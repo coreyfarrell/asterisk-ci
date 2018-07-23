@@ -52,5 +52,5 @@ RUN	dnf -y update && \
 	git clone https://github.com/asterisk/testsuite && \
 	(cd testsuite && git remote add gerrit https://gerrit.asterisk.org/testsuite)
 
-COPY asterisk-ci-* /usr/bin/
+COPY asterisk-ci-full /usr/bin/
 WORKDIR "/usr/src/asterisk"

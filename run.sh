@@ -7,8 +7,10 @@ DOCKER_ARGS="--rm --volume /etc/localtime:/etc/localtime:ro --volume ${VOLUME_NA
 # Build, install, unit tests, testsuite and process coverage.
 runner sudo docker run --privileged ${DOCKER_ARGS} asterisk-ci-full
 
-# Update ./output from docker volume.
-runner git rm -fr output
-echo "+ sudo docker run ${DOCKER_ARGS} asterisk-ci-tar | tar xf - --strip-components=2"
-sudo docker run ${DOCKER_ARGS} asterisk-ci-tar | tar xf - --strip-components=2
-runner git add output
+# Update ./output and ./testsuite from docker volume.
+runner git rm -qfr output testsuite
+echo "+ sudo docker run --workdir /usr/src/asterisk/tests/CI ${DOCKER_ARGS} tar -cf - output | tar xf -"
+sudo docker run --workdir /usr/src/asterisk/tests/CI ${DOCKER_ARGS} tar -cf - output | tar xf -
+echo "+ sudo docker run --workdir /usr/src ${DOCKER_ARGS} tar -cf - testsuite/asterisk-test-suite-report.xml testsuite/logs/ | tar xf -"
+sudo docker run --workdir /usr/src ${DOCKER_ARGS} tar -cf - testsuite/asterisk-test-suite-report.xml testsuite/logs/ | tar xf -
+runner git add output testsuite
