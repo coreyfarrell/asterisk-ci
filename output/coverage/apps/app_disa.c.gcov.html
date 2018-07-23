@@ -1,0 +1,507 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - apps/app_disa.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_disa.c<span style="font-size: 80%;"> (source / <a href="app_disa.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">108</td>
+            <td class="headerCovTableEntry">169</td>
+            <td class="headerCovTableEntryLo">63.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * Made only slightly more sane by Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       8 </span>            :  *
+<span class="lineNum">       9 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      10 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      11 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      12 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      13 </span>            :  * channels for your use.
+<span class="lineNum">      14 </span>            :  *
+<span class="lineNum">      15 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      16 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      17 </span>            :  * at the top of the source tree.
+<span class="lineNum">      18 </span>            :  */
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : /*! \file
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \brief DISA -- Direct Inward System Access Application
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \author Jim Dixon &lt;jim@lambdatel.com&gt;
+<span class="lineNum">      25 </span>            :  *
+<span class="lineNum">      26 </span>            :  * \ingroup applications
+<span class="lineNum">      27 </span>            :  */
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : /*** MODULEINFO
+<span class="lineNum">      30 </span>            :         &lt;use type=&quot;module&quot;&gt;app_cdr&lt;/use&gt;
+<span class="lineNum">      31 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      32 </span>            :  ***/
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &lt;math.h&gt;
+<span class="lineNum">      37 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/indications.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/ulaw.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/callerid.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/stringfields.h&quot;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      52 </span>            :         &lt;application name=&quot;DISA&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      53 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      54 </span>            :                         Direct Inward System Access.
+<span class="lineNum">      55 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      56 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      57 </span>            :                         &lt;parameter name=&quot;passcode|filename&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      58 </span>            :                                 &lt;para&gt;If you need to present a DISA dialtone without entering a password,
+<span class="lineNum">      59 </span>            :                                 simply set &lt;replaceable&gt;passcode&lt;/replaceable&gt; to &lt;literal&gt;no-password&lt;/literal&gt;&lt;/para&gt;
+<span class="lineNum">      60 </span>            :                                 &lt;para&gt;You may specified a &lt;replaceable&gt;filename&lt;/replaceable&gt; instead of a
+<span class="lineNum">      61 </span>            :                                 &lt;replaceable&gt;passcode&lt;/replaceable&gt;, this filename must contain individual passcodes&lt;/para&gt;
+<span class="lineNum">      62 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      63 </span>            :                         &lt;parameter name=&quot;context&quot;&gt;
+<span class="lineNum">      64 </span>            :                                 &lt;para&gt;Specifies the dialplan context in which the user-entered extension
+<span class="lineNum">      65 </span>            :                                 will be matched. If no context is specified, the DISA application defaults
+<span class="lineNum">      66 </span>            :                                 to the &lt;literal&gt;disa&lt;/literal&gt; context. Presumably a normal system will have a special
+<span class="lineNum">      67 </span>            :                                 context set up for DISA use with some or a lot of restrictions.&lt;/para&gt;
+<span class="lineNum">      68 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      69 </span>            :                         &lt;parameter name=&quot;cid&quot;&gt;
+<span class="lineNum">      70 </span>            :                                 &lt;para&gt;Specifies a new (different) callerid to be used for this call.&lt;/para&gt;
+<span class="lineNum">      71 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      72 </span>            :                         &lt;parameter name=&quot;mailbox&quot; argsep=&quot;@&quot;&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;para&gt;Will cause a stutter-dialtone (indication &lt;emphasis&gt;dialrecall&lt;/emphasis&gt;)
+<span class="lineNum">      74 </span>            :                                 to be used, if the specified mailbox contains any new messages.&lt;/para&gt;
+<span class="lineNum">      75 </span>            :                                 &lt;argument name=&quot;mailbox&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      76 </span>            :                                 &lt;argument name=&quot;context&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      77 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      78 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">      79 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      80 </span>            :                                         &lt;option name=&quot;n&quot;&gt;
+<span class="lineNum">      81 </span>            :                                                 &lt;para&gt;The DISA application will not answer initially.&lt;/para&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      83 </span>            :                                         &lt;option name=&quot;p&quot;&gt;
+<span class="lineNum">      84 </span>            :                                                 &lt;para&gt;The extension entered will be considered complete when a &lt;literal&gt;#&lt;/literal&gt;
+<span class="lineNum">      85 </span>            :                                                 is entered.&lt;/para&gt;
+<span class="lineNum">      86 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      87 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">      88 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      89 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      90 </span>            :                 &lt;description&gt;
+<span class="lineNum">      91 </span>            :                         &lt;para&gt;The DISA, Direct Inward System Access, application allows someone from
+<span class="lineNum">      92 </span>            :                         outside the telephone switch (PBX) to obtain an &lt;emphasis&gt;internal&lt;/emphasis&gt; system
+<span class="lineNum">      93 </span>            :                         dialtone and to place calls from it as if they were placing a call from
+<span class="lineNum">      94 </span>            :                         within the switch.
+<span class="lineNum">      95 </span>            :                         DISA plays a dialtone. The user enters their numeric passcode, followed by
+<span class="lineNum">      96 </span>            :                         the pound sign &lt;literal&gt;#&lt;/literal&gt;. If the passcode is correct, the user is then given
+<span class="lineNum">      97 </span>            :                         system dialtone within &lt;replaceable&gt;context&lt;/replaceable&gt; on which a call may be placed.
+<span class="lineNum">      98 </span>            :                         If the user enters an invalid extension and extension &lt;literal&gt;i&lt;/literal&gt; exists in the specified
+<span class="lineNum">      99 </span>            :                         &lt;replaceable&gt;context&lt;/replaceable&gt;, it will be used.
+<span class="lineNum">     100 </span>            :                         &lt;/para&gt;
+<span class="lineNum">     101 </span>            :                         &lt;para&gt;Be aware that using this may compromise the security of your PBX.&lt;/para&gt;
+<span class="lineNum">     102 </span>            :                         &lt;para&gt;The arguments to this application (in &lt;filename&gt;extensions.conf&lt;/filename&gt;) allow either
+<span class="lineNum">     103 </span>            :                         specification of a single global &lt;replaceable&gt;passcode&lt;/replaceable&gt; (that everyone uses), or
+<span class="lineNum">     104 </span>            :                         individual passcodes contained in a file (&lt;replaceable&gt;filename&lt;/replaceable&gt;).&lt;/para&gt;
+<span class="lineNum">     105 </span>            :                         &lt;para&gt;The file that contains the passcodes (if used) allows a complete
+<span class="lineNum">     106 </span>            :                         specification of all of the same arguments available on the command
+<span class="lineNum">     107 </span>            :                         line, with the sole exception of the options. The file may contain blank
+<span class="lineNum">     108 </span>            :                         lines, or comments starting with &lt;literal&gt;#&lt;/literal&gt; or &lt;literal&gt;;&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     109 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     110 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     111 </span>            :                         &lt;ref type=&quot;application&quot;&gt;Authenticate&lt;/ref&gt;
+<span class="lineNum">     112 </span>            :                         &lt;ref type=&quot;application&quot;&gt;VMAuthenticate&lt;/ref&gt;
+<span class="lineNum">     113 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     114 </span>            :         &lt;/application&gt;
+<span class="lineNum">     115 </span>            :  ***/
+<span class="lineNum">     116 </span>            : static const char app[] = &quot;DISA&quot;;
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            : enum {
+<span class="lineNum">     119 </span>            :         NOANSWER_FLAG = (1 &lt;&lt; 0),
+<span class="lineNum">     120 </span>            :         POUND_TO_END_FLAG = (1 &lt;&lt; 1),
+<span class="lineNum">     121 </span>            : };
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            : AST_APP_OPTIONS(app_opts, {
+<span class="lineNum">     124 </span>            :         AST_APP_OPTION('n', NOANSWER_FLAG),
+<span class="lineNum">     125 </span>            :         AST_APP_OPTION('p', POUND_TO_END_FLAG),
+<a name="126"><span class="lineNum">     126 </span>            : });</a>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">          6 : static void play_dialtone(struct ast_channel *chan, char *mailbox)</span>
+<span class="lineNum">     129 </span>            : {
+<span class="lineNum">     130 </span><span class="lineCov">          6 :         struct ast_tone_zone_sound *ts = NULL;</span>
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">          6 :         if (ast_app_has_voicemail(mailbox, NULL)) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 ts = ast_get_indication_tone(ast_channel_zone(chan), &quot;dialrecall&quot;);</span>
+<span class="lineNum">     134 </span>            :         } else {
+<span class="lineNum">     135 </span><span class="lineCov">          6 :                 ts = ast_get_indication_tone(ast_channel_zone(chan), &quot;dial&quot;);</span>
+<span class="lineNum">     136 </span>            :         }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">          6 :         if (ts) {</span>
+<span class="lineNum">     139 </span><span class="lineCov">          6 :                 ast_playtones_start(chan, 0, ts-&gt;data, 0);</span>
+<span class="lineNum">     140 </span><span class="lineCov">          6 :                 ts = ast_tone_zone_sound_unref(ts);</span>
+<span class="lineNum">     141 </span>            :         } else {
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                 ast_tonepair_start(chan, 350, 440, 0, 0);</span>
+<span class="lineNum">     143 </span>            :         }
+<a name="144"><span class="lineNum">     144 </span><span class="lineCov">          6 : }</span></a>
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">          5 : static int disa_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span><span class="lineCov">          5 :         int i = 0, j, k = 0, did_ignore = 0, special_noanswer = 0;</span>
+<span class="lineNum">     149 </span><span class="lineCov">          5 :         int firstdigittimeout = (ast_channel_pbx(chan) ? ast_channel_pbx(chan)-&gt;rtimeoutms : 20000);</span>
+<span class="lineNum">     150 </span><span class="lineCov">          5 :         int digittimeout = (ast_channel_pbx(chan) ? ast_channel_pbx(chan)-&gt;dtimeoutms : 10000);</span>
+<span class="lineNum">     151 </span>            :         struct ast_flags flags;
+<span class="lineNum">     152 </span><span class="lineCov">          5 :         char *tmp, exten[AST_MAX_EXTENSION] = &quot;&quot;, acctcode[20]=&quot;&quot;;</span>
+<span class="lineNum">     153 </span>            :         char pwline[256];
+<span class="lineNum">     154 </span>            :         char ourcidname[256],ourcidnum[256];
+<span class="lineNum">     155 </span>            :         struct ast_frame *f;
+<span class="lineNum">     156 </span>            :         struct timeval lastdigittime;
+<span class="lineNum">     157 </span>            :         int res;
+<span class="lineNum">     158 </span>            :         FILE *fp;
+<span class="lineNum">     159 </span><span class="lineCov">          5 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     160 </span>            :                 AST_APP_ARG(passcode);
+<span class="lineNum">     161 </span>            :                 AST_APP_ARG(context);
+<span class="lineNum">     162 </span>            :                 AST_APP_ARG(cid);
+<span class="lineNum">     163 </span>            :                 AST_APP_ARG(mailbox);
+<span class="lineNum">     164 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     165 </span>            :         );
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">          5 :         if (ast_strlen_zero(data)) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;DISA requires an argument (passcode/passcode file)\n&quot;);</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     170 </span>            :         }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">          5 :         ast_debug(1, &quot;Digittimeout: %d\n&quot;, digittimeout);</span>
+<span class="lineNum">     173 </span><span class="lineCov">          5 :         ast_debug(1, &quot;Responsetimeout: %d\n&quot;, firstdigittimeout);</span>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">          5 :         tmp = ast_strdupa(data);</span>
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineCov">          5 :         AST_STANDARD_APP_ARGS(args, tmp);</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">          5 :         if (ast_strlen_zero(args.context))</span>
+<span class="lineNum">     180 </span><span class="lineCov">          2 :                 args.context = &quot;disa&quot;;</span>
+<span class="lineNum">     181 </span><span class="lineCov">          5 :         if (ast_strlen_zero(args.mailbox))</span>
+<span class="lineNum">     182 </span><span class="lineCov">          5 :                 args.mailbox = &quot;&quot;;</span>
+<span class="lineNum">     183 </span><span class="lineCov">          5 :         if (!ast_strlen_zero(args.options)) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 ast_app_parse_options(app_opts, &amp;flags, NULL, args.options);</span>
+<span class="lineNum">     185 </span>            :         } else {
+<span class="lineNum">     186 </span>            :                 /* Coverity - This uninit_use should be ignored since this macro initializes the flags */
+<span class="lineNum">     187 </span><span class="lineCov">          5 :                 ast_clear_flag(&amp;flags, AST_FLAGS_ALL);</span>
+<span class="lineNum">     188 </span>            :         }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">          5 :         ast_debug(1, &quot;Mailbox: %s\n&quot;,args.mailbox);</span>
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineCov">          5 :         if (!ast_test_flag(&amp;flags, NOANSWER_FLAG)) {</span>
+<span class="lineNum">     194 </span><span class="lineCov">          5 :                 if (ast_channel_state(chan) != AST_STATE_UP) {</span>
+<span class="lineNum">     195 </span>            :                         /* answer */
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                         ast_answer(chan);</span>
+<span class="lineNum">     197 </span>            :                 }
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         } else special_noanswer = 1;</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineCov">          5 :         ast_debug(1, &quot;Context: %s\n&quot;,args.context);</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">          5 :         if (!strcasecmp(args.passcode, &quot;no-password&quot;)) {</span>
+<span class="lineNum">     203 </span><span class="lineCov">          3 :                 k |= 1; /* We have the password */</span>
+<span class="lineNum">     204 </span><span class="lineCov">          3 :                 ast_debug(1, &quot;DISA no-password login success\n&quot;);</span>
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">          5 :         lastdigittime = ast_tvnow();</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">          5 :         play_dialtone(chan, args.mailbox);</span>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">          5 :         ast_channel_set_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            :         for (;;) {
+<span class="lineNum">     214 </span>            :                   /* if outa time, give em reorder */
+<span class="lineNum">     215 </span><span class="lineCov">        360 :                 if (ast_tvdiff_ms(ast_tvnow(), lastdigittime) &gt; ((k&amp;2) ? digittimeout : firstdigittimeout)) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                         ast_debug(1,&quot;DISA %s entry timeout on chan %s\n&quot;,</span>
+<span class="lineNum">     217 </span>            :                                 ((k&amp;1) ? &quot;extension&quot; : &quot;password&quot;),ast_channel_name(chan));
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">        360 :                 if ((res = ast_waitfor(chan, -1)) &lt; 0) {</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;Waitfor returned %d\n&quot;, res);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     224 </span>            :                 }
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">        360 :                 if (!(f = ast_read(chan))) {</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                         ast_channel_clear_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     229 </span>            :                 }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">        360 :                 if ((f-&gt;frametype == AST_FRAME_CONTROL) &amp;&amp; (f-&gt;subclass.integer == AST_CONTROL_HANGUP)) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                         if (f-&gt;data.uint32)</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                                 ast_channel_hangupcause_set(chan, f-&gt;data.uint32);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                         ast_frfree(f);</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                         ast_channel_clear_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     237 </span>            :                 }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            :                 /* If the frame coming in is not DTMF, just drop it and continue */
+<span class="lineNum">     240 </span><span class="lineCov">        360 :                 if (f-&gt;frametype != AST_FRAME_DTMF) {</span>
+<span class="lineNum">     241 </span><span class="lineCov">        339 :                         ast_frfree(f);</span>
+<span class="lineNum">     242 </span><span class="lineCov">        339 :                         continue;</span>
+<span class="lineNum">     243 </span>            :                 }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">         21 :                 j = f-&gt;subclass.integer;  /* save digit */</span>
+<span class="lineNum">     246 </span><span class="lineCov">         21 :                 ast_frfree(f);</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">         21 :                 if (!i) {</span>
+<span class="lineNum">     249 </span><span class="lineCov">          6 :                         k |= 2; /* We have the first digit */</span>
+<span class="lineNum">     250 </span><span class="lineCov">          6 :                         ast_playtones_stop(chan);</span>
+<span class="lineNum">     251 </span>            :                 }
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span><span class="lineCov">         21 :                 lastdigittime = ast_tvnow();</span>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :                 /* got a DTMF tone */
+<span class="lineNum">     256 </span><span class="lineCov">         21 :                 if (i &lt; AST_MAX_EXTENSION) { /* if still valid number of digits */</span>
+<span class="lineNum">     257 </span><span class="lineCov">         21 :                         if (!(k&amp;1)) { /* if in password state */</span>
+<span class="lineNum">     258 </span><span class="lineCov">          9 :                                 if (j == '#') { /* end of password */</span>
+<span class="lineNum">     259 </span>            :                                           /* see if this is an integer */
+<span class="lineNum">     260 </span><span class="lineCov">          2 :                                         if (sscanf(args.passcode,&quot;%30d&quot;,&amp;j) &lt; 1) { /* nope, it must be a filename */</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :                                                 fp = fopen(args.passcode,&quot;r&quot;);</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                                                 if (!fp) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                                                         ast_log(LOG_WARNING,&quot;DISA password file %s not found on chan %s\n&quot;,args.passcode,ast_channel_name(chan));</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                                                         ast_channel_clear_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                                                         return -1;</span>
+<span class="lineNum">     266 </span>            :                                                 }
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                                                 pwline[0] = 0;</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                                                 while(fgets(pwline,sizeof(pwline) - 1,fp)) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                                                         if (!pwline[0])</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                                                                 continue;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                                                         if (pwline[strlen(pwline) - 1] == '\n')</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                                                                 pwline[strlen(pwline) - 1] = 0;</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                                                         if (!pwline[0])</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                                                                 continue;</span>
+<span class="lineNum">     275 </span>            :                                                          /* skip comments */
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                                                         if (pwline[0] == '#')</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                                                                 continue;</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                                                         if (pwline[0] == ';')</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                                                                 continue;</span>
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                                                         AST_STANDARD_APP_ARGS(args, pwline);</span>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                                                         ast_debug(1, &quot;Mailbox: %s\n&quot;,args.mailbox);</span>
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span>            :                                                         /* password must be in valid format (numeric) */
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                                                         if (sscanf(args.passcode,&quot;%30d&quot;, &amp;j) &lt; 1)</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                                                                 continue;</span>
+<span class="lineNum">     288 </span>            :                                                          /* if we got it */
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                                                         if (!strcmp(exten,args.passcode)) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                                                                 if (ast_strlen_zero(args.context))</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                                                                         args.context = &quot;disa&quot;;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                                                                 if (ast_strlen_zero(args.mailbox))</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :                                                                         args.mailbox = &quot;&quot;;</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                                                                 break;</span>
+<span class="lineNum">     295 </span>            :                                                         }
+<span class="lineNum">     296 </span>            :                                                 }
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                                                 fclose(fp);</span>
+<span class="lineNum">     298 </span>            :                                         }
+<span class="lineNum">     299 </span>            :                                         /* compare the two */
+<span class="lineNum">     300 </span><span class="lineCov">          2 :                                         if (strcmp(exten,args.passcode)) {</span>
+<span class="lineNum">     301 </span><span class="lineCov">          1 :                                                 ast_log(LOG_WARNING,&quot;DISA on chan %s got bad password %s\n&quot;,ast_channel_name(chan),exten);</span>
+<span class="lineNum">     302 </span><span class="lineCov">          1 :                                                 goto reorder;</span>
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span>            :                                         }
+<span class="lineNum">     305 </span>            :                                          /* password good, set to dial state */
+<span class="lineNum">     306 </span><span class="lineCov">          1 :                                         ast_debug(1,&quot;DISA on chan %s password is good\n&quot;,ast_channel_name(chan));</span>
+<span class="lineNum">     307 </span><span class="lineCov">          1 :                                         play_dialtone(chan, args.mailbox);</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">          1 :                                         k|=1; /* In number mode */</span>
+<span class="lineNum">     310 </span><span class="lineCov">          1 :                                         i = 0;  /* re-set buffer pointer */</span>
+<span class="lineNum">     311 </span><span class="lineCov">          1 :                                         exten[sizeof(acctcode)] = 0;</span>
+<span class="lineNum">     312 </span><span class="lineCov">          1 :                                         ast_copy_string(acctcode, exten, sizeof(acctcode));</span>
+<span class="lineNum">     313 </span><span class="lineCov">          1 :                                         exten[0] = 0;</span>
+<span class="lineNum">     314 </span><span class="lineCov">          1 :                                         ast_debug(1,&quot;Successful DISA log-in on chan %s\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     315 </span><span class="lineCov">          1 :                                         continue;</span>
+<span class="lineNum">     316 </span>            :                                 }
+<span class="lineNum">     317 </span>            :                         } else {
+<span class="lineNum">     318 </span><span class="lineCov">         12 :                                 if (j == '#') { /* end of extension .. maybe */</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                                         if (i == 0</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                                                 &amp;&amp; (ast_matchmore_extension(chan, args.context, &quot;#&quot;, 1,</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                                                         S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, NULL))</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                                                         || ast_exists_extension(chan, args.context, &quot;#&quot;, 1,</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                                                                 S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, NULL))) ) {</span>
+<span class="lineNum">     324 </span>            :                                                 /* Let the # be the part of, or the entire extension */
+<span class="lineNum">     325 </span>            :                                         } else {
+<span class="lineNum">     326 </span>            :                                                 break;
+<span class="lineNum">     327 </span>            :                                         }
+<span class="lineNum">     328 </span>            :                                 }
+<span class="lineNum">     329 </span>            :                         }
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">         19 :                         exten[i++] = j;  /* save digit */</span>
+<span class="lineNum">     332 </span><span class="lineCov">         19 :                         exten[i] = 0;</span>
+<span class="lineNum">     333 </span><span class="lineCov">         19 :                         if (!(k&amp;1))</span>
+<span class="lineNum">     334 </span><span class="lineCov">          7 :                                 continue; /* if getting password, continue doing it */</span>
+<span class="lineNum">     335 </span>            :                         /* if this exists */
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span>            :                         /* user wants end of number, remove # */
+<span class="lineNum">     338 </span><span class="lineCov">         12 :                         if (ast_test_flag(&amp;flags, POUND_TO_END_FLAG) &amp;&amp; j == '#') {</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                                 exten[--i] = 0;</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     341 </span>            :                         }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">         12 :                         if (ast_ignore_pattern(args.context, exten)) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                                 play_dialtone(chan, &quot;&quot;);</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                                 did_ignore = 1;</span>
+<span class="lineNum">     346 </span>            :                         } else
+<span class="lineNum">     347 </span><span class="lineCov">         12 :                                 if (did_ignore) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                                         ast_playtones_stop(chan);</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">          0 :                                         did_ignore = 0;</span>
+<span class="lineNum">     350 </span>            :                                 }
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span>            :                         /* if can do some more, do it */
+<span class="lineNum">     353 </span><span class="lineCov">         12 :                         if (!ast_matchmore_extension(chan, args.context, exten, 1,</span>
+<span class="lineNum">     354 </span><span class="lineCov">         12 :                                 S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, NULL))) {</span>
+<span class="lineNum">     355 </span><span class="lineCov">          4 :                                 break;</span>
+<span class="lineNum">     356 </span>            :                         }
+<span class="lineNum">     357 </span>            :                 }
+<span class="lineNum">     358 </span>            :         }
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">          4 :         ast_channel_clear_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineCov">          4 :         if (k == 3) {</span>
+<span class="lineNum">     363 </span><span class="lineCov">          4 :                 int recheck = 0;</span>
+<span class="lineNum">     364 </span>            :                 struct ast_app *app_reset_cdr;
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span><span class="lineCov">          4 :                 if (!ast_exists_extension(chan, args.context, exten, 1,</span>
+<span class="lineNum">     367 </span><span class="lineCov">          4 :                         S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, NULL))) {</span>
+<span class="lineNum">     368 </span><span class="lineCov">          1 :                         pbx_builtin_setvar_helper(chan, &quot;INVALID_EXTEN&quot;, exten);</span>
+<span class="lineNum">     369 </span><span class="lineCov">          1 :                         exten[0] = 'i';</span>
+<span class="lineNum">     370 </span><span class="lineCov">          1 :                         exten[1] = '\0';</span>
+<span class="lineNum">     371 </span><span class="lineCov">          1 :                         recheck = 1;</span>
+<span class="lineNum">     372 </span>            :                 }
+<span class="lineNum">     373 </span><span class="lineCov">          4 :                 if (!recheck</span>
+<span class="lineNum">     374 </span><span class="lineCov">          1 :                         || ast_exists_extension(chan, args.context, exten, 1,</span>
+<span class="lineNum">     375 </span><span class="lineCov">          1 :                                 S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, NULL))) {</span>
+<span class="lineNum">     376 </span><span class="lineCov">          4 :                         ast_playtones_stop(chan);</span>
+<span class="lineNum">     377 </span>            :                         /* We're authenticated and have a target extension */
+<span class="lineNum">     378 </span><span class="lineCov">          4 :                         if (!ast_strlen_zero(args.cid)) {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                                 ast_callerid_split(args.cid, ourcidname, sizeof(ourcidname), ourcidnum, sizeof(ourcidnum));</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :                                 ast_set_callerid(chan, ourcidnum, ourcidname, ourcidnum);</span>
+<span class="lineNum">     381 </span>            :                         }
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">          4 :                         if (!ast_strlen_zero(acctcode)) {</span>
+<span class="lineNum">     384 </span><span class="lineCov">          1 :                                 ast_channel_lock(chan);</span>
+<span class="lineNum">     385 </span><span class="lineCov">          1 :                                 ast_channel_accountcode_set(chan, acctcode);</span>
+<span class="lineNum">     386 </span><span class="lineCov">          1 :                                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     387 </span>            :                         }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">          4 :                         app_reset_cdr = pbx_findapp(&quot;ResetCDR&quot;);</span>
+<span class="lineNum">     390 </span><span class="lineCov">          4 :                         if (app_reset_cdr) {</span>
+<span class="lineNum">     391 </span><span class="lineCov">          4 :                                 pbx_exec(chan, app_reset_cdr, special_noanswer ? &quot;&quot; : &quot;e&quot;);</span>
+<span class="lineNum">     392 </span>            :                         } else {
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                                 ast_log(AST_LOG_NOTICE, &quot;ResetCDR application not found; CDR will not be reset\n&quot;);</span>
+<span class="lineNum">     394 </span>            :                         }
+<span class="lineNum">     395 </span><span class="lineCov">          4 :                         ast_explicit_goto(chan, args.context, exten, 1);</span>
+<span class="lineNum">     396 </span><span class="lineCov">          4 :                         return 0;</span>
+<span class="lineNum">     397 </span>            :                 }
+<span class="lineNum">     398 </span>            :         }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            :         /* Received invalid, but no &quot;i&quot; extension exists in the given context */
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 : reorder:</span>
+<span class="lineNum">     403 </span>            :         /* Play congestion for a bit */
+<span class="lineNum">     404 </span><span class="lineCov">          1 :         ast_indicate(chan, AST_CONTROL_CONGESTION);</span>
+<span class="lineNum">     405 </span><span class="lineCov">          1 :         ast_safe_sleep(chan, 10*1000);</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">          1 :         ast_playtones_stop(chan);</span>
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">          1 :         return -1;</span>
+<a name="410"><span class="lineNum">     410 </span>            : }</a>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     413 </span>            : {
+<span class="lineNum">     414 </span><span class="lineCov">       1115 :         return ast_unregister_application(app);</span>
+<a name="415"><span class="lineNum">     415 </span>            : }</a>
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span><span class="lineCov">       1117 :         return ast_register_application_xml(app, disa_exec) ?</span>
+<span class="lineNum">     420 </span><span class="lineCov">       1117 :                 AST_MODULE_LOAD_DECLINE : AST_MODULE_LOAD_SUCCESS;</span>
+<a name="421"><span class="lineNum">     421 </span>            : }</a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;DISA (Direct Inward System Access) Application&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

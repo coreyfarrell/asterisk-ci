@@ -1,0 +1,1261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/features.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - features.c<span style="font-size: 80%;"> (source / <a href="features.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">309</td>
+            <td class="headerCovTableEntry">445</td>
+            <td class="headerCovTableEntryLo">69.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntryHi">92.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2012, Digium, Inc.
+<span class="lineNum">       5 </span>            :  * Copyright (C) 2012, Russell Bryant
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       8 </span>            :  *
+<span class="lineNum">       9 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      10 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      11 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      12 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      13 </span>            :  * channels for your use.
+<span class="lineNum">      14 </span>            :  *
+<span class="lineNum">      15 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      16 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      17 </span>            :  * at the top of the source tree.
+<span class="lineNum">      18 </span>            :  */
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : /*! \file
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \brief Routines implementing call features as call pickup, parking and transfer
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*! \li \ref features.c uses the configuration file \ref features.conf
+<span class="lineNum">      28 </span>            :  * \addtogroup configuration_file Configuration Files
+<span class="lineNum">      29 </span>            :  */
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : /*!
+<span class="lineNum">      32 </span>            :  * \page features.conf features.conf
+<span class="lineNum">      33 </span>            :  * \verbinclude features.conf.sample
+<span class="lineNum">      34 </span>            :  */
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : /*** MODULEINFO
+<span class="lineNum">      37 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      38 </span>            :  ***/
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;features_config.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : #include &lt;pthread.h&gt;
+<span class="lineNum">      46 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      47 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      48 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      49 </span>            : #include &lt;netinet/in.h&gt;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      52 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      53 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      54 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      55 </span>            : #include &quot;asterisk/causes.h&quot;
+<span class="lineNum">      56 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      57 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      58 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      59 </span>            : #include &quot;asterisk/say.h&quot;
+<span class="lineNum">      60 </span>            : #include &quot;asterisk/features.h&quot;
+<span class="lineNum">      61 </span>            : #include &quot;asterisk/musiconhold.h&quot;
+<span class="lineNum">      62 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      63 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      64 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      65 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      66 </span>            : #include &quot;asterisk/devicestate.h&quot;
+<span class="lineNum">      67 </span>            : #include &quot;asterisk/audiohook.h&quot;
+<span class="lineNum">      68 </span>            : #include &quot;asterisk/global_datastores.h&quot;
+<span class="lineNum">      69 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      70 </span>            : #include &quot;asterisk/test.h&quot;
+<span class="lineNum">      71 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      72 </span>            : #include &quot;asterisk/bridge_features.h&quot;
+<span class="lineNum">      73 </span>            : #include &quot;asterisk/bridge_basic.h&quot;
+<span class="lineNum">      74 </span>            : #include &quot;asterisk/bridge_after.h&quot;
+<span class="lineNum">      75 </span>            : #include &quot;asterisk/stasis.h&quot;
+<span class="lineNum">      76 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      77 </span>            : #include &quot;asterisk/features_config.h&quot;
+<span class="lineNum">      78 </span>            : #include &quot;asterisk/max_forwards.h&quot;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      81 </span>            :         &lt;application name=&quot;Bridge&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      82 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      83 </span>            :                         Bridge two channels.
+<span class="lineNum">      84 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      85 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      86 </span>            :                         &lt;parameter name=&quot;channel&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      87 </span>            :                                 &lt;para&gt;The current channel is bridged to the specified &lt;replaceable&gt;channel&lt;/replaceable&gt;.&lt;/para&gt;
+<span class="lineNum">      88 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      89 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      91 </span>            :                                         &lt;option name=&quot;p&quot;&gt;
+<span class="lineNum">      92 </span>            :                                                 &lt;para&gt;Play a courtesy tone to &lt;replaceable&gt;channel&lt;/replaceable&gt;.&lt;/para&gt;
+<span class="lineNum">      93 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      94 </span>            :                                         &lt;option name=&quot;F&quot; argsep=&quot;^&quot;&gt;
+<span class="lineNum">      95 </span>            :                                                 &lt;argument name=&quot;context&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      96 </span>            :                                                 &lt;argument name=&quot;exten&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      97 </span>            :                                                 &lt;argument name=&quot;priority&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      98 </span>            :                                                 &lt;para&gt;When the bridger hangs up, transfer the &lt;emphasis&gt;bridged&lt;/emphasis&gt; party
+<span class="lineNum">      99 </span>            :                                                 to the specified destination and &lt;emphasis&gt;start&lt;/emphasis&gt; execution at that location.&lt;/para&gt;
+<span class="lineNum">     100 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">     101 </span>            :                                                         &lt;para&gt;Any channel variables you want the called channel to inherit from the caller channel must be
+<span class="lineNum">     102 </span>            :                                                         prefixed with one or two underbars ('_').&lt;/para&gt;
+<span class="lineNum">     103 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">     104 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">     105 </span>            :                                                         &lt;para&gt;This option will override the 'x' option&lt;/para&gt;
+<span class="lineNum">     106 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">     107 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     108 </span>            :                                         &lt;option name=&quot;F&quot;&gt;
+<span class="lineNum">     109 </span>            :                                                 &lt;para&gt;When the bridger hangs up, transfer the &lt;emphasis&gt;bridged&lt;/emphasis&gt; party
+<span class="lineNum">     110 </span>            :                                                 to the next priority of the current extension and &lt;emphasis&gt;start&lt;/emphasis&gt; execution
+<span class="lineNum">     111 </span>            :                                                 at that location.&lt;/para&gt;
+<span class="lineNum">     112 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">     113 </span>            :                                                         &lt;para&gt;Any channel variables you want the called channel to inherit from the caller channel must be
+<span class="lineNum">     114 </span>            :                                                         prefixed with one or two underbars ('_').&lt;/para&gt;
+<span class="lineNum">     115 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">     116 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">     117 </span>            :                                                         &lt;para&gt;Using this option from a Macro() or GoSub() might not make sense as there would be no return points.&lt;/para&gt;
+<span class="lineNum">     118 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">     119 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">     120 </span>            :                                                         &lt;para&gt;This option will override the 'x' option&lt;/para&gt;
+<span class="lineNum">     121 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">     122 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :                                         &lt;option name=&quot;h&quot;&gt;
+<span class="lineNum">     125 </span>            :                                                 &lt;para&gt;Allow the called party to hang up by sending the
+<span class="lineNum">     126 </span>            :                                                 &lt;replaceable&gt;*&lt;/replaceable&gt; DTMF digit.&lt;/para&gt;
+<span class="lineNum">     127 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     128 </span>            :                                         &lt;option name=&quot;H&quot;&gt;
+<span class="lineNum">     129 </span>            :                                                 &lt;para&gt;Allow the calling party to hang up by pressing the
+<span class="lineNum">     130 </span>            :                                                 &lt;replaceable&gt;*&lt;/replaceable&gt; DTMF digit.&lt;/para&gt;
+<span class="lineNum">     131 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     132 </span>            :                                         &lt;option name=&quot;k&quot;&gt;
+<span class="lineNum">     133 </span>            :                                                 &lt;para&gt;Allow the called party to enable parking of the call by sending
+<span class="lineNum">     134 </span>            :                                                 the DTMF sequence defined for call parking in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     135 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     136 </span>            :                                         &lt;option name=&quot;K&quot;&gt;
+<span class="lineNum">     137 </span>            :                                                 &lt;para&gt;Allow the calling party to enable parking of the call by sending
+<span class="lineNum">     138 </span>            :                                                  the DTMF sequence defined for call parking in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     139 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     140 </span>            :                                         &lt;option name=&quot;L(x[:y][:z])&quot;&gt;
+<span class="lineNum">     141 </span>            :                                                 &lt;para&gt;Limit the call to &lt;replaceable&gt;x&lt;/replaceable&gt; ms. Play a warning
+<span class="lineNum">     142 </span>            :                                                 when &lt;replaceable&gt;y&lt;/replaceable&gt; ms are left. Repeat the warning every
+<span class="lineNum">     143 </span>            :                                                 &lt;replaceable&gt;z&lt;/replaceable&gt; ms. The following special variables can be
+<span class="lineNum">     144 </span>            :                                                 used with this option:&lt;/para&gt;
+<span class="lineNum">     145 </span>            :                                                 &lt;variablelist&gt;
+<span class="lineNum">     146 </span>            :                                                         &lt;variable name=&quot;LIMIT_PLAYAUDIO_CALLER&quot;&gt;
+<span class="lineNum">     147 </span>            :                                                                 &lt;para&gt;Play sounds to the caller. yes|no (default yes)&lt;/para&gt;
+<span class="lineNum">     148 </span>            :                                                         &lt;/variable&gt;
+<span class="lineNum">     149 </span>            :                                                         &lt;variable name=&quot;LIMIT_PLAYAUDIO_CALLEE&quot;&gt;
+<span class="lineNum">     150 </span>            :                                                                 &lt;para&gt;Play sounds to the callee. yes|no&lt;/para&gt;
+<span class="lineNum">     151 </span>            :                                                         &lt;/variable&gt;
+<span class="lineNum">     152 </span>            :                                                         &lt;variable name=&quot;LIMIT_TIMEOUT_FILE&quot;&gt;
+<span class="lineNum">     153 </span>            :                                                                 &lt;para&gt;File to play when time is up.&lt;/para&gt;
+<span class="lineNum">     154 </span>            :                                                         &lt;/variable&gt;
+<span class="lineNum">     155 </span>            :                                                         &lt;variable name=&quot;LIMIT_CONNECT_FILE&quot;&gt;
+<span class="lineNum">     156 </span>            :                                                                 &lt;para&gt;File to play when call begins.&lt;/para&gt;
+<span class="lineNum">     157 </span>            :                                                         &lt;/variable&gt;
+<span class="lineNum">     158 </span>            :                                                         &lt;variable name=&quot;LIMIT_WARNING_FILE&quot;&gt;
+<span class="lineNum">     159 </span>            :                                                                 &lt;para&gt;File to play as warning if &lt;replaceable&gt;y&lt;/replaceable&gt; is
+<span class="lineNum">     160 </span>            :                                                                 defined. The default is to say the time remaining.&lt;/para&gt;
+<span class="lineNum">     161 </span>            :                                                         &lt;/variable&gt;
+<span class="lineNum">     162 </span>            :                                                 &lt;/variablelist&gt;
+<span class="lineNum">     163 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     164 </span>            :                                         &lt;option name=&quot;S(x)&quot;&gt;
+<span class="lineNum">     165 </span>            :                                                 &lt;para&gt;Hang up the call after &lt;replaceable&gt;x&lt;/replaceable&gt; seconds *after* the called party has answered the call.&lt;/para&gt;
+<span class="lineNum">     166 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     167 </span>            :                                         &lt;option name=&quot;t&quot;&gt;
+<span class="lineNum">     168 </span>            :                                                 &lt;para&gt;Allow the called party to transfer the calling party by sending the
+<span class="lineNum">     169 </span>            :                                                 DTMF sequence defined in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     170 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     171 </span>            :                                         &lt;option name=&quot;T&quot;&gt;
+<span class="lineNum">     172 </span>            :                                                 &lt;para&gt;Allow the calling party to transfer the called party by sending the
+<span class="lineNum">     173 </span>            :                                                 DTMF sequence defined in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     174 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     175 </span>            :                                         &lt;option name=&quot;w&quot;&gt;
+<span class="lineNum">     176 </span>            :                                                 &lt;para&gt;Allow the called party to enable recording of the call by sending
+<span class="lineNum">     177 </span>            :                                                 the DTMF sequence defined for one-touch recording in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     178 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     179 </span>            :                                         &lt;option name=&quot;W&quot;&gt;
+<span class="lineNum">     180 </span>            :                                                 &lt;para&gt;Allow the calling party to enable recording of the call by sending
+<span class="lineNum">     181 </span>            :                                                 the DTMF sequence defined for one-touch recording in &lt;filename&gt;features.conf&lt;/filename&gt;.&lt;/para&gt;
+<span class="lineNum">     182 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     183 </span>            :                                         &lt;option name=&quot;x&quot;&gt;
+<span class="lineNum">     184 </span>            :                                                 &lt;para&gt;Cause the called party to be hung up after the bridge, instead of being
+<span class="lineNum">     185 </span>            :                                                 restarted in the dialplan.&lt;/para&gt;
+<span class="lineNum">     186 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     187 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     188 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     189 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     190 </span>            :                 &lt;description&gt;
+<span class="lineNum">     191 </span>            :                         &lt;para&gt;Allows the ability to bridge two channels via the dialplan.&lt;/para&gt;
+<span class="lineNum">     192 </span>            :                         &lt;para&gt;This application sets the following channel variable upon completion:&lt;/para&gt;
+<span class="lineNum">     193 </span>            :                         &lt;variablelist&gt;
+<span class="lineNum">     194 </span>            :                                 &lt;variable name=&quot;BRIDGERESULT&quot;&gt;
+<span class="lineNum">     195 </span>            :                                         &lt;para&gt;The result of the bridge attempt as a text string.&lt;/para&gt;
+<span class="lineNum">     196 </span>            :                                         &lt;value name=&quot;SUCCESS&quot; /&gt;
+<span class="lineNum">     197 </span>            :                                         &lt;value name=&quot;FAILURE&quot; /&gt;
+<span class="lineNum">     198 </span>            :                                         &lt;value name=&quot;LOOP&quot; /&gt;
+<span class="lineNum">     199 </span>            :                                         &lt;value name=&quot;NONEXISTENT&quot; /&gt;
+<span class="lineNum">     200 </span>            :                                 &lt;/variable&gt;
+<span class="lineNum">     201 </span>            :                         &lt;/variablelist&gt;
+<span class="lineNum">     202 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     203 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     204 </span>            :                         &lt;ref type=&quot;manager&quot;&gt;Bridge&lt;/ref&gt;
+<span class="lineNum">     205 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;BridgeCreate&lt;/ref&gt;
+<span class="lineNum">     206 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;BridgeEnter&lt;/ref&gt;
+<span class="lineNum">     207 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     208 </span>            :         &lt;/application&gt;
+<span class="lineNum">     209 </span>            :         &lt;manager name=&quot;Bridge&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     210 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     211 </span>            :                         Bridge two channels already in the PBX.
+<span class="lineNum">     212 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     213 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     214 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">     215 </span>            :                         &lt;parameter name=&quot;Channel1&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     216 </span>            :                                 &lt;para&gt;Channel to Bridge to Channel2.&lt;/para&gt;
+<span class="lineNum">     217 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     218 </span>            :                         &lt;parameter name=&quot;Channel2&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     219 </span>            :                                 &lt;para&gt;Channel to Bridge to Channel1.&lt;/para&gt;
+<span class="lineNum">     220 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     221 </span>            :                         &lt;parameter name=&quot;Tone&quot;&gt;
+<span class="lineNum">     222 </span>            :                                 &lt;para&gt;Play courtesy tone to Channel 2.&lt;/para&gt;
+<span class="lineNum">     223 </span>            :                                 &lt;enumlist&gt;
+<span class="lineNum">     224 </span>            :                                         &lt;enum name=&quot;no&quot; /&gt;
+<span class="lineNum">     225 </span>            :                                         &lt;enum name=&quot;Channel1&quot; /&gt;
+<span class="lineNum">     226 </span>            :                                         &lt;enum name=&quot;Channel2&quot; /&gt;
+<span class="lineNum">     227 </span>            :                                         &lt;enum name=&quot;Both&quot; /&gt;
+<span class="lineNum">     228 </span>            :                                 &lt;/enumlist&gt;
+<span class="lineNum">     229 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     230 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     231 </span>            :                 &lt;description&gt;
+<span class="lineNum">     232 </span>            :                         &lt;para&gt;Bridge together two channels already in the PBX.&lt;/para&gt;
+<span class="lineNum">     233 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     234 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     235 </span>            :                         &lt;ref type=&quot;application&quot;&gt;Bridge&lt;/ref&gt;
+<span class="lineNum">     236 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;BridgeCreate&lt;/ref&gt;
+<span class="lineNum">     237 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;BridgeEnter&lt;/ref&gt;
+<span class="lineNum">     238 </span>            :                         &lt;ref type=&quot;manager&quot;&gt;BridgeDestroy&lt;/ref&gt;
+<span class="lineNum">     239 </span>            :                         &lt;ref type=&quot;manager&quot;&gt;BridgeInfo&lt;/ref&gt;
+<span class="lineNum">     240 </span>            :                         &lt;ref type=&quot;manager&quot;&gt;BridgeKick&lt;/ref&gt;
+<span class="lineNum">     241 </span>            :                         &lt;ref type=&quot;manager&quot;&gt;BridgeList&lt;/ref&gt;
+<span class="lineNum">     242 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     243 </span>            :         &lt;/manager&gt;
+<span class="lineNum">     244 </span>            :  ***/
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span>            : typedef enum {
+<span class="lineNum">     247 </span>            :         FEATURE_INTERPRET_DETECT, /* Used by ast_feature_detect */
+<span class="lineNum">     248 </span>            :         FEATURE_INTERPRET_DO,     /* Used by feature_interpret */
+<span class="lineNum">     249 </span>            :         FEATURE_INTERPRET_CHECK,  /* Used by feature_check */
+<span class="lineNum">     250 </span>            : } feature_interpret_op;
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span>            : struct ast_dial_features {
+<span class="lineNum">     253 </span>            :         /*! Channel's feature flags. */
+<span class="lineNum">     254 </span>            :         struct ast_flags my_features;
+<span class="lineNum">     255 </span>            :         /*! Bridge peer's feature flags. */
+<span class="lineNum">     256 </span>            :         struct ast_flags peer_features;
+<a name="257"><span class="lineNum">     257 </span>            : };</a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">         68 : static void *dial_features_duplicate(void *data)</span>
+<span class="lineNum">     260 </span>            : {
+<span class="lineNum">     261 </span><span class="lineCov">         68 :         struct ast_dial_features *df = data, *df_copy;</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">         68 :         if (!(df_copy = ast_calloc(1, sizeof(*df)))) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">         68 :         memcpy(df_copy, df, sizeof(*df));</span>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">         68 :         return df_copy;</span>
+<span class="lineNum">     270 </span>            : }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span>            : static const struct ast_datastore_info dial_features_info = {
+<span class="lineNum">     273 </span>            :         .type = &quot;dial-features&quot;,
+<span class="lineNum">     274 </span>            :         .destroy = ast_free_ptr,
+<span class="lineNum">     275 </span>            :         .duplicate = dial_features_duplicate,
+<span class="lineNum">     276 </span>            : };
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            : /*!
+<span class="lineNum">     279 </span>            :  * \internal
+<span class="lineNum">     280 </span>            :  * \brief Set the features datastore if it doesn't exist.
+<span class="lineNum">     281 </span>            :  *
+<span class="lineNum">     282 </span>            :  * \param chan Channel to add features datastore
+<span class="lineNum">     283 </span>            :  * \param my_features The channel's feature flags
+<span class="lineNum">     284 </span>            :  * \param peer_features The channel's bridge peer feature flags
+<span class="lineNum">     285 </span>            :  *
+<a name="286"><span class="lineNum">     286 </span>            :  * \retval TRUE if features datastore already existed.</a>
+<span class="lineNum">     287 </span>            :  */
+<span class="lineNum">     288 </span><span class="lineCov">       1315 : static int add_features_datastore(struct ast_channel *chan, const struct ast_flags *my_features, const struct ast_flags *peer_features)</span>
+<span class="lineNum">     289 </span>            : {
+<span class="lineNum">     290 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">     291 </span>            :         struct ast_dial_features *dialfeatures;
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineCov">       1315 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     294 </span><span class="lineCov">       1315 :         datastore = ast_channel_datastore_find(chan, &amp;dial_features_info, NULL);</span>
+<span class="lineNum">     295 </span><span class="lineCov">       1315 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     296 </span><span class="lineCov">       1315 :         if (datastore) {</span>
+<span class="lineNum">     297 </span>            :                 /* Already exists. */
+<span class="lineNum">     298 </span><span class="lineCov">         37 :                 return 1;</span>
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span>            :         /* Create a new datastore with specified feature flags. */
+<span class="lineNum">     302 </span><span class="lineCov">       1278 :         datastore = ast_datastore_alloc(&amp;dial_features_info, NULL);</span>
+<span class="lineNum">     303 </span><span class="lineCov">       1278 :         if (!datastore) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to create channel features datastore.\n&quot;);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span><span class="lineCov">       1278 :         dialfeatures = ast_calloc(1, sizeof(*dialfeatures));</span>
+<span class="lineNum">     308 </span><span class="lineCov">       1278 :         if (!dialfeatures) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to allocate memory for feature flags.\n&quot;);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 ast_datastore_free(datastore);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     312 </span>            :         }
+<span class="lineNum">     313 </span><span class="lineCov">       1278 :         ast_copy_flags(&amp;dialfeatures-&gt;my_features, my_features, AST_FLAGS_ALL);</span>
+<span class="lineNum">     314 </span><span class="lineCov">       1278 :         ast_copy_flags(&amp;dialfeatures-&gt;peer_features, peer_features, AST_FLAGS_ALL);</span>
+<span class="lineNum">     315 </span><span class="lineCov">       1278 :         datastore-&gt;inheritance = DATASTORE_INHERIT_FOREVER;</span>
+<span class="lineNum">     316 </span><span class="lineCov">       1278 :         datastore-&gt;data = dialfeatures;</span>
+<span class="lineNum">     317 </span><span class="lineCov">       1278 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     318 </span><span class="lineCov">       1278 :         ast_channel_datastore_add(chan, datastore);</span>
+<span class="lineNum">     319 </span><span class="lineCov">       1278 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     320 </span><span class="lineCov">       1278 :         return 0;</span>
+<span class="lineNum">     321 </span>            : }
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span>            : struct ast_bridge_thread_obj
+<span class="lineNum">     324 </span>            : {
+<span class="lineNum">     325 </span>            :         struct ast_bridge_config bconfig;
+<span class="lineNum">     326 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     327 </span>            :         struct ast_channel *peer;
+<span class="lineNum">     328 </span>            :         unsigned int return_to_pbx:1;
+<a name="329"><span class="lineNum">     329 </span>            : };</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">        676 : static void set_config_flags(struct ast_channel *chan, struct ast_bridge_config *config)</span>
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span><span class="lineCov">        676 :         ast_clear_flag(config, AST_FLAGS_ALL);</span>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineCov">        676 :         if (ast_test_flag(&amp;config-&gt;features_caller, AST_FEATURE_DTMF_MASK)) {</span>
+<span class="lineNum">     336 </span><span class="lineCov">         76 :                 ast_set_flag(config, AST_BRIDGE_DTMF_CHANNEL_0);</span>
+<span class="lineNum">     337 </span>            :         }
+<span class="lineNum">     338 </span><span class="lineCov">        676 :         if (ast_test_flag(&amp;config-&gt;features_callee, AST_FEATURE_DTMF_MASK)) {</span>
+<span class="lineNum">     339 </span><span class="lineCov">         70 :                 ast_set_flag(config, AST_BRIDGE_DTMF_CHANNEL_1);</span>
+<span class="lineNum">     340 </span>            :         }
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineCov">        676 :         if (!(ast_test_flag(config, AST_BRIDGE_DTMF_CHANNEL_0) &amp;&amp; ast_test_flag(config, AST_BRIDGE_DTMF_CHANNEL_1))) {</span>
+<span class="lineNum">     343 </span><span class="lineCov">       1234 :                 RAII_VAR(struct ao2_container *, applicationmap, NULL, ao2_cleanup);</span>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">        617 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     346 </span><span class="lineCov">        617 :                 applicationmap = ast_get_chan_applicationmap(chan);</span>
+<span class="lineNum">     347 </span><span class="lineCov">        617 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span><span class="lineCov">        617 :                 if (!applicationmap) {</span>
+<span class="lineNum">     350 </span><span class="lineCov">        617 :                         return;</span>
+<span class="lineNum">     351 </span>            :                 }
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            :                 /* If an applicationmap exists for this channel at all, then the channel needs the DTMF flag set */
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 ast_set_flag(config, AST_BRIDGE_DTMF_CHANNEL_0);</span>
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span>            : }
+<span class="lineNum">     357 </span>            : 
+<a name="358"><span class="lineNum">     358 </span>            : void ast_channel_log(char *title, struct ast_channel *chan);</a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 : void ast_channel_log(char *title, struct ast_channel *chan) /* for debug, this is handy enough to justify keeping it in the source */</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE, &quot;______ %s (%lx)______\n&quot;, title, (unsigned long) chan);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE, &quot;CHAN: name: %s;  appl: %s; data: %s; contxt: %s;  exten: %s; pri: %d;\n&quot;,</span>
+<span class="lineNum">     364 </span>            :                 ast_channel_name(chan), ast_channel_appl(chan), ast_channel_data(chan),
+<span class="lineNum">     365 </span>            :                 ast_channel_context(chan), ast_channel_exten(chan), ast_channel_priority(chan));
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE, &quot;CHAN: acctcode: %s;  dialcontext: %s; amaflags: %x; maccontxt: %s;  macexten: %s; macpri: %d;\n&quot;,</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 ast_channel_accountcode(chan), ast_channel_dialcontext(chan), ast_channel_amaflags(chan),</span>
+<span class="lineNum">     368 </span>            :                 ast_channel_macrocontext(chan), ast_channel_macroexten(chan), ast_channel_macropriority(chan));
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE, &quot;CHAN: masq: %p;  masqr: %p; uniqueID: %s; linkedID:%s\n&quot;,</span>
+<span class="lineNum">     370 </span>            :                 ast_channel_masq(chan), ast_channel_masqr(chan),
+<span class="lineNum">     371 </span>            :                 ast_channel_uniqueid(chan), ast_channel_linkedid(chan));
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         if (ast_channel_masqr(chan)) {</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;CHAN: masquerading as: %s;  cdr: %p;\n&quot;,</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                         ast_channel_name(ast_channel_masqr(chan)), ast_channel_cdr(ast_channel_masqr(chan)));</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE, &quot;===== done ====\n&quot;);</span>
+<a name="378"><span class="lineNum">     378 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">        676 : static void set_bridge_features_on_config(struct ast_bridge_config *config, const char *features)</span>
+<span class="lineNum">     381 </span>            : {
+<span class="lineNum">     382 </span>            :         const char *feature;
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineCov">        676 :         if (ast_strlen_zero(features)) {</span>
+<span class="lineNum">     385 </span><span class="lineCov">        665 :                 return;</span>
+<span class="lineNum">     386 </span>            :         }
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">         22 :         for (feature = features; *feature; feature++) {</span>
+<span class="lineNum">     389 </span>            :                 struct ast_flags *party;
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">         11 :                 if (isupper(*feature)) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">          7 :                         party = &amp;config-&gt;features_caller;</span>
+<span class="lineNum">     393 </span>            :                 } else {
+<span class="lineNum">     394 </span><span class="lineCov">          4 :                         party = &amp;config-&gt;features_callee;</span>
+<span class="lineNum">     395 </span>            :                 }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineCov">         11 :                 switch (tolower(*feature)) {</span>
+<span class="lineNum">     398 </span><span class="lineCov">          4 :                 case 't' :</span>
+<span class="lineNum">     399 </span><span class="lineCov">          4 :                         ast_set_flag(party, AST_FEATURE_REDIRECT);</span>
+<span class="lineNum">     400 </span><span class="lineCov">          4 :                         break;</span>
+<span class="lineNum">     401 </span><span class="lineCov">          2 :                 case 'k' :</span>
+<span class="lineNum">     402 </span><span class="lineCov">          2 :                         ast_set_flag(party, AST_FEATURE_PARKCALL);</span>
+<span class="lineNum">     403 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     404 </span><span class="lineCov">          1 :                 case 'h' :</span>
+<span class="lineNum">     405 </span><span class="lineCov">          1 :                         ast_set_flag(party, AST_FEATURE_DISCONNECT);</span>
+<span class="lineNum">     406 </span><span class="lineCov">          1 :                         break;</span>
+<span class="lineNum">     407 </span><span class="lineCov">          2 :                 case 'w' :</span>
+<span class="lineNum">     408 </span><span class="lineCov">          2 :                         ast_set_flag(party, AST_FEATURE_AUTOMON);</span>
+<span class="lineNum">     409 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     410 </span><span class="lineCov">          2 :                 case 'x' :</span>
+<span class="lineNum">     411 </span><span class="lineCov">          2 :                         ast_set_flag(party, AST_FEATURE_AUTOMIXMON);</span>
+<span class="lineNum">     412 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                 default :</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Skipping unknown feature code '%c'\n&quot;, *feature);</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     416 </span>            :                 }
+<span class="lineNum">     417 </span>            :         }
+<a name="418"><span class="lineNum">     418 </span>            : }</a>
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineCov">        676 : static void add_features_datastores(struct ast_channel *caller, struct ast_channel *callee, struct ast_bridge_config *config)</span>
+<span class="lineNum">     421 </span>            : {
+<span class="lineNum">     422 </span><span class="lineCov">        676 :         if (add_features_datastore(caller, &amp;config-&gt;features_caller, &amp;config-&gt;features_callee)) {</span>
+<span class="lineNum">     423 </span>            :                 /*
+<span class="lineNum">     424 </span>            :                  * If we don't return here, then when we do a builtin_atxfer we
+<span class="lineNum">     425 </span>            :                  * will copy the disconnect flags over from the atxfer to the
+<span class="lineNum">     426 </span>            :                  * callee (Party C).
+<span class="lineNum">     427 </span>            :                  */
+<span class="lineNum">     428 </span><span class="lineCov">         37 :                 return;</span>
+<span class="lineNum">     429 </span>            :         }
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">        639 :         add_features_datastore(callee, &amp;config-&gt;features_callee, &amp;config-&gt;features_caller);</span>
+<a name="432"><span class="lineNum">     432 </span>            : }</a>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">          4 : static void bridge_config_set_limits_warning_values(struct ast_bridge_config *config, struct ast_bridge_features_limits *limits)</span>
+<span class="lineNum">     435 </span>            : {
+<span class="lineNum">     436 </span><span class="lineCov">          4 :         if (config-&gt;end_sound) {</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                 ast_string_field_set(limits, duration_sound, config-&gt;end_sound);</span>
+<span class="lineNum">     438 </span>            :         }
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineCov">          4 :         if (config-&gt;warning_sound) {</span>
+<span class="lineNum">     441 </span><span class="lineCov">          4 :                 ast_string_field_set(limits, warning_sound, config-&gt;warning_sound);</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineCov">          4 :         if (config-&gt;start_sound) {</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 ast_string_field_set(limits, connect_sound, config-&gt;start_sound);</span>
+<span class="lineNum">     446 </span>            :         }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">          4 :         limits-&gt;frequency = config-&gt;warning_freq;</span>
+<span class="lineNum">     449 </span><span class="lineCov">          4 :         limits-&gt;warning = config-&gt;play_warning;</span>
+<span class="lineNum">     450 </span><span class="lineCov">          4 : }</span>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span>            : /*!
+<span class="lineNum">     453 </span>            :  * \internal brief Setup limit hook structures on calls that need limits
+<span class="lineNum">     454 </span>            :  *
+<span class="lineNum">     455 </span>            :  * \param config ast_bridge_config which provides the limit data
+<span class="lineNum">     456 </span>            :  * \param caller_limits pointer to an ast_bridge_features_limits struct which will store the caller side limits
+<a name="457"><span class="lineNum">     457 </span>            :  * \param callee_limits pointer to an ast_bridge_features_limits struct which will store the callee side limits</a>
+<span class="lineNum">     458 </span>            :  */
+<span class="lineNum">     459 </span><span class="lineCov">          3 : static void bridge_config_set_limits(struct ast_bridge_config *config, struct ast_bridge_features_limits *caller_limits, struct ast_bridge_features_limits *callee_limits)</span>
+<span class="lineNum">     460 </span>            : {
+<span class="lineNum">     461 </span><span class="lineCov">          3 :         if (ast_test_flag(&amp;config-&gt;features_caller, AST_FEATURE_PLAY_WARNING)) {</span>
+<span class="lineNum">     462 </span><span class="lineCov">          2 :                 bridge_config_set_limits_warning_values(config, caller_limits);</span>
+<span class="lineNum">     463 </span>            :         }
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span><span class="lineCov">          3 :         if (ast_test_flag(&amp;config-&gt;features_callee, AST_FEATURE_PLAY_WARNING)) {</span>
+<span class="lineNum">     466 </span><span class="lineCov">          2 :                 bridge_config_set_limits_warning_values(config, callee_limits);</span>
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">          3 :         caller_limits-&gt;duration = config-&gt;timelimit;</span>
+<span class="lineNum">     470 </span><span class="lineCov">          3 :         callee_limits-&gt;duration = config-&gt;timelimit;</span>
+<span class="lineNum">     471 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            : /*!
+<span class="lineNum">     474 </span>            :  * \internal
+<span class="lineNum">     475 </span>            :  * \brief Check if Monitor needs to be started on a channel.
+<span class="lineNum">     476 </span>            :  * \since 12.0.0
+<span class="lineNum">     477 </span>            :  *
+<span class="lineNum">     478 </span>            :  * \param chan The bridge considers this channel the caller.
+<span class="lineNum">     479 </span>            :  * \param peer The bridge considers this channel the callee.
+<span class="lineNum">     480 </span>            :  *
+<a name="481"><span class="lineNum">     481 </span>            :  * \return Nothing</a>
+<span class="lineNum">     482 </span>            :  */
+<span class="lineNum">     483 </span><span class="lineCov">        676 : static void bridge_check_monitor(struct ast_channel *chan, struct ast_channel *peer)</span>
+<span class="lineNum">     484 </span>            : {
+<span class="lineNum">     485 </span>            :         const char *value;
+<span class="lineNum">     486 </span><span class="lineCov">        676 :         const char *monitor_args = NULL;</span>
+<span class="lineNum">     487 </span><span class="lineCov">        676 :         struct ast_channel *monitor_chan = NULL;</span>
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">        676 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     490 </span><span class="lineCov">        676 :         value = pbx_builtin_getvar_helper(chan, &quot;AUTO_MONITOR&quot;);</span>
+<span class="lineNum">     491 </span><span class="lineCov">        676 :         if (!ast_strlen_zero(value)) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                 monitor_args = ast_strdupa(value);</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :                 monitor_chan = chan;</span>
+<span class="lineNum">     494 </span>            :         }
+<span class="lineNum">     495 </span><span class="lineCov">        676 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     496 </span><span class="lineCov">        676 :         if (!monitor_chan) {</span>
+<span class="lineNum">     497 </span><span class="lineCov">        676 :                 ast_channel_lock(peer);</span>
+<span class="lineNum">     498 </span><span class="lineCov">        676 :                 value = pbx_builtin_getvar_helper(peer, &quot;AUTO_MONITOR&quot;);</span>
+<span class="lineNum">     499 </span><span class="lineCov">        676 :                 if (!ast_strlen_zero(value)) {</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                         monitor_args = ast_strdupa(value);</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :                         monitor_chan = peer;</span>
+<span class="lineNum">     502 </span>            :                 }
+<span class="lineNum">     503 </span><span class="lineCov">        676 :                 ast_channel_unlock(peer);</span>
+<span class="lineNum">     504 </span>            :         }
+<span class="lineNum">     505 </span><span class="lineCov">        676 :         if (monitor_chan) {</span>
+<span class="lineNum">     506 </span>            :                 struct ast_app *monitor_app;
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :                 monitor_app = pbx_findapp(&quot;Monitor&quot;);</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 if (monitor_app) {</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                         pbx_exec(monitor_chan, monitor_app, monitor_args);</span>
+<span class="lineNum">     511 </span>            :                 }
+<span class="lineNum">     512 </span>            :         }
+<span class="lineNum">     513 </span><span class="lineCov">        676 : }</span>
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span>            : /*!
+<span class="lineNum">     516 </span>            :  * \internal
+<span class="lineNum">     517 </span>            :  * \brief Send the peer channel on its way on bridge start failure.
+<span class="lineNum">     518 </span>            :  * \since 12.0.0
+<span class="lineNum">     519 </span>            :  *
+<span class="lineNum">     520 </span>            :  * \param chan Chan to put into autoservice.
+<span class="lineNum">     521 </span>            :  * \param peer Chan to send to after bridge goto or run hangup handlers and hangup.
+<span class="lineNum">     522 </span>            :  *
+<a name="523"><span class="lineNum">     523 </span>            :  * \return Nothing</a>
+<span class="lineNum">     524 </span>            :  */
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 : static void bridge_failed_peer_goto(struct ast_channel *chan, struct ast_channel *peer)</span>
+<span class="lineNum">     526 </span>            : {
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         if (ast_bridge_setup_after_goto(peer)</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 || ast_pbx_start(peer)) {</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                 ast_autoservice_chan_hangup_peer(chan, peer);</span>
+<span class="lineNum">     530 </span>            :         }
+<a name="531"><span class="lineNum">     531 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     532 </span>            : 
+<span class="lineNum">     533 </span><span class="lineCov">        676 : static int pre_bridge_setup(struct ast_channel *chan, struct ast_channel *peer, struct ast_bridge_config *config,</span>
+<span class="lineNum">     534 </span>            :                 struct ast_bridge_features *chan_features, struct ast_bridge_features *peer_features)
+<span class="lineNum">     535 </span>            : {
+<span class="lineNum">     536 </span>            :         int res;
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">        676 :         set_bridge_features_on_config(config, pbx_builtin_getvar_helper(chan, &quot;BRIDGE_FEATURES&quot;));</span>
+<span class="lineNum">     539 </span><span class="lineCov">        676 :         add_features_datastores(chan, peer, config);</span>
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span>            :         /*
+<span class="lineNum">     542 </span>            :          * This is an interesting case.  One example is if a ringing
+<span class="lineNum">     543 </span>            :          * channel gets redirected to an extension that picks up a
+<span class="lineNum">     544 </span>            :          * parked call.  This will make sure that the call taken out of
+<span class="lineNum">     545 </span>            :          * parking gets told that the channel it just got bridged to is
+<span class="lineNum">     546 </span>            :          * still ringing.
+<span class="lineNum">     547 </span>            :          */
+<span class="lineNum">     548 </span><span class="lineCov">        676 :         if (ast_channel_state(chan) == AST_STATE_RINGING</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :                 &amp;&amp; ast_channel_visible_indication(peer) != AST_CONTROL_RINGING) {</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :                 ast_indicate(peer, AST_CONTROL_RINGING);</span>
+<span class="lineNum">     551 </span>            :         }
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span><span class="lineCov">        676 :         bridge_check_monitor(chan, peer);</span>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineCov">        676 :         set_config_flags(chan, config);</span>
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            :         /* Answer if need be */
+<span class="lineNum">     558 </span><span class="lineCov">        676 :         if (ast_channel_state(chan) != AST_STATE_UP) {</span>
+<span class="lineNum">     559 </span><span class="lineCov">        530 :                 if (ast_raw_answer(chan)) {</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     561 </span>            :                 }
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span>            : #ifdef FOR_DEBUG
+<span class="lineNum">     565 </span>            :         /* show the two channels and cdrs involved in the bridge for debug &amp; devel purposes */
+<span class="lineNum">     566 </span>            :         ast_channel_log(&quot;Pre-bridge CHAN Channel info&quot;, chan);
+<span class="lineNum">     567 </span>            :         ast_channel_log(&quot;Pre-bridge PEER Channel info&quot;, peer);
+<span class="lineNum">     568 </span>            : #endif
+<span class="lineNum">     569 </span>            : 
+<span class="lineNum">     570 </span><span class="lineCov">        676 :         res = 0;</span>
+<span class="lineNum">     571 </span><span class="lineCov">        676 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     572 </span><span class="lineCov">        676 :         ast_max_forwards_reset(chan);</span>
+<span class="lineNum">     573 </span><span class="lineCov">        676 :         res |= ast_bridge_features_ds_append(chan, &amp;config-&gt;features_caller);</span>
+<span class="lineNum">     574 </span><span class="lineCov">        676 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     575 </span><span class="lineCov">        676 :         ast_channel_lock(peer);</span>
+<span class="lineNum">     576 </span><span class="lineCov">        676 :         ast_max_forwards_reset(peer);</span>
+<span class="lineNum">     577 </span><span class="lineCov">        676 :         res |= ast_bridge_features_ds_append(peer, &amp;config-&gt;features_callee);</span>
+<span class="lineNum">     578 </span><span class="lineCov">        676 :         ast_channel_unlock(peer);</span>
+<span class="lineNum">     579 </span>            : 
+<span class="lineNum">     580 </span><span class="lineCov">        676 :         if (res) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     582 </span>            :         }
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineCov">        676 :         if (config-&gt;timelimit) {</span>
+<span class="lineNum">     585 </span>            :                 struct ast_bridge_features_limits call_duration_limits_chan;
+<span class="lineNum">     586 </span>            :                 struct ast_bridge_features_limits call_duration_limits_peer;
+<span class="lineNum">     587 </span><span class="lineCov">          3 :                 int abandon_call = 0; /* TRUE if set limits fails so we can abandon the call. */</span>
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span><span class="lineCov">          3 :                 if (ast_bridge_features_limits_construct(&amp;call_duration_limits_chan)) {</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Could not construct caller duration limits. Bridge canceled.\n&quot;);</span>
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     593 </span>            :                 }
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span><span class="lineCov">          3 :                 if (ast_bridge_features_limits_construct(&amp;call_duration_limits_peer)) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Could not construct callee duration limits. Bridge canceled.\n&quot;);</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">          0 :                         ast_bridge_features_limits_destroy(&amp;call_duration_limits_chan);</span>
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     600 </span>            :                 }
+<span class="lineNum">     601 </span>            : 
+<span class="lineNum">     602 </span><span class="lineCov">          3 :                 bridge_config_set_limits(config, &amp;call_duration_limits_chan, &amp;call_duration_limits_peer);</span>
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineCov">          3 :                 if (ast_bridge_features_set_limits(chan_features, &amp;call_duration_limits_chan, 0)) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :                         abandon_call = 1;</span>
+<span class="lineNum">     606 </span>            :                 }
+<span class="lineNum">     607 </span><span class="lineCov">          3 :                 if (ast_bridge_features_set_limits(peer_features, &amp;call_duration_limits_peer, 0)) {</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                         abandon_call = 1;</span>
+<span class="lineNum">     609 </span>            :                 }
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span>            :                 /* At this point we are done with the limits structs since they have been copied to the individual feature sets. */
+<span class="lineNum">     612 </span><span class="lineCov">          3 :                 ast_bridge_features_limits_destroy(&amp;call_duration_limits_chan);</span>
+<span class="lineNum">     613 </span><span class="lineCov">          3 :                 ast_bridge_features_limits_destroy(&amp;call_duration_limits_peer);</span>
+<span class="lineNum">     614 </span>            : 
+<span class="lineNum">     615 </span><span class="lineCov">          3 :                 if (abandon_call) {</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Could not set duration limits on one or more sides of the call. Bridge canceled.\n&quot;);</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     618 </span>            :                 }
+<span class="lineNum">     619 </span>            :         }
+<span class="lineNum">     620 </span>            : 
+<span class="lineNum">     621 </span><span class="lineCov">        676 :         return 0;</span>
+<a name="622"><span class="lineNum">     622 </span>            : }</a>
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineCov">        669 : int ast_bridge_call_with_flags(struct ast_channel *chan, struct ast_channel *peer, struct ast_bridge_config *config, unsigned int flags)</span>
+<span class="lineNum">     625 </span>            : {
+<span class="lineNum">     626 </span>            :         int res;
+<span class="lineNum">     627 </span>            :         struct ast_bridge *bridge;
+<span class="lineNum">     628 </span>            :         struct ast_bridge_features chan_features;
+<span class="lineNum">     629 </span>            :         struct ast_bridge_features *peer_features;
+<span class="lineNum">     630 </span>            : 
+<span class="lineNum">     631 </span>            :         /* Setup features. */
+<span class="lineNum">     632 </span><span class="lineCov">        669 :         res = ast_bridge_features_init(&amp;chan_features);</span>
+<span class="lineNum">     633 </span><span class="lineCov">        669 :         peer_features = ast_bridge_features_new();</span>
+<span class="lineNum">     634 </span><span class="lineCov">        669 :         if (res || !peer_features) {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(peer_features);</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :                 bridge_failed_peer_goto(chan, peer);</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     639 </span>            :         }
+<span class="lineNum">     640 </span>            : 
+<span class="lineNum">     641 </span><span class="lineCov">        669 :         if (pre_bridge_setup(chan, peer, config, &amp;chan_features, peer_features)) {</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(peer_features);</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :                 bridge_failed_peer_goto(chan, peer);</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     646 </span>            :         }
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span>            :         /* Create bridge */
+<span class="lineNum">     649 </span><span class="lineCov">        669 :         bridge = ast_bridge_basic_new();</span>
+<span class="lineNum">     650 </span><span class="lineCov">        669 :         if (!bridge) {</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(peer_features);</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 bridge_failed_peer_goto(chan, peer);</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     655 </span>            :         }
+<span class="lineNum">     656 </span>            : 
+<span class="lineNum">     657 </span><span class="lineCov">        669 :         ast_bridge_basic_set_flags(bridge, flags);</span>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span>            :         /* Put peer into the bridge */
+<span class="lineNum">     660 </span><span class="lineCov">        669 :         if (ast_bridge_impart(bridge, peer, NULL, peer_features,</span>
+<span class="lineNum">     661 </span>            :                 AST_BRIDGE_IMPART_CHAN_INDEPENDENT | AST_BRIDGE_IMPART_INHIBIT_JOIN_COLP)) {
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 ast_bridge_destroy(bridge, 0);</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                 bridge_failed_peer_goto(chan, peer);</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     666 </span>            :         }
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span>            :         /* Join bridge */
+<span class="lineNum">     669 </span><span class="lineCov">        669 :         ast_bridge_join(bridge, chan, NULL, &amp;chan_features, NULL,</span>
+<span class="lineNum">     670 </span>            :                 AST_BRIDGE_JOIN_PASS_REFERENCE | AST_BRIDGE_JOIN_INHIBIT_JOIN_COLP);
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span>            :         /*
+<span class="lineNum">     673 </span>            :          * If the bridge was broken for a hangup that isn't real, then
+<span class="lineNum">     674 </span>            :          * don't run the h extension, because the channel isn't really
+<span class="lineNum">     675 </span>            :          * hung up.  This should really only happen with
+<span class="lineNum">     676 </span>            :          * AST_SOFTHANGUP_ASYNCGOTO.
+<span class="lineNum">     677 </span>            :          */
+<span class="lineNum">     678 </span><span class="lineCov">        669 :         res = -1;</span>
+<span class="lineNum">     679 </span><span class="lineCov">        669 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     680 </span><span class="lineCov">        669 :         if (ast_channel_softhangup_internal_flag(chan) &amp; AST_SOFTHANGUP_ASYNCGOTO) {</span>
+<span class="lineNum">     681 </span><span class="lineCov">         18 :                 res = 0;</span>
+<span class="lineNum">     682 </span>            :         }
+<span class="lineNum">     683 </span><span class="lineCov">        669 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineCov">        669 :         ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span><span class="lineCov">        669 :         if (res &amp;&amp; config-&gt;end_bridge_callback) {</span>
+<span class="lineNum">     688 </span><span class="lineCov">        651 :                 config-&gt;end_bridge_callback(config-&gt;end_bridge_callback_data);</span>
+<span class="lineNum">     689 </span>            :         }
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineCov">        669 :         return res;</span>
+<span class="lineNum">     692 </span>            : }
+<span class="lineNum">     693 </span>            : 
+<span class="lineNum">     694 </span>            : /*!
+<span class="lineNum">     695 </span>            :  * \brief bridge the call and set CDR
+<span class="lineNum">     696 </span>            :  *
+<span class="lineNum">     697 </span>            :  * \param chan The bridge considers this channel the caller.
+<span class="lineNum">     698 </span>            :  * \param peer The bridge considers this channel the callee.
+<span class="lineNum">     699 </span>            :  * \param config Configuration for this bridge.
+<span class="lineNum">     700 </span>            :  *
+<span class="lineNum">     701 </span>            :  * Set start time, check for two channels,check if monitor on
+<span class="lineNum">     702 </span>            :  * check for feature activation, create new CDR
+<span class="lineNum">     703 </span>            :  * \retval res on success.
+<a name="704"><span class="lineNum">     704 </span>            :  * \retval -1 on failure to bridge.</a>
+<span class="lineNum">     705 </span>            :  */
+<span class="lineNum">     706 </span><span class="lineCov">        659 : int ast_bridge_call(struct ast_channel *chan, struct ast_channel *peer, struct ast_bridge_config *config)</span>
+<span class="lineNum">     707 </span>            : {
+<span class="lineNum">     708 </span><span class="lineCov">        659 :         return ast_bridge_call_with_flags(chan, peer, config, 0);</span>
+<span class="lineNum">     709 </span>            : }
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span>            : enum play_tone_action {
+<span class="lineNum">     712 </span>            :         PLAYTONE_NONE = 0,
+<span class="lineNum">     713 </span>            :         PLAYTONE_CHANNEL1 = (1 &lt;&lt; 0),
+<span class="lineNum">     714 </span>            :         PLAYTONE_CHANNEL2 = (1 &lt;&lt; 1),
+<span class="lineNum">     715 </span>            :         PLAYTONE_BOTH = PLAYTONE_CHANNEL1 | PLAYTONE_CHANNEL2,
+<a name="716"><span class="lineNum">     716 </span>            : };</a>
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">          9 : static enum play_tone_action parse_playtone(const char *playtone_val)</span>
+<span class="lineNum">     719 </span>            : {
+<span class="lineNum">     720 </span><span class="lineCov">          9 :         if (ast_strlen_zero(playtone_val) || ast_false(playtone_val)) {</span>
+<span class="lineNum">     721 </span><span class="lineCov">          9 :                 return PLAYTONE_NONE;</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :         } if (!strcasecmp(playtone_val, &quot;channel1&quot;)) {</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :                 return PLAYTONE_CHANNEL1;</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         } else if (!strcasecmp(playtone_val, &quot;channel2&quot;) || ast_true(playtone_val)) {</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :                 return PLAYTONE_CHANNEL2;</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :         } else if (!strcasecmp(playtone_val, &quot;both&quot;)) {</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :                 return PLAYTONE_BOTH;</span>
+<span class="lineNum">     728 </span>            :         } else {
+<span class="lineNum">     729 </span>            :                 /* Invalid input. Assume none */
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :                 return PLAYTONE_NONE;</span>
+<span class="lineNum">     731 </span>            :         }
+<span class="lineNum">     732 </span>            : }
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span>            : /*!
+<span class="lineNum">     735 </span>            :  * \brief Bridge channels together
+<span class="lineNum">     736 </span>            :  * \param s
+<span class="lineNum">     737 </span>            :  * \param m
+<span class="lineNum">     738 </span>            :  *
+<span class="lineNum">     739 </span>            :  * Make sure valid channels were specified,
+<span class="lineNum">     740 </span>            :  * send errors if any of the channels could not be found/locked, answer channels if needed,
+<span class="lineNum">     741 </span>            :  * create the placeholder channels and grab the other channels
+<span class="lineNum">     742 </span>            :  * make the channels compatible, send error if we fail doing so
+<span class="lineNum">     743 </span>            :  * setup the bridge thread object and start the bridge.
+<span class="lineNum">     744 </span>            :  *
+<a name="745"><span class="lineNum">     745 </span>            :  * \retval 0</a>
+<span class="lineNum">     746 </span>            :  */
+<span class="lineNum">     747 </span><span class="lineCov">          9 : static int action_bridge(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     748 </span>            : {
+<span class="lineNum">     749 </span><span class="lineCov">          9 :         const char *channela = astman_get_header(m, &quot;Channel1&quot;);</span>
+<a name="750"><span class="lineNum">     750 </span><span class="lineCov">          9 :         const char *channelb = astman_get_header(m, &quot;Channel2&quot;);</span></a>
+<a name="751"><span class="lineNum">     751 </span><span class="lineCov">          9 :         enum play_tone_action playtone = parse_playtone(astman_get_header(m, &quot;Tone&quot;));</span></a>
+<span class="lineNum">     752 </span><span class="lineCov">         18 :         RAII_VAR(struct ast_channel *, chana, NULL, ao2_cleanup);</span>
+<span class="lineNum">     753 </span><span class="lineCov">         18 :         RAII_VAR(struct ast_channel *, chanb, NULL, ao2_cleanup);</span>
+<span class="lineNum">     754 </span>            :         const char *chana_exten;
+<span class="lineNum">     755 </span>            :         const char *chana_context;
+<span class="lineNum">     756 </span>            :         int chana_priority;
+<span class="lineNum">     757 </span>            :         const char *chanb_exten;
+<span class="lineNum">     758 </span>            :         const char *chanb_context;
+<span class="lineNum">     759 </span>            :         int chanb_priority;
+<a name="760"><span class="lineNum">     760 </span>            :         struct ast_bridge *bridge;</a>
+<a name="761"><span class="lineNum">     761 </span>            :         char buf[256];</a>
+<span class="lineNum">     762 </span><span class="lineCov">         18 :         RAII_VAR(struct ast_features_xfer_config *, xfer_cfg_a, NULL, ao2_cleanup);</span>
+<span class="lineNum">     763 </span><span class="lineCov">         18 :         RAII_VAR(struct ast_features_xfer_config *, xfer_cfg_b, NULL, ao2_cleanup);</span>
+<span class="lineNum">     764 </span>            : 
+<span class="lineNum">     765 </span>            :         /* make sure valid channels were specified */
+<span class="lineNum">     766 </span><span class="lineCov">          9 :         if (ast_strlen_zero(channela) || ast_strlen_zero(channelb)) {</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Missing channel parameter in request&quot;);</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     769 </span>            :         }
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span><span class="lineCov">          9 :         ast_debug(1, &quot;Performing Bridge action on %s and %s\n&quot;, channela, channelb);</span>
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span>            :         /* Start with chana */
+<span class="lineNum">     774 </span><span class="lineCov">          9 :         chana = ast_channel_get_by_name_prefix(channela, strlen(channela));</span>
+<span class="lineNum">     775 </span><span class="lineCov">          9 :         if (!chana) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                 snprintf(buf, sizeof(buf), &quot;Channel1 does not exist: %s&quot;, channela);</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, buf);</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     779 </span>            :         }
+<span class="lineNum">     780 </span><span class="lineCov">          9 :         ast_channel_lock(chana);</span>
+<span class="lineNum">     781 </span><span class="lineCov">          9 :         xfer_cfg_a = ast_get_chan_features_xfer_config(chana);</span>
+<span class="lineNum">     782 </span><span class="lineCov">          9 :         chana_exten = ast_strdupa(ast_channel_exten(chana));</span>
+<span class="lineNum">     783 </span><span class="lineCov">          9 :         chana_context = ast_strdupa(ast_channel_context(chana));</span>
+<span class="lineNum">     784 </span><span class="lineCov">          9 :         chana_priority = ast_channel_priority(chana);</span>
+<span class="lineNum">     785 </span><span class="lineCov">          9 :         if (ast_test_flag(ast_channel_flags(chana), AST_FLAG_IN_AUTOLOOP)) {</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                 chana_priority++;</span>
+<span class="lineNum">     787 </span>            :         }
+<span class="lineNum">     788 </span><span class="lineCov">          9 :         ast_channel_unlock(chana);</span>
+<span class="lineNum">     789 </span>            : 
+<span class="lineNum">     790 </span><span class="lineCov">          9 :         chanb = ast_channel_get_by_name_prefix(channelb, strlen(channelb));</span>
+<span class="lineNum">     791 </span><span class="lineCov">          9 :         if (!chanb) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :                 snprintf(buf, sizeof(buf), &quot;Channel2 does not exist: %s&quot;, channelb);</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, buf);</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     795 </span>            :         }
+<span class="lineNum">     796 </span><span class="lineCov">          9 :         ast_channel_lock(chanb);</span>
+<span class="lineNum">     797 </span><span class="lineCov">          9 :         xfer_cfg_b = ast_get_chan_features_xfer_config(chanb);</span>
+<span class="lineNum">     798 </span><span class="lineCov">          9 :         chanb_exten = ast_strdupa(ast_channel_exten(chanb));</span>
+<span class="lineNum">     799 </span><span class="lineCov">          9 :         chanb_context = ast_strdupa(ast_channel_context(chanb));</span>
+<span class="lineNum">     800 </span><span class="lineCov">          9 :         chanb_priority = ast_channel_priority(chanb);</span>
+<span class="lineNum">     801 </span><span class="lineCov">          9 :         if (ast_test_flag(ast_channel_flags(chanb), AST_FLAG_IN_AUTOLOOP)) {</span>
+<span class="lineNum">     802 </span><span class="lineCov">          3 :                 chanb_priority++;</span>
+<span class="lineNum">     803 </span>            :         }
+<span class="lineNum">     804 </span><span class="lineCov">          9 :         ast_channel_unlock(chanb);</span>
+<span class="lineNum">     805 </span>            : 
+<span class="lineNum">     806 </span><span class="lineCov">          9 :         bridge = ast_bridge_basic_new();</span>
+<span class="lineNum">     807 </span><span class="lineCov">          9 :         if (!bridge) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Unable to create bridge\n&quot;);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     810 </span>            :         }
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineCov">          9 :         ast_bridge_set_after_goto(chana, chana_context, chana_exten, chana_priority);</span>
+<span class="lineNum">     813 </span><span class="lineCov">          9 :         if (ast_bridge_add_channel(bridge, chana, NULL, playtone &amp; PLAYTONE_CHANNEL1, xfer_cfg_a ? xfer_cfg_a-&gt;xfersound : NULL)) {</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :                 snprintf(buf, sizeof(buf), &quot;Unable to add Channel1 to bridge: %s&quot;, ast_channel_name(chana));</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, buf);</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :                 ast_bridge_destroy(bridge, 0);</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     818 </span>            :         }
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span><span class="lineCov">          9 :         ast_bridge_set_after_goto(chanb, chanb_context, chanb_exten, chanb_priority);</span>
+<span class="lineNum">     821 </span><span class="lineCov">          9 :         if (ast_bridge_add_channel(bridge, chanb, NULL, playtone &amp; PLAYTONE_CHANNEL2, xfer_cfg_b ? xfer_cfg_b-&gt;xfersound : NULL)) {</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                 snprintf(buf, sizeof(buf), &quot;Unable to add Channel2 to bridge: %s&quot;, ast_channel_name(chanb));</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, buf);</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                 ast_bridge_destroy(bridge, 0);</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     826 </span>            :         }
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span><span class="lineCov">          9 :         astman_send_ack(s, m, &quot;Channels have been bridged&quot;);</span>
+<span class="lineNum">     829 </span><span class="lineCov">          9 :         ao2_cleanup(bridge);</span>
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineCov">          9 :         return 0;</span>
+<span class="lineNum">     832 </span>            : }
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span>            : static char *app_bridge = &quot;Bridge&quot;;
+<span class="lineNum">     835 </span>            : 
+<span class="lineNum">     836 </span>            : enum {
+<span class="lineNum">     837 </span>            :         BRIDGE_OPT_PLAYTONE = (1 &lt;&lt; 0),
+<span class="lineNum">     838 </span>            :         OPT_CALLEE_HANGUP =     (1 &lt;&lt; 1),
+<span class="lineNum">     839 </span>            :         OPT_CALLER_HANGUP =     (1 &lt;&lt; 2),
+<span class="lineNum">     840 </span>            :         OPT_DURATION_LIMIT = (1 &lt;&lt; 3),
+<span class="lineNum">     841 </span>            :         OPT_DURATION_STOP =     (1 &lt;&lt; 4),
+<span class="lineNum">     842 </span>            :         OPT_CALLEE_TRANSFER = (1 &lt;&lt; 5),
+<span class="lineNum">     843 </span>            :         OPT_CALLER_TRANSFER = (1 &lt;&lt; 6),
+<span class="lineNum">     844 </span>            :         OPT_CALLEE_MONITOR = (1 &lt;&lt; 7),
+<span class="lineNum">     845 </span>            :         OPT_CALLER_MONITOR = (1 &lt;&lt; 8),
+<span class="lineNum">     846 </span>            :         OPT_CALLEE_PARK = (1 &lt;&lt; 9),
+<span class="lineNum">     847 </span>            :         OPT_CALLER_PARK = (1 &lt;&lt; 10),
+<span class="lineNum">     848 </span>            :         OPT_CALLEE_KILL = (1 &lt;&lt; 11),
+<span class="lineNum">     849 </span>            :         OPT_CALLEE_GO_ON = (1 &lt;&lt; 12),
+<span class="lineNum">     850 </span>            : };
+<span class="lineNum">     851 </span>            : 
+<span class="lineNum">     852 </span>            : enum {
+<span class="lineNum">     853 </span>            :         OPT_ARG_DURATION_LIMIT = 0,
+<span class="lineNum">     854 </span>            :         OPT_ARG_DURATION_STOP,
+<span class="lineNum">     855 </span>            :         OPT_ARG_CALLEE_GO_ON,
+<span class="lineNum">     856 </span>            :         /* note: this entry _MUST_ be the last one in the enum */
+<span class="lineNum">     857 </span>            :         OPT_ARG_ARRAY_SIZE,
+<span class="lineNum">     858 </span>            : };
+<span class="lineNum">     859 </span>            : 
+<span class="lineNum">     860 </span>            : AST_APP_OPTIONS(bridge_exec_options, BEGIN_OPTIONS
+<span class="lineNum">     861 </span>            :         AST_APP_OPTION('p', BRIDGE_OPT_PLAYTONE),
+<span class="lineNum">     862 </span>            :         AST_APP_OPTION_ARG('F', OPT_CALLEE_GO_ON, OPT_ARG_CALLEE_GO_ON),
+<span class="lineNum">     863 </span>            :         AST_APP_OPTION('h', OPT_CALLEE_HANGUP),
+<span class="lineNum">     864 </span>            :         AST_APP_OPTION('H', OPT_CALLER_HANGUP),
+<span class="lineNum">     865 </span>            :         AST_APP_OPTION('k', OPT_CALLEE_PARK),
+<span class="lineNum">     866 </span>            :         AST_APP_OPTION('K', OPT_CALLER_PARK),
+<span class="lineNum">     867 </span>            :         AST_APP_OPTION_ARG('L', OPT_DURATION_LIMIT, OPT_ARG_DURATION_LIMIT),
+<span class="lineNum">     868 </span>            :         AST_APP_OPTION_ARG('S', OPT_DURATION_STOP, OPT_ARG_DURATION_STOP),
+<span class="lineNum">     869 </span>            :         AST_APP_OPTION('t', OPT_CALLEE_TRANSFER),
+<span class="lineNum">     870 </span>            :         AST_APP_OPTION('T', OPT_CALLER_TRANSFER),
+<span class="lineNum">     871 </span>            :         AST_APP_OPTION('w', OPT_CALLEE_MONITOR),
+<span class="lineNum">     872 </span>            :         AST_APP_OPTION('W', OPT_CALLER_MONITOR),
+<span class="lineNum">     873 </span>            :         AST_APP_OPTION('x', OPT_CALLEE_KILL),
+<a name="874"><span class="lineNum">     874 </span>            : END_OPTIONS );</a>
+<span class="lineNum">     875 </span>            : 
+<span class="lineNum">     876 </span><span class="lineCov">          4 : int ast_bridge_timelimit(struct ast_channel *chan, struct ast_bridge_config *config,</span>
+<span class="lineNum">     877 </span>            :         char *parse, struct timeval *calldurationlimit)
+<span class="lineNum">     878 </span>            : {
+<span class="lineNum">     879 </span><span class="lineCov">          4 :         char *stringp = ast_strdupa(parse);</span>
+<span class="lineNum">     880 </span>            :         char *limit_str, *warning_str, *warnfreq_str;
+<span class="lineNum">     881 </span>            :         const char *var;
+<span class="lineNum">     882 </span><span class="lineCov">          4 :         int play_to_caller = 0, play_to_callee = 0;</span>
+<span class="lineNum">     883 </span>            :         int delta;
+<span class="lineNum">     884 </span>            : 
+<span class="lineNum">     885 </span><span class="lineCov">          4 :         limit_str = strsep(&amp;stringp, &quot;:&quot;);</span>
+<span class="lineNum">     886 </span><span class="lineCov">          4 :         warning_str = strsep(&amp;stringp, &quot;:&quot;);</span>
+<span class="lineNum">     887 </span><span class="lineCov">          4 :         warnfreq_str = strsep(&amp;stringp, &quot;:&quot;);</span>
+<span class="lineNum">     888 </span>            : 
+<span class="lineNum">     889 </span><span class="lineCov">          4 :         config-&gt;timelimit = atol(limit_str);</span>
+<span class="lineNum">     890 </span><span class="lineCov">          4 :         if (warning_str)</span>
+<span class="lineNum">     891 </span><span class="lineCov">          3 :                 config-&gt;play_warning = atol(warning_str);</span>
+<span class="lineNum">     892 </span><span class="lineCov">          4 :         if (warnfreq_str)</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                 config-&gt;warning_freq = atol(warnfreq_str);</span>
+<span class="lineNum">     894 </span>            : 
+<span class="lineNum">     895 </span><span class="lineCov">          4 :         if (!config-&gt;timelimit) {</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bridge does not accept L(%s), hanging up.\n&quot;, limit_str);</span>
+<span class="lineNum">     897 </span><span class="lineNoCov">          0 :                 config-&gt;timelimit = config-&gt;play_warning = config-&gt;warning_freq = 0;</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :                 config-&gt;warning_sound = NULL;</span>
+<span class="lineNum">     899 </span><span class="lineNoCov">          0 :                 return -1; /* error */</span>
+<span class="lineNum">     900 </span><span class="lineCov">          4 :         } else if ( (delta = config-&gt;play_warning - config-&gt;timelimit) &gt; 0) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 :                 int w = config-&gt;warning_freq;</span>
+<span class="lineNum">     902 </span>            : 
+<span class="lineNum">     903 </span>            :                 /*
+<span class="lineNum">     904 </span>            :                  * If the first warning is requested _after_ the entire call
+<span class="lineNum">     905 </span>            :                  * would end, and no warning frequency is requested, then turn
+<span class="lineNum">     906 </span>            :                  * off the warning. If a warning frequency is requested, reduce
+<span class="lineNum">     907 </span>            :                  * the 'first warning' time by that frequency until it falls
+<span class="lineNum">     908 </span>            :                  * within the call's total time limit.
+<span class="lineNum">     909 </span>            :                  *
+<span class="lineNum">     910 </span>            :                  * Graphically:
+<span class="lineNum">     911 </span>            :                  *                timelim-&gt;|    delta        |&lt;-playwarning
+<span class="lineNum">     912 </span>            :                  *      0__________________|_________________|
+<span class="lineNum">     913 </span>            :                  *                       | w  |    |    |    |
+<span class="lineNum">     914 </span>            :                  *
+<span class="lineNum">     915 </span>            :                  * so the number of intervals to cut is 1+(delta-1)/w
+<span class="lineNum">     916 </span>            :                  */
+<span class="lineNum">     917 </span><span class="lineNoCov">          0 :                 if (w == 0) {</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                         config-&gt;play_warning = 0;</span>
+<span class="lineNum">     919 </span>            :                 } else {
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :                         config-&gt;play_warning -= w * ( 1 + (delta-1)/w );</span>
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :                         if (config-&gt;play_warning &lt; 1)</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                                 config-&gt;play_warning = config-&gt;warning_freq = 0;</span>
+<span class="lineNum">     923 </span>            :                 }
+<span class="lineNum">     924 </span>            :         }
+<span class="lineNum">     925 </span>            : 
+<span class="lineNum">     926 </span><span class="lineCov">          4 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     927 </span>            : 
+<span class="lineNum">     928 </span><span class="lineCov">          4 :         var = pbx_builtin_getvar_helper(chan, &quot;LIMIT_PLAYAUDIO_CALLER&quot;);</span>
+<span class="lineNum">     929 </span><span class="lineCov">          4 :         play_to_caller = var ? ast_true(var) : 1;</span>
+<span class="lineNum">     930 </span>            : 
+<span class="lineNum">     931 </span><span class="lineCov">          4 :         var = pbx_builtin_getvar_helper(chan, &quot;LIMIT_PLAYAUDIO_CALLEE&quot;);</span>
+<span class="lineNum">     932 </span><span class="lineCov">          4 :         play_to_callee = var ? ast_true(var) : 0;</span>
+<span class="lineNum">     933 </span>            : 
+<span class="lineNum">     934 </span><span class="lineCov">          4 :         if (!play_to_caller &amp;&amp; !play_to_callee)</span>
+<span class="lineNum">     935 </span><span class="lineNoCov">          0 :                 play_to_caller = 1;</span>
+<span class="lineNum">     936 </span>            : 
+<span class="lineNum">     937 </span><span class="lineCov">          4 :         var = pbx_builtin_getvar_helper(chan, &quot;LIMIT_WARNING_FILE&quot;);</span>
+<span class="lineNum">     938 </span><span class="lineCov">          4 :         config-&gt;warning_sound = !ast_strlen_zero(var) ? ast_strdup(var) : ast_strdup(&quot;timeleft&quot;);</span>
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span>            :         /* The code looking at config wants a NULL, not just &quot;&quot;, to decide
+<span class="lineNum">     941 </span>            :          * that the message should not be played, so we replace &quot;&quot; with NULL.
+<span class="lineNum">     942 </span>            :          * Note, pbx_builtin_getvar_helper _can_ return NULL if the variable is
+<span class="lineNum">     943 </span>            :          * not found.
+<span class="lineNum">     944 </span>            :          */
+<span class="lineNum">     945 </span>            : 
+<span class="lineNum">     946 </span><span class="lineCov">          4 :         var = pbx_builtin_getvar_helper(chan, &quot;LIMIT_TIMEOUT_FILE&quot;);</span>
+<span class="lineNum">     947 </span><span class="lineCov">          4 :         config-&gt;end_sound = !ast_strlen_zero(var) ? ast_strdup(var) : NULL;</span>
+<span class="lineNum">     948 </span>            : 
+<span class="lineNum">     949 </span><span class="lineCov">          4 :         var = pbx_builtin_getvar_helper(chan, &quot;LIMIT_CONNECT_FILE&quot;);</span>
+<span class="lineNum">     950 </span><span class="lineCov">          4 :         config-&gt;start_sound = !ast_strlen_zero(var) ? ast_strdup(var) : NULL;</span>
+<span class="lineNum">     951 </span>            : 
+<span class="lineNum">     952 </span><span class="lineCov">          4 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     953 </span>            : 
+<span class="lineNum">     954 </span>            :         /* undo effect of S(x) in case they are both used */
+<span class="lineNum">     955 </span><span class="lineCov">          4 :         calldurationlimit-&gt;tv_sec = 0;</span>
+<span class="lineNum">     956 </span><span class="lineCov">          4 :         calldurationlimit-&gt;tv_usec = 0;</span>
+<span class="lineNum">     957 </span>            : 
+<span class="lineNum">     958 </span>            :         /* more efficient to do it like S(x) does since no advanced opts */
+<span class="lineNum">     959 </span><span class="lineCov">          4 :         if (!config-&gt;play_warning &amp;&amp; !config-&gt;start_sound &amp;&amp; !config-&gt;end_sound &amp;&amp; config-&gt;timelimit) {</span>
+<span class="lineNum">     960 </span><span class="lineCov">          1 :                 calldurationlimit-&gt;tv_sec = config-&gt;timelimit / 1000;</span>
+<span class="lineNum">     961 </span><span class="lineCov">          1 :                 calldurationlimit-&gt;tv_usec = (config-&gt;timelimit % 1000) * 1000;</span>
+<span class="lineNum">     962 </span><span class="lineCov">          1 :                 ast_verb(3, &quot;Setting call duration limit to %.3lf seconds.\n&quot;,</span>
+<span class="lineNum">     963 </span>            :                         calldurationlimit-&gt;tv_sec + calldurationlimit-&gt;tv_usec / 1000000.0);
+<span class="lineNum">     964 </span><span class="lineCov">          1 :                 play_to_caller = 0;</span>
+<span class="lineNum">     965 </span><span class="lineCov">          1 :                 play_to_callee = 0;</span>
+<span class="lineNum">     966 </span><span class="lineCov">          1 :                 config-&gt;timelimit = 0;</span>
+<span class="lineNum">     967 </span><span class="lineCov">          1 :                 config-&gt;play_warning = 0;</span>
+<span class="lineNum">     968 </span><span class="lineCov">          1 :                 config-&gt;warning_freq = 0;</span>
+<span class="lineNum">     969 </span>            :         } else {
+<span class="lineNum">     970 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;Limit Data for this call:\n&quot;);</span>
+<span class="lineNum">     971 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;timelimit      = %ld ms (%.3lf s)\n&quot;, config-&gt;timelimit, config-&gt;timelimit / 1000.0);</span>
+<span class="lineNum">     972 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;play_warning   = %ld ms (%.3lf s)\n&quot;, config-&gt;play_warning, config-&gt;play_warning / 1000.0);</span>
+<span class="lineNum">     973 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;play_to_caller = %s\n&quot;, play_to_caller ? &quot;yes&quot; : &quot;no&quot;);</span>
+<span class="lineNum">     974 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;play_to_callee = %s\n&quot;, play_to_callee ? &quot;yes&quot; : &quot;no&quot;);</span>
+<span class="lineNum">     975 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;warning_freq   = %ld ms (%.3lf s)\n&quot;, config-&gt;warning_freq, config-&gt;warning_freq / 1000.0);</span>
+<span class="lineNum">     976 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;start_sound    = %s\n&quot;, S_OR(config-&gt;start_sound, &quot;&quot;));</span>
+<span class="lineNum">     977 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;warning_sound  = %s\n&quot;, config-&gt;warning_sound);</span>
+<span class="lineNum">     978 </span><span class="lineCov">          3 :                 ast_verb(4, &quot;end_sound      = %s\n&quot;, S_OR(config-&gt;end_sound, &quot;&quot;));</span>
+<span class="lineNum">     979 </span>            :         }
+<span class="lineNum">     980 </span><span class="lineCov">          4 :         if (play_to_caller)</span>
+<span class="lineNum">     981 </span><span class="lineCov">          2 :                 ast_set_flag(&amp;(config-&gt;features_caller), AST_FEATURE_PLAY_WARNING);</span>
+<span class="lineNum">     982 </span><span class="lineCov">          4 :         if (play_to_callee)</span>
+<span class="lineNum">     983 </span><span class="lineCov">          2 :                 ast_set_flag(&amp;(config-&gt;features_callee), AST_FEATURE_PLAY_WARNING);</span>
+<span class="lineNum">     984 </span><span class="lineCov">          4 :         return 0;</span>
+<span class="lineNum">     985 </span>            : }
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span>            : 
+<span class="lineNum">     988 </span>            : /*!
+<span class="lineNum">     989 </span>            :  * \brief Bridge channels
+<span class="lineNum">     990 </span>            :  * \param chan
+<span class="lineNum">     991 </span>            :  * \param data channel to bridge with.
+<span class="lineNum">     992 </span>            :  *
+<span class="lineNum">     993 </span>            :  * Split data, check we aren't bridging with ourself, check valid channel,
+<span class="lineNum">     994 </span>            :  * answer call if not already, check compatible channels, setup bridge config
+<a name="995"><span class="lineNum">     995 </span>            :  * now bridge call, if transferred party hangs up return to PBX extension.</a>
+<span class="lineNum">     996 </span>            :  */
+<span class="lineNum">     997 </span><span class="lineCov">          7 : static int bridge_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     998 </span>            : {
+<span class="lineNum">     999 </span>            :         struct ast_channel *current_dest_chan;
+<span class="lineNum">    1000 </span><span class="lineCov">          7 :         char *tmp_data  = NULL;</span>
+<span class="lineNum">    1001 </span><span class="lineCov">          7 :         struct ast_flags opts = { 0, };</span>
+<span class="lineNum">    1002 </span><span class="lineCov">          7 :         struct ast_bridge_config bconfig = { { 0, }, };</span>
+<span class="lineNum">    1003 </span>            :         char *opt_args[OPT_ARG_ARRAY_SIZE];
+<span class="lineNum">    1004 </span><span class="lineCov">          7 :         struct timeval calldurationlimit = { 0, };</span>
+<span class="lineNum">    1005 </span>            :         const char *context;
+<span class="lineNum">    1006 </span>            :         const char *extension;
+<span class="lineNum">    1007 </span>            :         int priority;
+<span class="lineNum">    1008 </span>            :         int bridge_add_failed;
+<span class="lineNum">    1009 </span><span class="lineCov">          7 :         int res = -1;</span>
+<span class="lineNum">    1010 </span>            :         struct ast_bridge_features chan_features;
+<span class="lineNum">    1011 </span>            :         struct ast_bridge_features *peer_features;
+<span class="lineNum">    1012 </span>            :         struct ast_bridge *bridge;
+<span class="lineNum">    1013 </span>            :         struct ast_features_xfer_config *xfer_cfg;
+<span class="lineNum">    1014 </span>            : 
+<span class="lineNum">    1015 </span><span class="lineCov">          7 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">    1016 </span>            :                 AST_APP_ARG(dest_chan);
+<span class="lineNum">    1017 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">    1018 </span>            :         );
+<span class="lineNum">    1019 </span>            : 
+<span class="lineNum">    1020 </span><span class="lineCov">          7 :         if (ast_strlen_zero(data)) {</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bridge require at least 1 argument specifying the other end of the bridge\n&quot;);</span>
+<span class="lineNum">    1022 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1023 </span>            :         }
+<span class="lineNum">    1024 </span>            : 
+<span class="lineNum">    1025 </span><span class="lineCov">          7 :         tmp_data = ast_strdupa(data);</span>
+<span class="lineNum">    1026 </span><span class="lineCov">          7 :         AST_STANDARD_APP_ARGS(args, tmp_data);</span>
+<span class="lineNum">    1027 </span><span class="lineCov">          7 :         if (!ast_strlen_zero(args.options))</span>
+<span class="lineNum">    1028 </span><span class="lineCov">          5 :                 ast_app_parse_options(bridge_exec_options, &amp;opts, opt_args, args.options);</span>
+<span class="lineNum">    1029 </span>            : 
+<span class="lineNum">    1030 </span>            :         /* make sure we have a valid end point */
+<span class="lineNum">    1031 </span><span class="lineCov">          7 :         current_dest_chan = ast_channel_get_by_name_prefix(args.dest_chan,</span>
+<span class="lineNum">    1032 </span><span class="lineCov">          7 :                 strlen(args.dest_chan));</span>
+<span class="lineNum">    1033 </span><span class="lineCov">          7 :         if (!current_dest_chan) {</span>
+<span class="lineNum">    1034 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bridge failed because channel %s does not exist\n&quot;,</span>
+<span class="lineNum">    1035 </span>            :                         args.dest_chan);
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;BRIDGERESULT&quot;, &quot;NONEXISTENT&quot;);</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1038 </span>            :         }
+<span class="lineNum">    1039 </span>            : 
+<span class="lineNum">    1040 </span>            :         /* avoid bridge with ourselves */
+<span class="lineNum">    1041 </span><span class="lineCov">          7 :         if (chan == current_dest_chan) {</span>
+<span class="lineNum">    1042 </span><span class="lineNoCov">          0 :                 ast_channel_unref(current_dest_chan);</span>
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to bridge channel %s with itself\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;BRIDGERESULT&quot;, &quot;LOOP&quot;);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1046 </span>            :         }
+<span class="lineNum">    1047 </span>            : 
+<span class="lineNum">    1048 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_DURATION_LIMIT)</span>
+<span class="lineNum">    1049 </span><span class="lineNoCov">          0 :                 &amp;&amp; !ast_strlen_zero(opt_args[OPT_ARG_DURATION_LIMIT])</span>
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                 &amp;&amp; ast_bridge_timelimit(chan, &amp;bconfig, opt_args[OPT_ARG_DURATION_LIMIT], &amp;calldurationlimit)) {</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1052 </span>            :         }
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLEE_TRANSFER))</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_callee), AST_FEATURE_REDIRECT);</span>
+<span class="lineNum">    1056 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLER_TRANSFER))</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_caller), AST_FEATURE_REDIRECT);</span>
+<span class="lineNum">    1058 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLEE_HANGUP))</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_callee), AST_FEATURE_DISCONNECT);</span>
+<span class="lineNum">    1060 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLER_HANGUP))</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_caller), AST_FEATURE_DISCONNECT);</span>
+<span class="lineNum">    1062 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLEE_MONITOR))</span>
+<span class="lineNum">    1063 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_callee), AST_FEATURE_AUTOMON);</span>
+<span class="lineNum">    1064 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLER_MONITOR))</span>
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_caller), AST_FEATURE_AUTOMON);</span>
+<span class="lineNum">    1066 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLEE_PARK))</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_callee), AST_FEATURE_PARKCALL);</span>
+<span class="lineNum">    1068 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLER_PARK))</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;(bconfig.features_caller), AST_FEATURE_PARKCALL);</span>
+<span class="lineNum">    1070 </span>            : 
+<span class="lineNum">    1071 </span>            :         /* Setup after bridge goto location. */
+<span class="lineNum">    1072 </span><span class="lineCov">          7 :         if (ast_test_flag(&amp;opts, OPT_CALLEE_GO_ON)) {</span>
+<span class="lineNum">    1073 </span><span class="lineCov">          4 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">    1074 </span><span class="lineCov">          4 :                 context = ast_strdupa(ast_channel_context(chan));</span>
+<span class="lineNum">    1075 </span><span class="lineCov">          4 :                 extension = ast_strdupa(ast_channel_exten(chan));</span>
+<span class="lineNum">    1076 </span><span class="lineCov">          4 :                 priority = ast_channel_priority(chan);</span>
+<span class="lineNum">    1077 </span><span class="lineCov">          4 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1078 </span><span class="lineCov">          4 :                 ast_bridge_set_after_go_on(current_dest_chan, context, extension, priority,</span>
+<span class="lineNum">    1079 </span><span class="lineCov">          4 :                         opt_args[OPT_ARG_CALLEE_GO_ON]);</span>
+<span class="lineNum">    1080 </span><span class="lineCov">          3 :         } else if (!ast_test_flag(&amp;opts, OPT_CALLEE_KILL)) {</span>
+<span class="lineNum">    1081 </span><span class="lineCov">          2 :                 ast_channel_lock(current_dest_chan);</span>
+<span class="lineNum">    1082 </span><span class="lineCov">          2 :                 context = ast_strdupa(ast_channel_context(current_dest_chan));</span>
+<span class="lineNum">    1083 </span><span class="lineCov">          2 :                 extension = ast_strdupa(ast_channel_exten(current_dest_chan));</span>
+<span class="lineNum">    1084 </span><span class="lineCov">          2 :                 priority = ast_channel_priority(current_dest_chan);</span>
+<span class="lineNum">    1085 </span><span class="lineCov">          2 :                 ast_channel_unlock(current_dest_chan);</span>
+<span class="lineNum">    1086 </span><span class="lineCov">          2 :                 ast_bridge_set_after_go_on(current_dest_chan, context, extension, priority, NULL);</span>
+<span class="lineNum">    1087 </span>            :         }
+<span class="lineNum">    1088 </span>            : 
+<span class="lineNum">    1089 </span><span class="lineCov">          7 :         if (ast_bridge_features_init(&amp;chan_features)) {</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1092 </span>            :         }
+<span class="lineNum">    1093 </span>            : 
+<span class="lineNum">    1094 </span><span class="lineCov">          7 :         peer_features = ast_bridge_features_new();</span>
+<span class="lineNum">    1095 </span><span class="lineCov">          7 :         if (!peer_features) {</span>
+<span class="lineNum">    1096 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1097 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1098 </span>            :         }
+<span class="lineNum">    1099 </span>            : 
+<span class="lineNum">    1100 </span><span class="lineCov">          7 :         if (pre_bridge_setup(chan, current_dest_chan, &amp;bconfig, &amp;chan_features, peer_features)) {</span>
+<span class="lineNum">    1101 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(peer_features);</span>
+<span class="lineNum">    1102 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1104 </span>            :         }
+<span class="lineNum">    1105 </span>            : 
+<span class="lineNum">    1106 </span><span class="lineCov">          7 :         bridge = ast_bridge_basic_new();</span>
+<span class="lineNum">    1107 </span><span class="lineCov">          7 :         if (!bridge) {</span>
+<span class="lineNum">    1108 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(peer_features);</span>
+<span class="lineNum">    1109 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1111 </span>            :         }
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span><span class="lineCov">          7 :         ast_channel_lock(current_dest_chan);</span>
+<span class="lineNum">    1114 </span><span class="lineCov">          7 :         xfer_cfg = ast_get_chan_features_xfer_config(current_dest_chan);</span>
+<span class="lineNum">    1115 </span><span class="lineCov">          7 :         ast_channel_unlock(current_dest_chan);</span>
+<span class="lineNum">    1116 </span><span class="lineCov">          7 :         bridge_add_failed = ast_bridge_add_channel(bridge, current_dest_chan, peer_features,</span>
+<span class="lineNum">    1117 </span><span class="lineCov">          7 :                 ast_test_flag(&amp;opts, BRIDGE_OPT_PLAYTONE),</span>
+<span class="lineNum">    1118 </span>            :                 xfer_cfg ? xfer_cfg-&gt;xfersound : NULL);
+<span class="lineNum">    1119 </span><span class="lineCov">          7 :         ao2_cleanup(xfer_cfg);</span>
+<span class="lineNum">    1120 </span><span class="lineCov">          7 :         if (bridge_add_failed) {</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">          0 :                 ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1122 </span><span class="lineNoCov">          0 :                 ast_bridge_destroy(bridge, 0);</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 :                 goto done;</span>
+<span class="lineNum">    1124 </span>            :         }
+<span class="lineNum">    1125 </span>            : 
+<span class="lineNum">    1126 </span>            :         /* Don't keep the channel ref in case it was not already in a bridge. */
+<span class="lineNum">    1127 </span><span class="lineCov">          7 :         current_dest_chan = ast_channel_unref(current_dest_chan);</span>
+<span class="lineNum">    1128 </span>            : 
+<span class="lineNum">    1129 </span><span class="lineCov">          7 :         res = ast_bridge_join(bridge, chan, NULL, &amp;chan_features, NULL,</span>
+<span class="lineNum">    1130 </span>            :                 AST_BRIDGE_JOIN_PASS_REFERENCE);
+<span class="lineNum">    1131 </span>            : 
+<span class="lineNum">    1132 </span><span class="lineCov">          7 :         ast_bridge_features_cleanup(&amp;chan_features);</span>
+<span class="lineNum">    1133 </span>            : 
+<span class="lineNum">    1134 </span><span class="lineCov">          7 : done:</span>
+<span class="lineNum">    1135 </span><span class="lineCov">          7 :         if (res == -1) {</span>
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;BRIDGERESULT&quot;, &quot;FAILURE&quot;);</span>
+<span class="lineNum">    1137 </span>            :         } else {
+<span class="lineNum">    1138 </span><span class="lineCov">          7 :                 pbx_builtin_setvar_helper(chan, &quot;BRIDGERESULT&quot;, &quot;SUCCESS&quot;);</span>
+<span class="lineNum">    1139 </span>            :         }
+<span class="lineNum">    1140 </span>            : 
+<span class="lineNum">    1141 </span><span class="lineCov">          7 :         ast_free((char *) bconfig.warning_sound);</span>
+<span class="lineNum">    1142 </span><span class="lineCov">          7 :         ast_free((char *) bconfig.end_sound);</span>
+<span class="lineNum">    1143 </span><span class="lineCov">          7 :         ast_free((char *) bconfig.start_sound);</span>
+<span class="lineNum">    1144 </span>            : 
+<span class="lineNum">    1145 </span><span class="lineCov">          7 :         ast_channel_cleanup(current_dest_chan);</span>
+<span class="lineNum">    1146 </span><span class="lineCov">          7 :         return 0;</span>
+<a name="1147"><span class="lineNum">    1147 </span>            : }</a>
+<span class="lineNum">    1148 </span>            : 
+<span class="lineNum">    1149 </span><span class="lineCov">       1122 : static int unload_module(void)</span>
+<span class="lineNum">    1150 </span>            : {
+<span class="lineNum">    1151 </span><span class="lineCov">       1122 :         unload_features_config();</span>
+<span class="lineNum">    1152 </span>            : 
+<span class="lineNum">    1153 </span><span class="lineCov">       1122 :         ast_manager_unregister(&quot;Bridge&quot;);</span>
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span><span class="lineCov">       1122 :         ast_unregister_application(app_bridge);</span>
+<span class="lineNum">    1156 </span>            : 
+<span class="lineNum">    1157 </span><span class="lineCov">       1122 :         return 0;</span>
+<a name="1158"><span class="lineNum">    1158 </span>            : }</a>
+<span class="lineNum">    1159 </span>            : 
+<span class="lineNum">    1160 </span><span class="lineCov">       1124 : static int load_module(void)</span>
+<span class="lineNum">    1161 </span>            : {
+<span class="lineNum">    1162 </span>            :         int res;
+<span class="lineNum">    1163 </span>            : 
+<span class="lineNum">    1164 </span><span class="lineCov">       1124 :         res = load_features_config();</span>
+<span class="lineNum">    1165 </span><span class="lineCov">       1124 :         res |= ast_register_application2(app_bridge, bridge_exec, NULL, NULL, NULL);</span>
+<span class="lineNum">    1166 </span><span class="lineCov">       1124 :         res |= ast_manager_register_xml_core(&quot;Bridge&quot;, EVENT_FLAG_CALL, action_bridge);</span>
+<span class="lineNum">    1167 </span>            : 
+<span class="lineNum">    1168 </span><span class="lineCov">       1124 :         return res ? AST_MODULE_LOAD_FAILURE : AST_MODULE_LOAD_SUCCESS;</span>
+<a name="1169"><span class="lineNum">    1169 </span>            : }</a>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineCov">      10418 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS | AST_MODFLAG_LOAD_ORDER, &quot;Call Features&quot;,</span>
+<span class="lineNum">    1172 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">    1173 </span>            :         .load = load_module,
+<span class="lineNum">    1174 </span>            :         .unload = unload_module,
+<span class="lineNum">    1175 </span>            :         .reload = reload_features_config,
+<span class="lineNum">    1176 </span>            :         .load_pri = AST_MODPRI_CORE,
+<span class="lineNum">    1177 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

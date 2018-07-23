@@ -1,0 +1,1587 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - apps/app_chanspy.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_chanspy.c<span style="font-size: 80%;"> (source / <a href="app_chanspy.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">237</td>
+            <td class="headerCovTableEntry">582</td>
+            <td class="headerCovTableEntryLo">40.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntryMed">81.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2005 Anthony Minessale II (anthmct@yahoo.com)
+<span class="lineNum">       5 </span>            :  * Copyright (C) 2005 - 2008, Digium, Inc.
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * A license has been granted to Digium (via disclaimer) for the use of
+<span class="lineNum">       8 </span>            :  * this code.
+<span class="lineNum">       9 </span>            :  *
+<span class="lineNum">      10 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      11 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      12 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      13 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      14 </span>            :  * channels for your use.
+<span class="lineNum">      15 </span>            :  *
+<span class="lineNum">      16 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      17 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      18 </span>            :  * at the top of the source tree.
+<span class="lineNum">      19 </span>            :  */
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : /*! \file
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \brief ChanSpy: Listen in on any channel.
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \author Anthony Minessale II &lt;anthmct@yahoo.com&gt;
+<span class="lineNum">      26 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      27 </span>            :  * \author Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">      28 </span>            :  *
+<span class="lineNum">      29 </span>            :  * \ingroup applications
+<span class="lineNum">      30 </span>            :  */
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : /*** MODULEINFO
+<span class="lineNum">      33 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      34 </span>            :  ***/
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #include &lt;ctype.h&gt;
+<span class="lineNum">      39 </span>            : #include &lt;errno.h&gt;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/paths.h&quot; /* use ast_config_AST_MONITOR_DIR */
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/audiohook.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/features.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/say.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      52 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      53 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      54 </span>            : #include &quot;asterisk/options.h&quot;
+<span class="lineNum">      55 </span>            : #include &quot;asterisk/autochan.h&quot;
+<span class="lineNum">      56 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      57 </span>            : #include &quot;asterisk/json.h&quot;
+<span class="lineNum">      58 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : #define AST_NAME_STRLEN 256
+<span class="lineNum">      61 </span>            : #define NUM_SPYGROUPS 128
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      64 </span>            :         &lt;application name=&quot;ChanSpy&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      65 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      66 </span>            :                         Listen to a channel, and optionally whisper into it.
+<span class="lineNum">      67 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      68 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      69 </span>            :                         &lt;parameter name=&quot;chanprefix&quot; /&gt;
+<span class="lineNum">      70 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">      71 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      72 </span>            :                                         &lt;option name=&quot;b&quot;&gt;
+<span class="lineNum">      73 </span>            :                                                 &lt;para&gt;Only spy on channels involved in a bridged call.&lt;/para&gt;
+<span class="lineNum">      74 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      75 </span>            :                                         &lt;option name=&quot;B&quot;&gt;
+<span class="lineNum">      76 </span>            :                                                 &lt;para&gt;Instead of whispering on a single channel barge in on both
+<span class="lineNum">      77 </span>            :                                                 channels involved in the call.&lt;/para&gt;
+<span class="lineNum">      78 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      79 </span>            :                                         &lt;option name=&quot;c&quot;&gt;
+<span class="lineNum">      80 </span>            :                                                 &lt;argument name=&quot;digit&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      81 </span>            :                                                         &lt;para&gt;Specify a DTMF digit that can be used to spy on the next available channel.&lt;/para&gt;
+<span class="lineNum">      82 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">      83 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      84 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">      85 </span>            :                                                 &lt;para&gt;Override the typical numeric DTMF functionality and instead
+<span class="lineNum">      86 </span>            :                                                 use DTMF to switch between spy modes.&lt;/para&gt;
+<span class="lineNum">      87 </span>            :                                                 &lt;enumlist&gt;
+<span class="lineNum">      88 </span>            :                                                         &lt;enum name=&quot;4&quot;&gt;
+<span class="lineNum">      89 </span>            :                                                                 &lt;para&gt;spy mode&lt;/para&gt;
+<span class="lineNum">      90 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">      91 </span>            :                                                         &lt;enum name=&quot;5&quot;&gt;
+<span class="lineNum">      92 </span>            :                                                                 &lt;para&gt;whisper mode&lt;/para&gt;
+<span class="lineNum">      93 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">      94 </span>            :                                                         &lt;enum name=&quot;6&quot;&gt;
+<span class="lineNum">      95 </span>            :                                                                 &lt;para&gt;barge mode&lt;/para&gt;
+<span class="lineNum">      96 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">      97 </span>            :                                                 &lt;/enumlist&gt;
+<span class="lineNum">      98 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      99 </span>            :                                         &lt;option name=&quot;e&quot;&gt;
+<span class="lineNum">     100 </span>            :                                                 &lt;argument name=&quot;ext&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     101 </span>            :                                                 &lt;para&gt;Enable &lt;emphasis&gt;enforced&lt;/emphasis&gt; mode, so the spying channel can
+<span class="lineNum">     102 </span>            :                                                 only monitor extensions whose name is in the &lt;replaceable&gt;ext&lt;/replaceable&gt; : delimited
+<span class="lineNum">     103 </span>            :                                                 list.&lt;/para&gt;
+<span class="lineNum">     104 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     105 </span>            :                                         &lt;option name=&quot;E&quot;&gt;
+<span class="lineNum">     106 </span>            :                                                 &lt;para&gt;Exit when the spied-on channel hangs up.&lt;/para&gt;
+<span class="lineNum">     107 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     108 </span>            :                                         &lt;option name=&quot;g&quot;&gt;
+<span class="lineNum">     109 </span>            :                                                 &lt;argument name=&quot;grp&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     110 </span>            :                                                         &lt;para&gt;Only spy on channels in which one or more of the groups
+<span class="lineNum">     111 </span>            :                                                         listed in &lt;replaceable&gt;grp&lt;/replaceable&gt; matches one or more groups from the
+<span class="lineNum">     112 </span>            :                                                         &lt;variable&gt;SPYGROUP&lt;/variable&gt; variable set on the channel to be spied upon.&lt;/para&gt;
+<span class="lineNum">     113 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">     114 </span>            :                                                 &lt;note&gt;&lt;para&gt;both &lt;replaceable&gt;grp&lt;/replaceable&gt; and &lt;variable&gt;SPYGROUP&lt;/variable&gt; can contain
+<span class="lineNum">     115 </span>            :                                                 either a single group or a colon-delimited list of groups, such
+<span class="lineNum">     116 </span>            :                                                 as &lt;literal&gt;sales:support:accounting&lt;/literal&gt;.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     117 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     118 </span>            :                                         &lt;option name=&quot;l&quot;&gt;
+<span class="lineNum">     119 </span>            :                                                 &lt;para&gt;Allow usage of a long queue to store audio frames.&lt;/para&gt;
+<span class="lineNum">     120 </span>            :                                                 &lt;note&gt;&lt;para&gt;This may introduce some delay in the received audio feed, but will improve the audio quality.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     121 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     122 </span>            :                                         &lt;option name=&quot;n&quot; argsep=&quot;@&quot;&gt;
+<span class="lineNum">     123 </span>            :                                                 &lt;para&gt;Say the name of the person being spied on if that person has recorded
+<span class="lineNum">     124 </span>            :                                                 his/her name. If a context is specified, then that voicemail context will
+<span class="lineNum">     125 </span>            :                                                 be searched when retrieving the name, otherwise the &lt;literal&gt;default&lt;/literal&gt; context
+<span class="lineNum">     126 </span>            :                                                 be used when searching for the name (i.e. if SIP/1000 is the channel being
+<span class="lineNum">     127 </span>            :                                                 spied on and no mailbox is specified, then &lt;literal&gt;1000&lt;/literal&gt; will be used when searching
+<span class="lineNum">     128 </span>            :                                                 for the name).&lt;/para&gt;
+<span class="lineNum">     129 </span>            :                                                 &lt;argument name=&quot;mailbox&quot; /&gt;
+<span class="lineNum">     130 </span>            :                                                 &lt;argument name=&quot;context&quot; /&gt;
+<span class="lineNum">     131 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     132 </span>            :                                         &lt;option name=&quot;o&quot;&gt;
+<span class="lineNum">     133 </span>            :                                                 &lt;para&gt;Only listen to audio coming from this channel.&lt;/para&gt;
+<span class="lineNum">     134 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     135 </span>            :                                         &lt;option name=&quot;q&quot;&gt;
+<span class="lineNum">     136 </span>            :                                                 &lt;para&gt;Don't play a beep when beginning to spy on a channel, or speak the
+<span class="lineNum">     137 </span>            :                                                 selected channel name.&lt;/para&gt;
+<span class="lineNum">     138 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     139 </span>            :                                         &lt;option name=&quot;r&quot;&gt;
+<span class="lineNum">     140 </span>            :                                                 &lt;para&gt;Record the session to the monitor spool directory. An optional base for the filename
+<span class="lineNum">     141 </span>            :                                                 may be specified. The default is &lt;literal&gt;chanspy&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     142 </span>            :                                                 &lt;argument name=&quot;basename&quot; /&gt;
+<span class="lineNum">     143 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     144 </span>            :                                         &lt;option name=&quot;s&quot;&gt;
+<span class="lineNum">     145 </span>            :                                                 &lt;para&gt;Skip the playback of the channel type (i.e. SIP, IAX, etc) when
+<span class="lineNum">     146 </span>            :                                                 speaking the selected channel name.&lt;/para&gt;
+<span class="lineNum">     147 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     148 </span>            :                                         &lt;option name=&quot;S&quot;&gt;
+<span class="lineNum">     149 </span>            :                                                 &lt;para&gt;Stop when no more channels are left to spy on.&lt;/para&gt;
+<span class="lineNum">     150 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     151 </span>            :                                         &lt;option name=&quot;u&quot;&gt;
+<span class="lineNum">     152 </span>            :                                                 &lt;para&gt;The &lt;literal&gt;chanprefix&lt;/literal&gt; parameter is a channel uniqueid
+<span class="lineNum">     153 </span>            :                                                 or fully specified channel name.&lt;/para&gt;
+<span class="lineNum">     154 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     155 </span>            :                                         &lt;option name=&quot;v&quot;&gt;
+<span class="lineNum">     156 </span>            :                                                 &lt;argument name=&quot;value&quot; /&gt;
+<span class="lineNum">     157 </span>            :                                                 &lt;para&gt;Adjust the initial volume in the range from &lt;literal&gt;-4&lt;/literal&gt;
+<span class="lineNum">     158 </span>            :                                                 to &lt;literal&gt;4&lt;/literal&gt;. A negative value refers to a quieter setting.&lt;/para&gt;
+<span class="lineNum">     159 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     160 </span>            :                                         &lt;option name=&quot;w&quot;&gt;
+<span class="lineNum">     161 </span>            :                                                 &lt;para&gt;Enable &lt;literal&gt;whisper&lt;/literal&gt; mode, so the spying channel can talk to
+<span class="lineNum">     162 </span>            :                                                 the spied-on channel.&lt;/para&gt;
+<span class="lineNum">     163 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     164 </span>            :                                         &lt;option name=&quot;W&quot;&gt;
+<span class="lineNum">     165 </span>            :                                                 &lt;para&gt;Enable &lt;literal&gt;private whisper&lt;/literal&gt; mode, so the spying channel can
+<span class="lineNum">     166 </span>            :                                                 talk to the spied-on channel but cannot listen to that channel.&lt;/para&gt;
+<span class="lineNum">     167 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     168 </span>            :                                         &lt;option name=&quot;x&quot;&gt;
+<span class="lineNum">     169 </span>            :                                                 &lt;argument name=&quot;digit&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     170 </span>            :                                                         &lt;para&gt;Specify a DTMF digit that can be used to exit the application while actively
+<span class="lineNum">     171 </span>            :                                                         spying on a channel. If there is no channel being spied on, the DTMF digit will be
+<span class="lineNum">     172 </span>            :                                                         ignored.&lt;/para&gt;
+<span class="lineNum">     173 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">     174 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     175 </span>            :                                         &lt;option name=&quot;X&quot;&gt;
+<span class="lineNum">     176 </span>            :                                                 &lt;para&gt;Allow the user to exit ChanSpy to a valid single digit
+<span class="lineNum">     177 </span>            :                                                 numeric extension in the current context or the context
+<span class="lineNum">     178 </span>            :                                                 specified by the &lt;variable&gt;SPY_EXIT_CONTEXT&lt;/variable&gt; channel variable. The
+<span class="lineNum">     179 </span>            :                                                 name of the last channel that was spied on will be stored
+<span class="lineNum">     180 </span>            :                                                 in the &lt;variable&gt;SPY_CHANNEL&lt;/variable&gt; variable.&lt;/para&gt;
+<span class="lineNum">     181 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     182 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     183 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     184 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     185 </span>            :                 &lt;description&gt;
+<span class="lineNum">     186 </span>            :                         &lt;para&gt;This application is used to listen to the audio from an Asterisk channel. This includes the audio
+<span class="lineNum">     187 </span>            :                         coming in and out of the channel being spied on. If the &lt;literal&gt;chanprefix&lt;/literal&gt; parameter is specified,
+<span class="lineNum">     188 </span>            :                         only channels beginning with this string will be spied upon.&lt;/para&gt;
+<span class="lineNum">     189 </span>            :                         &lt;para&gt;While spying, the following actions may be performed:&lt;/para&gt;
+<span class="lineNum">     190 </span>            :                         &lt;para&gt; - Dialing &lt;literal&gt;#&lt;/literal&gt; cycles the volume level.&lt;/para&gt;
+<span class="lineNum">     191 </span>            :                         &lt;para&gt; - Dialing &lt;literal&gt;*&lt;/literal&gt; will stop spying and look for another channel to spy on.&lt;/para&gt;
+<span class="lineNum">     192 </span>            :                         &lt;para&gt; - Dialing a series of digits followed by &lt;literal&gt;#&lt;/literal&gt; builds a channel name to append
+<span class="lineNum">     193 </span>            :                         to &lt;literal&gt;chanprefix&lt;/literal&gt;. For example, executing ChanSpy(Agent) and then dialing the digits '1234#'
+<span class="lineNum">     194 </span>            :                         while spying will begin spying on the channel 'Agent/1234'. Note that this feature will be overridden
+<span class="lineNum">     195 </span>            :                         if the 'd' or 'u' options are used.&lt;/para&gt;
+<span class="lineNum">     196 </span>            :                         &lt;note&gt;&lt;para&gt;The &lt;replaceable&gt;X&lt;/replaceable&gt; option supersedes the three features above in that if a valid
+<span class="lineNum">     197 </span>            :                         single digit extension exists in the correct context ChanSpy will exit to it.
+<span class="lineNum">     198 </span>            :                         This also disables choosing a channel based on &lt;literal&gt;chanprefix&lt;/literal&gt; and a digit sequence.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     199 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     200 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     201 </span>            :                         &lt;ref type=&quot;application&quot;&gt;ExtenSpy&lt;/ref&gt;
+<span class="lineNum">     202 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStart&lt;/ref&gt;
+<span class="lineNum">     203 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStop&lt;/ref&gt;
+<span class="lineNum">     204 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     205 </span>            :         &lt;/application&gt;
+<span class="lineNum">     206 </span>            :         &lt;application name=&quot;ExtenSpy&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     207 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     208 </span>            :                         Listen to a channel, and optionally whisper into it.
+<span class="lineNum">     209 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     210 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     211 </span>            :                         &lt;parameter name=&quot;exten&quot; required=&quot;true&quot; argsep=&quot;@&quot;&gt;
+<span class="lineNum">     212 </span>            :                                 &lt;argument name=&quot;exten&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     213 </span>            :                                         &lt;para&gt;Specify extension.&lt;/para&gt;
+<span class="lineNum">     214 </span>            :                                 &lt;/argument&gt;
+<span class="lineNum">     215 </span>            :                                 &lt;argument name=&quot;context&quot;&gt;
+<span class="lineNum">     216 </span>            :                                         &lt;para&gt;Optionally specify a context, defaults to &lt;literal&gt;default&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     217 </span>            :                                 &lt;/argument&gt;
+<span class="lineNum">     218 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     219 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">     220 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">     221 </span>            :                                         &lt;option name=&quot;b&quot;&gt;
+<span class="lineNum">     222 </span>            :                                                 &lt;para&gt;Only spy on channels involved in a bridged call.&lt;/para&gt;
+<span class="lineNum">     223 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     224 </span>            :                                         &lt;option name=&quot;B&quot;&gt;
+<span class="lineNum">     225 </span>            :                                                 &lt;para&gt;Instead of whispering on a single channel barge in on both
+<span class="lineNum">     226 </span>            :                                                 channels involved in the call.&lt;/para&gt;
+<span class="lineNum">     227 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     228 </span>            :                                         &lt;option name=&quot;c&quot;&gt;
+<span class="lineNum">     229 </span>            :                                                 &lt;argument name=&quot;digit&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     230 </span>            :                                                         &lt;para&gt;Specify a DTMF digit that can be used to spy on the next available channel.&lt;/para&gt;
+<span class="lineNum">     231 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">     232 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     233 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">     234 </span>            :                                                 &lt;para&gt;Override the typical numeric DTMF functionality and instead
+<span class="lineNum">     235 </span>            :                                                 use DTMF to switch between spy modes.&lt;/para&gt;
+<span class="lineNum">     236 </span>            :                                                 &lt;enumlist&gt;
+<span class="lineNum">     237 </span>            :                                                         &lt;enum name=&quot;4&quot;&gt;
+<span class="lineNum">     238 </span>            :                                                                 &lt;para&gt;spy mode&lt;/para&gt;
+<span class="lineNum">     239 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">     240 </span>            :                                                         &lt;enum name=&quot;5&quot;&gt;
+<span class="lineNum">     241 </span>            :                                                                 &lt;para&gt;whisper mode&lt;/para&gt;
+<span class="lineNum">     242 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">     243 </span>            :                                                         &lt;enum name=&quot;6&quot;&gt;
+<span class="lineNum">     244 </span>            :                                                                 &lt;para&gt;barge mode&lt;/para&gt;
+<span class="lineNum">     245 </span>            :                                                         &lt;/enum&gt;
+<span class="lineNum">     246 </span>            :                                                 &lt;/enumlist&gt;
+<span class="lineNum">     247 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     248 </span>            :                                         &lt;option name=&quot;e&quot;&gt;
+<span class="lineNum">     249 </span>            :                                                 &lt;argument name=&quot;ext&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     250 </span>            :                                                 &lt;para&gt;Enable &lt;emphasis&gt;enforced&lt;/emphasis&gt; mode, so the spying channel can
+<span class="lineNum">     251 </span>            :                                                 only monitor extensions whose name is in the &lt;replaceable&gt;ext&lt;/replaceable&gt; : delimited
+<span class="lineNum">     252 </span>            :                                                 list.&lt;/para&gt;
+<span class="lineNum">     253 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     254 </span>            :                                         &lt;option name=&quot;E&quot;&gt;
+<span class="lineNum">     255 </span>            :                                                 &lt;para&gt;Exit when the spied-on channel hangs up.&lt;/para&gt;
+<span class="lineNum">     256 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     257 </span>            :                                         &lt;option name=&quot;g&quot;&gt;
+<span class="lineNum">     258 </span>            :                                                 &lt;argument name=&quot;grp&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     259 </span>            :                                                         &lt;para&gt;Only spy on channels in which one or more of the groups
+<span class="lineNum">     260 </span>            :                                                         listed in &lt;replaceable&gt;grp&lt;/replaceable&gt; matches one or more groups from the
+<span class="lineNum">     261 </span>            :                                                         &lt;variable&gt;SPYGROUP&lt;/variable&gt; variable set on the channel to be spied upon.&lt;/para&gt;
+<span class="lineNum">     262 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">     263 </span>            :                                                 &lt;note&gt;&lt;para&gt;both &lt;replaceable&gt;grp&lt;/replaceable&gt; and &lt;variable&gt;SPYGROUP&lt;/variable&gt; can contain
+<span class="lineNum">     264 </span>            :                                                 either a single group or a colon-delimited list of groups, such
+<span class="lineNum">     265 </span>            :                                                 as &lt;literal&gt;sales:support:accounting&lt;/literal&gt;.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     266 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     267 </span>            :                                         &lt;option name=&quot;l&quot;&gt;
+<span class="lineNum">     268 </span>            :                                                 &lt;para&gt;Allow usage of a long queue to store audio frames.&lt;/para&gt;
+<span class="lineNum">     269 </span>            :                                                 &lt;note&gt;&lt;para&gt;This may introduce some delay in the received audio feed, but will improve the audio quality.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     270 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     271 </span>            :                                         &lt;option name=&quot;n&quot; argsep=&quot;@&quot;&gt;
+<span class="lineNum">     272 </span>            :                                                 &lt;para&gt;Say the name of the person being spied on if that person has recorded
+<span class="lineNum">     273 </span>            :                                                 his/her name. If a context is specified, then that voicemail context will
+<span class="lineNum">     274 </span>            :                                                 be searched when retrieving the name, otherwise the &lt;literal&gt;default&lt;/literal&gt; context
+<span class="lineNum">     275 </span>            :                                                 be used when searching for the name (i.e. if SIP/1000 is the channel being
+<span class="lineNum">     276 </span>            :                                                 spied on and no mailbox is specified, then &lt;literal&gt;1000&lt;/literal&gt; will be used when searching
+<span class="lineNum">     277 </span>            :                                                 for the name).&lt;/para&gt;
+<span class="lineNum">     278 </span>            :                                                 &lt;argument name=&quot;mailbox&quot; /&gt;
+<span class="lineNum">     279 </span>            :                                                 &lt;argument name=&quot;context&quot; /&gt;
+<span class="lineNum">     280 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     281 </span>            :                                         &lt;option name=&quot;o&quot;&gt;
+<span class="lineNum">     282 </span>            :                                                 &lt;para&gt;Only listen to audio coming from this channel.&lt;/para&gt;
+<span class="lineNum">     283 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     284 </span>            :                                         &lt;option name=&quot;q&quot;&gt;
+<span class="lineNum">     285 </span>            :                                                 &lt;para&gt;Don't play a beep when beginning to spy on a channel, or speak the
+<span class="lineNum">     286 </span>            :                                                 selected channel name.&lt;/para&gt;
+<span class="lineNum">     287 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     288 </span>            :                                         &lt;option name=&quot;r&quot;&gt;
+<span class="lineNum">     289 </span>            :                                                 &lt;para&gt;Record the session to the monitor spool directory. An optional base for the filename
+<span class="lineNum">     290 </span>            :                                                 may be specified. The default is &lt;literal&gt;chanspy&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     291 </span>            :                                                 &lt;argument name=&quot;basename&quot; /&gt;
+<span class="lineNum">     292 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     293 </span>            :                                         &lt;option name=&quot;s&quot;&gt;
+<span class="lineNum">     294 </span>            :                                                 &lt;para&gt;Skip the playback of the channel type (i.e. SIP, IAX, etc) when
+<span class="lineNum">     295 </span>            :                                                 speaking the selected channel name.&lt;/para&gt;
+<span class="lineNum">     296 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     297 </span>            :                                         &lt;option name=&quot;S&quot;&gt;
+<span class="lineNum">     298 </span>            :                                                 &lt;para&gt;Stop when there are no more extensions left to spy on.&lt;/para&gt;
+<span class="lineNum">     299 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     300 </span>            :                                         &lt;option name=&quot;v&quot;&gt;
+<span class="lineNum">     301 </span>            :                                                 &lt;argument name=&quot;value&quot; /&gt;
+<span class="lineNum">     302 </span>            :                                                 &lt;para&gt;Adjust the initial volume in the range from &lt;literal&gt;-4&lt;/literal&gt;
+<span class="lineNum">     303 </span>            :                                                 to &lt;literal&gt;4&lt;/literal&gt;. A negative value refers to a quieter setting.&lt;/para&gt;
+<span class="lineNum">     304 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     305 </span>            :                                         &lt;option name=&quot;w&quot;&gt;
+<span class="lineNum">     306 </span>            :                                                 &lt;para&gt;Enable &lt;literal&gt;whisper&lt;/literal&gt; mode, so the spying channel can talk to
+<span class="lineNum">     307 </span>            :                                                 the spied-on channel.&lt;/para&gt;
+<span class="lineNum">     308 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     309 </span>            :                                         &lt;option name=&quot;W&quot;&gt;
+<span class="lineNum">     310 </span>            :                                                 &lt;para&gt;Enable &lt;literal&gt;private whisper&lt;/literal&gt; mode, so the spying channel can
+<span class="lineNum">     311 </span>            :                                                 talk to the spied-on channel but cannot listen to that channel.&lt;/para&gt;
+<span class="lineNum">     312 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     313 </span>            :                                         &lt;option name=&quot;x&quot;&gt;
+<span class="lineNum">     314 </span>            :                                                 &lt;argument name=&quot;digit&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     315 </span>            :                                                         &lt;para&gt;Specify a DTMF digit that can be used to exit the application while actively
+<span class="lineNum">     316 </span>            :                                                         spying on a channel. If there is no channel being spied on, the DTMF digit will be
+<span class="lineNum">     317 </span>            :                                                         ignored.&lt;/para&gt;
+<span class="lineNum">     318 </span>            :                                                 &lt;/argument&gt;
+<span class="lineNum">     319 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     320 </span>            :                                         &lt;option name=&quot;X&quot;&gt;
+<span class="lineNum">     321 </span>            :                                                 &lt;para&gt;Allow the user to exit ChanSpy to a valid single digit
+<span class="lineNum">     322 </span>            :                                                 numeric extension in the current context or the context
+<span class="lineNum">     323 </span>            :                                                 specified by the &lt;variable&gt;SPY_EXIT_CONTEXT&lt;/variable&gt; channel variable. The
+<span class="lineNum">     324 </span>            :                                                 name of the last channel that was spied on will be stored
+<span class="lineNum">     325 </span>            :                                                 in the &lt;variable&gt;SPY_CHANNEL&lt;/variable&gt; variable.&lt;/para&gt;
+<span class="lineNum">     326 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     327 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     328 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     329 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     330 </span>            :                 &lt;description&gt;
+<span class="lineNum">     331 </span>            :                         &lt;para&gt;This application is used to listen to the audio from an Asterisk channel. This includes
+<span class="lineNum">     332 </span>            :                         the audio coming in and out of the channel being spied on. Only channels created by outgoing calls for the
+<span class="lineNum">     333 </span>            :                         specified extension will be selected for spying. If the optional context is not supplied,
+<span class="lineNum">     334 </span>            :                         the current channel's context will be used.&lt;/para&gt;
+<span class="lineNum">     335 </span>            :                         &lt;para&gt;While spying, the following actions may be performed:&lt;/para&gt;
+<span class="lineNum">     336 </span>            :                         &lt;para&gt; - Dialing &lt;literal&gt;#&lt;/literal&gt; cycles the volume level.&lt;/para&gt;
+<span class="lineNum">     337 </span>            :                         &lt;para&gt; - Dialing &lt;literal&gt;*&lt;/literal&gt; will stop spying and look for another channel to spy on.&lt;/para&gt;
+<span class="lineNum">     338 </span>            :                         &lt;note&gt;&lt;para&gt;The &lt;replaceable&gt;X&lt;/replaceable&gt; option supersedes the three features above in that if a valid
+<span class="lineNum">     339 </span>            :                         single digit extension exists in the correct context ChanSpy will exit to it.
+<span class="lineNum">     340 </span>            :                         This also disables choosing a channel based on &lt;literal&gt;chanprefix&lt;/literal&gt; and a digit sequence.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     341 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     342 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     343 </span>            :                         &lt;ref type=&quot;application&quot;&gt;ChanSpy&lt;/ref&gt;
+<span class="lineNum">     344 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStart&lt;/ref&gt;
+<span class="lineNum">     345 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStop&lt;/ref&gt;
+<span class="lineNum">     346 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     347 </span>            :         &lt;/application&gt;
+<span class="lineNum">     348 </span>            :         &lt;application name=&quot;DAHDIScan&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     349 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     350 </span>            :                         Scan DAHDI channels to monitor calls.
+<span class="lineNum">     351 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     352 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     353 </span>            :                         &lt;parameter name=&quot;group&quot;&gt;
+<span class="lineNum">     354 </span>            :                                 &lt;para&gt;Limit scanning to a channel &lt;replaceable&gt;group&lt;/replaceable&gt; by setting this option.&lt;/para&gt;
+<span class="lineNum">     355 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     356 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     357 </span>            :                 &lt;description&gt;
+<span class="lineNum">     358 </span>            :                         &lt;para&gt;Allows a call center manager to monitor DAHDI channels in a
+<span class="lineNum">     359 </span>            :                         convenient way.  Use &lt;literal&gt;#&lt;/literal&gt; to select the next channel and use &lt;literal&gt;*&lt;/literal&gt; to exit.&lt;/para&gt;
+<span class="lineNum">     360 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     361 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     362 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStart&lt;/ref&gt;
+<span class="lineNum">     363 </span>            :                         &lt;ref type=&quot;managerEvent&quot;&gt;ChanSpyStop&lt;/ref&gt;
+<span class="lineNum">     364 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     365 </span>            :         &lt;/application&gt;
+<span class="lineNum">     366 </span>            :  ***/
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span>            : static const char app_chan[] = &quot;ChanSpy&quot;;
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span>            : static const char app_ext[] = &quot;ExtenSpy&quot;;
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span>            : static const char app_dahdiscan[] = &quot;DAHDIScan&quot;;
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span>            : enum {
+<span class="lineNum">     375 </span>            :         OPTION_QUIET             = (1 &lt;&lt; 0),    /* Quiet, no announcement */
+<span class="lineNum">     376 </span>            :         OPTION_BRIDGED           = (1 &lt;&lt; 1),    /* Only look at bridged calls */
+<span class="lineNum">     377 </span>            :         OPTION_VOLUME            = (1 &lt;&lt; 2),    /* Specify initial volume */
+<span class="lineNum">     378 </span>            :         OPTION_GROUP             = (1 &lt;&lt; 3),    /* Only look at channels in group */
+<span class="lineNum">     379 </span>            :         OPTION_RECORD            = (1 &lt;&lt; 4),
+<span class="lineNum">     380 </span>            :         OPTION_WHISPER           = (1 &lt;&lt; 5),
+<span class="lineNum">     381 </span>            :         OPTION_PRIVATE           = (1 &lt;&lt; 6),    /* Private Whisper mode */
+<span class="lineNum">     382 </span>            :         OPTION_READONLY          = (1 &lt;&lt; 7),    /* Don't mix the two channels */
+<span class="lineNum">     383 </span>            :         OPTION_EXIT              = (1 &lt;&lt; 8),    /* Exit to a valid single digit extension */
+<span class="lineNum">     384 </span>            :         OPTION_ENFORCED          = (1 &lt;&lt; 9),    /* Enforced mode */
+<span class="lineNum">     385 </span>            :         OPTION_NOTECH            = (1 &lt;&lt; 10),   /* Skip technology name playback */
+<span class="lineNum">     386 </span>            :         OPTION_BARGE             = (1 &lt;&lt; 11),   /* Barge mode (whisper to both channels) */
+<span class="lineNum">     387 </span>            :         OPTION_NAME              = (1 &lt;&lt; 12),   /* Say the name of the person on whom we will spy */
+<span class="lineNum">     388 </span>            :         OPTION_DTMF_SWITCH_MODES = (1 &lt;&lt; 13),   /* Allow numeric DTMF to switch between chanspy modes */
+<span class="lineNum">     389 </span>            :         OPTION_DTMF_EXIT         = (1 &lt;&lt; 14),     /* Set DTMF to exit, added for DAHDIScan integration */
+<span class="lineNum">     390 </span>            :         OPTION_DTMF_CYCLE        = (1 &lt;&lt; 15),     /* Custom DTMF for cycling next available channel, (default is '*') */
+<span class="lineNum">     391 </span>            :         OPTION_DAHDI_SCAN        = (1 &lt;&lt; 16),     /* Scan groups in DAHDIScan mode */
+<span class="lineNum">     392 </span>            :         OPTION_STOP              = (1 &lt;&lt; 17),
+<span class="lineNum">     393 </span>            :         OPTION_EXITONHANGUP      = (1 &lt;&lt; 18),   /* Hang up when the spied-on channel hangs up. */
+<span class="lineNum">     394 </span>            :         OPTION_UNIQUEID          = (1 &lt;&lt; 19),     /* The chanprefix is a channel uniqueid or fully specified channel name. */
+<span class="lineNum">     395 </span>            :         OPTION_LONG_QUEUE        = (1 &lt;&lt; 20),     /* Allow usage of a long queue to store audio frames. */
+<span class="lineNum">     396 </span>            : };
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span>            : enum {
+<span class="lineNum">     399 </span>            :         OPT_ARG_VOLUME = 0,
+<span class="lineNum">     400 </span>            :         OPT_ARG_GROUP,
+<span class="lineNum">     401 </span>            :         OPT_ARG_RECORD,
+<span class="lineNum">     402 </span>            :         OPT_ARG_ENFORCED,
+<span class="lineNum">     403 </span>            :         OPT_ARG_NAME,
+<span class="lineNum">     404 </span>            :         OPT_ARG_EXIT,
+<span class="lineNum">     405 </span>            :         OPT_ARG_CYCLE,
+<span class="lineNum">     406 </span>            :         OPT_ARG_ARRAY_SIZE,
+<span class="lineNum">     407 </span>            : };
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span>            : AST_APP_OPTIONS(spy_opts, {
+<span class="lineNum">     410 </span>            :         AST_APP_OPTION('b', OPTION_BRIDGED),
+<span class="lineNum">     411 </span>            :         AST_APP_OPTION('B', OPTION_BARGE),
+<span class="lineNum">     412 </span>            :         AST_APP_OPTION_ARG('c', OPTION_DTMF_CYCLE, OPT_ARG_CYCLE),
+<span class="lineNum">     413 </span>            :         AST_APP_OPTION('d', OPTION_DTMF_SWITCH_MODES),
+<span class="lineNum">     414 </span>            :         AST_APP_OPTION_ARG('e', OPTION_ENFORCED, OPT_ARG_ENFORCED),
+<span class="lineNum">     415 </span>            :         AST_APP_OPTION('E', OPTION_EXITONHANGUP),
+<span class="lineNum">     416 </span>            :         AST_APP_OPTION_ARG('g', OPTION_GROUP, OPT_ARG_GROUP),
+<span class="lineNum">     417 </span>            :         AST_APP_OPTION('l', OPTION_LONG_QUEUE),
+<span class="lineNum">     418 </span>            :         AST_APP_OPTION_ARG('n', OPTION_NAME, OPT_ARG_NAME),
+<span class="lineNum">     419 </span>            :         AST_APP_OPTION('o', OPTION_READONLY),
+<span class="lineNum">     420 </span>            :         AST_APP_OPTION('q', OPTION_QUIET),
+<span class="lineNum">     421 </span>            :         AST_APP_OPTION_ARG('r', OPTION_RECORD, OPT_ARG_RECORD),
+<span class="lineNum">     422 </span>            :         AST_APP_OPTION('s', OPTION_NOTECH),
+<span class="lineNum">     423 </span>            :         AST_APP_OPTION('S', OPTION_STOP),
+<span class="lineNum">     424 </span>            :         AST_APP_OPTION('u', OPTION_UNIQUEID),
+<span class="lineNum">     425 </span>            :         AST_APP_OPTION_ARG('v', OPTION_VOLUME, OPT_ARG_VOLUME),
+<span class="lineNum">     426 </span>            :         AST_APP_OPTION('w', OPTION_WHISPER),
+<span class="lineNum">     427 </span>            :         AST_APP_OPTION('W', OPTION_PRIVATE),
+<span class="lineNum">     428 </span>            :         AST_APP_OPTION_ARG('x', OPTION_DTMF_EXIT, OPT_ARG_EXIT),
+<span class="lineNum">     429 </span>            :         AST_APP_OPTION('X', OPTION_EXIT),
+<span class="lineNum">     430 </span>            : });
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span>            : struct chanspy_translation_helper {
+<span class="lineNum">     433 </span>            :         /* spy data */
+<span class="lineNum">     434 </span>            :         struct ast_audiohook spy_audiohook;
+<span class="lineNum">     435 </span>            :         struct ast_audiohook whisper_audiohook;
+<span class="lineNum">     436 </span>            :         struct ast_audiohook bridge_whisper_audiohook;
+<span class="lineNum">     437 </span>            :         int fd;
+<span class="lineNum">     438 </span>            :         int volfactor;
+<span class="lineNum">     439 </span>            :         struct ast_flags flags;
+<span class="lineNum">     440 </span>            : };
+<span class="lineNum">     441 </span>            : 
+<span class="lineNum">     442 </span>            : struct spy_dtmf_options {
+<span class="lineNum">     443 </span>            :         char exit;
+<span class="lineNum">     444 </span>            :         char cycle;
+<span class="lineNum">     445 </span>            :         char volume;
+<a name="446"><span class="lineNum">     446 </span>            : };</a>
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">          4 : static void *spy_alloc(struct ast_channel *chan, void *data)</span>
+<span class="lineNum">     449 </span>            : {
+<span class="lineNum">     450 </span>            :         /* just store the data pointer in the channel structure */
+<span class="lineNum">     451 </span><span class="lineCov">          4 :         return data;</span>
+<a name="452"><span class="lineNum">     452 </span>            : }</a>
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">          4 : static void spy_release(struct ast_channel *chan, void *data)</span>
+<span class="lineNum">     455 </span>            : {
+<span class="lineNum">     456 </span>            :         /* nothing to do */
+<a name="457"><span class="lineNum">     457 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">        344 : static int spy_generate(struct ast_channel *chan, void *data, int len, int samples)</span>
+<span class="lineNum">     460 </span>            : {
+<span class="lineNum">     461 </span><span class="lineCov">        344 :         struct chanspy_translation_helper *csth = data;</span>
+<span class="lineNum">     462 </span>            :         struct ast_frame *f, *cur;
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span><span class="lineCov">        344 :         ast_audiohook_lock(&amp;csth-&gt;spy_audiohook);</span>
+<span class="lineNum">     465 </span><span class="lineCov">        344 :         if (csth-&gt;spy_audiohook.status != AST_AUDIOHOOK_STATUS_RUNNING) {</span>
+<span class="lineNum">     466 </span>            :                 /* Channel is already gone more than likely */
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                 ast_audiohook_unlock(&amp;csth-&gt;spy_audiohook);</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     469 </span>            :         }
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineCov">        344 :         if (ast_test_flag(&amp;csth-&gt;flags, OPTION_READONLY)) {</span>
+<span class="lineNum">     472 </span>            :                 /* Option 'o' was set, so don't mix channel audio */
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :                 f = ast_audiohook_read_frame(&amp;csth-&gt;spy_audiohook, samples, AST_AUDIOHOOK_DIRECTION_READ, ast_format_slin);</span>
+<span class="lineNum">     474 </span>            :         } else {
+<span class="lineNum">     475 </span><span class="lineCov">        344 :                 f = ast_audiohook_read_frame(&amp;csth-&gt;spy_audiohook, samples, AST_AUDIOHOOK_DIRECTION_BOTH, ast_format_slin);</span>
+<span class="lineNum">     476 </span>            :         }
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">        344 :         ast_audiohook_unlock(&amp;csth-&gt;spy_audiohook);</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineCov">        344 :         if (!f)</span>
+<span class="lineNum">     481 </span><span class="lineCov">        122 :                 return 0;</span>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">        444 :         for (cur = f; cur; cur = AST_LIST_NEXT(cur, frame_list)) {</span>
+<span class="lineNum">     484 </span><span class="lineCov">        222 :                 if (ast_write(chan, cur)) {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                         ast_frfree(f);</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     487 </span>            :                 }
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">        222 :                 if (csth-&gt;fd) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                         if (write(csth-&gt;fd, cur-&gt;data.ptr, cur-&gt;datalen) &lt; 0) {</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;write() failed: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     492 </span>            :                         }
+<span class="lineNum">     493 </span>            :                 }
+<span class="lineNum">     494 </span>            :         }
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">        222 :         ast_frfree(f);</span>
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">        222 :         return 0;</span>
+<span class="lineNum">     499 </span>            : }
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span>            : static struct ast_generator spygen = {
+<span class="lineNum">     502 </span>            :         .alloc = spy_alloc,
+<span class="lineNum">     503 </span>            :         .release = spy_release,
+<span class="lineNum">     504 </span>            :         .generate = spy_generate,
+<a name="505"><span class="lineNum">     505 </span>            : };</a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineCov">          5 : static int start_spying(struct ast_autochan *autochan, const char *spychan_name, struct ast_audiohook *audiohook, struct ast_flags *flags)</span>
+<span class="lineNum">     508 </span>            : {
+<span class="lineNum">     509 </span>            :         int res;
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">          5 :         ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">     512 </span><span class="lineCov">          5 :         ast_log(LOG_NOTICE, &quot;Attaching %s to %s\n&quot;, spychan_name, ast_channel_name(autochan-&gt;chan));</span>
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span><span class="lineCov">          5 :         if (ast_test_flag(flags, OPTION_READONLY)) {</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                 ast_set_flag(audiohook, AST_AUDIOHOOK_MUTE_WRITE);</span>
+<span class="lineNum">     516 </span>            :         } else {
+<span class="lineNum">     517 </span><span class="lineCov">          5 :                 ast_set_flag(audiohook, AST_AUDIOHOOK_TRIGGER_SYNC);</span>
+<span class="lineNum">     518 </span>            :         }
+<span class="lineNum">     519 </span><span class="lineCov">          5 :         if (ast_test_flag(flags, OPTION_LONG_QUEUE)) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                 ast_debug(9, &quot;Using a long queue to store audio frames in spy audiohook\n&quot;);</span>
+<span class="lineNum">     521 </span>            :         } else {
+<span class="lineNum">     522 </span><span class="lineCov">          5 :                 ast_set_flag(audiohook, AST_AUDIOHOOK_SMALL_QUEUE);</span>
+<span class="lineNum">     523 </span>            :         }
+<span class="lineNum">     524 </span><span class="lineCov">          5 :         res = ast_audiohook_attach(autochan-&gt;chan, audiohook);</span>
+<span class="lineNum">     525 </span><span class="lineCov">          5 :         ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">     526 </span><span class="lineCov">          5 :         return res;</span>
+<a name="527"><span class="lineNum">     527 </span>            : }</a>
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 : static void change_spy_mode(const char digit, struct ast_flags *flags)</span>
+<span class="lineNum">     530 </span>            : {
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :         if (digit == '4') {</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 ast_clear_flag(flags, OPTION_WHISPER);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 ast_clear_flag(flags, OPTION_BARGE);</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :         } else if (digit == '5') {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 ast_clear_flag(flags, OPTION_BARGE);</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                 ast_set_flag(flags, OPTION_WHISPER);</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :         } else if (digit == '6') {</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                 ast_clear_flag(flags, OPTION_WHISPER);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                 ast_set_flag(flags, OPTION_BARGE);</span>
+<span class="lineNum">     540 </span>            :         }
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">         12 : static int pack_channel_into_message(struct ast_channel *chan, const char *role,</span>
+<a name="544"><span class="lineNum">     544 </span>            :                                                                          struct ast_multi_channel_blob *payload)</a>
+<span class="lineNum">     545 </span>            : {
+<span class="lineNum">     546 </span><span class="lineCov">         36 :         RAII_VAR(struct ast_channel_snapshot *, snapshot,</span>
+<span class="lineNum">     547 </span>            :                         ast_channel_snapshot_get_latest(ast_channel_uniqueid(chan)),
+<span class="lineNum">     548 </span>            :                         ao2_cleanup);
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span><span class="lineCov">         12 :         if (!snapshot) {</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     552 </span>            :         }
+<span class="lineNum">     553 </span><span class="lineCov">         12 :         ast_multi_channel_blob_add_channel(payload, role, snapshot);</span>
+<span class="lineNum">     554 </span><span class="lineCov">         12 :         return 0;</span>
+<span class="lineNum">     555 </span>            : }
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            : /*! \internal
+<span class="lineNum">     558 </span>            :  * \brief Publish the chanspy message over Stasis-Core
+<span class="lineNum">     559 </span>            :  * \param spyer The channel doing the spying
+<span class="lineNum">     560 </span>            :  * \param spyee Who is being spied upon
+<span class="lineNum">     561 </span>            :  * \start start If non-zero, the spying is starting. Otherwise, the spyer is
+<a name="562"><span class="lineNum">     562 </span>            :  * finishing</a>
+<span class="lineNum">     563 </span>            :  */
+<span class="lineNum">     564 </span><span class="lineCov">          8 : static void publish_chanspy_message(struct ast_channel *spyer,</span>
+<span class="lineNum">     565 </span>            :                                                                         struct ast_channel *spyee,
+<a name="566"><span class="lineNum">     566 </span>            :                                                                         int start)</a>
+<a name="567"><span class="lineNum">     567 </span>            : {</a>
+<a name="568"><span class="lineNum">     568 </span><span class="lineCov">         16 :         RAII_VAR(struct ast_json *, blob, NULL, ast_json_unref);</span></a>
+<span class="lineNum">     569 </span><span class="lineCov">         16 :         RAII_VAR(struct ast_multi_channel_blob *, payload, NULL, ao2_cleanup);</span>
+<span class="lineNum">     570 </span><span class="lineCov">         16 :         RAII_VAR(struct stasis_message *, message, NULL, ao2_cleanup);</span>
+<span class="lineNum">     571 </span><span class="lineCov">          8 :         struct stasis_message_type *type = start ? ast_channel_chanspy_start_type(): ast_channel_chanspy_stop_type();</span>
+<span class="lineNum">     572 </span>            : 
+<span class="lineNum">     573 </span><span class="lineCov">          8 :         if (!spyer) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Attempt to publish ChanSpy message for NULL spyer channel\n&quot;);</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     576 </span>            :         }
+<span class="lineNum">     577 </span><span class="lineCov">          8 :         blob = ast_json_null();</span>
+<span class="lineNum">     578 </span><span class="lineCov">          8 :         if (!blob || !type) {</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     580 </span>            :         }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">          8 :         payload = ast_multi_channel_blob_create(blob);</span>
+<span class="lineNum">     583 </span><span class="lineCov">          8 :         if (!payload) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     585 </span>            :         }
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineCov">          8 :         if (pack_channel_into_message(spyer, &quot;spyer_channel&quot;, payload)) {</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     589 </span>            :         }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">          8 :         if (spyee) {</span>
+<span class="lineNum">     592 </span><span class="lineCov">          4 :                 if (pack_channel_into_message(spyee, &quot;spyee_channel&quot;, payload)) {</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     594 </span>            :                 }
+<span class="lineNum">     595 </span>            :         }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span><span class="lineCov">          8 :         message = stasis_message_create(type, payload);</span>
+<span class="lineNum">     598 </span><span class="lineCov">          8 :         if (!message) {</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     600 </span>            :         }
+<span class="lineNum">     601 </span><span class="lineCov">          8 :         stasis_publish(ast_channel_topic(spyer), message);</span>
+<a name="602"><span class="lineNum">     602 </span>            : }</a>
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineCov">        144 : static int attach_barge(struct ast_autochan *spyee_autochan,</span>
+<span class="lineNum">     605 </span>            :         struct ast_autochan **spyee_bridge_autochan, struct ast_audiohook *bridge_whisper_audiohook,
+<span class="lineNum">     606 </span>            :         const char *spyer_name, const char *name, struct ast_flags *flags)
+<span class="lineNum">     607 </span>            : {
+<span class="lineNum">     608 </span><span class="lineCov">        144 :         int retval = 0;</span>
+<a name="609"><span class="lineNum">     609 </span>            :         struct ast_autochan *internal_bridge_autochan;</a>
+<span class="lineNum">     610 </span>            :         struct ast_channel *spyee_chan;
+<span class="lineNum">     611 </span><span class="lineCov">        288 :         RAII_VAR(struct ast_channel *, bridged, NULL, ast_channel_cleanup);</span>
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span><span class="lineCov">        144 :         ast_autochan_channel_lock(spyee_autochan);</span>
+<span class="lineNum">     614 </span><span class="lineCov">        144 :         spyee_chan = ast_channel_ref(spyee_autochan-&gt;chan);</span>
+<span class="lineNum">     615 </span><span class="lineCov">        144 :         ast_autochan_channel_unlock(spyee_autochan);</span>
+<span class="lineNum">     616 </span><span class="lineCov">        144 :         bridged = ast_channel_bridge_peer(spyee_chan);</span>
+<span class="lineNum">     617 </span><span class="lineCov">        144 :         ast_channel_unref(spyee_chan);</span>
+<span class="lineNum">     618 </span><span class="lineCov">        144 :         if (!bridged) {</span>
+<span class="lineNum">     619 </span><span class="lineCov">        144 :                 return -1;</span>
+<span class="lineNum">     620 </span>            :         }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :         ast_audiohook_init(bridge_whisper_audiohook, AST_AUDIOHOOK_TYPE_WHISPER, &quot;Chanspy&quot;, 0);</span>
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :         internal_bridge_autochan = ast_autochan_setup(bridged);</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">          0 :         if (!internal_bridge_autochan) {</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     627 </span>            :         }
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :         if (start_spying(internal_bridge_autochan, spyer_name, bridge_whisper_audiohook, flags)) {</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to attach barge audiohook on spyee '%s'. Barge mode disabled.\n&quot;, name);</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :                 retval = -1;</span>
+<span class="lineNum">     632 </span>            :         }
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         *spyee_bridge_autochan = internal_bridge_autochan;</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :         return retval;</span>
+<a name="637"><span class="lineNum">     637 </span>            : }</a>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">          4 : static int channel_spy(struct ast_channel *chan, struct ast_autochan *spyee_autochan,</span>
+<span class="lineNum">     640 </span>            :         int *volfactor, int fd, struct spy_dtmf_options *user_options, struct ast_flags *flags,
+<span class="lineNum">     641 </span>            :         char *exitcontext)
+<span class="lineNum">     642 </span>            : {
+<span class="lineNum">     643 </span>            :         struct chanspy_translation_helper csth;
+<span class="lineNum">     644 </span><span class="lineCov">          4 :         int running = 0, bridge_connected = 0, res, x = 0;</span>
+<span class="lineNum">     645 </span><span class="lineCov">          4 :         char inp[24] = {0};</span>
+<span class="lineNum">     646 </span>            :         char *name;
+<span class="lineNum">     647 </span>            :         struct ast_frame *f;
+<span class="lineNum">     648 </span><span class="lineCov">          4 :         struct ast_silence_generator *silgen = NULL;</span>
+<span class="lineNum">     649 </span><span class="lineCov">          4 :         struct ast_autochan *spyee_bridge_autochan = NULL;</span>
+<span class="lineNum">     650 </span>            :         const char *spyer_name;
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineCov">          4 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     653 </span><span class="lineCov">          4 :         if (ast_check_hangup(chan)) {</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     656 </span>            :         }
+<span class="lineNum">     657 </span><span class="lineCov">          4 :         spyer_name = ast_strdupa(ast_channel_name(chan));</span>
+<span class="lineNum">     658 </span><span class="lineCov">          4 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     659 </span>            : 
+<span class="lineNum">     660 </span><span class="lineCov">          4 :         ast_autochan_channel_lock(spyee_autochan);</span>
+<span class="lineNum">     661 </span><span class="lineCov">          4 :         if (ast_check_hangup(spyee_autochan-&gt;chan)</span>
+<span class="lineNum">     662 </span><span class="lineCov">          4 :                 || ast_test_flag(ast_channel_flags(spyee_autochan-&gt;chan), AST_FLAG_ZOMBIE)) {</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                 ast_autochan_channel_unlock(spyee_autochan);</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     665 </span>            :         }
+<span class="lineNum">     666 </span><span class="lineCov">          4 :         name = ast_strdupa(ast_channel_name(spyee_autochan-&gt;chan));</span>
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span><span class="lineCov">          4 :         ast_verb(2, &quot;Spying on channel %s\n&quot;, name);</span>
+<span class="lineNum">     669 </span><span class="lineCov">          4 :         publish_chanspy_message(chan, spyee_autochan-&gt;chan, 1);</span>
+<span class="lineNum">     670 </span><span class="lineCov">          4 :         ast_autochan_channel_unlock(spyee_autochan);</span>
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineCov">          4 :         memset(&amp;csth, 0, sizeof(csth));</span>
+<span class="lineNum">     673 </span><span class="lineCov">          4 :         ast_copy_flags(&amp;csth.flags, flags, AST_FLAGS_ALL);</span>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span>            :         /* This is the audiohook which gives us the audio off the channel we are
+<span class="lineNum">     676 </span>            :            spying on.
+<span class="lineNum">     677 </span>            :         */
+<span class="lineNum">     678 </span><span class="lineCov">          4 :         ast_audiohook_init(&amp;csth.spy_audiohook, AST_AUDIOHOOK_TYPE_SPY, &quot;ChanSpy&quot;, 0);</span>
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span><span class="lineCov">          4 :         if (start_spying(spyee_autochan, spyer_name, &amp;csth.spy_audiohook, flags)) {</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                 ast_audiohook_destroy(&amp;csth.spy_audiohook);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     683 </span>            :         }
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineCov">          4 :         if (ast_test_flag(flags, OPTION_WHISPER | OPTION_BARGE | OPTION_DTMF_SWITCH_MODES)) {</span>
+<span class="lineNum">     686 </span>            :                 /* This audiohook will let us inject audio from our channel into the
+<span class="lineNum">     687 </span>            :                    channel we are currently spying on.
+<span class="lineNum">     688 </span>            :                 */
+<span class="lineNum">     689 </span><span class="lineCov">          1 :                 ast_audiohook_init(&amp;csth.whisper_audiohook, AST_AUDIOHOOK_TYPE_WHISPER, &quot;ChanSpy&quot;, 0);</span>
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineCov">          1 :                 if (start_spying(spyee_autochan, spyer_name, &amp;csth.whisper_audiohook, flags)) {</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to attach whisper audiohook to spyee %s. Whisper mode disabled!\n&quot;, name);</span>
+<span class="lineNum">     693 </span>            :                 }
+<span class="lineNum">     694 </span>            :         }
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">          4 :         ast_channel_set_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     697 </span>            : 
+<span class="lineNum">     698 </span><span class="lineCov">          4 :         csth.volfactor = *volfactor;</span>
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineCov">          4 :         if (csth.volfactor) {</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">          0 :                 csth.spy_audiohook.options.read_volume = csth.volfactor;</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :                 csth.spy_audiohook.options.write_volume = csth.volfactor;</span>
+<span class="lineNum">     703 </span>            :         }
+<span class="lineNum">     704 </span>            : 
+<span class="lineNum">     705 </span><span class="lineCov">          4 :         csth.fd = fd;</span>
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span><span class="lineCov">          4 :         if (ast_test_flag(flags, OPTION_PRIVATE))</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :                 silgen = ast_channel_start_silence_generator(chan);</span>
+<span class="lineNum">     709 </span>            :         else
+<span class="lineNum">     710 </span><span class="lineCov">          4 :                 ast_activate_generator(chan, &amp;spygen, &amp;csth);</span>
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span>            :         /* We can no longer rely on 'spyee' being an actual channel;
+<span class="lineNum">     713 </span>            :            it can be hung up and freed out from under us. However, the
+<span class="lineNum">     714 </span>            :            channel destructor will put NULL into our csth.spy.chan
+<span class="lineNum">     715 </span>            :            field when that happens, so that is our signal that the spyee
+<span class="lineNum">     716 </span>            :            channel has gone away.
+<span class="lineNum">     717 </span>            :         */
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span>            :         /* Note: it is very important that the ast_waitfor() be the first
+<span class="lineNum">     720 </span>            :            condition in this expression, so that if we wait for some period
+<span class="lineNum">     721 </span>            :            of time before receiving a frame from our spying channel, we check
+<span class="lineNum">     722 </span>            :            for hangup on the spied-on channel _after_ knowing that a frame
+<span class="lineNum">     723 </span>            :            has arrived, since the spied-on channel could have gone away while
+<span class="lineNum">     724 </span>            :            we were waiting
+<span class="lineNum">     725 </span>            :         */
+<span class="lineNum">     726 </span><span class="lineCov">        493 :         while (ast_waitfor(chan, -1) &gt; -1 &amp;&amp; csth.spy_audiohook.status == AST_AUDIOHOOK_STATUS_RUNNING) {</span>
+<span class="lineNum">     727 </span><span class="lineCov">        489 :                 if (!(f = ast_read(chan)) || ast_check_hangup(chan)) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :                         running = -1;</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 :                         if (f) {</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :                                 ast_frfree(f);</span>
+<span class="lineNum">     731 </span>            :                         }
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     733 </span>            :                 }
+<span class="lineNum">     734 </span>            : 
+<span class="lineNum">     735 </span><span class="lineCov">        489 :                 if (ast_test_flag(flags, OPTION_BARGE) &amp;&amp; f-&gt;frametype == AST_FRAME_VOICE) {</span>
+<span class="lineNum">     736 </span>            :                         /* This hook lets us inject audio into the channel that the spyee is currently
+<span class="lineNum">     737 </span>            :                          * bridged with. If the spyee isn't bridged with anything yet, nothing will
+<span class="lineNum">     738 </span>            :                          * be attached and we'll need to continue attempting to attach the barge
+<span class="lineNum">     739 </span>            :                          * audio hook. */
+<span class="lineNum">     740 </span><span class="lineCov">        144 :                         if (!bridge_connected &amp;&amp; attach_barge(spyee_autochan, &amp;spyee_bridge_autochan,</span>
+<span class="lineNum">     741 </span>            :                                         &amp;csth.bridge_whisper_audiohook, spyer_name, name, flags) == 0) {
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :                                 bridge_connected = 1;</span>
+<span class="lineNum">     743 </span>            :                         }
+<span class="lineNum">     744 </span>            : 
+<span class="lineNum">     745 </span><span class="lineCov">        144 :                         ast_audiohook_lock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     746 </span><span class="lineCov">        144 :                         ast_audiohook_write_frame(&amp;csth.whisper_audiohook, AST_AUDIOHOOK_DIRECTION_WRITE, f);</span>
+<span class="lineNum">     747 </span><span class="lineCov">        144 :                         ast_audiohook_unlock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span><span class="lineCov">        144 :                         if (bridge_connected) {</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :                                 ast_audiohook_lock(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :                                 ast_audiohook_write_frame(&amp;csth.bridge_whisper_audiohook, AST_AUDIOHOOK_DIRECTION_WRITE, f);</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :                                 ast_audiohook_unlock(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     753 </span>            :                         }
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span><span class="lineCov">        144 :                         ast_frfree(f);</span>
+<span class="lineNum">     756 </span><span class="lineCov">        144 :                         continue;</span>
+<span class="lineNum">     757 </span><span class="lineCov">        345 :                 } else if (ast_test_flag(flags, OPTION_WHISPER) &amp;&amp; f-&gt;frametype == AST_FRAME_VOICE) {</span>
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :                         ast_audiohook_lock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :                         ast_audiohook_write_frame(&amp;csth.whisper_audiohook, AST_AUDIOHOOK_DIRECTION_WRITE, f);</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                         ast_audiohook_unlock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :                         ast_frfree(f);</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     763 </span>            :                 }
+<span class="lineNum">     764 </span>            : 
+<span class="lineNum">     765 </span><span class="lineCov">        345 :                 res = (f-&gt;frametype == AST_FRAME_DTMF) ? f-&gt;subclass.integer : 0;</span>
+<span class="lineNum">     766 </span><span class="lineCov">        345 :                 ast_frfree(f);</span>
+<span class="lineNum">     767 </span><span class="lineCov">        345 :                 if (!res)</span>
+<span class="lineNum">     768 </span><span class="lineCov">        345 :                         continue;</span>
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :                 if (x == sizeof(inp))</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                         x = 0;</span>
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span><span class="lineNoCov">          0 :                 if (res &lt; 0) {</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :                         running = -1;</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     776 </span>            :                 }
+<span class="lineNum">     777 </span>            : 
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(flags, OPTION_EXIT)) {</span>
+<span class="lineNum">     779 </span>            :                         char tmp[2];
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 :                         tmp[0] = res;</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 :                         tmp[1] = '\0';</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :                         if (!ast_goto_if_exists(chan, exitcontext, tmp, 1)) {</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;Got DTMF %c, goto context %s\n&quot;, tmp[0], exitcontext);</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                                 pbx_builtin_setvar_helper(chan, &quot;SPY_CHANNEL&quot;, name);</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :                                 running = -2;</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     787 </span>            :                         } else {
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :                                 ast_debug(2, &quot;Exit by single digit did not work in chanspy. Extension %s does not exist in context %s\n&quot;, tmp, exitcontext);</span>
+<span class="lineNum">     789 </span>            :                         }
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                 } else if (res &gt;= '0' &amp;&amp; res &lt;= '9') {</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :                         if (ast_test_flag(flags, OPTION_DTMF_SWITCH_MODES)) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :                                 change_spy_mode(res, flags);</span>
+<span class="lineNum">     793 </span>            :                         } else {
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                                 inp[x++] = res;</span>
+<span class="lineNum">     795 </span>            :                         }
+<span class="lineNum">     796 </span>            :                 }
+<span class="lineNum">     797 </span>            : 
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                 if (res == user_options-&gt;cycle) {</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :                         running = 0;</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">          0 :                 } else if (res == user_options-&gt;exit) {</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :                         running = -2;</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                 } else if (res == user_options-&gt;volume) {</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :                         if (!ast_strlen_zero(inp)) {</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :                                 running = atoi(inp);</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     808 </span>            :                         }
+<span class="lineNum">     809 </span>            : 
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                         (*volfactor)++;</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :                         if (*volfactor &gt; 4)</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                                 *volfactor = -4;</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;Setting spy volume on %s to %d\n&quot;, ast_channel_name(chan), *volfactor);</span>
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 :                         csth.volfactor = *volfactor;</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :                         csth.spy_audiohook.options.read_volume = csth.volfactor;</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                         csth.spy_audiohook.options.write_volume = csth.volfactor;</span>
+<span class="lineNum">     818 </span>            :                 }
+<span class="lineNum">     819 </span>            :         }
+<span class="lineNum">     820 </span>            : 
+<span class="lineNum">     821 </span><span class="lineCov">          4 :         if (ast_test_flag(flags, OPTION_PRIVATE))</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                 ast_channel_stop_silence_generator(chan, silgen);</span>
+<span class="lineNum">     823 </span>            :         else
+<span class="lineNum">     824 </span><span class="lineCov">          4 :                 ast_deactivate_generator(chan);</span>
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span><span class="lineCov">          4 :         ast_channel_clear_flag(chan, AST_FLAG_END_DTMF_ONLY);</span>
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span><span class="lineCov">          4 :         if (ast_test_flag(flags, OPTION_WHISPER | OPTION_BARGE | OPTION_DTMF_SWITCH_MODES)) {</span>
+<span class="lineNum">     829 </span><span class="lineCov">          1 :                 ast_audiohook_lock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     830 </span><span class="lineCov">          1 :                 ast_audiohook_detach(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     831 </span><span class="lineCov">          1 :                 ast_audiohook_unlock(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     832 </span><span class="lineCov">          1 :                 ast_audiohook_destroy(&amp;csth.whisper_audiohook);</span>
+<span class="lineNum">     833 </span>            :         }
+<span class="lineNum">     834 </span>            : 
+<span class="lineNum">     835 </span><span class="lineCov">          4 :         if (ast_test_flag(flags, OPTION_BARGE | OPTION_DTMF_SWITCH_MODES)) {</span>
+<span class="lineNum">     836 </span><span class="lineCov">          1 :                 ast_audiohook_lock(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     837 </span><span class="lineCov">          1 :                 ast_audiohook_detach(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     838 </span><span class="lineCov">          1 :                 ast_audiohook_unlock(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     839 </span><span class="lineCov">          1 :                 ast_audiohook_destroy(&amp;csth.bridge_whisper_audiohook);</span>
+<span class="lineNum">     840 </span>            :         }
+<span class="lineNum">     841 </span>            : 
+<span class="lineNum">     842 </span><span class="lineCov">          4 :         ast_audiohook_lock(&amp;csth.spy_audiohook);</span>
+<span class="lineNum">     843 </span><span class="lineCov">          4 :         ast_audiohook_detach(&amp;csth.spy_audiohook);</span>
+<span class="lineNum">     844 </span><span class="lineCov">          4 :         ast_audiohook_unlock(&amp;csth.spy_audiohook);</span>
+<span class="lineNum">     845 </span><span class="lineCov">          4 :         ast_audiohook_destroy(&amp;csth.spy_audiohook);</span>
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span><span class="lineCov">          4 :         if (spyee_bridge_autochan) {</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">          0 :                 ast_autochan_destroy(spyee_bridge_autochan);</span>
+<span class="lineNum">     849 </span>            :         }
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineCov">          4 :         ast_verb(2, &quot;Done Spying on channel %s\n&quot;, name);</span>
+<span class="lineNum">     852 </span><span class="lineCov">          4 :         publish_chanspy_message(chan, NULL, 0);</span>
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span><span class="lineCov">          4 :         return running;</span>
+<a name="855"><span class="lineNum">     855 </span>            : }</a>
+<span class="lineNum">     856 </span>            : 
+<span class="lineNum">     857 </span><span class="lineCov">         88 : static struct ast_autochan *next_channel(struct ast_channel_iterator *iter,</span>
+<span class="lineNum">     858 </span>            :         struct ast_channel *chan)
+<span class="lineNum">     859 </span>            : {
+<span class="lineNum">     860 </span>            :         struct ast_channel *next;
+<span class="lineNum">     861 </span>            :         struct ast_autochan *autochan_store;
+<span class="lineNum">     862 </span><span class="lineCov">         88 :         const size_t pseudo_len = strlen(&quot;DAHDI/pseudo&quot;);</span>
+<span class="lineNum">     863 </span>            : 
+<span class="lineNum">     864 </span><span class="lineCov">         88 :         if (!iter) {</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     866 </span>            :         }
+<span class="lineNum">     867 </span>            : 
+<span class="lineNum">     868 </span><span class="lineCov">        110 :         for (; (next = ast_channel_iterator_next(iter)); ast_channel_unref(next)) {</span>
+<span class="lineNum">     869 </span><span class="lineCov">         26 :                 if (!strncmp(ast_channel_name(next), &quot;DAHDI/pseudo&quot;, pseudo_len)</span>
+<span class="lineNum">     870 </span><span class="lineCov">         26 :                         || next == chan) {</span>
+<span class="lineNum">     871 </span><span class="lineCov">         22 :                         continue;</span>
+<span class="lineNum">     872 </span>            :                 }
+<span class="lineNum">     873 </span>            : 
+<span class="lineNum">     874 </span><span class="lineCov">          4 :                 autochan_store = ast_autochan_setup(next);</span>
+<span class="lineNum">     875 </span><span class="lineCov">          4 :                 ast_channel_unref(next);</span>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineCov">          4 :                 return autochan_store;</span>
+<span class="lineNum">     878 </span>            :         }
+<span class="lineNum">     879 </span><span class="lineCov">         84 :         return NULL;</span>
+<a name="880"><span class="lineNum">     880 </span>            : }</a>
+<span class="lineNum">     881 </span>            : 
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 : static int spy_sayname(struct ast_channel *chan, const char *mailbox, const char *context)</span>
+<span class="lineNum">     883 </span>            : {
+<span class="lineNum">     884 </span>            :         char *mailbox_id;
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span><span class="lineNoCov">          0 :         mailbox_id = ast_alloca(strlen(mailbox) + strlen(context) + 2);</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :         sprintf(mailbox_id, &quot;%s@%s&quot;, mailbox, context); /* Safe */</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :         return ast_app_sayname(chan, mailbox_id);</span>
+<a name="889"><span class="lineNum">     889 </span>            : }</a>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">          2 : static int common_exec(struct ast_channel *chan, struct ast_flags *flags,</span>
+<span class="lineNum">     892 </span>            :         int volfactor, const int fd, struct spy_dtmf_options *user_options,
+<span class="lineNum">     893 </span>            :         const char *mygroup, const char *myenforced, const char *spec, const char *exten,
+<span class="lineNum">     894 </span>            :         const char *context, const char *mailbox, const char *name_context)
+<span class="lineNum">     895 </span>            : {
+<span class="lineNum">     896 </span>            :         char nameprefix[AST_NAME_STRLEN];
+<span class="lineNum">     897 </span><span class="lineCov">          2 :         char exitcontext[AST_MAX_CONTEXT] = &quot;&quot;;</span>
+<span class="lineNum">     898 </span><span class="lineCov">          2 :         signed char zero_volume = 0;</span>
+<span class="lineNum">     899 </span>            :         int waitms;
+<span class="lineNum">     900 </span>            :         int res;
+<span class="lineNum">     901 </span><span class="lineCov">          2 :         int num_spyed_upon = 1;</span>
+<span class="lineNum">     902 </span><span class="lineCov">          2 :         struct ast_channel_iterator *iter = NULL;</span>
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span><span class="lineCov">          2 :         if (ast_test_flag(flags, OPTION_EXIT)) {</span>
+<span class="lineNum">     905 </span>            :                 const char *c;
+<span class="lineNum">     906 </span><span class="lineNoCov">          0 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :                 if ((c = pbx_builtin_getvar_helper(chan, &quot;SPY_EXIT_CONTEXT&quot;))) {</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">          0 :                         ast_copy_string(exitcontext, c, sizeof(exitcontext));</span>
+<span class="lineNum">     909 </span><span class="lineNoCov">          0 :                 } else if (!ast_strlen_zero(ast_channel_macrocontext(chan))) {</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                         ast_copy_string(exitcontext, ast_channel_macrocontext(chan), sizeof(exitcontext));</span>
+<span class="lineNum">     911 </span>            :                 } else {
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         ast_copy_string(exitcontext, ast_channel_context(chan), sizeof(exitcontext));</span>
+<span class="lineNum">     913 </span>            :                 }
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     915 </span>            :         }
+<span class="lineNum">     916 </span>            : 
+<span class="lineNum">     917 </span><span class="lineCov">          2 :         if (ast_channel_state(chan) != AST_STATE_UP)</span>
+<span class="lineNum">     918 </span><span class="lineCov">          1 :                 ast_answer(chan);</span>
+<span class="lineNum">     919 </span>            : 
+<span class="lineNum">     920 </span><span class="lineCov">          2 :         ast_channel_set_flag(chan, AST_FLAG_SPYING);</span>
+<span class="lineNum">     921 </span>            : 
+<span class="lineNum">     922 </span><span class="lineCov">          2 :         waitms = 100;</span>
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span><span class="lineCov">         84 :         for (;;) {</span>
+<span class="lineNum">     925 </span><span class="lineCov">         86 :                 struct ast_autochan *autochan = NULL, *next_autochan = NULL;</span>
+<span class="lineNum">     926 </span><span class="lineCov">         86 :                 struct ast_channel *prev = NULL;</span>
+<span class="lineNum">     927 </span>            : 
+<span class="lineNum">     928 </span><span class="lineCov">         86 :                 if (!ast_test_flag(flags, OPTION_QUIET) &amp;&amp; num_spyed_upon) {</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">          0 :                         res = ast_streamfile(chan, &quot;beep&quot;, ast_channel_language(chan));</span>
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :                         if (!res)</span>
+<span class="lineNum">     931 </span><span class="lineNoCov">          0 :                                 res = ast_waitstream(chan, &quot;&quot;);</span>
+<span class="lineNum">     932 </span><span class="lineNoCov">          0 :                         else if (res &lt; 0) {</span>
+<span class="lineNum">     933 </span><span class="lineNoCov">          0 :                                 ast_channel_clear_flag(chan, AST_FLAG_SPYING);</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     935 </span>            :                         }
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                         if (!ast_strlen_zero(exitcontext)) {</span>
+<span class="lineNum">     937 </span>            :                                 char tmp[2];
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :                                 tmp[0] = res;</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">          0 :                                 tmp[1] = '\0';</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">          0 :                                 if (!ast_goto_if_exists(chan, exitcontext, tmp, 1))</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">          0 :                                         goto exit;</span>
+<span class="lineNum">     942 </span>            :                                 else
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                                         ast_debug(2, &quot;Exit by single digit did not work in chanspy. Extension %s does not exist in context %s\n&quot;, tmp, exitcontext);</span>
+<span class="lineNum">     944 </span>            :                         }
+<span class="lineNum">     945 </span>            :                 }
+<span class="lineNum">     946 </span>            : 
+<span class="lineNum">     947 </span>            :                 /* Set up the iterator we'll be using during this call */
+<span class="lineNum">     948 </span><span class="lineCov">         86 :                 if (!ast_strlen_zero(spec)) {</span>
+<span class="lineNum">     949 </span><span class="lineCov">         86 :                         if (ast_test_flag(flags, OPTION_UNIQUEID)) {</span>
+<span class="lineNum">     950 </span>            :                                 struct ast_channel *unique_chan;
+<span class="lineNum">     951 </span>            : 
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :                                 unique_chan = ast_channel_get_by_name(spec);</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">          0 :                                 if (!unique_chan) {</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                                         res = -1;</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">          0 :                                         goto exit;</span>
+<span class="lineNum">     956 </span>            :                                 }
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :                                 iter = ast_channel_iterator_by_name_new(ast_channel_name(unique_chan), 0);</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                                 ast_channel_unref(unique_chan);</span>
+<span class="lineNum">     959 </span>            :                         } else {
+<span class="lineNum">     960 </span><span class="lineCov">         86 :                                 iter = ast_channel_iterator_by_name_new(spec, strlen(spec));</span>
+<span class="lineNum">     961 </span>            :                         }
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                 } else if (!ast_strlen_zero(exten)) {</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                         iter = ast_channel_iterator_by_exten_new(exten, context);</span>
+<span class="lineNum">     964 </span>            :                 } else {
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                         iter = ast_channel_iterator_all_new();</span>
+<span class="lineNum">     966 </span>            :                 }
+<span class="lineNum">     967 </span>            : 
+<span class="lineNum">     968 </span><span class="lineCov">         86 :                 if (!iter) {</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         res = -1;</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                         goto exit;</span>
+<span class="lineNum">     971 </span>            :                 }
+<span class="lineNum">     972 </span>            : 
+<span class="lineNum">     973 </span><span class="lineCov">         86 :                 res = ast_waitfordigit(chan, waitms);</span>
+<span class="lineNum">     974 </span><span class="lineCov">         86 :                 if (res &lt; 0) {</span>
+<span class="lineNum">     975 </span><span class="lineCov">          2 :                         iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">     976 </span><span class="lineCov">          2 :                         ast_channel_clear_flag(chan, AST_FLAG_SPYING);</span>
+<span class="lineNum">     977 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     978 </span>            :                 }
+<span class="lineNum">     979 </span><span class="lineCov">         84 :                 if (!ast_strlen_zero(exitcontext)) {</span>
+<span class="lineNum">     980 </span>            :                         char tmp[2];
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                         tmp[0] = res;</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                         tmp[1] = '\0';</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :                         if (!ast_goto_if_exists(chan, exitcontext, tmp, 1)) {</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :                                 iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">     985 </span><span class="lineNoCov">          0 :                                 goto exit;</span>
+<span class="lineNum">     986 </span>            :                         } else {
+<span class="lineNum">     987 </span><span class="lineNoCov">          0 :                                 ast_debug(2, &quot;Exit by single digit did not work in chanspy. Extension %s does not exist in context %s\n&quot;, tmp, exitcontext);</span>
+<span class="lineNum">     988 </span>            :                         }
+<span class="lineNum">     989 </span>            :                 }
+<span class="lineNum">     990 </span>            : 
+<span class="lineNum">     991 </span>            :                 /* reset for the next loop around, unless overridden later */
+<span class="lineNum">     992 </span><span class="lineCov">         84 :                 waitms = 100;</span>
+<span class="lineNum">     993 </span><span class="lineCov">         84 :                 num_spyed_upon = 0;</span>
+<span class="lineNum">     994 </span>            : 
+<span class="lineNum">     995 </span><span class="lineCov">         88 :                 for (autochan = next_channel(iter, chan);</span>
+<span class="lineNum">     996 </span>            :                         autochan;
+<span class="lineNum">     997 </span><span class="lineCov">          4 :                         prev = autochan-&gt;chan,</span>
+<span class="lineNum">     998 </span><span class="lineCov">          4 :                                 ast_autochan_destroy(autochan),</span>
+<span class="lineNum">     999 </span><span class="lineCov">          4 :                                 autochan = next_autochan ?: next_channel(iter, chan),</span>
+<span class="lineNum">    1000 </span><span class="lineCov">          4 :                                 next_autochan = NULL) {</span>
+<span class="lineNum">    1001 </span><span class="lineCov">          4 :                         int igrp = !mygroup;</span>
+<span class="lineNum">    1002 </span><span class="lineCov">          4 :                         int ienf = !myenforced;</span>
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineCov">          4 :                         if (autochan-&gt;chan == prev) {</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">          0 :                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1007 </span>            :                         }
+<span class="lineNum">    1008 </span>            : 
+<span class="lineNum">    1009 </span><span class="lineCov">          4 :                         if (ast_check_hangup(chan)) {</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1012 </span>            :                         }
+<span class="lineNum">    1013 </span>            : 
+<span class="lineNum">    1014 </span><span class="lineCov">          4 :                         ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">    1015 </span><span class="lineCov">          4 :                         if (ast_test_flag(flags, OPTION_BRIDGED)</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :                                 &amp;&amp; !ast_channel_is_bridged(autochan-&gt;chan)) {</span>
+<span class="lineNum">    1017 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1019 </span>            :                         }
+<span class="lineNum">    1020 </span>            : 
+<span class="lineNum">    1021 </span><span class="lineCov">          4 :                         if (ast_check_hangup(autochan-&gt;chan)</span>
+<span class="lineNum">    1022 </span><span class="lineCov">          4 :                                 || ast_test_flag(ast_channel_flags(autochan-&gt;chan), AST_FLAG_SPYING)) {</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1025 </span>            :                         }
+<span class="lineNum">    1026 </span><span class="lineCov">          4 :                         ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span><span class="lineCov">          4 :                         if (mygroup) {</span>
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                                 int num_groups = 0;</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                                 int num_mygroups = 0;</span>
+<span class="lineNum">    1031 </span>            :                                 char dup_group[512];
+<span class="lineNum">    1032 </span>            :                                 char dup_mygroup[512];
+<span class="lineNum">    1033 </span>            :                                 char *groups[NUM_SPYGROUPS];
+<span class="lineNum">    1034 </span>            :                                 char *mygroups[NUM_SPYGROUPS];
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                                 const char *group = NULL;</span>
+<span class="lineNum">    1036 </span>            :                                 int x;
+<span class="lineNum">    1037 </span>            :                                 int y;
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                                 ast_copy_string(dup_mygroup, mygroup, sizeof(dup_mygroup));</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                                 num_mygroups = ast_app_separate_args(dup_mygroup, ':', mygroups,</span>
+<span class="lineNum">    1040 </span>            :                                         ARRAY_LEN(mygroups));
+<span class="lineNum">    1041 </span>            : 
+<span class="lineNum">    1042 </span>            :                                 /* Before dahdi scan was part of chanspy, it would use the &quot;GROUP&quot; variable
+<span class="lineNum">    1043 </span>            :                                  * rather than &quot;SPYGROUP&quot;, this check is done to preserve expected behavior */
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                                 if (ast_test_flag(flags, OPTION_DAHDI_SCAN)) {</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">          0 :                                         group = pbx_builtin_getvar_helper(autochan-&gt;chan, &quot;GROUP&quot;);</span>
+<span class="lineNum">    1047 </span>            :                                 } else {
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 :                                         group = pbx_builtin_getvar_helper(autochan-&gt;chan, &quot;SPYGROUP&quot;);</span>
+<span class="lineNum">    1049 </span>            :                                 }
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1051 </span>            : 
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 :                                 if (!ast_strlen_zero(group)) {</span>
+<span class="lineNum">    1053 </span><span class="lineNoCov">          0 :                                         ast_copy_string(dup_group, group, sizeof(dup_group));</span>
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :                                         num_groups = ast_app_separate_args(dup_group, ':', groups,</span>
+<span class="lineNum">    1055 </span>            :                                                 ARRAY_LEN(groups));
+<span class="lineNum">    1056 </span>            :                                 }
+<span class="lineNum">    1057 </span>            : 
+<span class="lineNum">    1058 </span><span class="lineNoCov">          0 :                                 for (y = 0; y &lt; num_mygroups; y++) {</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                                         for (x = 0; x &lt; num_groups; x++) {</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :                                                 if (!strcmp(mygroups[y], groups[x])) {</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                                                         igrp = 1;</span>
+<span class="lineNum">    1062 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">    1063 </span>            :                                                 }
+<span class="lineNum">    1064 </span>            :                                         }
+<span class="lineNum">    1065 </span>            :                                 }
+<span class="lineNum">    1066 </span>            :                         }
+<span class="lineNum">    1067 </span>            : 
+<span class="lineNum">    1068 </span><span class="lineCov">          4 :                         if (!igrp) {</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1070 </span>            :                         }
+<span class="lineNum">    1071 </span><span class="lineCov">          4 :                         if (myenforced) {</span>
+<span class="lineNum">    1072 </span>            :                                 char ext[AST_CHANNEL_NAME + 3];
+<span class="lineNum">    1073 </span>            :                                 char buffer[512];
+<span class="lineNum">    1074 </span>            :                                 char *end;
+<span class="lineNum">    1075 </span>            : 
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                                 snprintf(buffer, sizeof(buffer) - 1, &quot;:%s:&quot;, myenforced);</span>
+<span class="lineNum">    1077 </span>            : 
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :                                 ast_copy_string(ext + 1, ast_channel_name(autochan-&gt;chan), sizeof(ext) - 1);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                                 if ((end = strchr(ext, '-'))) {</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                                         *end++ = ':';</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">          0 :                                         *end = '\0';</span>
+<span class="lineNum">    1084 </span>            :                                 }
+<span class="lineNum">    1085 </span>            : 
+<span class="lineNum">    1086 </span><span class="lineNoCov">          0 :                                 ext[0] = ':';</span>
+<span class="lineNum">    1087 </span>            : 
+<span class="lineNum">    1088 </span><span class="lineNoCov">          0 :                                 if (strcasestr(buffer, ext)) {</span>
+<span class="lineNum">    1089 </span><span class="lineNoCov">          0 :                                         ienf = 1;</span>
+<span class="lineNum">    1090 </span>            :                                 }
+<span class="lineNum">    1091 </span>            :                         }
+<span class="lineNum">    1092 </span>            : 
+<span class="lineNum">    1093 </span><span class="lineCov">          4 :                         if (!ienf) {</span>
+<span class="lineNum">    1094 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1095 </span>            :                         }
+<span class="lineNum">    1096 </span>            : 
+<span class="lineNum">    1097 </span><span class="lineCov">          4 :                         if (!ast_test_flag(flags, OPTION_QUIET)) {</span>
+<span class="lineNum">    1098 </span>            :                                 char peer_name[AST_NAME_STRLEN + 5];
+<span class="lineNum">    1099 </span>            :                                 char *ptr, *s;
+<span class="lineNum">    1100 </span>            : 
+<span class="lineNum">    1101 </span><span class="lineNoCov">          0 :                                 strcpy(peer_name, &quot;spy-&quot;);</span>
+<span class="lineNum">    1102 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :                                 strncat(peer_name, ast_channel_name(autochan-&gt;chan), AST_NAME_STRLEN - 4 - 1);</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :                                 ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">          0 :                                 if ((ptr = strchr(peer_name, '/'))) {</span>
+<span class="lineNum">    1106 </span><span class="lineNoCov">          0 :                                         *ptr++ = '\0';</span>
+<span class="lineNum">    1107 </span><span class="lineNoCov">          0 :                                         for (s = peer_name; s &lt; ptr; s++) {</span>
+<span class="lineNum">    1108 </span><span class="lineNoCov">          0 :                                                 *s = tolower(*s);</span>
+<span class="lineNum">    1109 </span>            :                                         }
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 :                                         if ((s = strchr(ptr, '-'))) {</span>
+<span class="lineNum">    1111 </span><span class="lineNoCov">          0 :                                                 *s = '\0';</span>
+<span class="lineNum">    1112 </span>            :                                         }
+<span class="lineNum">    1113 </span>            :                                 }
+<span class="lineNum">    1114 </span>            : 
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                                 if (ast_test_flag(flags, OPTION_NAME)) {</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">          0 :                                         const char *local_context = S_OR(name_context, &quot;default&quot;);</span>
+<span class="lineNum">    1117 </span><span class="lineNoCov">          0 :                                         const char *local_mailbox = S_OR(mailbox, ptr);</span>
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span><span class="lineNoCov">          0 :                                         if (local_mailbox) {</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :                                                 res = spy_sayname(chan, local_mailbox, local_context);</span>
+<span class="lineNum">    1121 </span>            :                                         } else {
+<span class="lineNum">    1122 </span><span class="lineNoCov">          0 :                                                 res = -1;</span>
+<span class="lineNum">    1123 </span>            :                                         }
+<span class="lineNum">    1124 </span>            :                                 }
+<span class="lineNum">    1125 </span><span class="lineNoCov">          0 :                                 if (!ast_test_flag(flags, OPTION_NAME) || res &lt; 0) {</span>
+<span class="lineNum">    1126 </span>            :                                         int num;
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                                         if (!ast_test_flag(flags, OPTION_NOTECH)) {</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :                                                 if (ast_fileexists(peer_name, NULL, NULL) &gt; 0) {</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                                                         res = ast_streamfile(chan, peer_name, ast_channel_language(chan));</span>
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 :                                                         if (!res) {</span>
+<span class="lineNum">    1131 </span><span class="lineNoCov">          0 :                                                                 res = ast_waitstream(chan, &quot;&quot;);</span>
+<span class="lineNum">    1132 </span>            :                                                         }
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :                                                         if (res) {</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">          0 :                                                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1135 </span><span class="lineNoCov">          0 :                                                                 break;</span>
+<span class="lineNum">    1136 </span>            :                                                         }
+<span class="lineNum">    1137 </span>            :                                                 } else {
+<span class="lineNum">    1138 </span><span class="lineNoCov">          0 :                                                         res = ast_say_character_str(chan, peer_name, &quot;&quot;, ast_channel_language(chan), AST_SAY_CASE_NONE);</span>
+<span class="lineNum">    1139 </span>            :                                                 }
+<span class="lineNum">    1140 </span>            :                                         }
+<span class="lineNum">    1141 </span><span class="lineNoCov">          0 :                                         if (ptr &amp;&amp; (num = atoi(ptr))) {</span>
+<span class="lineNum">    1142 </span><span class="lineNoCov">          0 :                                                 ast_say_digits(chan, num, &quot;&quot;, ast_channel_language(chan));</span>
+<span class="lineNum">    1143 </span>            :                                         }
+<span class="lineNum">    1144 </span>            :                                 }
+<span class="lineNum">    1145 </span>            :                         }
+<span class="lineNum">    1146 </span>            : 
+<span class="lineNum">    1147 </span><span class="lineCov">          4 :                         res = channel_spy(chan, autochan, &amp;volfactor, fd, user_options, flags, exitcontext);</span>
+<span class="lineNum">    1148 </span><span class="lineCov">          4 :                         num_spyed_upon++;</span>
+<span class="lineNum">    1149 </span>            : 
+<span class="lineNum">    1150 </span><span class="lineCov">          4 :                         if (res == -1) {</span>
+<span class="lineNum">    1151 </span><span class="lineNoCov">          0 :                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1152 </span><span class="lineNoCov">          0 :                                 iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">    1153 </span><span class="lineNoCov">          0 :                                 goto exit;</span>
+<span class="lineNum">    1154 </span><span class="lineCov">          4 :                         } else if (res == -2) {</span>
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :                                 res = 0;</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">          0 :                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1157 </span><span class="lineNoCov">          0 :                                 iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">    1158 </span><span class="lineNoCov">          0 :                                 goto exit;</span>
+<span class="lineNum">    1159 </span><span class="lineCov">          4 :                         } else if (res &gt; 1 &amp;&amp; spec &amp;&amp; !ast_test_flag(flags, OPTION_UNIQUEID)) {</span>
+<span class="lineNum">    1160 </span>            :                                 struct ast_channel *next;
+<span class="lineNum">    1161 </span>            : 
+<span class="lineNum">    1162 </span><span class="lineNoCov">          0 :                                 snprintf(nameprefix, AST_NAME_STRLEN, &quot;%s/%d&quot;, spec, res);</span>
+<span class="lineNum">    1163 </span>            : 
+<span class="lineNum">    1164 </span><span class="lineNoCov">          0 :                                 if ((next = ast_channel_get_by_name_prefix(nameprefix, strlen(nameprefix)))) {</span>
+<span class="lineNum">    1165 </span><span class="lineNoCov">          0 :                                         next_autochan = ast_autochan_setup(next);</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :                                         next = ast_channel_unref(next);</span>
+<span class="lineNum">    1167 </span>            :                                 } else {
+<span class="lineNum">    1168 </span>            :                                         /* stay on this channel, if it is still valid */
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                                         ast_autochan_channel_lock(autochan);</span>
+<span class="lineNum">    1170 </span><span class="lineNoCov">          0 :                                         if (!ast_check_hangup(autochan-&gt;chan)) {</span>
+<span class="lineNum">    1171 </span><span class="lineNoCov">          0 :                                                 next_autochan = ast_autochan_setup(autochan-&gt;chan);</span>
+<span class="lineNum">    1172 </span>            :                                         } else {
+<span class="lineNum">    1173 </span>            :                                                 /* the channel is gone */
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :                                                 next_autochan = NULL;</span>
+<span class="lineNum">    1175 </span>            :                                         }
+<span class="lineNum">    1176 </span><span class="lineNoCov">          0 :                                         ast_autochan_channel_unlock(autochan);</span>
+<span class="lineNum">    1177 </span>            :                                 }
+<span class="lineNum">    1178 </span><span class="lineCov">          4 :                         } else if (res == 0 &amp;&amp; ast_test_flag(flags, OPTION_EXITONHANGUP)) {</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :                                 ast_autochan_destroy(autochan);</span>
+<span class="lineNum">    1180 </span><span class="lineNoCov">          0 :                                 iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">    1181 </span><span class="lineNoCov">          0 :                                 goto exit;</span>
+<span class="lineNum">    1182 </span>            :                         }
+<span class="lineNum">    1183 </span>            :                 }
+<span class="lineNum">    1184 </span>            : 
+<span class="lineNum">    1185 </span><span class="lineCov">         84 :                 iter = ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">    1186 </span>            : 
+<span class="lineNum">    1187 </span><span class="lineCov">         84 :                 if (res == -1 || ast_check_hangup(chan))</span>
+<span class="lineNum">    1188 </span>            :                         break;
+<span class="lineNum">    1189 </span><span class="lineCov">         84 :                 if (ast_test_flag(flags, OPTION_STOP) &amp;&amp; !next_autochan) {</span>
+<span class="lineNum">    1190 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1191 </span>            :                 }
+<span class="lineNum">    1192 </span>            :         }
+<span class="lineNum">    1193 </span><span class="lineNoCov">          0 : exit:</span>
+<span class="lineNum">    1194 </span>            : 
+<span class="lineNum">    1195 </span><span class="lineCov">          2 :         ast_channel_clear_flag(chan, AST_FLAG_SPYING);</span>
+<span class="lineNum">    1196 </span>            : 
+<span class="lineNum">    1197 </span><span class="lineCov">          2 :         ast_channel_setoption(chan, AST_OPTION_TXGAIN, &amp;zero_volume, sizeof(zero_volume), 0);</span>
+<span class="lineNum">    1198 </span>            : 
+<span class="lineNum">    1199 </span><span class="lineCov">          2 :         return res;</span>
+<a name="1200"><span class="lineNum">    1200 </span>            : }</a>
+<span class="lineNum">    1201 </span>            : 
+<span class="lineNum">    1202 </span><span class="lineCov">          2 : static int chanspy_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">    1203 </span>            : {
+<span class="lineNum">    1204 </span><span class="lineCov">          2 :         char *myenforced = NULL;</span>
+<span class="lineNum">    1205 </span><span class="lineCov">          2 :         char *mygroup = NULL;</span>
+<span class="lineNum">    1206 </span><span class="lineCov">          2 :         char *recbase = NULL;</span>
+<span class="lineNum">    1207 </span><span class="lineCov">          2 :         int fd = 0;</span>
+<span class="lineNum">    1208 </span>            :         struct ast_flags flags;
+<span class="lineNum">    1209 </span><span class="lineCov">          2 :         struct spy_dtmf_options user_options = {</span>
+<span class="lineNum">    1210 </span>            :                 .cycle = '*',
+<span class="lineNum">    1211 </span>            :                 .volume = '#',
+<a name="1212"><span class="lineNum">    1212 </span>            :                 .exit = '\0',</a>
+<span class="lineNum">    1213 </span>            :         };
+<span class="lineNum">    1214 </span><span class="lineCov">          4 :         RAII_VAR(struct ast_format *, oldwf, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1215 </span><span class="lineCov">          2 :         int volfactor = 0;</span>
+<span class="lineNum">    1216 </span>            :         int res;
+<span class="lineNum">    1217 </span><span class="lineCov">          2 :         char *mailbox = NULL;</span>
+<span class="lineNum">    1218 </span><span class="lineCov">          2 :         char *name_context = NULL;</span>
+<span class="lineNum">    1219 </span><span class="lineCov">          2 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">    1220 </span>            :                 AST_APP_ARG(spec);
+<span class="lineNum">    1221 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">    1222 </span>            :         );
+<span class="lineNum">    1223 </span>            :         char *opts[OPT_ARG_ARRAY_SIZE];
+<span class="lineNum">    1224 </span><span class="lineCov">          2 :         char *parse = ast_strdupa(data);</span>
+<span class="lineNum">    1225 </span>            : 
+<span class="lineNum">    1226 </span><span class="lineCov">          2 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">    1227 </span>            : 
+<span class="lineNum">    1228 </span><span class="lineCov">          2 :         if (args.spec &amp;&amp; !strcmp(args.spec, &quot;all&quot;))</span>
+<span class="lineNum">    1229 </span><span class="lineNoCov">          0 :                 args.spec = NULL;</span>
+<span class="lineNum">    1230 </span>            : 
+<span class="lineNum">    1231 </span><span class="lineCov">          2 :         if (args.options) {</span>
+<span class="lineNum">    1232 </span>            :                 char tmp;
+<span class="lineNum">    1233 </span><span class="lineCov">          2 :                 ast_app_parse_options(spy_opts, &amp;flags, opts, args.options);</span>
+<span class="lineNum">    1234 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_GROUP))</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">          0 :                         mygroup = opts[OPT_ARG_GROUP];</span>
+<span class="lineNum">    1236 </span>            : 
+<span class="lineNum">    1237 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_RECORD) &amp;&amp;</span>
+<span class="lineNum">    1238 </span><span class="lineNoCov">          0 :                         !(recbase = opts[OPT_ARG_RECORD]))</span>
+<span class="lineNum">    1239 </span><span class="lineNoCov">          0 :                         recbase = &quot;chanspy&quot;;</span>
+<span class="lineNum">    1240 </span>            : 
+<span class="lineNum">    1241 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_DTMF_EXIT) &amp;&amp; opts[OPT_ARG_EXIT]) {</span>
+<span class="lineNum">    1242 </span><span class="lineNoCov">          0 :                         tmp = opts[OPT_ARG_EXIT][0];</span>
+<span class="lineNum">    1243 </span><span class="lineNoCov">          0 :                         if (strchr(&quot;0123456789*#&quot;, tmp) &amp;&amp; tmp != '\0') {</span>
+<span class="lineNum">    1244 </span><span class="lineNoCov">          0 :                                 user_options.exit = tmp;</span>
+<span class="lineNum">    1245 </span>            :                         } else {
+<span class="lineNum">    1246 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Argument for option 'x' must be a valid DTMF digit.\n&quot;);</span>
+<span class="lineNum">    1247 </span>            :                         }
+<span class="lineNum">    1248 </span>            :                 }
+<span class="lineNum">    1249 </span>            : 
+<span class="lineNum">    1250 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_DTMF_CYCLE) &amp;&amp; opts[OPT_ARG_CYCLE]) {</span>
+<span class="lineNum">    1251 </span><span class="lineNoCov">          0 :                         tmp = opts[OPT_ARG_CYCLE][0];</span>
+<span class="lineNum">    1252 </span><span class="lineNoCov">          0 :                         if (strchr(&quot;0123456789*#&quot;, tmp) &amp;&amp; tmp != '\0') {</span>
+<span class="lineNum">    1253 </span><span class="lineNoCov">          0 :                                 user_options.cycle = tmp;</span>
+<span class="lineNum">    1254 </span>            :                         } else {
+<span class="lineNum">    1255 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Argument for option 'c' must be a valid DTMF digit.\n&quot;);</span>
+<span class="lineNum">    1256 </span>            :                         }
+<span class="lineNum">    1257 </span>            :                 }
+<span class="lineNum">    1258 </span>            : 
+<span class="lineNum">    1259 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_VOLUME) &amp;&amp; opts[OPT_ARG_VOLUME]) {</span>
+<span class="lineNum">    1260 </span>            :                         int vol;
+<span class="lineNum">    1261 </span>            : 
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :                         if ((sscanf(opts[OPT_ARG_VOLUME], &quot;%30d&quot;, &amp;vol) != 1) || (vol &gt; 4) || (vol &lt; -4))</span>
+<span class="lineNum">    1263 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Volume factor must be a number between -4 and 4\n&quot;);</span>
+<span class="lineNum">    1264 </span>            :                         else
+<span class="lineNum">    1265 </span><span class="lineNoCov">          0 :                                 volfactor = vol;</span>
+<span class="lineNum">    1266 </span>            :                 }
+<span class="lineNum">    1267 </span>            : 
+<span class="lineNum">    1268 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_PRIVATE))</span>
+<span class="lineNum">    1269 </span><span class="lineNoCov">          0 :                         ast_set_flag(&amp;flags, OPTION_WHISPER);</span>
+<span class="lineNum">    1270 </span>            : 
+<span class="lineNum">    1271 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_ENFORCED))</span>
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :                         myenforced = opts[OPT_ARG_ENFORCED];</span>
+<span class="lineNum">    1273 </span>            : 
+<span class="lineNum">    1274 </span><span class="lineCov">          2 :                 if (ast_test_flag(&amp;flags, OPTION_NAME)) {</span>
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :                         if (!ast_strlen_zero(opts[OPT_ARG_NAME])) {</span>
+<span class="lineNum">    1276 </span>            :                                 char *delimiter;
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                                 if ((delimiter = strchr(opts[OPT_ARG_NAME], '@'))) {</span>
+<span class="lineNum">    1278 </span><span class="lineNoCov">          0 :                                         mailbox = opts[OPT_ARG_NAME];</span>
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :                                         *delimiter++ = '\0';</span>
+<span class="lineNum">    1280 </span><span class="lineNoCov">          0 :                                         name_context = delimiter;</span>
+<span class="lineNum">    1281 </span>            :                                 } else {
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                                         mailbox = opts[OPT_ARG_NAME];</span>
+<span class="lineNum">    1283 </span>            :                                 }
+<span class="lineNum">    1284 </span>            :                         }
+<span class="lineNum">    1285 </span>            :                 }
+<span class="lineNum">    1286 </span>            :         } else {
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                 ast_clear_flag(&amp;flags, AST_FLAGS_ALL);</span>
+<span class="lineNum">    1288 </span>            :         }
+<span class="lineNum">    1289 </span>            : 
+<span class="lineNum">    1290 </span><span class="lineCov">          2 :         oldwf = ao2_bump(ast_channel_writeformat(chan));</span>
+<span class="lineNum">    1291 </span><span class="lineCov">          2 :         if (ast_set_write_format(chan, ast_format_slin) &lt; 0) {</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1294 </span>            :         }
+<span class="lineNum">    1295 </span>            : 
+<span class="lineNum">    1296 </span><span class="lineCov">          2 :         if (recbase) {</span>
+<span class="lineNum">    1297 </span>            :                 char filename[PATH_MAX];
+<span class="lineNum">    1298 </span>            : 
+<span class="lineNum">    1299 </span><span class="lineNoCov">          0 :                 snprintf(filename, sizeof(filename), &quot;%s/%s.%d.raw&quot;, ast_config_AST_MONITOR_DIR, recbase, (int) time(NULL));</span>
+<span class="lineNum">    1300 </span><span class="lineNoCov">          0 :                 if ((fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, AST_FILE_MODE)) &lt;= 0) {</span>
+<span class="lineNum">    1301 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Cannot open '%s' for recording\n&quot;, filename);</span>
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :                         fd = 0;</span>
+<span class="lineNum">    1303 </span>            :                 }
+<span class="lineNum">    1304 </span>            :         }
+<span class="lineNum">    1305 </span>            : 
+<span class="lineNum">    1306 </span><span class="lineCov">          2 :         res = common_exec(chan, &amp;flags, volfactor, fd, &amp;user_options, mygroup, myenforced, args.spec, NULL, NULL, mailbox, name_context);</span>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineCov">          2 :         if (fd)</span>
+<span class="lineNum">    1309 </span><span class="lineNoCov">          0 :                 close(fd);</span>
+<span class="lineNum">    1310 </span>            : 
+<span class="lineNum">    1311 </span><span class="lineCov">          2 :         if (oldwf &amp;&amp; ast_set_write_format(chan, oldwf) &lt; 0)</span>
+<span class="lineNum">    1312 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1313 </span>            : 
+<span class="lineNum">    1314 </span><span class="lineCov">          2 :         if (ast_test_flag(&amp;flags, OPTION_EXITONHANGUP)) {</span>
+<span class="lineNum">    1315 </span><span class="lineNoCov">          0 :                 ast_verb(3, &quot;Stopped spying due to the spied-on channel hanging up.\n&quot;);</span>
+<span class="lineNum">    1316 </span>            :         }
+<span class="lineNum">    1317 </span>            : 
+<span class="lineNum">    1318 </span><span class="lineCov">          2 :         return res;</span>
+<a name="1319"><span class="lineNum">    1319 </span>            : }</a>
+<span class="lineNum">    1320 </span>            : 
+<span class="lineNum">    1321 </span><span class="lineNoCov">          0 : static int extenspy_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">    1322 </span>            : {
+<span class="lineNum">    1323 </span><span class="lineNoCov">          0 :         char *ptr, *exten = NULL;</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">          0 :         char *mygroup = NULL;</span>
+<span class="lineNum">    1325 </span><span class="lineNoCov">          0 :         char *recbase = NULL;</span>
+<span class="lineNum">    1326 </span><span class="lineNoCov">          0 :         int fd = 0;</span>
+<span class="lineNum">    1327 </span>            :         struct ast_flags flags;
+<span class="lineNum">    1328 </span><span class="lineNoCov">          0 :         struct spy_dtmf_options user_options = {</span>
+<span class="lineNum">    1329 </span>            :                 .cycle = '*',
+<span class="lineNum">    1330 </span>            :                 .volume = '#',
+<a name="1331"><span class="lineNum">    1331 </span>            :                 .exit = '\0',</a>
+<span class="lineNum">    1332 </span>            :         };
+<span class="lineNum">    1333 </span><span class="lineNoCov">          0 :         RAII_VAR(struct ast_format *, oldwf, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1334 </span><span class="lineNoCov">          0 :         int volfactor = 0;</span>
+<span class="lineNum">    1335 </span>            :         int res;
+<span class="lineNum">    1336 </span><span class="lineNoCov">          0 :         char *mailbox = NULL;</span>
+<span class="lineNum">    1337 </span><span class="lineNoCov">          0 :         char *name_context = NULL;</span>
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">    1339 </span>            :                 AST_APP_ARG(context);
+<span class="lineNum">    1340 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">    1341 </span>            :         );
+<span class="lineNum">    1342 </span><span class="lineNoCov">          0 :         char *parse = ast_strdupa(data);</span>
+<span class="lineNum">    1343 </span>            : 
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">    1345 </span>            : 
+<span class="lineNum">    1346 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(args.context) &amp;&amp; (ptr = strchr(args.context, '@'))) {</span>
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 :                 exten = args.context;</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">          0 :                 *ptr++ = '\0';</span>
+<span class="lineNum">    1349 </span><span class="lineNoCov">          0 :                 args.context = ptr;</span>
+<span class="lineNum">    1350 </span>            :         }
+<span class="lineNum">    1351 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(args.context))</span>
+<span class="lineNum">    1352 </span><span class="lineNoCov">          0 :                 args.context = ast_strdupa(ast_channel_context(chan));</span>
+<span class="lineNum">    1353 </span>            : 
+<span class="lineNum">    1354 </span><span class="lineNoCov">          0 :         if (args.options) {</span>
+<span class="lineNum">    1355 </span>            :                 char *opts[OPT_ARG_ARRAY_SIZE];
+<span class="lineNum">    1356 </span>            :                 char tmp;
+<span class="lineNum">    1357 </span>            : 
+<span class="lineNum">    1358 </span><span class="lineNoCov">          0 :                 ast_app_parse_options(spy_opts, &amp;flags, opts, args.options);</span>
+<span class="lineNum">    1359 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_GROUP))</span>
+<span class="lineNum">    1360 </span><span class="lineNoCov">          0 :                         mygroup = opts[OPT_ARG_GROUP];</span>
+<span class="lineNum">    1361 </span>            : 
+<span class="lineNum">    1362 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_RECORD) &amp;&amp;</span>
+<span class="lineNum">    1363 </span><span class="lineNoCov">          0 :                         !(recbase = opts[OPT_ARG_RECORD]))</span>
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :                         recbase = &quot;chanspy&quot;;</span>
+<span class="lineNum">    1365 </span>            : 
+<span class="lineNum">    1366 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_DTMF_EXIT) &amp;&amp; opts[OPT_ARG_EXIT]) {</span>
+<span class="lineNum">    1367 </span><span class="lineNoCov">          0 :                         tmp = opts[OPT_ARG_EXIT][0];</span>
+<span class="lineNum">    1368 </span><span class="lineNoCov">          0 :                         if (strchr(&quot;0123456789*#&quot;, tmp) &amp;&amp; tmp != '\0') {</span>
+<span class="lineNum">    1369 </span><span class="lineNoCov">          0 :                                 user_options.exit = tmp;</span>
+<span class="lineNum">    1370 </span>            :                         } else {
+<span class="lineNum">    1371 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Argument for option 'x' must be a valid DTMF digit.\n&quot;);</span>
+<span class="lineNum">    1372 </span>            :                         }
+<span class="lineNum">    1373 </span>            :                 }
+<span class="lineNum">    1374 </span>            : 
+<span class="lineNum">    1375 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_DTMF_CYCLE) &amp;&amp; opts[OPT_ARG_CYCLE]) {</span>
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :                         tmp = opts[OPT_ARG_CYCLE][0];</span>
+<span class="lineNum">    1377 </span><span class="lineNoCov">          0 :                         if (strchr(&quot;0123456789*#&quot;, tmp) &amp;&amp; tmp != '\0') {</span>
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :                                 user_options.cycle = tmp;</span>
+<span class="lineNum">    1379 </span>            :                         } else {
+<span class="lineNum">    1380 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Argument for option 'c' must be a valid DTMF digit.\n&quot;);</span>
+<span class="lineNum">    1381 </span>            :                         }
+<span class="lineNum">    1382 </span>            :                 }
+<span class="lineNum">    1383 </span>            : 
+<span class="lineNum">    1384 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_VOLUME) &amp;&amp; opts[OPT_ARG_VOLUME]) {</span>
+<span class="lineNum">    1385 </span>            :                         int vol;
+<span class="lineNum">    1386 </span>            : 
+<span class="lineNum">    1387 </span><span class="lineNoCov">          0 :                         if ((sscanf(opts[OPT_ARG_VOLUME], &quot;%30d&quot;, &amp;vol) != 1) || (vol &gt; 4) || (vol &lt; -4))</span>
+<span class="lineNum">    1388 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;Volume factor must be a number between -4 and 4\n&quot;);</span>
+<span class="lineNum">    1389 </span>            :                         else
+<span class="lineNum">    1390 </span><span class="lineNoCov">          0 :                                 volfactor = vol;</span>
+<span class="lineNum">    1391 </span>            :                 }
+<span class="lineNum">    1392 </span>            : 
+<span class="lineNum">    1393 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_PRIVATE))</span>
+<span class="lineNum">    1394 </span><span class="lineNoCov">          0 :                         ast_set_flag(&amp;flags, OPTION_WHISPER);</span>
+<span class="lineNum">    1395 </span>            : 
+<span class="lineNum">    1396 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags, OPTION_NAME)) {</span>
+<span class="lineNum">    1397 </span><span class="lineNoCov">          0 :                         if (!ast_strlen_zero(opts[OPT_ARG_NAME])) {</span>
+<span class="lineNum">    1398 </span>            :                                 char *delimiter;
+<span class="lineNum">    1399 </span><span class="lineNoCov">          0 :                                 if ((delimiter = strchr(opts[OPT_ARG_NAME], '@'))) {</span>
+<span class="lineNum">    1400 </span><span class="lineNoCov">          0 :                                         mailbox = opts[OPT_ARG_NAME];</span>
+<span class="lineNum">    1401 </span><span class="lineNoCov">          0 :                                         *delimiter++ = '\0';</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">          0 :                                         name_context = delimiter;</span>
+<span class="lineNum">    1403 </span>            :                                 } else {
+<span class="lineNum">    1404 </span><span class="lineNoCov">          0 :                                         mailbox = opts[OPT_ARG_NAME];</span>
+<span class="lineNum">    1405 </span>            :                                 }
+<span class="lineNum">    1406 </span>            :                         }
+<span class="lineNum">    1407 </span>            :                 }
+<span class="lineNum">    1408 </span>            : 
+<span class="lineNum">    1409 </span>            :         } else {
+<span class="lineNum">    1410 </span>            :                 /* Coverity - This uninit_use should be ignored since this macro initializes the flags */
+<span class="lineNum">    1411 </span><span class="lineNoCov">          0 :                 ast_clear_flag(&amp;flags, AST_FLAGS_ALL);</span>
+<span class="lineNum">    1412 </span>            :         }
+<span class="lineNum">    1413 </span>            : 
+<span class="lineNum">    1414 </span><span class="lineNoCov">          0 :         oldwf = ao2_bump(ast_channel_writeformat(chan));</span>
+<span class="lineNum">    1415 </span><span class="lineNoCov">          0 :         if (ast_set_write_format(chan, ast_format_slin) &lt; 0) {</span>
+<span class="lineNum">    1416 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1417 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1418 </span>            :         }
+<span class="lineNum">    1419 </span>            : 
+<span class="lineNum">    1420 </span><span class="lineNoCov">          0 :         if (recbase) {</span>
+<span class="lineNum">    1421 </span>            :                 char filename[PATH_MAX];
+<span class="lineNum">    1422 </span>            : 
+<span class="lineNum">    1423 </span><span class="lineNoCov">          0 :                 snprintf(filename, sizeof(filename), &quot;%s/%s.%d.raw&quot;, ast_config_AST_MONITOR_DIR, recbase, (int) time(NULL));</span>
+<span class="lineNum">    1424 </span><span class="lineNoCov">          0 :                 if ((fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, AST_FILE_MODE)) &lt;= 0) {</span>
+<span class="lineNum">    1425 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Cannot open '%s' for recording\n&quot;, filename);</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">          0 :                         fd = 0;</span>
+<span class="lineNum">    1427 </span>            :                 }
+<span class="lineNum">    1428 </span>            :         }
+<span class="lineNum">    1429 </span>            : 
+<span class="lineNum">    1430 </span>            : 
+<span class="lineNum">    1431 </span><span class="lineNoCov">          0 :         res = common_exec(chan, &amp;flags, volfactor, fd, &amp;user_options, mygroup, NULL, NULL, exten, args.context, mailbox, name_context);</span>
+<span class="lineNum">    1432 </span>            : 
+<span class="lineNum">    1433 </span><span class="lineNoCov">          0 :         if (fd)</span>
+<span class="lineNum">    1434 </span><span class="lineNoCov">          0 :                 close(fd);</span>
+<span class="lineNum">    1435 </span>            : 
+<span class="lineNum">    1436 </span><span class="lineNoCov">          0 :         if (oldwf &amp;&amp; ast_set_write_format(chan, oldwf) &lt; 0)</span>
+<span class="lineNum">    1437 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1438 </span>            : 
+<span class="lineNum">    1439 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="1440"><span class="lineNum">    1440 </span>            : }</a>
+<span class="lineNum">    1441 </span>            : 
+<span class="lineNum">    1442 </span><span class="lineNoCov">          0 : static int dahdiscan_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">    1443 </span>            : {
+<span class="lineNum">    1444 </span><span class="lineNoCov">          0 :         const char *spec = &quot;DAHDI&quot;;</span>
+<span class="lineNum">    1445 </span><span class="lineNoCov">          0 :         struct ast_flags flags = {0};</span>
+<span class="lineNum">    1446 </span><span class="lineNoCov">          0 :         struct spy_dtmf_options user_options = {</span>
+<span class="lineNum">    1447 </span>            :                 .cycle = '#',
+<span class="lineNum">    1448 </span>            :                 .volume = '\0',
+<span class="lineNum">    1449 </span>            :                 .exit = '*',
+<span class="lineNum">    1450 </span>            :         };
+<span class="lineNum">    1451 </span>            :         struct ast_format *oldwf;
+<span class="lineNum">    1452 </span>            :         int res;
+<span class="lineNum">    1453 </span><span class="lineNoCov">          0 :         char *mygroup = NULL;</span>
+<span class="lineNum">    1454 </span>            : 
+<span class="lineNum">    1455 </span>            :         /* Coverity - This uninit_use should be ignored since this macro initializes the flags */
+<span class="lineNum">    1456 </span><span class="lineNoCov">          0 :         ast_clear_flag(&amp;flags, AST_FLAGS_ALL);</span>
+<span class="lineNum">    1457 </span>            : 
+<span class="lineNum">    1458 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(data)) {</span>
+<span class="lineNum">    1459 </span><span class="lineNoCov">          0 :                 mygroup = ast_strdupa(data);</span>
+<span class="lineNum">    1460 </span>            :         }
+<span class="lineNum">    1461 </span><span class="lineNoCov">          0 :         ast_set_flag(&amp;flags, OPTION_DTMF_EXIT);</span>
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :         ast_set_flag(&amp;flags, OPTION_DTMF_CYCLE);</span>
+<span class="lineNum">    1463 </span><span class="lineNoCov">          0 :         ast_set_flag(&amp;flags, OPTION_DAHDI_SCAN);</span>
+<span class="lineNum">    1464 </span>            : 
+<span class="lineNum">    1465 </span><span class="lineNoCov">          0 :         oldwf = ao2_bump(ast_channel_writeformat(chan));</span>
+<span class="lineNum">    1466 </span><span class="lineNoCov">          0 :         if (ast_set_write_format(chan, ast_format_slin) &lt; 0) {</span>
+<span class="lineNum">    1467 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1468 </span><span class="lineNoCov">          0 :                 ao2_cleanup(oldwf);</span>
+<span class="lineNum">    1469 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1470 </span>            :         }
+<span class="lineNum">    1471 </span>            : 
+<span class="lineNum">    1472 </span><span class="lineNoCov">          0 :         res = common_exec(chan, &amp;flags, 0, 0, &amp;user_options, mygroup, NULL, spec, NULL, NULL, NULL, NULL);</span>
+<span class="lineNum">    1473 </span>            : 
+<span class="lineNum">    1474 </span><span class="lineNoCov">          0 :         if (oldwf &amp;&amp; ast_set_write_format(chan, oldwf) &lt; 0)</span>
+<span class="lineNum">    1475 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could Not Set Write Format.\n&quot;);</span>
+<span class="lineNum">    1476 </span><span class="lineNoCov">          0 :         ao2_cleanup(oldwf);</span>
+<span class="lineNum">    1477 </span>            : 
+<span class="lineNum">    1478 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="1479"><span class="lineNum">    1479 </span>            : }</a>
+<span class="lineNum">    1480 </span>            : 
+<span class="lineNum">    1481 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">    1482 </span>            : {
+<span class="lineNum">    1483 </span><span class="lineCov">       1115 :         int res = 0;</span>
+<span class="lineNum">    1484 </span>            : 
+<span class="lineNum">    1485 </span><span class="lineCov">       1115 :         res |= ast_unregister_application(app_chan);</span>
+<span class="lineNum">    1486 </span><span class="lineCov">       1115 :         res |= ast_unregister_application(app_ext);</span>
+<span class="lineNum">    1487 </span><span class="lineCov">       1115 :         res |= ast_unregister_application(app_dahdiscan);</span>
+<span class="lineNum">    1488 </span>            : 
+<span class="lineNum">    1489 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="1490"><span class="lineNum">    1490 </span>            : }</a>
+<span class="lineNum">    1491 </span>            : 
+<span class="lineNum">    1492 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">    1493 </span>            : {
+<span class="lineNum">    1494 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">    1495 </span>            : 
+<span class="lineNum">    1496 </span><span class="lineCov">       1117 :         res |= ast_register_application_xml(app_chan, chanspy_exec);</span>
+<span class="lineNum">    1497 </span><span class="lineCov">       1117 :         res |= ast_register_application_xml(app_ext, extenspy_exec);</span>
+<span class="lineNum">    1498 </span><span class="lineCov">       1117 :         res |= ast_register_application_xml(app_dahdiscan, dahdiscan_exec);</span>
+<span class="lineNum">    1499 </span>            : 
+<span class="lineNum">    1500 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="1501"><span class="lineNum">    1501 </span>            : }</a>
+<span class="lineNum">    1502 </span>            : 
+<span class="lineNum">    1503 </span><span class="lineCov">       5585 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Listen to the audio of an active channel&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

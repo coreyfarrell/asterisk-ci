@@ -1,0 +1,866 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_pjsip_endpoint_identifier_ip.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_pjsip_endpoint_identifier_ip.c<span style="font-size: 80%;"> (source / <a href="res_pjsip_endpoint_identifier_ip.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">209</td>
+            <td class="headerCovTableEntry">305</td>
+            <td class="headerCovTableEntryLo">68.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntryMed">81.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Michelson &lt;mmichelson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*** MODULEINFO
+<span class="lineNum">      20 </span>            :         &lt;depend&gt;pjproject&lt;/depend&gt;
+<span class="lineNum">      21 </span>            :         &lt;depend&gt;res_pjsip&lt;/depend&gt;
+<span class="lineNum">      22 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      23 </span>            :  ***/
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/res_pjsip_cli.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/acl.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;res_pjsip/include/res_pjsip_private.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      37 </span>            :         &lt;configInfo name=&quot;res_pjsip_endpoint_identifier_ip&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      38 </span>            :                 &lt;synopsis&gt;Module that identifies endpoints&lt;/synopsis&gt;
+<span class="lineNum">      39 </span>            :                 &lt;configFile name=&quot;pjsip.conf&quot;&gt;
+<span class="lineNum">      40 </span>            :                         &lt;configObject name=&quot;identify&quot;&gt;
+<span class="lineNum">      41 </span>            :                                 &lt;synopsis&gt;Identifies endpoints via some criteria.&lt;/synopsis&gt;
+<span class="lineNum">      42 </span>            :                                 &lt;description&gt;
+<span class="lineNum">      43 </span>            :                                         &lt;para&gt;This module provides alternatives to matching inbound requests to
+<span class="lineNum">      44 </span>            :                                         a configured endpoint. At least one of the matching mechanisms
+<span class="lineNum">      45 </span>            :                                         must be provided, or the object configuration will be invalid.&lt;/para&gt;
+<span class="lineNum">      46 </span>            :                                         &lt;para&gt;The matching mechanisms are provided by the following
+<span class="lineNum">      47 </span>            :                                         configuration options:&lt;/para&gt;
+<span class="lineNum">      48 </span>            :                                         &lt;enumlist&gt;
+<span class="lineNum">      49 </span>            :                                                 &lt;enum name=&quot;match&quot;&gt;&lt;para&gt;Match by source IP address.&lt;/para&gt;&lt;/enum&gt;
+<span class="lineNum">      50 </span>            :                                                 &lt;enum name=&quot;match_header&quot;&gt;&lt;para&gt;Match by SIP header.&lt;/para&gt;&lt;/enum&gt;
+<span class="lineNum">      51 </span>            :                                         &lt;/enumlist&gt;
+<span class="lineNum">      52 </span>            :                                         &lt;note&gt;&lt;para&gt;If multiple matching criteria are provided then an inbound
+<span class="lineNum">      53 </span>            :                                         request will be matched to the endpoint if it matches
+<span class="lineNum">      54 </span>            :                                         &lt;emphasis&gt;any&lt;/emphasis&gt; of the criteria.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">      55 </span>            :                                 &lt;/description&gt;
+<span class="lineNum">      56 </span>            :                                 &lt;configOption name=&quot;endpoint&quot;&gt;
+<span class="lineNum">      57 </span>            :                                         &lt;synopsis&gt;Name of endpoint identified&lt;/synopsis&gt;
+<span class="lineNum">      58 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;configOption name=&quot;match&quot;&gt;
+<span class="lineNum">      60 </span>            :                                         &lt;synopsis&gt;IP addresses or networks to match against.&lt;/synopsis&gt;
+<span class="lineNum">      61 </span>            :                                         &lt;description&gt;
+<span class="lineNum">      62 </span>            :                                                 &lt;para&gt;The value is a comma-delimited list of IP addresses or
+<span class="lineNum">      63 </span>            :                                                 hostnames.  IP addresses may have a subnet mask appended.  The
+<span class="lineNum">      64 </span>            :                                                 subnet mask may be written in either CIDR or dotted-decimal
+<span class="lineNum">      65 </span>            :                                                 notation.  Separate the IP address and subnet mask with a slash
+<span class="lineNum">      66 </span>            :                                                 ('/').
+<span class="lineNum">      67 </span>            :                                                 &lt;/para&gt;
+<span class="lineNum">      68 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">      69 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      70 </span>            :                                 &lt;configOption name=&quot;srv_lookups&quot; default=&quot;yes&quot;&gt;
+<span class="lineNum">      71 </span>            :                                         &lt;synopsis&gt;Perform SRV lookups for provided hostnames.&lt;/synopsis&gt;
+<span class="lineNum">      72 </span>            :                                         &lt;description&gt;
+<span class="lineNum">      73 </span>            :                                                 &lt;para&gt;When enabled, &lt;replaceable&gt;srv_lookups&lt;/replaceable&gt; will
+<span class="lineNum">      74 </span>            :                                                 perform SRV lookups for _sip._udp, _sip._tcp, and _sips._tcp of
+<span class="lineNum">      75 </span>            :                                                 the given hostnames to determine additional addresses that traffic
+<span class="lineNum">      76 </span>            :                                                 may originate from.
+<span class="lineNum">      77 </span>            :                                                 &lt;/para&gt;
+<span class="lineNum">      78 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">      79 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      80 </span>            :                                 &lt;configOption name=&quot;match_header&quot;&gt;
+<span class="lineNum">      81 </span>            :                                         &lt;synopsis&gt;Header/value pair to match against.&lt;/synopsis&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;description&gt;
+<span class="lineNum">      83 </span>            :                                                 &lt;para&gt;A SIP header whose value is used to match against.  SIP
+<span class="lineNum">      84 </span>            :                                                 requests containing the header, along with the specified value,
+<span class="lineNum">      85 </span>            :                                                 will be mapped to the specified endpoint.  The header must be
+<span class="lineNum">      86 </span>            :                                                 specified with a &lt;literal&gt;:&lt;/literal&gt;, as in
+<span class="lineNum">      87 </span>            :                                                 &lt;literal&gt;match_header = SIPHeader: value&lt;/literal&gt;.
+<span class="lineNum">      88 </span>            :                                                 &lt;/para&gt;
+<span class="lineNum">      89 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      91 </span>            :                                 &lt;configOption name=&quot;type&quot;&gt;
+<span class="lineNum">      92 </span>            :                                         &lt;synopsis&gt;Must be of type 'identify'.&lt;/synopsis&gt;
+<span class="lineNum">      93 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      94 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">      95 </span>            :                 &lt;/configFile&gt;
+<span class="lineNum">      96 </span>            :         &lt;/configInfo&gt;
+<span class="lineNum">      97 </span>            :  ***/
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span>            : /*! \brief The number of buckets for storing hosts for resolution */
+<span class="lineNum">     100 </span>            : #define HOSTS_BUCKETS 53
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : /*! \brief Structure for an IP identification matching object */
+<span class="lineNum">     103 </span>            : struct ip_identify_match {
+<span class="lineNum">     104 </span>            :         /*! \brief Sorcery object details */
+<span class="lineNum">     105 </span>            :         SORCERY_OBJECT(details);
+<span class="lineNum">     106 </span>            :         /*! \brief Stringfields */
+<span class="lineNum">     107 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">     108 </span>            :                 /*! The name of the endpoint */
+<span class="lineNum">     109 </span>            :                 AST_STRING_FIELD(endpoint_name);
+<span class="lineNum">     110 </span>            :                 /*! If matching by header, the header/value to match against */
+<span class="lineNum">     111 </span>            :                 AST_STRING_FIELD(match_header);
+<span class="lineNum">     112 </span>            :         );
+<span class="lineNum">     113 </span>            :         /*! \brief Networks or addresses that should match this */
+<span class="lineNum">     114 </span>            :         struct ast_ha *matches;
+<span class="lineNum">     115 </span>            :         /*! \brief Perform SRV resolution of hostnames */
+<span class="lineNum">     116 </span>            :         unsigned int srv_lookups;
+<span class="lineNum">     117 </span>            :         /*! \brief Hosts to be resolved when applying configuration */
+<span class="lineNum">     118 </span>            :         struct ao2_container *hosts;
+<span class="lineNum">     119 </span>            : };
+<a name="120"><span class="lineNum">     120 </span>            : </a>
+<span class="lineNum">     121 </span>            : /*! \brief Destructor function for a matching object */
+<span class="lineNum">     122 </span><span class="lineCov">        163 : static void ip_identify_destroy(void *obj)</span>
+<span class="lineNum">     123 </span>            : {
+<span class="lineNum">     124 </span><span class="lineCov">        163 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">        163 :         ast_string_field_free_memory(identify);</span>
+<span class="lineNum">     127 </span><span class="lineCov">        163 :         ast_free_ha(identify-&gt;matches);</span>
+<span class="lineNum">     128 </span><span class="lineCov">        163 :         ao2_cleanup(identify-&gt;hosts);</span>
+<span class="lineNum">     129 </span><span class="lineCov">        163 : }</span>
+<a name="130"><span class="lineNum">     130 </span>            : </a>
+<span class="lineNum">     131 </span>            : /*! \brief Allocator function for a matching object */
+<span class="lineNum">     132 </span><span class="lineCov">        163 : static void *ip_identify_alloc(const char *name)</span>
+<span class="lineNum">     133 </span>            : {
+<span class="lineNum">     134 </span><span class="lineCov">        163 :         struct ip_identify_match *identify = ast_sorcery_generic_alloc(sizeof(*identify), ip_identify_destroy);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">        163 :         if (!identify || ast_string_field_init(identify, 256)) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 ao2_cleanup(identify);</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     139 </span>            :         }
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">        163 :         return identify;</span>
+<span class="lineNum">     142 </span>            : }
+<a name="143"><span class="lineNum">     143 </span>            : </a>
+<span class="lineNum">     144 </span>            : /*! \brief Comparator function for matching an object by header */
+<span class="lineNum">     145 </span><span class="lineCov">        287 : static int header_identify_match_check(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     146 </span>            : {
+<span class="lineNum">     147 </span><span class="lineCov">        287 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     148 </span><span class="lineCov">        287 :         struct pjsip_rx_data *rdata = arg;</span>
+<span class="lineNum">     149 </span>            :         pjsip_generic_string_hdr *header;
+<span class="lineNum">     150 </span>            :         pj_str_t pj_header_name;
+<span class="lineNum">     151 </span>            :         pj_str_t pj_header_value;
+<span class="lineNum">     152 </span>            :         char *c_header;
+<span class="lineNum">     153 </span>            :         char *c_value;
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">        287 :         if (ast_strlen_zero(identify-&gt;match_header)) {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     157 </span>            :         }
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">        287 :         c_header = ast_strdupa(identify-&gt;match_header);</span>
+<span class="lineNum">     160 </span><span class="lineCov">        287 :         c_value = strchr(c_header, ':');</span>
+<span class="lineNum">     161 </span><span class="lineCov">        287 :         if (!c_value) {</span>
+<span class="lineNum">     162 </span>            :                 /* This should not be possible.  The object cannot be created if so. */
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     165 </span>            :         }
+<span class="lineNum">     166 </span><span class="lineCov">        287 :         *c_value = '\0';</span>
+<span class="lineNum">     167 </span><span class="lineCov">        287 :         c_value++;</span>
+<span class="lineNum">     168 </span><span class="lineCov">        287 :         c_value = ast_strip(c_value);</span>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">        287 :         pj_header_name = pj_str(c_header);</span>
+<span class="lineNum">     171 </span><span class="lineCov">        287 :         header = pjsip_msg_find_hdr_by_name(rdata-&gt;msg_info.msg, &amp;pj_header_name, NULL);</span>
+<span class="lineNum">     172 </span><span class="lineCov">        287 :         if (!header) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 ast_debug(3, &quot;Identify '%s': SIP message does not have header '%s'\n&quot;,</span>
+<span class="lineNum">     174 </span>            :                         ast_sorcery_object_get_id(identify),
+<span class="lineNum">     175 </span>            :                         c_header);
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     177 </span>            :         }
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">        287 :         pj_header_value = pj_str(c_value);</span>
+<span class="lineNum">     180 </span><span class="lineCov">        287 :         if (pj_strcmp(&amp;pj_header_value, &amp;header-&gt;hvalue)) {</span>
+<span class="lineNum">     181 </span><span class="lineCov">        172 :                 ast_debug(3, &quot;Identify '%s': SIP message has header '%s' but value '%.*s' does not match '%s'\n&quot;,</span>
+<span class="lineNum">     182 </span>            :                         ast_sorcery_object_get_id(identify),
+<span class="lineNum">     183 </span>            :                         c_header,
+<span class="lineNum">     184 </span>            :                         (int) pj_strlen(&amp;header-&gt;hvalue), pj_strbuf(&amp;header-&gt;hvalue),
+<span class="lineNum">     185 </span>            :                         c_value);
+<span class="lineNum">     186 </span><span class="lineCov">        172 :                 return 0;</span>
+<span class="lineNum">     187 </span>            :         }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">        115 :         return CMP_MATCH;</span>
+<span class="lineNum">     190 </span>            : }
+<a name="191"><span class="lineNum">     191 </span>            : </a>
+<span class="lineNum">     192 </span>            : /*! \brief Comparator function for matching an object by IP address */
+<span class="lineNum">     193 </span><span class="lineCov">        720 : static int ip_identify_match_check(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     194 </span>            : {
+<span class="lineNum">     195 </span><span class="lineCov">        720 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     196 </span><span class="lineCov">        720 :         struct ast_sockaddr *addr = arg;</span>
+<span class="lineNum">     197 </span>            :         int sense;
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">        720 :         sense = ast_apply_ha(identify-&gt;matches, addr);</span>
+<span class="lineNum">     200 </span><span class="lineCov">        720 :         if (sense != AST_SENSE_ALLOW) {</span>
+<span class="lineNum">     201 </span><span class="lineCov">        193 :                 ast_debug(3, &quot;Source address %s matches identify '%s'\n&quot;,</span>
+<span class="lineNum">     202 </span>            :                                 ast_sockaddr_stringify(addr),
+<span class="lineNum">     203 </span>            :                                 ast_sorcery_object_get_id(identify));
+<span class="lineNum">     204 </span><span class="lineCov">        193 :                 return CMP_MATCH;</span>
+<span class="lineNum">     205 </span>            :         } else {
+<span class="lineNum">     206 </span><span class="lineCov">        527 :                 ast_debug(3, &quot;Source address %s does not match identify '%s'\n&quot;,</span>
+<span class="lineNum">     207 </span>            :                                 ast_sockaddr_stringify(addr),
+<span class="lineNum">     208 </span>            :                                 ast_sorcery_object_get_id(identify));
+<span class="lineNum">     209 </span><span class="lineCov">        527 :                 return 0;</span>
+<span class="lineNum">     210 </span>            :         }
+<a name="211"><span class="lineNum">     211 </span>            : }</a>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">       1527 : static struct ast_sip_endpoint *common_identify(ao2_callback_fn *identify_match_cb, void *arg)</span></a>
+<span class="lineNum">     214 </span>            : {
+<span class="lineNum">     215 </span><span class="lineCov">       3054 :         RAII_VAR(struct ao2_container *, candidates, NULL, ao2_cleanup);</span>
+<span class="lineNum">     216 </span>            :         struct ip_identify_match *match;
+<span class="lineNum">     217 </span>            :         struct ast_sip_endpoint *endpoint;
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            :         /* If no possibilities exist return early to save some time */
+<span class="lineNum">     220 </span><span class="lineCov">       1527 :         candidates = ast_sorcery_retrieve_by_fields(ast_sip_get_sorcery(), &quot;identify&quot;,</span>
+<span class="lineNum">     221 </span>            :                 AST_RETRIEVE_FLAG_MULTIPLE | AST_RETRIEVE_FLAG_ALL, NULL);
+<span class="lineNum">     222 </span><span class="lineCov">       1527 :         if (!candidates || !ao2_container_count(candidates)) {</span>
+<span class="lineNum">     223 </span><span class="lineCov">       1097 :                 ast_debug(3, &quot;No identify sections to match against\n&quot;);</span>
+<span class="lineNum">     224 </span><span class="lineCov">       1097 :                 return NULL;</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">        430 :         match = ao2_callback(candidates, 0, identify_match_cb, arg);</span>
+<span class="lineNum">     228 </span><span class="lineCov">        430 :         if (!match) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">        122 :                 return NULL;</span>
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineCov">        308 :         endpoint = ast_sorcery_retrieve_by_id(ast_sip_get_sorcery(), &quot;endpoint&quot;,</span>
+<span class="lineNum">     233 </span>            :                 match-&gt;endpoint_name);
+<span class="lineNum">     234 </span><span class="lineCov">        308 :         if (endpoint) {</span>
+<span class="lineNum">     235 </span><span class="lineCov">        308 :                 ast_debug(3, &quot;Identify '%s' SIP message matched to endpoint %s\n&quot;,</span>
+<span class="lineNum">     236 </span>            :                         ast_sorcery_object_get_id(match), match-&gt;endpoint_name);
+<span class="lineNum">     237 </span>            :         } else {
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Identify '%s' points to endpoint '%s' but endpoint could not be found\n&quot;,</span>
+<span class="lineNum">     239 </span>            :                         ast_sorcery_object_get_id(match), match-&gt;endpoint_name);
+<span class="lineNum">     240 </span>            :         }
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineCov">        308 :         ao2_ref(match, -1);</span>
+<span class="lineNum">     243 </span><span class="lineCov">        308 :         return endpoint;</span>
+<a name="244"><span class="lineNum">     244 </span>            : }</a>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">       1396 : static struct ast_sip_endpoint *ip_identify(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     247 </span>            : {
+<span class="lineNum">     248 </span><span class="lineCov">       1396 :         struct ast_sockaddr addr = { { 0, } };</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">       1396 :         ast_sockaddr_parse(&amp;addr, rdata-&gt;pkt_info.src_name, PARSE_PORT_FORBID);</span>
+<span class="lineNum">     251 </span><span class="lineCov">       1396 :         ast_sockaddr_set_port(&amp;addr, rdata-&gt;pkt_info.src_port);</span>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span><span class="lineCov">       1396 :         return common_identify(ip_identify_match_check, &amp;addr);</span>
+<span class="lineNum">     254 </span>            : }
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span>            : static struct ast_sip_endpoint_identifier ip_identifier = {
+<span class="lineNum">     257 </span>            :         .identify_endpoint = ip_identify,
+<a name="258"><span class="lineNum">     258 </span>            : };</a>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">        131 : static struct ast_sip_endpoint *header_identify(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     261 </span>            : {
+<span class="lineNum">     262 </span><span class="lineCov">        131 :         return common_identify(header_identify_match_check, rdata);</span>
+<span class="lineNum">     263 </span>            : }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            : static struct ast_sip_endpoint_identifier header_identifier = {
+<span class="lineNum">     266 </span>            :         .identify_endpoint = header_identify,
+<span class="lineNum">     267 </span>            : };
+<a name="268"><span class="lineNum">     268 </span>            : </a>
+<span class="lineNum">     269 </span>            : /*! \brief Helper function which performs a host lookup and adds result to identify match */
+<span class="lineNum">     270 </span><span class="lineCov">        150 : static int ip_identify_match_host_lookup(struct ip_identify_match *identify, const char *host)</span>
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span>            :         struct ast_sockaddr *addrs;
+<span class="lineNum">     273 </span><span class="lineCov">        150 :         int num_addrs = 0, error = 0, i;</span>
+<span class="lineNum">     274 </span><span class="lineCov">        150 :         int results = 0;</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">        150 :         num_addrs = ast_sockaddr_resolve(&amp;addrs, host, PARSE_PORT_FORBID, AST_AF_UNSPEC);</span>
+<span class="lineNum">     277 </span><span class="lineCov">        150 :         if (!num_addrs) {</span>
+<span class="lineNum">     278 </span><span class="lineCov">          6 :                 return -1;</span>
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">        288 :         for (i = 0; i &lt; num_addrs; ++i) {</span>
+<span class="lineNum">     282 </span>            :                 /* Check if the address is already in the list, if so don't add it again */
+<span class="lineNum">     283 </span><span class="lineCov">        144 :                 if (identify-&gt;matches &amp;&amp; (ast_apply_ha(identify-&gt;matches, &amp;addrs[i]) != AST_SENSE_ALLOW)) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     285 </span>            :                 }
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :                 /* We deny what we actually want to match because there is an implicit permit all rule for ACLs */
+<span class="lineNum">     288 </span><span class="lineCov">        144 :                 identify-&gt;matches = ast_append_ha(&quot;d&quot;, ast_sockaddr_stringify_addr(&amp;addrs[i]), identify-&gt;matches, &amp;error);</span>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">        144 :                 if (!identify-&gt;matches || error) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                         results = -1;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     293 </span>            :                 }
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineCov">        144 :                 results += 1;</span>
+<span class="lineNum">     296 </span>            :         }
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineCov">        144 :         ast_free(addrs);</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">        144 :         return results;</span>
+<span class="lineNum">     301 </span>            : }
+<a name="302"><span class="lineNum">     302 </span>            : </a>
+<span class="lineNum">     303 </span>            : /*! \brief Helper function which performs an SRV lookup and then resolves the hostname */
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 : static int ip_identify_match_srv_lookup(struct ip_identify_match *identify, const char *prefix, const char *host, int results)</span>
+<span class="lineNum">     305 </span>            : {
+<span class="lineNum">     306 </span>            :         char service[NI_MAXHOST];
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         struct srv_context *context = NULL;</span>
+<span class="lineNum">     308 </span>            :         int srv_ret;
+<span class="lineNum">     309 </span>            :         const char *srvhost;
+<span class="lineNum">     310 </span>            :         unsigned short srvport;
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         snprintf(service, sizeof(service), &quot;%s.%s&quot;, prefix, host);</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         while (!(srv_ret = ast_srv_lookup(&amp;context, service, &amp;srvhost, &amp;srvport))) {</span>
+<span class="lineNum">     315 </span>            :                 int hosts;
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            :                 /* In the case of the SRV lookup we don't care if it fails, we will output a log message
+<span class="lineNum">     318 </span>            :                  * when we fallback to a normal lookup.
+<span class="lineNum">     319 </span>            :                  */
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 hosts = ip_identify_match_host_lookup(identify, srvhost);</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 if (hosts == -1) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         results = -1;</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     324 </span>            :                 } else {
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :                         results += hosts;</span>
+<span class="lineNum">     326 </span>            :                 }
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :         ast_srv_cleanup(&amp;context);</span>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         return results;</span>
+<span class="lineNum">     332 </span>            : }
+<a name="333"><span class="lineNum">     333 </span>            : </a>
+<span class="lineNum">     334 </span>            : /*! \brief Custom handler for match field */
+<span class="lineNum">     335 </span><span class="lineCov">        150 : static int ip_identify_match_handler(const struct aco_option *opt, struct ast_variable *var, void *obj)</span>
+<span class="lineNum">     336 </span>            : {
+<span class="lineNum">     337 </span><span class="lineCov">        150 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     338 </span><span class="lineCov">        150 :         char *input_string = ast_strdupa(var-&gt;value);</span>
+<span class="lineNum">     339 </span>            :         char *current_string;
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">        150 :         if (ast_strlen_zero(var-&gt;value)) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     343 </span>            :         }
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">        300 :         while ((current_string = ast_strip(strsep(&amp;input_string, &quot;,&quot;)))) {</span>
+<span class="lineNum">     346 </span><span class="lineCov">        150 :                 char *mask = strrchr(current_string, '/');</span>
+<span class="lineNum">     347 </span><span class="lineCov">        150 :                 int error = 0;</span>
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span><span class="lineCov">        150 :                 if (ast_strlen_zero(current_string)) {</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     351 </span>            :                 }
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span><span class="lineCov">        150 :                 if (mask) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                         identify-&gt;matches = ast_append_ha(&quot;d&quot;, current_string, identify-&gt;matches, &amp;error);</span>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                         if (!identify-&gt;matches || error) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Failed to add address '%s' to ip endpoint identifier '%s'\n&quot;,</span>
+<span class="lineNum">     358 </span>            :                                         current_string, ast_sorcery_object_get_id(obj));
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     360 </span>            :                         }
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     363 </span>            :                 }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">        150 :                 if (!identify-&gt;hosts) {</span>
+<span class="lineNum">     366 </span><span class="lineCov">        148 :                         identify-&gt;hosts = ast_str_container_alloc_options(AO2_ALLOC_OPT_LOCK_NOLOCK, HOSTS_BUCKETS);</span>
+<span class="lineNum">     367 </span><span class="lineCov">        148 :                         if (!identify-&gt;hosts) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Failed to create container to store hosts on ip endpoint identifier '%s'\n&quot;,</span>
+<span class="lineNum">     369 </span>            :                                         ast_sorcery_object_get_id(obj));
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     371 </span>            :                         }
+<span class="lineNum">     372 </span>            :                 }
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">        150 :                 error = ast_str_container_add(identify-&gt;hosts, current_string);</span>
+<span class="lineNum">     375 </span><span class="lineCov">        150 :                 if (error) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to store host '%s' for resolution on ip endpoint identifier '%s'\n&quot;,</span>
+<span class="lineNum">     377 </span>            :                                 current_string, ast_sorcery_object_get_id(obj));
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     379 </span>            :                 }
+<span class="lineNum">     380 </span>            :         }
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span><span class="lineCov">        150 :         return 0;</span>
+<span class="lineNum">     383 </span>            : }
+<a name="384"><span class="lineNum">     384 </span>            : </a>
+<span class="lineNum">     385 </span>            : /*! \brief Apply handler for identify type */
+<span class="lineNum">     386 </span><span class="lineCov">        163 : static int ip_identify_apply(const struct ast_sorcery *sorcery, void *obj)</span>
+<span class="lineNum">     387 </span>            : {
+<span class="lineNum">     388 </span><span class="lineCov">        163 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     389 </span>            :         char *current_string;
+<span class="lineNum">     390 </span>            :         struct ao2_iterator i;
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span>            :         /* Validate the identify object configuration */
+<span class="lineNum">     393 </span><span class="lineCov">        163 :         if (ast_strlen_zero(identify-&gt;endpoint_name)) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Identify '%s' missing required endpoint name.\n&quot;,</span>
+<span class="lineNum">     395 </span>            :                         ast_sorcery_object_get_id(identify));
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     397 </span>            :         }
+<span class="lineNum">     398 </span><span class="lineCov">        163 :         if (ast_strlen_zero(identify-&gt;match_header) /* No header to match */</span>
+<span class="lineNum">     399 </span>            :                 /* and no static IP addresses with a mask */
+<span class="lineNum">     400 </span><span class="lineCov">        147 :                 &amp;&amp; !identify-&gt;matches</span>
+<span class="lineNum">     401 </span>            :                 /* and no addresses to resolve */
+<span class="lineNum">     402 </span><span class="lineCov">        147 :                 &amp;&amp; (!identify-&gt;hosts || !ao2_container_count(identify-&gt;hosts))) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Identify '%s' is not configured to match anything.\n&quot;,</span>
+<span class="lineNum">     404 </span>            :                         ast_sorcery_object_get_id(identify));
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     406 </span>            :         }
+<span class="lineNum">     407 </span><span class="lineCov">        163 :         if (!ast_strlen_zero(identify-&gt;match_header)</span>
+<span class="lineNum">     408 </span><span class="lineCov">         16 :                 &amp;&amp; !strchr(identify-&gt;match_header, ':')) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Identify '%s' missing ':' separator in match_header '%s'.\n&quot;,</span>
+<span class="lineNum">     410 </span>            :                         ast_sorcery_object_get_id(identify), identify-&gt;match_header);
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     412 </span>            :         }
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span><span class="lineCov">        163 :         if (!identify-&gt;hosts) {</span>
+<span class="lineNum">     415 </span><span class="lineCov">         15 :                 return 0;</span>
+<span class="lineNum">     416 </span>            :         }
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span>            :         /* Resolve the match addresses now */
+<span class="lineNum">     419 </span><span class="lineCov">        148 :         i = ao2_iterator_init(identify-&gt;hosts, 0);</span>
+<span class="lineNum">     420 </span><span class="lineCov">        292 :         while ((current_string = ao2_iterator_next(&amp;i))) {</span>
+<span class="lineNum">     421 </span>            :                 struct ast_sockaddr address;
+<span class="lineNum">     422 </span><span class="lineCov">        150 :                 int results = 0;</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span>            :                 /* If the provided string is not an IP address perform SRV resolution on it */
+<span class="lineNum">     425 </span><span class="lineCov">        150 :                 if (identify-&gt;srv_lookups &amp;&amp; !ast_sockaddr_parse(&amp;address, current_string, 0)) {</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                         results = ip_identify_match_srv_lookup(identify, &quot;_sip._udp&quot;, current_string,</span>
+<span class="lineNum">     427 </span>            :                                 results);
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                         if (results != -1) {</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                                 results = ip_identify_match_srv_lookup(identify, &quot;_sip._tcp&quot;,</span>
+<span class="lineNum">     430 </span>            :                                         current_string, results);
+<span class="lineNum">     431 </span>            :                         }
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                         if (results != -1) {</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                                 results = ip_identify_match_srv_lookup(identify, &quot;_sips._tcp&quot;,</span>
+<span class="lineNum">     434 </span>            :                                         current_string, results);
+<span class="lineNum">     435 </span>            :                         }
+<span class="lineNum">     436 </span>            :                 }
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span>            :                 /* If SRV fails fall back to a normal lookup on the host itself */
+<span class="lineNum">     439 </span><span class="lineCov">        150 :                 if (!results) {</span>
+<span class="lineNum">     440 </span><span class="lineCov">        150 :                         results = ip_identify_match_host_lookup(identify, current_string);</span>
+<span class="lineNum">     441 </span>            :                 }
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">        150 :                 if (results == 0) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Identify '%s' provided address '%s' did not resolve to any address\n&quot;,</span>
+<span class="lineNum">     445 </span>            :                                 ast_sorcery_object_get_id(identify), current_string);
+<span class="lineNum">     446 </span><span class="lineCov">        150 :                 } else if (results == -1) {</span>
+<span class="lineNum">     447 </span><span class="lineCov">          6 :                         ast_log(LOG_ERROR, &quot;Identify '%s' failed when adding resolution results of '%s'\n&quot;,</span>
+<span class="lineNum">     448 </span>            :                                 ast_sorcery_object_get_id(identify), current_string);
+<span class="lineNum">     449 </span><span class="lineCov">          6 :                         ao2_ref(current_string, -1);</span>
+<span class="lineNum">     450 </span><span class="lineCov">          6 :                         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     451 </span><span class="lineCov">          6 :                         return -1;</span>
+<span class="lineNum">     452 </span>            :                 }
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">        144 :                 ao2_ref(current_string, -1);</span>
+<span class="lineNum">     455 </span>            :         }
+<span class="lineNum">     456 </span><span class="lineCov">        142 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineCov">        142 :         ao2_ref(identify-&gt;hosts, -1);</span>
+<span class="lineNum">     459 </span><span class="lineCov">        142 :         identify-&gt;hosts = NULL;</span>
+<span class="lineNum">     460 </span>            : 
+<span class="lineNum">     461 </span><span class="lineCov">        142 :         return 0;</span>
+<a name="462"><span class="lineNum">     462 </span>            : }</a>
+<span class="lineNum">     463 </span>            : 
+<a name="464"><span class="lineNum">     464 </span><span class="lineCov">          2 : static int match_to_str(const void *obj, const intptr_t *args, char **buf)</span></a>
+<span class="lineNum">     465 </span>            : {
+<span class="lineNum">     466 </span><span class="lineCov">          4 :         RAII_VAR(struct ast_str *, str, ast_str_create(MAX_OBJECT_FIELD), ast_free);</span>
+<span class="lineNum">     467 </span><span class="lineCov">          2 :         const struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">          2 :         ast_ha_join(identify-&gt;matches, &amp;str);</span>
+<span class="lineNum">     470 </span><span class="lineCov">          2 :         *buf = ast_strdup(ast_str_buffer(str));</span>
+<span class="lineNum">     471 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="472"><span class="lineNum">     472 </span>            : }</a>
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineCov">          3 : static int match_to_var_list(const void *obj, struct ast_variable **fields)</span>
+<span class="lineNum">     475 </span>            : {
+<span class="lineNum">     476 </span>            :         char str[MAX_OBJECT_FIELD];
+<span class="lineNum">     477 </span><span class="lineCov">          3 :         const struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     478 </span><span class="lineCov">          3 :         struct ast_variable *head = NULL;</span>
+<span class="lineNum">     479 </span><span class="lineCov">          3 :         struct ast_ha *ha = identify-&gt;matches;</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">          7 :         for (; ha; ha = ha-&gt;next) {</span>
+<span class="lineNum">     482 </span><span class="lineCov">          4 :                 const char *addr = ast_strdupa(ast_sockaddr_stringify_addr(&amp;ha-&gt;addr));</span>
+<span class="lineNum">     483 </span><span class="lineCov">          4 :                 snprintf(str, MAX_OBJECT_FIELD, &quot;%s%s/%s&quot;, ha-&gt;sense == AST_SENSE_ALLOW ? &quot;!&quot; : &quot;&quot;,</span>
+<span class="lineNum">     484 </span><span class="lineCov">          4 :                         addr, ast_sockaddr_stringify_addr(&amp;ha-&gt;netmask));</span>
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span><span class="lineCov">          4 :                 ast_variable_list_append(&amp;head, ast_variable_new(&quot;match&quot;, str, &quot;&quot;));</span>
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span>            :         }
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span><span class="lineCov">          3 :         if (head) {</span>
+<span class="lineNum">     491 </span><span class="lineCov">          3 :                 *fields = head;</span>
+<span class="lineNum">     492 </span>            :         }
+<span class="lineNum">     493 </span>            : 
+<span class="lineNum">     494 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="495"><span class="lineNum">     495 </span>            : }</a>
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span><span class="lineCov">          2 : static int sip_identify_to_ami(const struct ip_identify_match *identify,</span>
+<span class="lineNum">     498 </span>            :                                struct ast_str **buf)
+<span class="lineNum">     499 </span>            : {
+<span class="lineNum">     500 </span><span class="lineCov">          2 :         return ast_sip_sorcery_object_to_ami(identify, buf);</span>
+<a name="501"><span class="lineNum">     501 </span>            : }</a>
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineCov">          2 : static int send_identify_ami_event(void *obj, void *arg, void *data, int flags)</span>
+<span class="lineNum">     504 </span>            : {
+<span class="lineNum">     505 </span><span class="lineCov">          2 :         struct ip_identify_match *identify = obj;</span>
+<span class="lineNum">     506 </span><span class="lineCov">          2 :         const char *endpoint_name = arg;</span>
+<span class="lineNum">     507 </span><span class="lineCov">          2 :         struct ast_sip_ami *ami = data;</span>
+<span class="lineNum">     508 </span>            :         struct ast_str *buf;
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span>            :         /* Build AMI event */
+<span class="lineNum">     511 </span><span class="lineCov">          2 :         buf = ast_sip_create_ami_event(&quot;IdentifyDetail&quot;, ami);</span>
+<span class="lineNum">     512 </span><span class="lineCov">          2 :         if (!buf) {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                 return CMP_STOP;</span>
+<span class="lineNum">     514 </span>            :         }
+<span class="lineNum">     515 </span><span class="lineCov">          2 :         if (sip_identify_to_ami(identify, &amp;buf)) {</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                 ast_free(buf);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 return CMP_STOP;</span>
+<span class="lineNum">     518 </span>            :         }
+<span class="lineNum">     519 </span><span class="lineCov">          2 :         ast_str_append(&amp;buf, 0, &quot;EndpointName: %s\r\n&quot;, endpoint_name);</span>
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span>            :         /* Send AMI event */
+<span class="lineNum">     522 </span><span class="lineCov">          2 :         astman_append(ami-&gt;s, &quot;%s\r\n&quot;, ast_str_buffer(buf));</span>
+<span class="lineNum">     523 </span><span class="lineCov">          2 :         ++ami-&gt;count;</span>
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span><span class="lineCov">          2 :         ast_free(buf);</span>
+<span class="lineNum">     526 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="527"><span class="lineNum">     527 </span>            : }</a>
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineCov">         17 : static int format_ami_endpoint_identify(const struct ast_sip_endpoint *endpoint,</span>
+<span class="lineNum">     530 </span>            :                                         struct ast_sip_ami *ami)
+<span class="lineNum">     531 </span>            : {
+<span class="lineNum">     532 </span>            :         struct ao2_container *identifies;
+<span class="lineNum">     533 </span><span class="lineCov">         34 :         struct ast_variable fields = {</span>
+<span class="lineNum">     534 </span>            :                 .name = &quot;endpoint&quot;,
+<span class="lineNum">     535 </span><span class="lineCov">         17 :                 .value = ast_sorcery_object_get_id(endpoint),</span>
+<span class="lineNum">     536 </span>            :         };
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">         17 :         identifies = ast_sorcery_retrieve_by_fields(ast_sip_get_sorcery(), &quot;identify&quot;,</span>
+<span class="lineNum">     539 </span>            :                 AST_RETRIEVE_FLAG_MULTIPLE, &amp;fields);
+<span class="lineNum">     540 </span><span class="lineCov">         17 :         if (!identifies) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     542 </span>            :         }
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span>            :         /* Build and send any found identify object's AMI IdentifyDetail event. */
+<span class="lineNum">     545 </span><span class="lineCov">         17 :         ao2_callback_data(identifies, OBJ_MULTIPLE | OBJ_NODATA,</span>
+<span class="lineNum">     546 </span>            :                 send_identify_ami_event,
+<span class="lineNum">     547 </span>            :                 (void *) ast_sorcery_object_get_id(endpoint),
+<span class="lineNum">     548 </span>            :                 ami);
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span><span class="lineCov">         17 :         ao2_ref(identifies, -1);</span>
+<span class="lineNum">     551 </span><span class="lineCov">         17 :         return 0;</span>
+<span class="lineNum">     552 </span>            : }
+<span class="lineNum">     553 </span>            : 
+<span class="lineNum">     554 </span>            : struct ast_sip_endpoint_formatter endpoint_identify_formatter = {
+<span class="lineNum">     555 </span>            :         .format_ami = format_ami_endpoint_identify
+<a name="556"><span class="lineNum">     556 </span>            : };</a>
+<span class="lineNum">     557 </span>            : 
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 : static int cli_iterator(void *container, ao2_callback_fn callback, void *args)</span>
+<span class="lineNum">     559 </span>            : {
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         const struct ast_sip_endpoint *endpoint = container;</span>
+<span class="lineNum">     561 </span>            :         struct ao2_container *identifies;
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :         struct ast_variable fields = {</span>
+<span class="lineNum">     564 </span>            :                 .name = &quot;endpoint&quot;,
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :                 .value = ast_sorcery_object_get_id(endpoint),</span>
+<span class="lineNum">     566 </span>            :                 .next = NULL,
+<span class="lineNum">     567 </span>            :         };
+<span class="lineNum">     568 </span>            : 
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :         identifies = ast_sorcery_retrieve_by_fields(ast_sip_get_sorcery(), &quot;identify&quot;,</span>
+<span class="lineNum">     570 </span>            :                 AST_RETRIEVE_FLAG_MULTIPLE, &amp;fields);
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :         if (!identifies) {</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     573 </span>            :         }
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :         ao2_callback(identifies, OBJ_NODATA, callback, args);</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :         ao2_cleanup(identifies);</span>
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="579"><span class="lineNum">     579 </span>            : }</a>
+<span class="lineNum">     580 </span>            : 
+<a name="581"><span class="lineNum">     581 </span><span class="lineCov">          1 : static struct ao2_container *cli_get_container(const char *regex)</span></a>
+<span class="lineNum">     582 </span>            : {
+<span class="lineNum">     583 </span><span class="lineCov">          2 :         RAII_VAR(struct ao2_container *, container, NULL, ao2_cleanup);</span>
+<span class="lineNum">     584 </span>            :         struct ao2_container *s_container;
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">          1 :         container =  ast_sorcery_retrieve_by_regex(ast_sip_get_sorcery(), &quot;identify&quot;, regex);</span>
+<span class="lineNum">     587 </span><span class="lineCov">          1 :         if (!container) {</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     589 </span>            :         }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">          1 :         s_container = ao2_container_alloc_list(AO2_ALLOC_OPT_LOCK_NOLOCK, 0,</span>
+<span class="lineNum">     592 </span>            :                 ast_sorcery_object_id_sort, ast_sorcery_object_id_compare);
+<span class="lineNum">     593 </span><span class="lineCov">          1 :         if (!s_container) {</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     595 </span>            :         }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span><span class="lineCov">          1 :         if (ao2_container_dup(s_container, container, 0)) {</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                 ao2_ref(s_container, -1);</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     600 </span>            :         }
+<span class="lineNum">     601 </span>            : 
+<span class="lineNum">     602 </span><span class="lineCov">          1 :         return s_container;</span>
+<a name="603"><span class="lineNum">     603 </span>            : }</a>
+<span class="lineNum">     604 </span>            : 
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 : static void *cli_retrieve_by_id(const char *id)</span>
+<span class="lineNum">     606 </span>            : {
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         return ast_sorcery_retrieve_by_id(ast_sip_get_sorcery(), &quot;identify&quot;, id);</span>
+<a name="608"><span class="lineNum">     608 </span>            : }</a>
+<span class="lineNum">     609 </span>            : 
+<span class="lineNum">     610 </span><span class="lineCov">          2 : static int cli_print_header(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     611 </span>            : {
+<span class="lineNum">     612 </span><span class="lineCov">          2 :         struct ast_sip_cli_context *context = arg;</span>
+<span class="lineNum">     613 </span><span class="lineCov">          2 :         int indent = CLI_INDENT_TO_SPACES(context-&gt;indent_level);</span>
+<span class="lineNum">     614 </span><span class="lineCov">          2 :         int filler = CLI_MAX_WIDTH - indent - 22;</span>
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">          2 :         ast_assert(context-&gt;output_buffer != NULL);</span>
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span><span class="lineCov">          2 :         ast_str_append(&amp;context-&gt;output_buffer, 0,</span>
+<span class="lineNum">     619 </span>            :                 &quot;%*s:  &lt;Identify/Endpoint%*.*s&gt;\n&quot;,
+<span class="lineNum">     620 </span>            :                 indent, &quot;Identify&quot;, filler, filler, CLI_HEADER_FILLER);
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span><span class="lineCov">          2 :         if (context-&gt;recurse) {</span>
+<span class="lineNum">     623 </span><span class="lineCov">          2 :                 context-&gt;indent_level++;</span>
+<span class="lineNum">     624 </span><span class="lineCov">          2 :                 indent = CLI_INDENT_TO_SPACES(context-&gt;indent_level);</span>
+<span class="lineNum">     625 </span><span class="lineCov">          2 :                 filler = CLI_LAST_TABSTOP - indent - 24;</span>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span><span class="lineCov">          2 :                 ast_str_append(&amp;context-&gt;output_buffer, 0,</span>
+<span class="lineNum">     628 </span>            :                         &quot;%*s:  &lt;criteria%*.*s&gt;\n&quot;,
+<span class="lineNum">     629 </span>            :                         indent, &quot;Match&quot;, filler, filler, CLI_HEADER_FILLER);
+<span class="lineNum">     630 </span>            : 
+<span class="lineNum">     631 </span><span class="lineCov">          2 :                 context-&gt;indent_level--;</span>
+<span class="lineNum">     632 </span>            :         }
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="635"><span class="lineNum">     635 </span>            : }</a>
+<span class="lineNum">     636 </span>            : 
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 : static int cli_print_body(void *obj, void *arg, int flags)</span></a>
+<span class="lineNum">     638 </span>            : {
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :         RAII_VAR(struct ast_str *, str, ast_str_create(MAX_OBJECT_FIELD), ast_free);</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :         struct ip_identify_match *ident = obj;</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :         struct ast_sip_cli_context *context = arg;</span>
+<span class="lineNum">     642 </span>            :         struct ast_ha *match;
+<span class="lineNum">     643 </span>            :         int indent;
+<span class="lineNum">     644 </span>            : 
+<span class="lineNum">     645 </span><span class="lineNoCov">          0 :         ast_assert(context-&gt;output_buffer != NULL);</span>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;%*s:  %s/%s\n&quot;,</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                 CLI_INDENT_TO_SPACES(context-&gt;indent_level), &quot;Identify&quot;,</span>
+<span class="lineNum">     649 </span>            :                 ast_sorcery_object_get_id(ident), ident-&gt;endpoint_name);
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :         if (context-&gt;recurse) {</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 context-&gt;indent_level++;</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 indent = CLI_INDENT_TO_SPACES(context-&gt;indent_level);</span>
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :                 for (match = ident-&gt;matches; match; match = match-&gt;next) {</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                         const char *addr = ast_sockaddr_stringify_addr(&amp;match-&gt;addr);</span>
+<span class="lineNum">     657 </span>            : 
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                         ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;%*s: %s%s/%d\n&quot;,</span>
+<span class="lineNum">     659 </span>            :                                 indent,
+<span class="lineNum">     660 </span>            :                                 &quot;Match&quot;,
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :                                 match-&gt;sense == AST_SENSE_ALLOW ? &quot;!&quot; : &quot;&quot;,</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                                 addr, ast_sockaddr_cidr_bits(&amp;match-&gt;netmask));</span>
+<span class="lineNum">     663 </span>            :                 }
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span><span class="lineNoCov">          0 :                 if (!ast_strlen_zero(ident-&gt;match_header)) {</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                         ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;%*s: %s\n&quot;,</span>
+<span class="lineNum">     667 </span>            :                                 indent,
+<span class="lineNum">     668 </span>            :                                 &quot;Match&quot;,
+<span class="lineNum">     669 </span>            :                                 ident-&gt;match_header);
+<span class="lineNum">     670 </span>            :                 }
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                 context-&gt;indent_level--;</span>
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                 if (context-&gt;indent_level == 0) {</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                         ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;\n&quot;);</span>
+<span class="lineNum">     676 </span>            :                 }
+<span class="lineNum">     677 </span>            :         }
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         if (context-&gt;show_details</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                 || (context-&gt;show_details_only_level_0 &amp;&amp; context-&gt;indent_level == 0)) {</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                 ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;\n&quot;);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 ast_sip_cli_print_sorcery_objectset(ident, context, 0);</span>
+<span class="lineNum">     683 </span>            :         }
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     686 </span>            : }
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span>            : /*
+<span class="lineNum">     689 </span>            :  * A function pointer to callback needs to be within the
+<span class="lineNum">     690 </span>            :  * module in order to avoid problems with an undefined
+<a name="691"><span class="lineNum">     691 </span>            :  * symbol when the module is loaded.</a>
+<span class="lineNum">     692 </span>            :  */
+<span class="lineNum">     693 </span><span class="lineCov">       2557 : static char *my_cli_traverse_objects(struct ast_cli_entry *e, int cmd,</span>
+<span class="lineNum">     694 </span>            :         struct ast_cli_args *a)
+<span class="lineNum">     695 </span>            : {
+<span class="lineNum">     696 </span><span class="lineCov">       2557 :         return ast_sip_cli_traverse_objects(e, cmd, a);</span>
+<span class="lineNum">     697 </span>            : }
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span>            : static struct ast_cli_entry cli_identify[] = {
+<span class="lineNum">     700 </span>            : AST_CLI_DEFINE(my_cli_traverse_objects, &quot;List PJSIP Identifies&quot;,
+<span class="lineNum">     701 </span>            :         .command = &quot;pjsip list identifies&quot;,
+<span class="lineNum">     702 </span>            :         .usage = &quot;Usage: pjsip list identifies [ like &lt;pattern&gt; ]\n&quot;
+<span class="lineNum">     703 </span>            :         &quot;       List the configured PJSIP Identifies\n&quot;
+<span class="lineNum">     704 </span>            :         &quot;       Optional regular expression pattern is used to filter the list.\n&quot;),
+<span class="lineNum">     705 </span>            : AST_CLI_DEFINE(my_cli_traverse_objects, &quot;Show PJSIP Identifies&quot;,
+<span class="lineNum">     706 </span>            :         .command = &quot;pjsip show identifies&quot;,
+<span class="lineNum">     707 </span>            :         .usage = &quot;Usage: pjsip show identifies [ like &lt;pattern&gt; ]\n&quot;
+<span class="lineNum">     708 </span>            :         &quot;       Show the configured PJSIP Identifies\n&quot;
+<span class="lineNum">     709 </span>            :         &quot;       Optional regular expression pattern is used to filter the list.\n&quot;),
+<span class="lineNum">     710 </span>            : AST_CLI_DEFINE(my_cli_traverse_objects, &quot;Show PJSIP Identify&quot;,
+<span class="lineNum">     711 </span>            :         .command = &quot;pjsip show identify&quot;,
+<span class="lineNum">     712 </span>            :         .usage = &quot;Usage: pjsip show identify &lt;id&gt;\n&quot;
+<span class="lineNum">     713 </span>            :         &quot;       Show the configured PJSIP Identify\n&quot;),
+<span class="lineNum">     714 </span>            : };
+<span class="lineNum">     715 </span>            : 
+<a name="716"><span class="lineNum">     716 </span>            : static struct ast_sip_cli_formatter_entry *cli_formatter;</a>
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">        852 : static int load_module(void)</span>
+<span class="lineNum">     719 </span>            : {
+<span class="lineNum">     720 </span><span class="lineCov">        852 :         ast_sorcery_apply_config(ast_sip_get_sorcery(), &quot;res_pjsip_endpoint_identifier_ip&quot;);</span>
+<span class="lineNum">     721 </span><span class="lineCov">        852 :         ast_sorcery_apply_default(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;config&quot;, &quot;pjsip.conf,criteria=type=identify&quot;);</span>
+<span class="lineNum">     722 </span>            : 
+<span class="lineNum">     723 </span><span class="lineCov">        852 :         if (ast_sorcery_object_register(ast_sip_get_sorcery(), &quot;identify&quot;, ip_identify_alloc, NULL, ip_identify_apply)) {</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     725 </span>            :         }
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;type&quot;, &quot;&quot;, OPT_NOOP_T, 0, 0);</span>
+<span class="lineNum">     728 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;endpoint&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ip_identify_match, endpoint_name));</span>
+<span class="lineNum">     729 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register_custom(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;match&quot;, &quot;&quot;, ip_identify_match_handler, match_to_str, match_to_var_list, 0, 0);</span>
+<span class="lineNum">     730 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;match_header&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ip_identify_match, match_header));</span>
+<span class="lineNum">     731 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;identify&quot;, &quot;srv_lookups&quot;, &quot;yes&quot;, OPT_BOOL_T, 1, FLDSET(struct ip_identify_match, srv_lookups));</span>
+<span class="lineNum">     732 </span><span class="lineCov">        852 :         ast_sorcery_load_object(ast_sip_get_sorcery(), &quot;identify&quot;);</span>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineCov">        852 :         ast_sip_register_endpoint_identifier_with_name(&amp;ip_identifier, &quot;ip&quot;);</span>
+<span class="lineNum">     735 </span><span class="lineCov">        852 :         ast_sip_register_endpoint_identifier_with_name(&amp;header_identifier, &quot;header&quot;);</span>
+<span class="lineNum">     736 </span><span class="lineCov">        852 :         ast_sip_register_endpoint_formatter(&amp;endpoint_identify_formatter);</span>
+<span class="lineNum">     737 </span>            : 
+<span class="lineNum">     738 </span><span class="lineCov">        852 :         cli_formatter = ao2_alloc(sizeof(struct ast_sip_cli_formatter_entry), NULL);</span>
+<span class="lineNum">     739 </span><span class="lineCov">        852 :         if (!cli_formatter) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to allocate memory for cli formatter\n&quot;);</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     742 </span>            :         }
+<span class="lineNum">     743 </span><span class="lineCov">        852 :         cli_formatter-&gt;name = &quot;identify&quot;;</span>
+<span class="lineNum">     744 </span><span class="lineCov">        852 :         cli_formatter-&gt;print_header = cli_print_header;</span>
+<span class="lineNum">     745 </span><span class="lineCov">        852 :         cli_formatter-&gt;print_body = cli_print_body;</span>
+<span class="lineNum">     746 </span><span class="lineCov">        852 :         cli_formatter-&gt;get_container = cli_get_container;</span>
+<span class="lineNum">     747 </span><span class="lineCov">        852 :         cli_formatter-&gt;iterate = cli_iterator;</span>
+<span class="lineNum">     748 </span><span class="lineCov">        852 :         cli_formatter-&gt;get_id = ast_sorcery_object_get_id;</span>
+<span class="lineNum">     749 </span><span class="lineCov">        852 :         cli_formatter-&gt;retrieve_by_id = cli_retrieve_by_id;</span>
+<span class="lineNum">     750 </span>            : 
+<span class="lineNum">     751 </span><span class="lineCov">        852 :         ast_sip_register_cli_formatter(cli_formatter);</span>
+<span class="lineNum">     752 </span><span class="lineCov">        852 :         ast_cli_register_multiple(cli_identify, ARRAY_LEN(cli_identify));</span>
+<span class="lineNum">     753 </span>            : 
+<span class="lineNum">     754 </span><span class="lineCov">        852 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="755"><span class="lineNum">     755 </span>            : }</a>
+<span class="lineNum">     756 </span>            : 
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 : static int reload_module(void)</span>
+<span class="lineNum">     758 </span>            : {
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :         ast_sorcery_reload_object(ast_sip_get_sorcery(), &quot;identify&quot;);</span>
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="762"><span class="lineNum">     762 </span>            : }</a>
+<span class="lineNum">     763 </span>            : 
+<span class="lineNum">     764 </span><span class="lineCov">        851 : static int unload_module(void)</span>
+<span class="lineNum">     765 </span>            : {
+<span class="lineNum">     766 </span><span class="lineCov">        851 :         ast_cli_unregister_multiple(cli_identify, ARRAY_LEN(cli_identify));</span>
+<span class="lineNum">     767 </span><span class="lineCov">        851 :         ast_sip_unregister_cli_formatter(cli_formatter);</span>
+<span class="lineNum">     768 </span><span class="lineCov">        851 :         ast_sip_unregister_endpoint_formatter(&amp;endpoint_identify_formatter);</span>
+<span class="lineNum">     769 </span><span class="lineCov">        851 :         ast_sip_unregister_endpoint_identifier(&amp;header_identifier);</span>
+<span class="lineNum">     770 </span><span class="lineCov">        851 :         ast_sip_unregister_endpoint_identifier(&amp;ip_identifier);</span>
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineCov">        851 :         return 0;</span>
+<a name="773"><span class="lineNum">     773 </span>            : }</a>
+<span class="lineNum">     774 </span>            : 
+<span class="lineNum">     775 </span><span class="lineCov">       2556 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;PJSIP IP endpoint identifier&quot;,</span>
+<span class="lineNum">     776 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     777 </span>            :         .load = load_module,
+<span class="lineNum">     778 </span>            :         .reload = reload_module,
+<span class="lineNum">     779 </span>            :         .unload = unload_module,
+<span class="lineNum">     780 </span>            :         .load_pri = AST_MODPRI_CHANNEL_DEPEND - 4,
+<span class="lineNum">     781 </span>            :         .requires = &quot;res_pjsip&quot;,
+<span class="lineNum">     782 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

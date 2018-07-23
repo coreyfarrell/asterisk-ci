@@ -1,0 +1,616 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - funcs/func_lock.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">funcs</a> - func_lock.c<span style="font-size: 80%;"> (source / <a href="func_lock.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">30</td>
+            <td class="headerCovTableEntry">207</td>
+            <td class="headerCovTableEntryLo">14.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryLo">42.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2007, Tilghman Lesher
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Tilghman Lesher &lt;func_lock_2007@the-tilghman.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Dialplan mutexes
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Tilghman Lesher &lt;func_lock_2007@the-tilghman.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \ingroup functions
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  */
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : /*** MODULEINFO
+<span class="lineNum">      30 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      31 </span>            :  ***/
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      47 </span>            :         &lt;function name=&quot;LOCK&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      48 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      49 </span>            :                         Attempt to obtain a named mutex.
+<span class="lineNum">      50 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      51 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      52 </span>            :                         &lt;parameter name=&quot;lockname&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      53 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      54 </span>            :                 &lt;description&gt;
+<span class="lineNum">      55 </span>            :                         &lt;para&gt;Attempts to grab a named lock exclusively, and prevents other channels from
+<span class="lineNum">      56 </span>            :                         obtaining the same lock.  LOCK will wait for the lock to become available.
+<span class="lineNum">      57 </span>            :                         Returns &lt;literal&gt;1&lt;/literal&gt; if the lock was obtained or &lt;literal&gt;0&lt;/literal&gt; on error.&lt;/para&gt;
+<span class="lineNum">      58 </span>            :                         &lt;note&gt;&lt;para&gt;To avoid the possibility of a deadlock, LOCK will only attempt to
+<span class="lineNum">      59 </span>            :                         obtain the lock for 3 seconds if the channel already has another lock.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">      60 </span>            :                         &lt;note&gt;
+<span class="lineNum">      61 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">      62 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">      63 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">      64 </span>            :                         &lt;/note&gt;
+<span class="lineNum">      65 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      66 </span>            :         &lt;/function&gt;
+<span class="lineNum">      67 </span>            :         &lt;function name=&quot;TRYLOCK&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      68 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      69 </span>            :                         Attempt to obtain a named mutex.
+<span class="lineNum">      70 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      71 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      72 </span>            :                         &lt;parameter name=&quot;lockname&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      73 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      74 </span>            :                 &lt;description&gt;
+<span class="lineNum">      75 </span>            :                         &lt;para&gt;Attempts to grab a named lock exclusively, and prevents other channels
+<span class="lineNum">      76 </span>            :                         from obtaining the same lock.  Returns &lt;literal&gt;1&lt;/literal&gt; if the lock was
+<span class="lineNum">      77 </span>            :                         available or &lt;literal&gt;0&lt;/literal&gt; otherwise.&lt;/para&gt;
+<span class="lineNum">      78 </span>            :                         &lt;note&gt;
+<span class="lineNum">      79 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">      80 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">      81 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">      82 </span>            :                         &lt;/note&gt;
+<span class="lineNum">      83 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      84 </span>            :         &lt;/function&gt;
+<span class="lineNum">      85 </span>            :         &lt;function name=&quot;UNLOCK&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      86 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      87 </span>            :                         Unlocks a named mutex.
+<span class="lineNum">      88 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      89 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      90 </span>            :                         &lt;parameter name=&quot;lockname&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      91 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      92 </span>            :                 &lt;description&gt;
+<span class="lineNum">      93 </span>            :                         &lt;para&gt;Unlocks a previously locked mutex. Returns &lt;literal&gt;1&lt;/literal&gt; if the channel
+<span class="lineNum">      94 </span>            :                         had a lock or &lt;literal&gt;0&lt;/literal&gt; otherwise.&lt;/para&gt;
+<span class="lineNum">      95 </span>            :                         &lt;note&gt;&lt;para&gt;It is generally unnecessary to unlock in a hangup routine, as any locks
+<span class="lineNum">      96 </span>            :                         held are automatically freed when the channel is destroyed.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">      97 </span>            :                         &lt;note&gt;
+<span class="lineNum">      98 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">      99 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">     100 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">     101 </span>            :                         &lt;/note&gt;
+<span class="lineNum">     102 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     103 </span>            :         &lt;/function&gt;
+<span class="lineNum">     104 </span>            :  ***/
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : static AST_LIST_HEAD_STATIC(locklist, lock_frame);
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : static void lock_free(void *data);
+<span class="lineNum">     111 </span>            : static void lock_fixup(void *data, struct ast_channel *oldchan, struct ast_channel *newchan);
+<span class="lineNum">     112 </span>            : static int unloading = 0;
+<span class="lineNum">     113 </span>            : static pthread_t broker_tid = AST_PTHREADT_NULL;
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : static const struct ast_datastore_info lock_info = {
+<span class="lineNum">     116 </span>            :         .type = &quot;MUTEX&quot;,
+<span class="lineNum">     117 </span>            :         .destroy = lock_free,
+<span class="lineNum">     118 </span>            :         .chan_fixup = lock_fixup,
+<span class="lineNum">     119 </span>            : };
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span>            : struct lock_frame {
+<span class="lineNum">     122 </span>            :         AST_LIST_ENTRY(lock_frame) entries;
+<span class="lineNum">     123 </span>            :         ast_mutex_t mutex;
+<span class="lineNum">     124 </span>            :         ast_cond_t cond;
+<span class="lineNum">     125 </span>            :         /*! count is needed so if a recursive mutex exits early, we know how many times to unlock it. */
+<span class="lineNum">     126 </span>            :         unsigned int count;
+<span class="lineNum">     127 </span>            :         /*! Container of requesters for the named lock */
+<span class="lineNum">     128 </span>            :         struct ao2_container *requesters;
+<span class="lineNum">     129 </span>            :         /*! who owns us */
+<span class="lineNum">     130 </span>            :         struct ast_channel *owner;
+<span class="lineNum">     131 </span>            :         /*! name of the lock */
+<span class="lineNum">     132 </span>            :         char name[0];
+<span class="lineNum">     133 </span>            : };
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span>            : struct channel_lock_frame {
+<span class="lineNum">     136 </span>            :         AST_LIST_ENTRY(channel_lock_frame) list;
+<span class="lineNum">     137 </span>            :         /*! Need to save channel pointer here, because during destruction, we won't have it. */
+<span class="lineNum">     138 </span>            :         struct ast_channel *channel;
+<span class="lineNum">     139 </span>            :         struct lock_frame *lock_frame;
+<a name="140"><span class="lineNum">     140 </span>            : };</a>
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 : static void lock_free(void *data)</span>
+<span class="lineNum">     143 </span>            : {
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         AST_LIST_HEAD(, channel_lock_frame) *oldlist = data;</span>
+<span class="lineNum">     145 </span>            :         struct channel_lock_frame *clframe;
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(oldlist);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         while ((clframe = AST_LIST_REMOVE_HEAD(oldlist, list))) {</span>
+<span class="lineNum">     148 </span>            :                 /* Only unlock if we own the lock */
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 if (clframe-&gt;channel == clframe-&gt;lock_frame-&gt;owner) {</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                         clframe-&gt;lock_frame-&gt;count = 0;</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                         clframe-&gt;lock_frame-&gt;owner = NULL;</span>
+<span class="lineNum">     152 </span>            :                 }
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 ast_free(clframe);</span>
+<span class="lineNum">     154 </span>            :         }
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(oldlist);</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         AST_LIST_HEAD_DESTROY(oldlist);</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :         ast_free(oldlist);</span>
+<a name="158"><span class="lineNum">     158 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 : static void lock_fixup(void *data, struct ast_channel *oldchan, struct ast_channel *newchan)</span>
+<span class="lineNum">     161 </span>            : {
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         struct ast_datastore *lock_store = ast_channel_datastore_find(oldchan, &amp;lock_info, NULL);</span>
+<span class="lineNum">     163 </span>            :         AST_LIST_HEAD(, channel_lock_frame) *list;
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         struct channel_lock_frame *clframe = NULL;</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         if (!lock_store) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     168 </span>            :         }
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :         list = lock_store-&gt;data;</span>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(list);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(list, clframe, list) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 if (clframe-&gt;lock_frame-&gt;owner == oldchan) {</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                         clframe-&gt;lock_frame-&gt;owner = newchan;</span>
+<span class="lineNum">     175 </span>            :                 }
+<span class="lineNum">     176 </span>            :                 /* We don't move requesters, because the thread stack is different */
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 clframe-&gt;channel = newchan;</span>
+<span class="lineNum">     178 </span>            :         }
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(list);</span>
+<a name="180"><span class="lineNum">     180 </span>            : }</a>
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span><span class="lineCov">       1117 : static void *lock_broker(void *unused)</span>
+<span class="lineNum">     183 </span>            : {
+<span class="lineNum">     184 </span>            :         struct lock_frame *frame;
+<span class="lineNum">     185 </span><span class="lineCov">       1117 :         struct timespec forever = { 1000000, 0 };</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :         for (;;) {</span>
+<span class="lineNum">     187 </span><span class="lineCov">       1117 :                 int found_requester = 0;</span>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            :                 /* Test for cancel outside of the lock */
+<span class="lineNum">     190 </span><span class="lineCov">       1117 :                 pthread_testcancel();</span>
+<span class="lineNum">     191 </span><span class="lineCov">       1117 :                 AST_LIST_LOCK(&amp;locklist);</span>
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineCov">       1117 :                 AST_LIST_TRAVERSE(&amp;locklist, frame, entries) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                         if (ao2_container_count(frame-&gt;requesters)) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                                 found_requester++;</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                                 ast_mutex_lock(&amp;frame-&gt;mutex);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                                 if (!frame-&gt;owner) {</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                                         ast_cond_signal(&amp;frame-&gt;cond);</span>
+<span class="lineNum">     199 </span>            :                                 }
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                                 ast_mutex_unlock(&amp;frame-&gt;mutex);</span>
+<span class="lineNum">     201 </span>            :                         }
+<span class="lineNum">     202 </span>            :                 }
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">       1117 :                 AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     205 </span><span class="lineCov">       1117 :                 pthread_testcancel();</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            :                 /* If there are no requesters, then wait for a signal */
+<span class="lineNum">     208 </span><span class="lineCov">       1117 :                 if (!found_requester) {</span>
+<span class="lineNum">     209 </span><span class="lineCov">       1117 :                         nanosleep(&amp;forever, NULL);</span>
+<span class="lineNum">     210 </span>            :                 } else {
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                         sched_yield();</span>
+<span class="lineNum">     212 </span>            :                 }
+<span class="lineNum">     213 </span>            :         }
+<span class="lineNum">     214 </span>            :         /* Not reached */
+<span class="lineNum">     215 </span>            :         return NULL;
+<a name="216"><span class="lineNum">     216 </span>            : }</a>
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 : static int ast_channel_hash_cb(const void *obj, const int flags)</span>
+<span class="lineNum">     219 </span>            : {
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :         const struct ast_channel *chan = obj;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :         return ast_str_case_hash(ast_channel_name(chan));</span>
+<a name="222"><span class="lineNum">     222 </span>            : }</a>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 : static int ast_channel_cmp_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         struct ast_channel *chan = obj, *cmp_args = arg;</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         return strcasecmp(ast_channel_name(chan), ast_channel_name(cmp_args)) ? 0 : CMP_MATCH;</span>
+<a name="228"><span class="lineNum">     228 </span>            : }</a>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 : static int get_lock(struct ast_channel *chan, char *lockname, int trylock)</span>
+<span class="lineNum">     231 </span>            : {
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         struct ast_datastore *lock_store = ast_channel_datastore_find(chan, &amp;lock_info, NULL);</span>
+<span class="lineNum">     233 </span>            :         struct lock_frame *current;
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         struct channel_lock_frame *clframe = NULL;</span>
+<span class="lineNum">     235 </span>            :         AST_LIST_HEAD(, channel_lock_frame) *list;
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         int res = 0;</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :         struct timespec timeout = { 0, };</span>
+<span class="lineNum">     238 </span>            :         struct timeval now;
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         if (!lock_store) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;Channel %s has no lock datastore, so we're allocating one.\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 lock_store = ast_datastore_alloc(&amp;lock_info, NULL);</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 if (!lock_store) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to allocate new datastore.  No locks will be obtained.\n&quot;);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     246 </span>            :                 }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                 list = ast_calloc(1, sizeof(*list));</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 if (!list) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR,</span>
+<span class="lineNum">     251 </span>            :                                 &quot;Unable to allocate datastore list head.  %sLOCK will fail.\n&quot;,
+<span class="lineNum">     252 </span>            :                                 trylock ? &quot;TRY&quot; : &quot;&quot;);
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_datastore_free(lock_store);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     255 </span>            :                 }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 lock_store-&gt;data = list;</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 AST_LIST_HEAD_INIT(list);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 ast_channel_datastore_add(chan, lock_store);</span>
+<span class="lineNum">     260 </span>            :         } else
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :                 list = lock_store-&gt;data;</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            :         /* Lock already exists? */
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(&amp;locklist);</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(&amp;locklist, current, entries) {</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                 if (strcmp(current-&gt;name, lockname) == 0) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     268 </span>            :                 }
+<span class="lineNum">     269 </span>            :         }
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         if (!current) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 if (unloading) {</span>
+<span class="lineNum">     273 </span>            :                         /* Don't bother */
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     276 </span>            :                 }
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            :                 /* Create new lock entry */
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                 current = ast_calloc(1, sizeof(*current) + strlen(lockname) + 1);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                 if (!current) {</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     283 </span>            :                 }
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 strcpy(current-&gt;name, lockname); /* SAFE */</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 if ((res = ast_mutex_init(&amp;current-&gt;mutex))) {</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to initialize mutex: %s\n&quot;, strerror(res));</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                         ast_free(current);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     291 </span>            :                 }
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 if ((res = ast_cond_init(&amp;current-&gt;cond, NULL))) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to initialize condition variable: %s\n&quot;, strerror(res));</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                         ast_mutex_destroy(&amp;current-&gt;mutex);</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         ast_free(current);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     298 </span>            :                 }
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 if (!(current-&gt;requesters = ao2_container_alloc(1, ast_channel_hash_cb, ast_channel_cmp_cb))) {</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                         ast_mutex_destroy(&amp;current-&gt;mutex);</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         ast_cond_destroy(&amp;current-&gt;cond);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                         ast_free(current);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     305 </span>            :                 }
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 AST_LIST_INSERT_TAIL(&amp;locklist, current, entries);</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            :         /* Found lock or created one - now find or create the corresponding link in the channel */
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(list);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(list, clframe, list) {</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 if (clframe-&gt;lock_frame == current) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     315 </span>            :                 }
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         if (!clframe) {</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 if (unloading) {</span>
+<span class="lineNum">     320 </span>            :                         /* Don't bother */
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(list);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     323 </span>            :                 }
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 if (!(clframe = ast_calloc(1, sizeof(*clframe)))) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR,</span>
+<span class="lineNum">     327 </span>            :                                 &quot;Unable to allocate channel lock frame.  %sLOCK will fail.\n&quot;,
+<span class="lineNum">     328 </span>            :                                 trylock ? &quot;TRY&quot; : &quot;&quot;);
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(list);</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     331 </span>            :                 }
+<span class="lineNum">     332 </span>            : 
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 clframe-&gt;lock_frame = current;</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 clframe-&gt;channel = chan;</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 AST_LIST_INSERT_TAIL(list, clframe, list);</span>
+<span class="lineNum">     336 </span>            :         }
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(list);</span>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span>            :         /* If we already own the lock, then we're being called recursively.
+<span class="lineNum">     340 </span>            :          * Keep track of how many times that is, because we need to unlock
+<span class="lineNum">     341 </span>            :          * the same amount, before we'll release this one.
+<span class="lineNum">     342 </span>            :          */
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         if (current-&gt;owner == chan) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 current-&gt;count++;</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     346 </span>            :         }
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span>            :         /* Okay, we have both frames, so now we need to try to lock.
+<span class="lineNum">     349 </span>            :          *
+<span class="lineNum">     350 </span>            :          * Locking order: always lock locklist first.  We need the
+<span class="lineNum">     351 </span>            :          * locklist lock because the broker thread counts whether
+<span class="lineNum">     352 </span>            :          * there are requesters with the locklist lock held, and we
+<span class="lineNum">     353 </span>            :          * need to hold it, so that when we send our signal, below,
+<span class="lineNum">     354 </span>            :          * to wake up the broker thread, it definitely will see that
+<span class="lineNum">     355 </span>            :          * a requester exists at that point in time.  Otherwise, we
+<span class="lineNum">     356 </span>            :          * could add to the requesters after it has already seen that
+<span class="lineNum">     357 </span>            :          * that lock is unoccupied and wait forever for another signal.
+<span class="lineNum">     358 </span>            :          */
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(&amp;locklist);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;current-&gt;mutex);</span>
+<span class="lineNum">     361 </span>            :         /* Add to requester list */
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         ao2_link(current-&gt;requesters, chan);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         pthread_kill(broker_tid, SIGURG);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span>            :         /* Wait up to three seconds from now for LOCK. */
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         now = ast_tvnow();</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         timeout.tv_sec = now.tv_sec + 3;</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :         timeout.tv_nsec = now.tv_usec * 1000;</span>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         if (!current-&gt;owner</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 || (!trylock</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         &amp;&amp; !(res = ast_cond_timedwait(&amp;current-&gt;cond, &amp;current-&gt;mutex, &amp;timeout)))) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 res = 0;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 current-&gt;owner = chan;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 current-&gt;count++;</span>
+<span class="lineNum">     377 </span>            :         } else {
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     379 </span>            :         }
+<span class="lineNum">     380 </span>            :         /* Remove from requester list */
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :         ao2_unlink(current-&gt;requesters, chan);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;current-&gt;mutex);</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="385"><span class="lineNum">     385 </span>            : }</a>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 : static int unlock_read(struct ast_channel *chan, const char *cmd, char *data, char *buf, size_t len)</span>
+<span class="lineNum">     388 </span>            : {
+<span class="lineNum">     389 </span>            :         struct ast_datastore *lock_store;
+<span class="lineNum">     390 </span>            :         struct channel_lock_frame *clframe;
+<span class="lineNum">     391 </span>            :         AST_LIST_HEAD(, channel_lock_frame) *list;
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     395 </span>            :         }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :         lock_store = ast_channel_datastore_find(chan, &amp;lock_info, NULL);</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         if (!lock_store) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No datastore for dialplan locks.  Nothing was ever locked!\n&quot;);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 ast_copy_string(buf, &quot;0&quot;, len);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         if (!(list = lock_store-&gt;data)) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;This should NEVER happen\n&quot;);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 ast_copy_string(buf, &quot;0&quot;, len);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     408 </span>            :         }
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span>            :         /* Find item in the channel list */
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(list);</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(list, clframe, list) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                 if (clframe-&gt;lock_frame &amp;&amp; clframe-&gt;lock_frame-&gt;owner == chan &amp;&amp; strcmp(clframe-&gt;lock_frame-&gt;name, data) == 0) {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     415 </span>            :                 }
+<span class="lineNum">     416 </span>            :         }
+<span class="lineNum">     417 </span>            :         /* We never destroy anything until channel destruction, which will never
+<span class="lineNum">     418 </span>            :          * happen while this routine is executing, so we don't need to hold the
+<span class="lineNum">     419 </span>            :          * lock beyond this point. */
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(list);</span>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :         if (!clframe) {</span>
+<span class="lineNum">     423 </span>            :                 /* We didn't have this lock in the first place */
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 ast_copy_string(buf, &quot;0&quot;, len);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     426 </span>            :         }
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :         if (--clframe-&gt;lock_frame-&gt;count == 0) {</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 clframe-&gt;lock_frame-&gt;owner = NULL;</span>
+<span class="lineNum">     430 </span>            :         }
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, &quot;1&quot;, len);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="434"><span class="lineNum">     434 </span>            : }</a>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 : static int lock_read(struct ast_channel *chan, const char *cmd, char *data, char *buf, size_t len)</span>
+<span class="lineNum">     437 </span>            : {
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     440 </span>            :         }
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :         ast_autoservice_start(chan);</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, get_lock(chan, data, 0) ? &quot;0&quot; : &quot;1&quot;, len);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :         ast_autoservice_stop(chan);</span>
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="446"><span class="lineNum">     446 </span>            : }</a>
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 : static int trylock_read(struct ast_channel *chan, const char *cmd, char *data, char *buf, size_t len)</span>
+<span class="lineNum">     449 </span>            : {
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     452 </span>            :         }
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :         ast_autoservice_start(chan);</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, get_lock(chan, data, 1) ? &quot;0&quot; : &quot;1&quot;, len);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :         ast_autoservice_stop(chan);</span>
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     458 </span>            : }
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span>            : static struct ast_custom_function lock_function = {
+<span class="lineNum">     461 </span>            :         .name = &quot;LOCK&quot;,
+<span class="lineNum">     462 </span>            :         .read = lock_read,
+<span class="lineNum">     463 </span>            :         .read_max = 2,
+<span class="lineNum">     464 </span>            : };
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span>            : static struct ast_custom_function trylock_function = {
+<span class="lineNum">     467 </span>            :         .name = &quot;TRYLOCK&quot;,
+<span class="lineNum">     468 </span>            :         .read = trylock_read,
+<span class="lineNum">     469 </span>            :         .read_max = 2,
+<span class="lineNum">     470 </span>            : };
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span>            : static struct ast_custom_function unlock_function = {
+<span class="lineNum">     473 </span>            :         .name = &quot;UNLOCK&quot;,
+<span class="lineNum">     474 </span>            :         .read = unlock_read,
+<span class="lineNum">     475 </span>            :         .read_max = 2,
+<a name="476"><span class="lineNum">     476 </span>            : };</a>
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     479 </span>            : {
+<span class="lineNum">     480 </span>            :         struct lock_frame *current;
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span>            :         /* Module flag */
+<span class="lineNum">     483 </span><span class="lineCov">       1115 :         unloading = 1;</span>
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span><span class="lineCov">       1115 :         AST_LIST_LOCK(&amp;locklist);</span>
+<span class="lineNum">     486 </span><span class="lineCov">       1115 :         while ((current = AST_LIST_REMOVE_HEAD(&amp;locklist, entries))) {</span>
+<span class="lineNum">     487 </span>            :                 /* If any locks are currently in use, then we cannot unload this module */
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                 if (current-&gt;owner || ao2_container_count(current-&gt;requesters)) {</span>
+<span class="lineNum">     489 </span>            :                         /* Put it back */
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                         AST_LIST_INSERT_HEAD(&amp;locklist, current, entries);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                         unloading = 0;</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     494 </span>            :                 }
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                 ast_mutex_destroy(&amp;current-&gt;mutex);</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 ao2_ref(current-&gt;requesters, -1);</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :                 ast_free(current);</span>
+<span class="lineNum">     498 </span>            :         }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span>            :         /* No locks left, unregister functions */
+<span class="lineNum">     501 </span><span class="lineCov">       1115 :         ast_custom_function_unregister(&amp;lock_function);</span>
+<span class="lineNum">     502 </span><span class="lineCov">       1115 :         ast_custom_function_unregister(&amp;trylock_function);</span>
+<span class="lineNum">     503 </span><span class="lineCov">       1115 :         ast_custom_function_unregister(&amp;unlock_function);</span>
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span><span class="lineCov">       1115 :         if (broker_tid != AST_PTHREADT_NULL) {</span>
+<span class="lineNum">     506 </span><span class="lineCov">       1115 :                 pthread_cancel(broker_tid);</span>
+<span class="lineNum">     507 </span><span class="lineCov">       1115 :                 pthread_kill(broker_tid, SIGURG);</span>
+<span class="lineNum">     508 </span><span class="lineCov">       1115 :                 pthread_join(broker_tid, NULL);</span>
+<span class="lineNum">     509 </span>            :         }
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">       1115 :         AST_LIST_UNLOCK(&amp;locklist);</span>
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span><span class="lineCov">       1115 :         return 0;</span>
+<a name="514"><span class="lineNum">     514 </span>            : }</a>
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     517 </span>            : {
+<span class="lineNum">     518 </span><span class="lineCov">       1117 :         int res = ast_custom_function_register_escalating(&amp;lock_function, AST_CFE_READ);</span>
+<span class="lineNum">     519 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;trylock_function, AST_CFE_READ);</span>
+<span class="lineNum">     520 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;unlock_function, AST_CFE_READ);</span>
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span><span class="lineCov">       1117 :         if (ast_pthread_create_background(&amp;broker_tid, NULL, lock_broker, NULL)) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to start lock broker thread. Unloading func_lock module.\n&quot;);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 broker_tid = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     527 </span>            :         }
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="530"><span class="lineNum">     530 </span>            : }</a>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">       5585 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Dialplan mutexes&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

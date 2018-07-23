@@ -1,0 +1,797 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/media_cache.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - media_cache.c<span style="font-size: 80%;"> (source / <a href="media_cache.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">154</td>
+            <td class="headerCovTableEntry">306</td>
+            <td class="headerCovTableEntryLo">50.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntryLo">70.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2015, Matt Jordan
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \brief An in-memory media cache
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author \verbatim Matt Jordan &lt;mjordan@digium.com&gt; \endverbatim
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/bucket.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/astdb.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/media_cache.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : /*! The name of the AstDB family holding items in the cache. */
+<span class="lineNum">      42 </span>            : #define AST_DB_FAMILY &quot;MediaCache&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : /*! Length of 'MediaCache' + 2 '/' characters */
+<span class="lineNum">      45 </span>            : #define AST_DB_FAMILY_LEN 12
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*! Number of buckets in the ao2 container holding our media items */
+<span class="lineNum">      48 </span>            : #define AO2_BUCKETS 61
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : /*! Our one and only container holding media items */
+<a name="51"><span class="lineNum">      51 </span>            : static struct ao2_container *media_cache;</a>
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineCov">          6 : int ast_media_cache_exists(const char *uri)</span>
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span><span class="lineCov">          6 :         if (ast_strlen_zero(uri)) {</span>
+<span class="lineNum">      58 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">      59 </span>            :         }
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span><span class="lineCov">          4 :         bucket_file = ao2_find(media_cache, uri, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">      62 </span><span class="lineCov">          4 :         if (bucket_file) {</span>
+<span class="lineNum">      63 </span><span class="lineCov">          1 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">      64 </span><span class="lineCov">          1 :                 return 1;</span>
+<span class="lineNum">      65 </span>            :         }
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            :         /* Check to see if any bucket implementation could return this item */
+<span class="lineNum">      68 </span><span class="lineCov">          3 :         bucket_file = ast_bucket_file_retrieve(uri);</span>
+<span class="lineNum">      69 </span><span class="lineCov">          3 :         if (bucket_file) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">      72 </span>            :         }
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span><span class="lineCov">          3 :         return 0;</span>
+<span class="lineNum">      75 </span>            : }
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : /*!
+<span class="lineNum">      78 </span>            :  * \internal
+<a name="79"><span class="lineNum">      79 </span>            :  * \brief Sync \c bucket_file metadata to the AstDB</a>
+<span class="lineNum">      80 </span>            :  */
+<span class="lineNum">      81 </span><span class="lineCov">         28 : static int metadata_sync_to_astdb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">      82 </span>            : {
+<span class="lineNum">      83 </span><span class="lineCov">         28 :         struct ast_bucket_metadata *metadata = obj;</span>
+<span class="lineNum">      84 </span><span class="lineCov">         28 :         const char *hash = arg;</span>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineCov">         28 :         ast_db_put(hash, metadata-&gt;name, metadata-&gt;value);</span>
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineCov">         28 :         return 0;</span>
+<span class="lineNum">      89 </span>            : }
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span>            : /*!
+<span class="lineNum">      92 </span>            :  * \internal
+<span class="lineNum">      93 </span>            :  * \brief Sync a media cache item to the AstDB
+<a name="94"><span class="lineNum">      94 </span>            :  * \param bucket_file The \c ast_bucket_file media cache item to sync</a>
+<span class="lineNum">      95 </span>            :  */
+<span class="lineNum">      96 </span><span class="lineCov">          7 : static void media_cache_item_sync_to_astdb(struct ast_bucket_file *bucket_file)</span>
+<span class="lineNum">      97 </span>            : {
+<span class="lineNum">      98 </span>            :         char hash[41]; /* 40 character SHA1 hash */
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">          7 :         ast_sha1_hash(hash, ast_sorcery_object_get_id(bucket_file));</span>
+<span class="lineNum">     101 </span><span class="lineCov">          7 :         if (ast_db_put(AST_DB_FAMILY, ast_sorcery_object_get_id(bucket_file), hash)) {</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     103 </span>            :         }
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span><span class="lineCov">          7 :         ast_db_put(hash, &quot;path&quot;, bucket_file-&gt;path);</span>
+<span class="lineNum">     106 </span><span class="lineCov">          7 :         ast_bucket_file_metadata_callback(bucket_file, metadata_sync_to_astdb, hash);</span>
+<span class="lineNum">     107 </span>            : }
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            : /*!
+<span class="lineNum">     110 </span>            :  * \internal
+<span class="lineNum">     111 </span>            :  * \brief Delete a media cache item from the AstDB
+<a name="112"><span class="lineNum">     112 </span>            :  * \param bucket_file The \c ast_bucket_file media cache item to delete</a>
+<span class="lineNum">     113 </span>            :  */
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 : static void media_cache_item_del_from_astdb(struct ast_bucket_file *bucket_file)</span>
+<span class="lineNum">     115 </span>            : {
+<span class="lineNum">     116 </span>            :         char *hash_value;
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :         if (ast_db_get_allocated(AST_DB_FAMILY, ast_sorcery_object_get_id(bucket_file), &amp;hash_value)) {</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     120 </span>            :         }
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         ast_db_deltree(hash_value, NULL);</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :         ast_db_del(AST_DB_FAMILY, ast_sorcery_object_get_id(bucket_file));</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         ast_free(hash_value);</span>
+<span class="lineNum">     125 </span>            : }
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : /*!
+<span class="lineNum">     128 </span>            :  * \internal
+<span class="lineNum">     129 </span>            :  * \brief Normalize the value of a Content-Type header
+<span class="lineNum">     130 </span>            :  *
+<a name="131"><span class="lineNum">     131 </span>            :  * This will trim off any optional parameters after the type/subtype.</a>
+<span class="lineNum">     132 </span>            :  */
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 : static void normalize_content_type_header(char *content_type)</span>
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         char *params = strchr(content_type, ';');</span>
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :         if (params) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 *params-- = 0;</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 while (params &gt; content_type &amp;&amp; (*params == ' ' || *params == '\t')) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                         *params-- = 0;</span>
+<span class="lineNum">     141 </span>            :                 }
+<span class="lineNum">     142 </span>            :         }
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            : /*!
+<span class="lineNum">     146 </span>            :  * \internal
+<span class="lineNum">     147 </span>            :  * \brief Update the name of the file backing a \c bucket_file
+<a name="148"><span class="lineNum">     148 </span>            :  * \param preferred_file_name The preferred name of the backing file</a>
+<span class="lineNum">     149 </span>            :  */
+<span class="lineNum">     150 </span><span class="lineCov">          4 : static void bucket_file_update_path(struct ast_bucket_file *bucket_file,</span>
+<span class="lineNum">     151 </span>            :         const char *preferred_file_name)
+<span class="lineNum">     152 </span>            : {
+<span class="lineNum">     153 </span>            :         char *ext;
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">          4 :         if (!ast_strlen_zero(preferred_file_name) &amp;&amp; strcmp(bucket_file-&gt;path, preferred_file_name)) {</span>
+<span class="lineNum">     156 </span>            :                 /* Use the preferred file name if available */
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                 rename(bucket_file-&gt;path, preferred_file_name);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 ast_copy_string(bucket_file-&gt;path, preferred_file_name,</span>
+<span class="lineNum">     160 </span>            :                         sizeof(bucket_file-&gt;path));
+<span class="lineNum">     161 </span><span class="lineCov">          4 :         } else if (!strchr(bucket_file-&gt;path, '.') &amp;&amp; (ext = strrchr(ast_sorcery_object_get_id(bucket_file), '.'))) {</span>
+<span class="lineNum">     162 </span>            :                 /* If we don't have a file extension and were provided one in the URI, use it */
+<span class="lineNum">     163 </span>            :                 char new_path[PATH_MAX];
+<span class="lineNum">     164 </span>            :                 char found_ext[PATH_MAX];
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineCov">          4 :                 ast_bucket_file_metadata_set(bucket_file, &quot;ext&quot;, ext);</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span>            :                 /* Don't pass '.' while checking for supported extension */
+<span class="lineNum">     169 </span><span class="lineCov">          4 :                 if (!ast_get_format_for_file_ext(ext + 1)) {</span>
+<span class="lineNum">     170 </span>            :                         /* If the file extension passed in the URI isn't supported check for the
+<span class="lineNum">     171 </span>            :                          * extension based on the MIME type passed in the Content-Type header before
+<span class="lineNum">     172 </span>            :                          * giving up.
+<span class="lineNum">     173 </span>            :                          * If a match is found then retrieve the extension from the supported list
+<span class="lineNum">     174 </span>            :                          * corresponding to the mime-type and use that to rename the file */
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                         struct ast_bucket_metadata *header = ast_bucket_file_metadata_get(bucket_file, &quot;content-type&quot;);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                         if (header) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                                 char *mime_type = ast_strdup(header-&gt;value);</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                                 if (mime_type) {</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                                         normalize_content_type_header(mime_type);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                                         if (!ast_strlen_zero(mime_type)) {</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                                                 if (ast_get_extension_for_mime_type(mime_type, found_ext, sizeof(found_ext))) {</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                                                         ext = found_ext;</span>
+<span class="lineNum">     183 </span>            :                                                 }
+<span class="lineNum">     184 </span>            :                                         }
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                                         ast_free(mime_type);</span>
+<span class="lineNum">     186 </span>            :                                 }
+<span class="lineNum">     187 </span>            :                         }
+<span class="lineNum">     188 </span>            :                 }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">          4 :                 snprintf(new_path, sizeof(new_path), &quot;%s%s&quot;, bucket_file-&gt;path, ext);</span>
+<span class="lineNum">     191 </span><span class="lineCov">          4 :                 rename(bucket_file-&gt;path, new_path);</span>
+<span class="lineNum">     192 </span><span class="lineCov">          4 :                 ast_copy_string(bucket_file-&gt;path, new_path, sizeof(bucket_file-&gt;path));</span>
+<span class="lineNum">     193 </span>            :         }
+<a name="194"><span class="lineNum">     194 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">       4221 : int ast_media_cache_retrieve(const char *uri, const char *preferred_file_name,</span>
+<span class="lineNum">     197 </span>            :         char *file_path, size_t len)
+<span class="lineNum">     198 </span>            : {
+<a name="199"><span class="lineNum">     199 </span>            :         struct ast_bucket_file *bucket_file;</a>
+<span class="lineNum">     200 </span>            :         char *ext;
+<span class="lineNum">     201 </span><span class="lineCov">      12663 :         SCOPED_AO2LOCK(media_lock, media_cache);</span>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">       4221 :         if (ast_strlen_zero(uri)) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            :         /* First, retrieve from the ao2 cache here. If we find a bucket_file
+<span class="lineNum">     208 </span>            :          * matching the requested URI, ask the appropriate backend if it is
+<span class="lineNum">     209 </span>            :          * stale. If not; return it.
+<span class="lineNum">     210 </span>            :          */
+<span class="lineNum">     211 </span><span class="lineCov">       4221 :         bucket_file = ao2_find(media_cache, uri, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">     212 </span><span class="lineCov">       4221 :         if (bucket_file) {</span>
+<span class="lineNum">     213 </span><span class="lineCov">          5 :                 if (!ast_bucket_file_is_stale(bucket_file)</span>
+<span class="lineNum">     214 </span><span class="lineCov">          3 :                         &amp;&amp; ast_file_is_readable(bucket_file-&gt;path)) {</span>
+<span class="lineNum">     215 </span><span class="lineCov">          3 :                         ast_copy_string(file_path, bucket_file-&gt;path, len);</span>
+<span class="lineNum">     216 </span><span class="lineCov">          3 :                         if ((ext = strrchr(file_path, '.'))) {</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                                 *ext = '\0';</span>
+<span class="lineNum">     218 </span>            :                         }
+<span class="lineNum">     219 </span><span class="lineCov">          3 :                         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">          3 :                         ast_debug(5, &quot;Returning media at local file: %s\n&quot;, file_path);</span>
+<span class="lineNum">     222 </span><span class="lineCov">          3 :                         return 0;</span>
+<span class="lineNum">     223 </span>            :                 }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span>            :                 /* Stale! Remove the item completely, as we're going to replace it next */
+<span class="lineNum">     226 </span><span class="lineCov">          2 :                 ao2_unlink_flags(media_cache, bucket_file, OBJ_NOLOCK);</span>
+<span class="lineNum">     227 </span><span class="lineCov">          2 :                 ast_bucket_file_delete(bucket_file);</span>
+<span class="lineNum">     228 </span><span class="lineCov">          2 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     229 </span>            :         }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span>            :         /* Either this is new or the resource is stale; do a full retrieve
+<span class="lineNum">     232 </span>            :          * from the appropriate bucket_file backend
+<span class="lineNum">     233 </span>            :          */
+<span class="lineNum">     234 </span><span class="lineCov">       4218 :         bucket_file = ast_bucket_file_retrieve(uri);</span>
+<span class="lineNum">     235 </span><span class="lineCov">       4218 :         if (!bucket_file) {</span>
+<span class="lineNum">     236 </span><span class="lineCov">       4214 :                 ast_debug(2, &quot;Failed to obtain media at '%s'\n&quot;, uri);</span>
+<span class="lineNum">     237 </span><span class="lineCov">       4214 :                 return -1;</span>
+<span class="lineNum">     238 </span>            :         }
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            :         /* We can manipulate the 'immutable' bucket_file here, as we haven't
+<span class="lineNum">     241 </span>            :          * let anyone know of its existence yet
+<span class="lineNum">     242 </span>            :          */
+<span class="lineNum">     243 </span><span class="lineCov">          4 :         bucket_file_update_path(bucket_file, preferred_file_name);</span>
+<span class="lineNum">     244 </span><span class="lineCov">          4 :         media_cache_item_sync_to_astdb(bucket_file);</span>
+<span class="lineNum">     245 </span><span class="lineCov">          4 :         ast_copy_string(file_path, bucket_file-&gt;path, len);</span>
+<span class="lineNum">     246 </span><span class="lineCov">          4 :         if ((ext = strrchr(file_path, '.'))) {</span>
+<span class="lineNum">     247 </span><span class="lineCov">          4 :                 *ext = '\0';</span>
+<span class="lineNum">     248 </span>            :         }
+<span class="lineNum">     249 </span><span class="lineCov">          4 :         ao2_link_flags(media_cache, bucket_file, OBJ_NOLOCK);</span>
+<span class="lineNum">     250 </span><span class="lineCov">          4 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">          4 :         ast_debug(5, &quot;Returning media at local file: %s\n&quot;, file_path);</span>
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span><span class="lineCov">          4 :         return 0;</span>
+<a name="255"><span class="lineNum">     255 </span>            : }</a>
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">          2 : int ast_media_cache_retrieve_metadata(const char *uri, const char *key,</span>
+<span class="lineNum">     258 </span>            :         char *value, size_t len)
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     261 </span>            :         struct ast_bucket_metadata *metadata;
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">          2 :         if (ast_strlen_zero(uri) || ast_strlen_zero(key) || !value) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">          2 :         bucket_file = ao2_find(media_cache, uri, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     268 </span><span class="lineCov">          2 :         if (!bucket_file) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     270 </span>            :         }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          2 :         metadata = ao2_find(bucket_file-&gt;metadata, key, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     273 </span><span class="lineCov">          2 :         if (!metadata) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     276 </span>            :         }
+<span class="lineNum">     277 </span><span class="lineCov">          2 :         ast_copy_string(value, metadata-&gt;value, len);</span>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">          2 :         ao2_ref(metadata, -1);</span>
+<span class="lineNum">     280 </span><span class="lineCov">          2 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     281 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="282"><span class="lineNum">     282 </span>            : }</a>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineCov">          9 : int ast_media_cache_create_or_update(const char *uri, const char *file_path,</span>
+<span class="lineNum">     285 </span>            :         struct ast_variable *metadata)
+<span class="lineNum">     286 </span>            : {
+<span class="lineNum">     287 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     288 </span>            :         struct ast_variable *it_metadata;
+<span class="lineNum">     289 </span>            :         struct stat st;
+<span class="lineNum">     290 </span>            :         char tmp[128];
+<span class="lineNum">     291 </span>            :         char *ext;
+<a name="292"><span class="lineNum">     292 </span>            :         char *file_path_ptr;</a>
+<span class="lineNum">     293 </span><span class="lineCov">          9 :         int created = 0;</span>
+<span class="lineNum">     294 </span><span class="lineCov">         27 :         SCOPED_AO2LOCK(media_lock, media_cache);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">          9 :         if (ast_strlen_zero(file_path) || ast_strlen_zero(uri)) {</span>
+<span class="lineNum">     297 </span><span class="lineCov">          2 :                 return -1;</span>
+<span class="lineNum">     298 </span>            :         }
+<span class="lineNum">     299 </span><span class="lineCov">          7 :         file_path_ptr = ast_strdupa(file_path);</span>
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineCov">          7 :         if (stat(file_path, &amp;st)) {</span>
+<span class="lineNum">     302 </span><span class="lineCov">          1 :                 ast_log(LOG_WARNING, &quot;Unable to obtain information for file %s for URI %s\n&quot;,</span>
+<span class="lineNum">     303 </span>            :                         file_path, uri);
+<span class="lineNum">     304 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     305 </span>            :         }
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineCov">          6 :         bucket_file = ao2_find(media_cache, uri, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">     308 </span><span class="lineCov">          6 :         if (bucket_file) {</span>
+<span class="lineNum">     309 </span>            :                 struct ast_bucket_file *clone;
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineCov">          2 :                 clone = ast_bucket_file_clone(bucket_file);</span>
+<span class="lineNum">     312 </span><span class="lineCov">          2 :                 if (!clone) {</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :                         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     315 </span>            :                 }
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            :                 /* Remove the old bucket_file. We'll replace it if we succeed below. */
+<span class="lineNum">     318 </span><span class="lineCov">          2 :                 ao2_unlink_flags(media_cache, bucket_file, OBJ_NOLOCK);</span>
+<span class="lineNum">     319 </span><span class="lineCov">          2 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">          2 :                 bucket_file = clone;</span>
+<span class="lineNum">     322 </span>            :         } else {
+<span class="lineNum">     323 </span><span class="lineCov">          4 :                 bucket_file = ast_bucket_file_alloc(uri);</span>
+<span class="lineNum">     324 </span><span class="lineCov">          4 :                 if (!bucket_file) {</span>
+<span class="lineNum">     325 </span><span class="lineCov">          2 :                         ast_log(LOG_WARNING, &quot;Failed to create file storage for %s and %s\n&quot;,</span>
+<span class="lineNum">     326 </span>            :                                 uri, file_path);
+<span class="lineNum">     327 </span><span class="lineCov">          2 :                         return -1;</span>
+<span class="lineNum">     328 </span>            :                 }
+<span class="lineNum">     329 </span><span class="lineCov">          2 :                 created = 1;</span>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">          4 :         strcpy(bucket_file-&gt;path, file_path);</span>
+<span class="lineNum">     333 </span><span class="lineCov">          4 :         bucket_file-&gt;created.tv_sec = st.st_ctime;</span>
+<span class="lineNum">     334 </span><span class="lineCov">          4 :         bucket_file-&gt;modified.tv_sec = st.st_mtime;</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          4 :         snprintf(tmp, sizeof(tmp), &quot;%ld&quot;, (long)st.st_atime);</span>
+<span class="lineNum">     337 </span><span class="lineCov">          4 :         ast_bucket_file_metadata_set(bucket_file, &quot;accessed&quot;, tmp);</span>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineCov">          4 :         snprintf(tmp, sizeof(tmp), &quot;%jd&quot;, (intmax_t)st.st_size);</span>
+<span class="lineNum">     340 </span><span class="lineCov">          4 :         ast_bucket_file_metadata_set(bucket_file, &quot;size&quot;, tmp);</span>
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span><span class="lineCov">          4 :         ext = strrchr(file_path_ptr, '.');</span>
+<span class="lineNum">     343 </span><span class="lineCov">          4 :         if (ext) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 ast_bucket_file_metadata_set(bucket_file, &quot;ext&quot;, ext + 1);</span>
+<span class="lineNum">     345 </span>            :         }
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">          6 :         for (it_metadata = metadata; it_metadata; it_metadata = it_metadata-&gt;next) {</span>
+<span class="lineNum">     348 </span><span class="lineCov">          2 :                 ast_bucket_file_metadata_set(bucket_file, it_metadata-&gt;name, it_metadata-&gt;value);</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">          4 :         if (created &amp;&amp; ast_bucket_file_create(bucket_file)) {</span>
+<span class="lineNum">     352 </span><span class="lineCov">          1 :                 ast_log(LOG_WARNING, &quot;Failed to create media for %s\n&quot;, uri);</span>
+<span class="lineNum">     353 </span><span class="lineCov">          1 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     354 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span><span class="lineCov">          3 :         media_cache_item_sync_to_astdb(bucket_file);</span>
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span><span class="lineCov">          3 :         ao2_link_flags(media_cache, bucket_file, OBJ_NOLOCK);</span>
+<span class="lineNum">     359 </span><span class="lineCov">          3 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     360 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="361"><span class="lineNum">     361 </span>            : }</a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 : int ast_media_cache_delete(const char *uri)</span>
+<span class="lineNum">     364 </span>            : {
+<span class="lineNum">     365 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     366 </span>            :         int res;
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(uri)) {</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     370 </span>            :         }
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         bucket_file = ao2_find(media_cache, uri, OBJ_SEARCH_KEY | OBJ_UNLINK);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         if (!bucket_file) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         res = ast_bucket_file_delete(bucket_file);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         media_cache_item_del_from_astdb(bucket_file);</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         return res;</span>
+<span class="lineNum">     383 </span>            : }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span>            : /*!
+<span class="lineNum">     386 </span>            :  * \internal
+<span class="lineNum">     387 </span>            :  * \brief Remove a media cache item from the AstDB
+<span class="lineNum">     388 </span>            :  * \param uri The unique URI that represents the item in the cache
+<a name="389"><span class="lineNum">     389 </span>            :  * \param hash The hash key for the item in the AstDB</a>
+<span class="lineNum">     390 </span>            :  */
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 : static void media_cache_remove_from_astdb(const char *uri, const char *hash)</span>
+<span class="lineNum">     392 </span>            : {
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         ast_db_del(AST_DB_FAMILY, uri + AST_DB_FAMILY_LEN);</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         ast_db_deltree(hash, NULL);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span>            : /*!
+<span class="lineNum">     398 </span>            :  * \internal
+<span class="lineNum">     399 </span>            :  * \brief Create an item in the media cache from entries in the AstDB
+<span class="lineNum">     400 </span>            :  * \param uri The unique URI that represents the item in the cache
+<span class="lineNum">     401 </span>            :  * \param hash The hash key for the item in the AstDB
+<span class="lineNum">     402 </span>            :  * \retval 0 success
+<a name="403"><span class="lineNum">     403 </span>            :  * \retval -1 failure</a>
+<span class="lineNum">     404 </span>            :  */
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 : static int media_cache_item_populate_from_astdb(const char *uri, const char *hash)</span>
+<span class="lineNum">     406 </span>            : {
+<span class="lineNum">     407 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     408 </span>            :         struct ast_db_entry *db_tree;
+<span class="lineNum">     409 </span>            :         struct ast_db_entry *db_entry;
+<span class="lineNum">     410 </span>            :         struct stat st;
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         bucket_file = ast_bucket_file_alloc(uri);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         if (!bucket_file) {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     415 </span>            :         }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :         db_tree = ast_db_gettree(hash, NULL);</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         for (db_entry = db_tree; db_entry; db_entry = db_entry-&gt;next) {</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 const char *key = strchr(db_entry-&gt;key + 1, '/');</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 if (ast_strlen_zero(key)) {</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     423 </span>            :                 }
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 key++;</span>
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(key, &quot;path&quot;)) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                         strcpy(bucket_file-&gt;path, db_entry-&gt;data);</span>
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                         if (stat(bucket_file-&gt;path, &amp;st)) {</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Unable to obtain information for file %s for URI %s\n&quot;,</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                                         bucket_file-&gt;path, uri);</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                                 ast_db_freetree(db_tree);</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     435 </span>            :                         }
+<span class="lineNum">     436 </span>            :                 } else {
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         ast_bucket_file_metadata_set(bucket_file, key, db_entry-&gt;data);</span>
+<span class="lineNum">     438 </span>            :                 }
+<span class="lineNum">     439 </span>            :         }
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :         ast_db_freetree(db_tree);</span>
+<span class="lineNum">     441 </span>            : 
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(bucket_file-&gt;path)) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to restore media cache item for '%s' from AstDB: no 'path' specified\n&quot;,</span>
+<span class="lineNum">     445 </span>            :                         uri);
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     447 </span>            :         }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :         ao2_link(media_cache, bucket_file);</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     453 </span>            : }
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span>            : /*!
+<span class="lineNum">     456 </span>            :  * \internal
+<a name="457"><span class="lineNum">     457 </span>            :  * \brief Populate the media cache from entries in the AstDB</a>
+<span class="lineNum">     458 </span>            :  */
+<span class="lineNum">     459 </span><span class="lineCov">       1123 : static void media_cache_populate_from_astdb(void)</span>
+<span class="lineNum">     460 </span>            : {
+<span class="lineNum">     461 </span>            :         struct ast_db_entry *db_entry;
+<span class="lineNum">     462 </span>            :         struct ast_db_entry *db_tree;
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span><span class="lineCov">       1123 :         db_tree = ast_db_gettree(AST_DB_FAMILY, NULL);</span>
+<span class="lineNum">     465 </span><span class="lineCov">       1123 :         for (db_entry = db_tree; db_entry; db_entry = db_entry-&gt;next) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                 if (media_cache_item_populate_from_astdb(db_entry-&gt;key + AST_DB_FAMILY_LEN, db_entry-&gt;data)) {</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                         media_cache_remove_from_astdb(db_entry-&gt;key, db_entry-&gt;data);</span>
+<span class="lineNum">     468 </span>            :                 }
+<span class="lineNum">     469 </span>            :         }
+<span class="lineNum">     470 </span><span class="lineCov">       1123 :         ast_db_freetree(db_tree);</span>
+<span class="lineNum">     471 </span><span class="lineCov">       1123 : }</span>
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            : /*!
+<span class="lineNum">     474 </span>            :  * \internal
+<a name="475"><span class="lineNum">     475 </span>            :  * \brief ao2 callback function for \ref media_cache_handle_show_all</a>
+<span class="lineNum">     476 </span>            :  */
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 : static int media_cache_prnt_summary(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     478 </span>            : {
+<span class="lineNum">     479 </span>            : #define FORMAT_ROW &quot;%-40s\n\t%-40s\n&quot;
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :         struct ast_bucket_file *bucket_file = obj;</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :         struct ast_cli_args *a = arg;</span>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, FORMAT_ROW, ast_sorcery_object_get_id(bucket_file), bucket_file-&gt;path);</span>
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span>            : #undef FORMAT_ROW
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :         return CMP_MATCH;</span>
+<a name="487"><span class="lineNum">     487 </span>            : }</a>
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">       1123 : static char *media_cache_handle_show_all(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     490 </span>            : {
+<span class="lineNum">     491 </span><span class="lineCov">       1123 :         switch (cmd) {</span>
+<span class="lineNum">     492 </span><span class="lineCov">       1123 :         case CLI_INIT:</span>
+<span class="lineNum">     493 </span><span class="lineCov">       1123 :                 e-&gt;command = &quot;media cache show all&quot;;</span>
+<span class="lineNum">     494 </span><span class="lineCov">       1123 :                 e-&gt;usage =</span>
+<span class="lineNum">     495 </span>            :                         &quot;Usage: media cache show all\n&quot;
+<span class="lineNum">     496 </span>            :                         &quot;       Display a summary of all current items\n&quot;
+<span class="lineNum">     497 </span>            :                         &quot;       in the media cache.\n&quot;;
+<span class="lineNum">     498 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     501 </span>            :         }
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     505 </span>            :         }
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;URI\n\tLocal File\n&quot;);</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;---------------\n&quot;);</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :         ao2_callback(media_cache, OBJ_NODATA | OBJ_MULTIPLE, media_cache_prnt_summary, a);</span>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     512 </span>            : }
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span>            : /*!
+<span class="lineNum">     515 </span>            :  * \internal
+<a name="516"><span class="lineNum">     516 </span>            :  * \brief CLI tab completion function for URIs</a>
+<span class="lineNum">     517 </span>            :  */
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 : static char *cli_complete_uri(const char *word, int state)</span>
+<span class="lineNum">     519 </span>            : {
+<span class="lineNum">     520 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     521 </span>            :         struct ao2_iterator it_media_items;
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         int wordlen = strlen(word);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :         int which = 0;</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :         char *result = NULL;</span>
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :         it_media_items = ao2_iterator_init(media_cache, 0);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         while ((bucket_file = ao2_iterator_next(&amp;it_media_items))) {</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 if (!strncasecmp(word, ast_sorcery_object_get_id(bucket_file), wordlen)</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                         &amp;&amp; ++which &gt; state) {</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :                         result = ast_strdup(ast_sorcery_object_get_id(bucket_file));</span>
+<span class="lineNum">     531 </span>            :                 }
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 if (result) {</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     535 </span>            :                 }
+<span class="lineNum">     536 </span>            :         }
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;it_media_items);</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :         return result;</span>
+<a name="539"><span class="lineNum">     539 </span>            : }</a>
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineCov">       1123 : static char *media_cache_handle_show_item(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     542 </span>            : {
+<span class="lineNum">     543 </span>            : #define FORMAT_ROW &quot;\t%20s: %-40.40s\n&quot;
+<span class="lineNum">     544 </span>            :         struct ast_bucket_file *bucket_file;
+<span class="lineNum">     545 </span>            :         struct ao2_iterator it_metadata;
+<span class="lineNum">     546 </span>            :         struct ast_bucket_metadata *metadata;
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineCov">       1123 :         switch (cmd) {</span>
+<span class="lineNum">     549 </span><span class="lineCov">       1123 :         case CLI_INIT:</span>
+<span class="lineNum">     550 </span><span class="lineCov">       1123 :                 e-&gt;command = &quot;media cache show&quot;;</span>
+<span class="lineNum">     551 </span><span class="lineCov">       1123 :                 e-&gt;usage =</span>
+<span class="lineNum">     552 </span>            :                         &quot;Usage: media cache show &lt;uri&gt;\n&quot;
+<span class="lineNum">     553 </span>            :                         &quot;       Display all information about a particular\n&quot;
+<span class="lineNum">     554 </span>            :                         &quot;       item in the media cache.\n&quot;;
+<span class="lineNum">     555 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 return cli_complete_uri(a-&gt;word, a-&gt;n);</span>
+<span class="lineNum">     558 </span>            :         }
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         bucket_file = ao2_find(media_cache, a-&gt;argv[3], OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :         if (!bucket_file) {</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Unable to find '%s' in the media cache\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :                 return CLI_SUCCESS;</span>
+<span class="lineNum">     568 </span>            :         }
+<span class="lineNum">     569 </span>            : 
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;URI: %s\n&quot;, ast_sorcery_object_get_id(bucket_file));</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%s\n&quot;, &quot;----------------------------------------&quot;);</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, FORMAT_ROW, &quot;Path&quot;, bucket_file-&gt;path);</span>
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :         it_metadata = ao2_iterator_init(bucket_file-&gt;metadata, 0);</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :         while ((metadata = ao2_iterator_next(&amp;it_metadata))) {</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, FORMAT_ROW, metadata-&gt;name, metadata-&gt;value);</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 ao2_ref(metadata, -1);</span>
+<span class="lineNum">     578 </span>            :         }
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;it_metadata);</span>
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :         ao2_ref(bucket_file, -1);</span>
+<span class="lineNum">     582 </span>            : #undef FORMAT_ROW
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="584"><span class="lineNum">     584 </span>            : }</a>
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">       1123 : static char *media_cache_handle_delete_item(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     587 </span>            : {
+<span class="lineNum">     588 </span><span class="lineCov">       1123 :         switch (cmd) {</span>
+<span class="lineNum">     589 </span><span class="lineCov">       1123 :         case CLI_INIT:</span>
+<span class="lineNum">     590 </span><span class="lineCov">       1123 :                 e-&gt;command = &quot;media cache delete&quot;;</span>
+<span class="lineNum">     591 </span><span class="lineCov">       1123 :                 e-&gt;usage =</span>
+<span class="lineNum">     592 </span>            :                         &quot;Usage: media cache delete &lt;uri&gt;\n&quot;
+<span class="lineNum">     593 </span>            :                         &quot;       Delete an item from the media cache.\n&quot;
+<span class="lineNum">     594 </span>            :                         &quot;       Note that this will also remove any local\n&quot;
+<span class="lineNum">     595 </span>            :                         &quot;       storage of the media associated with the URI,\n&quot;
+<span class="lineNum">     596 </span>            :                         &quot;       and will inform the backend supporting the URI\n&quot;
+<span class="lineNum">     597 </span>            :                         &quot;       scheme that it should remove the item.\n&quot;;
+<span class="lineNum">     598 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :                 return cli_complete_uri(a-&gt;word, a-&gt;n);</span>
+<span class="lineNum">     601 </span>            :         }
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4) {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     605 </span>            :         }
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         if (ast_media_cache_delete(a-&gt;argv[3])) {</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Unable to delete '%s'\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     609 </span>            :         } else {
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Deleted '%s' from the media cache\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     611 </span>            :         }
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="614"><span class="lineNum">     614 </span>            : }</a>
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">       1123 : static char *media_cache_handle_refresh_item(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     617 </span>            : {
+<span class="lineNum">     618 </span>            :         char file_path[PATH_MAX];
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span><span class="lineCov">       1123 :         switch (cmd) {</span>
+<span class="lineNum">     621 </span><span class="lineCov">       1123 :         case CLI_INIT:</span>
+<span class="lineNum">     622 </span><span class="lineCov">       1123 :                 e-&gt;command = &quot;media cache refresh&quot;;</span>
+<span class="lineNum">     623 </span><span class="lineCov">       1123 :                 e-&gt;usage =</span>
+<span class="lineNum">     624 </span>            :                         &quot;Usage: media cache refresh &lt;uri&gt;\n&quot;
+<span class="lineNum">     625 </span>            :                         &quot;       Ask for a refresh of a particular URI.\n&quot;
+<span class="lineNum">     626 </span>            :                         &quot;       If the item does not already exist in the\n&quot;
+<span class="lineNum">     627 </span>            :                         &quot;       media cache, the item will be populated from\n&quot;
+<span class="lineNum">     628 </span>            :                         &quot;       the backend supporting the URI scheme.\n&quot;;
+<span class="lineNum">     629 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :                 return cli_complete_uri(a-&gt;word, a-&gt;n);</span>
+<span class="lineNum">     632 </span>            :         }
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4) {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     636 </span>            :         }
+<span class="lineNum">     637 </span>            : 
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :         if (ast_media_cache_retrieve(a-&gt;argv[3], NULL, file_path, sizeof(file_path))) {</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Unable to refresh '%s'\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     640 </span>            :         } else {
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Refreshed '%s' to local storage '%s'\n&quot;, a-&gt;argv[3], file_path);</span>
+<span class="lineNum">     642 </span>            :         }
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="645"><span class="lineNum">     645 </span>            : }</a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineCov">       1123 : static char *media_cache_handle_create_item(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     648 </span>            : {
+<span class="lineNum">     649 </span><span class="lineCov">       1123 :         switch (cmd) {</span>
+<span class="lineNum">     650 </span><span class="lineCov">       1123 :         case CLI_INIT:</span>
+<span class="lineNum">     651 </span><span class="lineCov">       1123 :                 e-&gt;command = &quot;media cache create&quot;;</span>
+<span class="lineNum">     652 </span><span class="lineCov">       1123 :                 e-&gt;usage =</span>
+<span class="lineNum">     653 </span>            :                         &quot;Usage: media cache create &lt;uri&gt; &lt;file&gt;\n&quot;
+<span class="lineNum">     654 </span>            :                         &quot;       Create an item in the media cache by associating\n&quot;
+<span class="lineNum">     655 </span>            :                         &quot;       a local media file with some URI.\n&quot;;
+<span class="lineNum">     656 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     659 </span>            :         }
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 5) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     663 </span>            :         }
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span><span class="lineNoCov">          0 :         if (ast_media_cache_create_or_update(a-&gt;argv[3], a-&gt;argv[4], NULL)) {</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Unable to create '%s' associated with local file '%s'\n&quot;,</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                         a-&gt;argv[3], a-&gt;argv[4]);</span>
+<span class="lineNum">     668 </span>            :         } else {
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Created '%s' for '%s' in the media cache\n&quot;,</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                         a-&gt;argv[3], a-&gt;argv[4]);</span>
+<span class="lineNum">     671 </span>            :         }
+<span class="lineNum">     672 </span>            : 
+<span class="lineNum">     673 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     674 </span>            : }
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span>            : static struct ast_cli_entry cli_media_cache[] = {
+<span class="lineNum">     677 </span>            :         AST_CLI_DEFINE(media_cache_handle_show_all, &quot;Show all items in the media cache&quot;),
+<span class="lineNum">     678 </span>            :         AST_CLI_DEFINE(media_cache_handle_show_item, &quot;Show a single item in the media cache&quot;),
+<span class="lineNum">     679 </span>            :         AST_CLI_DEFINE(media_cache_handle_delete_item, &quot;Remove an item from the media cache&quot;),
+<span class="lineNum">     680 </span>            :         AST_CLI_DEFINE(media_cache_handle_refresh_item, &quot;Refresh an item in the media cache&quot;),
+<span class="lineNum">     681 </span>            :         AST_CLI_DEFINE(media_cache_handle_create_item, &quot;Create an item in the media cache&quot;),
+<span class="lineNum">     682 </span>            : };
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span>            : /*!
+<span class="lineNum">     685 </span>            :  * \internal
+<a name="686"><span class="lineNum">     686 </span>            :  * \brief Shutdown the media cache</a>
+<span class="lineNum">     687 </span>            :  */
+<span class="lineNum">     688 </span><span class="lineCov">       1061 : static void media_cache_shutdown(void)</span>
+<span class="lineNum">     689 </span>            : {
+<span class="lineNum">     690 </span><span class="lineCov">       1061 :         ao2_cleanup(media_cache);</span>
+<span class="lineNum">     691 </span><span class="lineCov">       1061 :         media_cache = NULL;</span>
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span><span class="lineCov">       1061 :         ast_cli_unregister_multiple(cli_media_cache, ARRAY_LEN(cli_media_cache));</span>
+<a name="694"><span class="lineNum">     694 </span><span class="lineCov">       1061 : }</span></a>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">       1123 : int ast_media_cache_init(void)</span>
+<span class="lineNum">     697 </span>            : {
+<span class="lineNum">     698 </span><span class="lineCov">       1123 :         ast_register_cleanup(media_cache_shutdown);</span>
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineCov">       1123 :         media_cache = ao2_container_alloc_options(AO2_ALLOC_OPT_LOCK_MUTEX, AO2_BUCKETS,</span>
+<span class="lineNum">     701 </span>            :                 ast_sorcery_object_id_hash, ast_sorcery_object_id_compare);
+<span class="lineNum">     702 </span><span class="lineCov">       1123 :         if (!media_cache) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span>            : 
+<span class="lineNum">     706 </span><span class="lineCov">       1123 :         if (ast_cli_register_multiple(cli_media_cache, ARRAY_LEN(cli_media_cache))) {</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     708 </span>            :         }
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span><span class="lineCov">       1123 :         media_cache_populate_from_astdb();</span>
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span><span class="lineCov">       1123 :         return 0;</span>
+<span class="lineNum">     713 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - formats/format_g719.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">formats</a> - format_g719.c<span style="font-size: 80%;"> (source / <a href="format_g719.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">55</td>
+            <td class="headerCovTableEntryLo">12.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryLo">50.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2010, Anthony Minessale and Digium, Inc.
+<span class="lineNum">       5 </span>            :  * Anthony Minessale (anthmct@yahoo.com)
+<span class="lineNum">       6 </span>            :  * Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief ITU G.719 , 64kbps bitrate only
+<span class="lineNum">      22 </span>            :  * \arg File name extensions: g719
+<span class="lineNum">      23 </span>            :  * \ingroup formats
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/mod_format.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/endian.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : #define BUF_SIZE        160             /* 20 milliseconds == 160 bytes, 960 samples */
+<span class="lineNum">      38 </span>            : #define SAMPLES_TO_BYTES(x)     ((typeof(x)) x / ((float) 960 / 160))
+<a name="39"><span class="lineNum">      39 </span>            : #define BYTES_TO_SAMPLES(x)     ((typeof(x)) x * ((float) 960 / 160))</a>
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 : static struct ast_frame *g719read(struct ast_filestream *s, int *whennext)</span>
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span>            :         size_t res;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            :         /* Send a frame from the file to the appropriate channel */
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         AST_FRAME_SET_BUFFER(&amp;s-&gt;fr, s-&gt;buf, AST_FRIENDLY_OFFSET, BUF_SIZE);</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         if ((res = fread(s-&gt;fr.data.ptr, 1, s-&gt;fr.datalen, s-&gt;f)) != s-&gt;fr.datalen) {</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                 if (res) {</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Short read of %s data (expected %d bytes, read %zu): %s\n&quot;,</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                                         ast_format_get_name(s-&gt;fr.subclass.format), s-&gt;fr.datalen, res,</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                                         strerror(errno));</span>
+<span class="lineNum">      52 </span>            :                 }
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      54 </span>            :         }
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :         *whennext = s-&gt;fr.samples = BYTES_TO_SAMPLES(res);</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         return &amp;s-&gt;fr;</span>
+<a name="57"><span class="lineNum">      57 </span>            : }</a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 : static int g719write(struct ast_filestream *fs, struct ast_frame *f)</span>
+<span class="lineNum">      60 </span>            : {
+<span class="lineNum">      61 </span>            :         int res;
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         if ((res = fwrite(f-&gt;data.ptr, 1, f-&gt;datalen, fs-&gt;f)) != f-&gt;datalen) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bad write (%d/%d): %s\n&quot;, res, f-&gt;datalen, strerror(errno));</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      66 </span>            :         }
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="68"><span class="lineNum">      68 </span>            : }</a>
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static int g719seek(struct ast_filestream *fs, off_t sample_offset, int whence)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         off_t offset = 0, min = 0, cur, max;</span>
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         sample_offset = SAMPLES_TO_BYTES(sample_offset);</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in g719 filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      79 </span>            :         }
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 :         if (fseeko(fs-&gt;f, 0, SEEK_END) &lt; 0) {</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to seek to end of g719 filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      84 </span>            :         }
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         if ((max = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine max position in g719 filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      89 </span>            :         }
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         if (whence == SEEK_SET)</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 offset = sample_offset;</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :         else if (whence == SEEK_CUR || whence == SEEK_FORCECUR)</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 offset = sample_offset + cur;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         else if (whence == SEEK_END)</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                 offset = max - sample_offset;</span>
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         if (whence != SEEK_FORCECUR)</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 offset = (offset &gt; max) ? max : offset;</span>
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span>            :         /* always protect against seeking past begining. */
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         offset = (offset &lt; min) ? min : offset;</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         return fseeko(fs-&gt;f, offset, SEEK_SET);</span>
+<a name="105"><span class="lineNum">     105 </span>            : }</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 : static int g719trunc(struct ast_filestream *fs)</span>
+<span class="lineNum">     108 </span>            : {
+<span class="lineNum">     109 </span>            :         int fd;
+<span class="lineNum">     110 </span>            :         off_t cur;
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         if ((fd = fileno(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine file descriptor for g719 filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in g719 filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     119 </span>            :         }
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         return ftruncate(fd, cur);</span>
+<a name="121"><span class="lineNum">     121 </span>            : }</a>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 : static off_t g719tell(struct ast_filestream *fs)</span>
+<span class="lineNum">     124 </span>            : {
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :         return BYTES_TO_SAMPLES(ftello(fs-&gt;f));</span>
+<span class="lineNum">     126 </span>            : }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : static struct ast_format_def g719_f = {
+<span class="lineNum">     129 </span>            :         .name = &quot;g719&quot;,
+<span class="lineNum">     130 </span>            :         .exts = &quot;g719&quot;,
+<span class="lineNum">     131 </span>            :         .write = g719write,
+<span class="lineNum">     132 </span>            :         .seek = g719seek,
+<span class="lineNum">     133 </span>            :         .trunc = g719trunc,
+<span class="lineNum">     134 </span>            :         .tell = g719tell,
+<span class="lineNum">     135 </span>            :         .read = g719read,
+<span class="lineNum">     136 </span>            :         .buf_size = BUF_SIZE + AST_FRIENDLY_OFFSET,
+<a name="137"><span class="lineNum">     137 </span>            : };</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span><span class="lineCov">       1117 :         g719_f.format = ast_format_g719;</span>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">       1117 :         if (ast_format_def_register(&amp;g719_f))</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     145 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="146"><span class="lineNum">     146 </span>            : }</a>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     149 </span>            : {
+<span class="lineNum">     150 </span><span class="lineCov">       1115 :         return ast_format_def_unregister(g719_f.name);</span>
+<a name="151"><span class="lineNum">     151 </span>            : }</a>
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span><span class="lineCov">       3351 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;ITU G.719&quot;,</span>
+<span class="lineNum">     154 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     155 </span>            :         .load = load_module,
+<span class="lineNum">     156 </span>            :         .unload = unload_module,
+<span class="lineNum">     157 </span>            :         .load_pri = AST_MODPRI_APP_DEPEND
+<span class="lineNum">     158 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

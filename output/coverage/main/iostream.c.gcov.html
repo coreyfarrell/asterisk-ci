@@ -1,0 +1,716 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/iostream.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - iostream.c<span style="font-size: 80%;"> (source / <a href="iostream.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">179</td>
+            <td class="headerCovTableEntry">296</td>
+            <td class="headerCovTableEntryLo">60.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntryHi">95.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2015, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Timo Teräs &lt;timo.teras@iki.fi&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : #include &quot;asterisk/iostream.h&quot;          /* for DO_SSL */
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : #include &lt;fcntl.h&gt;                      /* for O_NONBLOCK */
+<span class="lineNum">      24 </span>            : #ifdef DO_SSL
+<span class="lineNum">      25 </span>            : #include &lt;openssl/err.h&gt;                /* for ERR_error_string */
+<span class="lineNum">      26 </span>            : #include &lt;openssl/opensslv.h&gt;           /* for OPENSSL_VERSION_NUMBER */
+<span class="lineNum">      27 </span>            : #include &lt;openssl/ssl.h&gt;                /* for SSL_get_error, SSL_free, SSL_... */
+<span class="lineNum">      28 </span>            : #endif
+<span class="lineNum">      29 </span>            : #include &lt;sys/socket.h&gt;                 /* for shutdown, SHUT_RDWR */
+<span class="lineNum">      30 </span>            : #include &lt;sys/time.h&gt;                   /* for timeval */
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/astobj2.h&quot;           /* for ao2_alloc_options, ao2_alloc_... */
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/logger.h&quot;            /* for ast_debug, ast_log, LOG_ERROR */
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/strings.h&quot;           /* for asterisk/threadstorage.h */
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/threadstorage.h&quot;     /* for ast_threadstorage_get, AST_TH... */
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/time.h&quot;              /* for ast_remaining_ms, ast_tvnow */
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/utils.h&quot;             /* for ast_wait_for_input, ast_wait_... */
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : struct ast_iostream {
+<span class="lineNum">      40 </span>            :         SSL *ssl;
+<span class="lineNum">      41 </span>            :         struct timeval start;
+<span class="lineNum">      42 </span>            :         int fd;
+<span class="lineNum">      43 </span>            :         int timeout;
+<span class="lineNum">      44 </span>            :         int timeout_reset;
+<span class="lineNum">      45 </span>            :         int exclusive_input;
+<span class="lineNum">      46 </span>            :         int rbuflen;
+<span class="lineNum">      47 </span>            :         char *rbufhead;
+<span class="lineNum">      48 </span>            :         char rbuf[2048];
+<span class="lineNum">      49 </span>            : };
+<a name="50"><span class="lineNum">      50 </span>            : </a>
+<span class="lineNum">      51 </span>            : #if defined(DO_SSL)
+<span class="lineNum">      52 </span><span class="lineCov">          1 : AST_THREADSTORAGE(err2str_threadbuf);</span>
+<a name="53"><span class="lineNum">      53 </span>            : #define ERR2STR_BUFSIZE   128</a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">          2 : static const char *ssl_error_to_string(int sslerr, int ret)</span>
+<span class="lineNum">      56 </span>            : {
+<span class="lineNum">      57 </span><span class="lineCov">          2 :         switch (sslerr) {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         case SSL_ERROR_SSL:</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 return &quot;Internal SSL error&quot;;</span>
+<span class="lineNum">      60 </span><span class="lineCov">          2 :         case SSL_ERROR_SYSCALL:</span>
+<span class="lineNum">      61 </span><span class="lineCov">          2 :                 if (!ret) {</span>
+<span class="lineNum">      62 </span><span class="lineCov">          1 :                         return &quot;System call EOF&quot;;</span>
+<span class="lineNum">      63 </span><span class="lineCov">          1 :                 } else if (ret == -1) {</span>
+<span class="lineNum">      64 </span>            :                         char *buf;
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span><span class="lineCov">          1 :                         buf = ast_threadstorage_get(&amp;err2str_threadbuf, ERR2STR_BUFSIZE);</span>
+<span class="lineNum">      67 </span><span class="lineCov">          1 :                         if (!buf) {</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                                 return &quot;Unknown&quot;;</span>
+<span class="lineNum">      69 </span>            :                         }
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineCov">          1 :                         snprintf(buf, ERR2STR_BUFSIZE, &quot;Underlying BIO error: %s&quot;, strerror(errno));</span>
+<span class="lineNum">      72 </span><span class="lineCov">          1 :                         return buf;</span>
+<span class="lineNum">      73 </span>            :                 } else {
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                         return &quot;System call other&quot;;</span>
+<span class="lineNum">      75 </span>            :                 }
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">      78 </span>            :         }
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         return &quot;Unknown&quot;;</span>
+<span class="lineNum">      81 </span>            : }
+<a name="82"><span class="lineNum">      82 </span>            : #endif</a>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineCov">     107662 : int ast_iostream_get_fd(struct ast_iostream *stream)</span>
+<span class="lineNum">      85 </span>            : {
+<span class="lineNum">      86 </span><span class="lineCov">     107662 :         return stream-&gt;fd;</span>
+<a name="87"><span class="lineNum">      87 </span>            : }</a>
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span><span class="lineCov">       2415 : void ast_iostream_nonblock(struct ast_iostream *stream)</span>
+<span class="lineNum">      90 </span>            : {
+<span class="lineNum">      91 </span><span class="lineCov">       2415 :         ast_fd_set_flags(stream-&gt;fd, O_NONBLOCK);</span>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">       2415 : }</span></a>
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">        228 : SSL *ast_iostream_get_ssl(struct ast_iostream *stream)</span>
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span><span class="lineCov">        228 :         return stream-&gt;ssl;</span>
+<a name="97"><span class="lineNum">      97 </span>            : }</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">     152268 : void ast_iostream_set_timeout_disable(struct ast_iostream *stream)</span>
+<span class="lineNum">     100 </span>            : {
+<span class="lineNum">     101 </span><span class="lineCov">     152268 :         ast_assert(stream != NULL);</span>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineCov">     152268 :         stream-&gt;timeout = -1;</span>
+<span class="lineNum">     104 </span><span class="lineCov">     152268 :         stream-&gt;timeout_reset = -1;</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">     152268 : }</span></a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineCov">     145760 : void ast_iostream_set_timeout_inactivity(struct ast_iostream *stream, int timeout)</span>
+<span class="lineNum">     108 </span>            : {
+<span class="lineNum">     109 </span><span class="lineCov">     145760 :         ast_assert(stream != NULL);</span>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">     145760 :         stream-&gt;start.tv_sec = 0;</span>
+<span class="lineNum">     112 </span><span class="lineCov">     145760 :         stream-&gt;timeout = timeout;</span>
+<span class="lineNum">     113 </span><span class="lineCov">     145760 :         stream-&gt;timeout_reset = timeout;</span>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">     145760 : }</span></a>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">       2287 : void ast_iostream_set_timeout_idle_inactivity(struct ast_iostream *stream, int timeout, int timeout_reset)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span><span class="lineCov">       2287 :         ast_assert(stream != NULL);</span>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineCov">       2287 :         stream-&gt;start.tv_sec = 0;</span>
+<span class="lineNum">     121 </span><span class="lineCov">       2287 :         stream-&gt;timeout = timeout;</span>
+<span class="lineNum">     122 </span><span class="lineCov">       2287 :         stream-&gt;timeout_reset = timeout_reset;</span>
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">       2287 : }</span></a>
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">       4147 : void ast_iostream_set_timeout_sequence(struct ast_iostream *stream, struct timeval start, int timeout)</span>
+<span class="lineNum">     126 </span>            : {
+<span class="lineNum">     127 </span><span class="lineCov">       4147 :         ast_assert(stream != NULL);</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">       4147 :         stream-&gt;start = start;</span>
+<span class="lineNum">     130 </span><span class="lineCov">       4147 :         stream-&gt;timeout = timeout;</span>
+<span class="lineNum">     131 </span><span class="lineCov">       4147 :         stream-&gt;timeout_reset = timeout;</span>
+<a name="132"><span class="lineNum">     132 </span><span class="lineCov">       4147 : }</span></a>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">       2565 : void ast_iostream_set_exclusive_input(struct ast_iostream *stream, int exclusive_input)</span>
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineCov">       2565 :         ast_assert(stream != NULL);</span>
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">       2565 :         stream-&gt;exclusive_input = exclusive_input;</span>
+<a name="139"><span class="lineNum">     139 </span><span class="lineCov">       2565 : }</span></a>
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">       5521 : static ssize_t iostream_read(struct ast_iostream *stream, void *buf, size_t size)</span>
+<span class="lineNum">     142 </span>            : {
+<span class="lineNum">     143 </span>            :         struct timeval start;
+<span class="lineNum">     144 </span>            :         int ms;
+<span class="lineNum">     145 </span>            :         int res;
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">       5521 :         if (stream-&gt;start.tv_sec) {</span>
+<span class="lineNum">     148 </span><span class="lineCov">        175 :                 start = stream-&gt;start;</span>
+<span class="lineNum">     149 </span>            :         } else {
+<span class="lineNum">     150 </span><span class="lineCov">       5346 :                 start = ast_tvnow();</span>
+<span class="lineNum">     151 </span>            :         }
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            : #if defined(DO_SSL)
+<span class="lineNum">     154 </span><span class="lineCov">       5521 :         if (stream-&gt;ssl) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 for (;;) {</span>
+<span class="lineNum">     156 </span>            :                         int sslerr;
+<span class="lineNum">     157 </span>            :                         char err[256];
+<span class="lineNum">     158 </span><span class="lineCov">         12 :                         res = SSL_read(stream-&gt;ssl, buf, size);</span>
+<span class="lineNum">     159 </span><span class="lineCov">         12 :                         if (0 &lt; res) {</span>
+<span class="lineNum">     160 </span>            :                                 /* We read some payload data. */
+<span class="lineNum">     161 </span><span class="lineCov">         10 :                                 stream-&gt;timeout = stream-&gt;timeout_reset;</span>
+<span class="lineNum">     162 </span><span class="lineCov">         12 :                                 return res;</span>
+<span class="lineNum">     163 </span>            :                         }
+<span class="lineNum">     164 </span><span class="lineCov">          2 :                         sslerr = SSL_get_error(stream-&gt;ssl, res);</span>
+<span class="lineNum">     165 </span><span class="lineCov">          2 :                         switch (sslerr) {</span>
+<span class="lineNum">     166 </span><span class="lineCov">          1 :                         case SSL_ERROR_ZERO_RETURN:</span>
+<span class="lineNum">     167 </span>            :                                 /* Report EOF for a shutdown */
+<span class="lineNum">     168 </span><span class="lineCov">          1 :                                 ast_debug(1, &quot;TLS clean shutdown alert reading data\n&quot;);</span>
+<span class="lineNum">     169 </span><span class="lineCov">          1 :                                 return 0;</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                         case SSL_ERROR_WANT_READ:</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                                 if (!stream-&gt;exclusive_input) {</span>
+<span class="lineNum">     172 </span>            :                                         /* We cannot wait for data now. */
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                                         errno = EAGAIN;</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     175 </span>            :                                 }
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                                 while ((ms = ast_remaining_ms(start, stream-&gt;timeout))) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                                         res = ast_wait_for_input(stream-&gt;fd, ms);</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                                         if (0 &lt; res) {</span>
+<span class="lineNum">     179 </span>            :                                                 /* Socket is ready to be read. */
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     181 </span>            :                                         }
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                                         if (res &lt; 0) {</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                                                 if (errno == EINTR || errno == EAGAIN) {</span>
+<span class="lineNum">     184 </span>            :                                                         /* Try again. */
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                                                         continue;</span>
+<span class="lineNum">     186 </span>            :                                                 }
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                                                 ast_debug(1, &quot;TLS socket error waiting for read data: %s\n&quot;,</span>
+<span class="lineNum">     188 </span>            :                                                         strerror(errno));
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">     190 </span>            :                                         }
+<span class="lineNum">     191 </span>            :                                 }
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :                         case SSL_ERROR_WANT_WRITE:</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                                 while ((ms = ast_remaining_ms(start, stream-&gt;timeout))) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                                         res = ast_wait_for_output(stream-&gt;fd, ms);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                                         if (0 &lt; res) {</span>
+<span class="lineNum">     197 </span>            :                                                 /* Socket is ready to be written. */
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     199 </span>            :                                         }
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                                         if (res &lt; 0) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                                                 if (errno == EINTR || errno == EAGAIN) {</span>
+<span class="lineNum">     202 </span>            :                                                         /* Try again. */
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                                                         continue;</span>
+<span class="lineNum">     204 </span>            :                                                 }
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                                                 ast_debug(1, &quot;TLS socket error waiting for write space: %s\n&quot;,</span>
+<span class="lineNum">     206 </span>            :                                                         strerror(errno));
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">     208 </span>            :                                         }
+<span class="lineNum">     209 </span>            :                                 }
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     211 </span><span class="lineCov">          1 :                         case SSL_ERROR_SYSCALL:</span>
+<span class="lineNum">     212 </span>            :                                 /* Some non-recoverable I/O error occurred. The OpenSSL error queue may
+<span class="lineNum">     213 </span>            :                                  * contain more information on the error. For socket I/O on Unix systems,
+<span class="lineNum">     214 </span>            :                                  * consult errno for details. */
+<span class="lineNum">     215 </span><span class="lineCov">          1 :                                 ast_debug(1, &quot;TLS non-recoverable I/O error occurred: %s, %s\n&quot;, ERR_error_string(sslerr, err),</span>
+<span class="lineNum">     216 </span>            :                                         ssl_error_to_string(sslerr, res));
+<span class="lineNum">     217 </span><span class="lineCov">          1 :                                 return -1;</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                         default:</span>
+<span class="lineNum">     219 </span>            :                                 /* Report EOF for an undecoded SSL or transport error. */
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;TLS transport or SSL error reading data:  %s, %s\n&quot;, ERR_error_string(sslerr, err),</span>
+<span class="lineNum">     221 </span>            :                                         ssl_error_to_string(sslerr, res));
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     223 </span>            :                         }
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                         if (!ms) {</span>
+<span class="lineNum">     225 </span>            :                                 /* Report EOF for a timeout */
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;TLS timeout reading data\n&quot;);</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                                 return 0;</span>
+<span class="lineNum">     228 </span>            :                         }
+<span class="lineNum">     229 </span>            :                 }
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : #endif  /* defined(DO_SSL) */
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :         for (;;) {
+<span class="lineNum">     234 </span><span class="lineCov">       6727 :                 res = read(stream-&gt;fd, buf, size);</span>
+<span class="lineNum">     235 </span><span class="lineCov">       6727 :                 if (0 &lt;= res) {</span>
+<span class="lineNum">     236 </span>            :                         /* Got data or we cannot wait for it. */
+<span class="lineNum">     237 </span><span class="lineCov">       5509 :                         stream-&gt;timeout = stream-&gt;timeout_reset;</span>
+<span class="lineNum">     238 </span><span class="lineCov">       5509 :                         return res;</span>
+<span class="lineNum">     239 </span>            :                 }
+<span class="lineNum">     240 </span><span class="lineCov">       1218 :                 if (!stream-&gt;exclusive_input) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                         return res;</span>
+<span class="lineNum">     242 </span>            :                 }
+<span class="lineNum">     243 </span><span class="lineCov">       1218 :                 if (errno != EINTR &amp;&amp; errno != EAGAIN) {</span>
+<span class="lineNum">     244 </span>            :                         /* Not a retryable error. */
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;TCP socket error reading data: %s\n&quot;,</span>
+<span class="lineNum">     246 </span>            :                                 strerror(errno));
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     248 </span>            :                 }
+<span class="lineNum">     249 </span><span class="lineCov">       1218 :                 ms = ast_remaining_ms(start, stream-&gt;timeout);</span>
+<span class="lineNum">     250 </span><span class="lineCov">       1218 :                 if (!ms) {</span>
+<span class="lineNum">     251 </span>            :                         /* Report EOF for a timeout */
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;TCP timeout reading data\n&quot;);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     254 </span>            :                 }
+<span class="lineNum">     255 </span><span class="lineCov">       1218 :                 ast_wait_for_input(stream-&gt;fd, ms);</span>
+<span class="lineNum">     256 </span>            :         }
+<a name="257"><span class="lineNum">     257 </span>            : }</a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">       3254 : ssize_t ast_iostream_read(struct ast_iostream *stream, void *buffer, size_t count)</span>
+<span class="lineNum">     260 </span>            : {
+<span class="lineNum">     261 </span><span class="lineCov">       3254 :         if (!count) {</span>
+<span class="lineNum">     262 </span>            :                 /* You asked for no data you got no data. */
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     264 </span>            :         }
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">       3254 :         if (!stream || stream-&gt;fd == -1) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                 errno = EBADF;</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     269 </span>            :         }
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            :         /* Get any remains from the read buffer */
+<span class="lineNum">     272 </span><span class="lineCov">       3254 :         if (stream-&gt;rbuflen) {</span>
+<span class="lineNum">     273 </span><span class="lineCov">         87 :                 size_t r = count;</span>
+<span class="lineNum">     274 </span><span class="lineCov">         87 :                 if (r &gt; stream-&gt;rbuflen) {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         r = stream-&gt;rbuflen;</span>
+<span class="lineNum">     276 </span>            :                 }
+<span class="lineNum">     277 </span><span class="lineCov">         87 :                 memcpy(buffer, stream-&gt;rbufhead, r);</span>
+<span class="lineNum">     278 </span><span class="lineCov">         87 :                 stream-&gt;rbuflen -= r;</span>
+<span class="lineNum">     279 </span><span class="lineCov">         87 :                 stream-&gt;rbufhead += r;</span>
+<span class="lineNum">     280 </span><span class="lineCov">         87 :                 return r;</span>
+<span class="lineNum">     281 </span>            :         }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">       3167 :         return iostream_read(stream, buffer, count);</span>
+<a name="284"><span class="lineNum">     284 </span>            : }</a>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">      13552 : ssize_t ast_iostream_gets(struct ast_iostream *stream, char *buffer, size_t size)</span>
+<span class="lineNum">     287 </span>            : {
+<span class="lineNum">     288 </span>            :         ssize_t r;
+<span class="lineNum">     289 </span>            :         char *newline;
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span>            :         do {
+<span class="lineNum">     292 </span>            :                 /* Search for newline */
+<span class="lineNum">     293 </span><span class="lineCov">      14866 :                 newline = memchr(stream-&gt;rbufhead, '\n', stream-&gt;rbuflen);</span>
+<span class="lineNum">     294 </span><span class="lineCov">      13552 :                 if (newline) {</span>
+<span class="lineNum">     295 </span><span class="lineCov">      11198 :                         r = newline - stream-&gt;rbufhead + 1;</span>
+<span class="lineNum">     296 </span><span class="lineCov">      11198 :                         if (r &gt; size-1) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                                 r = size-1;</span>
+<span class="lineNum">     298 </span>            :                         }
+<span class="lineNum">     299 </span><span class="lineCov">      11198 :                         break;</span>
+<span class="lineNum">     300 </span>            :                 }
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span>            :                 /* Enough data? */
+<span class="lineNum">     303 </span><span class="lineCov">       2354 :                 if (stream-&gt;rbuflen &gt;= size - 1) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                         r = size - 1;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     306 </span>            :                 }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            :                 /* Try to fill in line buffer */
+<span class="lineNum">     309 </span><span class="lineCov">       2354 :                 if (stream-&gt;rbuflen &amp;&amp; stream-&gt;rbuf != stream-&gt;rbufhead) {</span>
+<span class="lineNum">     310 </span><span class="lineCov">          2 :                         memmove(&amp;stream-&gt;rbuf, stream-&gt;rbufhead, stream-&gt;rbuflen);</span>
+<span class="lineNum">     311 </span>            :                 }
+<span class="lineNum">     312 </span><span class="lineCov">       2354 :                 stream-&gt;rbufhead = stream-&gt;rbuf;</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineCov">       2354 :                 r = iostream_read(stream, stream-&gt;rbufhead + stream-&gt;rbuflen, sizeof(stream-&gt;rbuf) - stream-&gt;rbuflen);</span>
+<span class="lineNum">     315 </span><span class="lineCov">       2354 :                 if (r &lt;= 0) {</span>
+<span class="lineNum">     316 </span><span class="lineCov">       1040 :                         return r;</span>
+<span class="lineNum">     317 </span>            :                 }
+<span class="lineNum">     318 </span><span class="lineCov">       1314 :                 stream-&gt;rbuflen += r;</span>
+<span class="lineNum">     319 </span>            :         } while (1);
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span>            :         /* Return r bytes with termination byte */
+<span class="lineNum">     322 </span><span class="lineCov">      11198 :         memcpy(buffer, stream-&gt;rbufhead, r);</span>
+<span class="lineNum">     323 </span><span class="lineCov">      11198 :         buffer[r] = 0;</span>
+<span class="lineNum">     324 </span><span class="lineCov">      11198 :         stream-&gt;rbuflen -= r;</span>
+<span class="lineNum">     325 </span><span class="lineCov">      11198 :         stream-&gt;rbufhead += r;</span>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineCov">      11198 :         return r;</span>
+<a name="328"><span class="lineNum">     328 </span>            : }</a>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : ssize_t ast_iostream_discard(struct ast_iostream *stream, size_t size)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         char buf[1024];
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :         size_t remaining = size;</span>
+<span class="lineNum">     334 </span>            :         ssize_t ret;
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         while (remaining) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 ret = ast_iostream_read(stream, buf, remaining &gt; sizeof(buf) ? sizeof(buf) : remaining);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 if (ret &lt;= 0) {</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                         return ret;</span>
+<span class="lineNum">     340 </span>            :                 }
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 remaining -= ret;</span>
+<span class="lineNum">     342 </span>            :         }
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :         return size;</span>
+<a name="345"><span class="lineNum">     345 </span>            : }</a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">     151259 : ssize_t ast_iostream_write(struct ast_iostream *stream, const void *buffer, size_t size)</span>
+<span class="lineNum">     348 </span>            : {
+<span class="lineNum">     349 </span>            :         struct timeval start;
+<span class="lineNum">     350 </span>            :         int ms;
+<span class="lineNum">     351 </span>            :         int res;
+<span class="lineNum">     352 </span>            :         int written;
+<span class="lineNum">     353 </span>            :         int remaining;
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">     151259 :         if (!size) {</span>
+<span class="lineNum">     356 </span>            :                 /* You asked to write no data you wrote no data. */
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     358 </span>            :         }
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">     151259 :         if (!stream || stream-&gt;fd == -1) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                 errno = EBADF;</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     363 </span>            :         }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">     151259 :         if (stream-&gt;start.tv_sec) {</span>
+<span class="lineNum">     366 </span><span class="lineCov">       3100 :                 start = stream-&gt;start;</span>
+<span class="lineNum">     367 </span>            :         } else {
+<span class="lineNum">     368 </span><span class="lineCov">     148159 :                 start = ast_tvnow();</span>
+<span class="lineNum">     369 </span>            :         }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            : #if defined(DO_SSL)
+<span class="lineNum">     372 </span><span class="lineCov">     151259 :         if (stream-&gt;ssl) {</span>
+<span class="lineNum">     373 </span><span class="lineCov">         10 :                 written = 0;</span>
+<span class="lineNum">     374 </span><span class="lineCov">         10 :                 remaining = size;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 for (;;) {</span>
+<span class="lineNum">     376 </span>            :                         int sslerr;
+<span class="lineNum">     377 </span>            :                         char err[256];
+<span class="lineNum">     378 </span><span class="lineCov">         10 :                         res = SSL_write(stream-&gt;ssl, buffer + written, remaining);</span>
+<span class="lineNum">     379 </span><span class="lineCov">         10 :                         if (res == remaining) {</span>
+<span class="lineNum">     380 </span>            :                                 /* Everything was written. */
+<span class="lineNum">     381 </span><span class="lineCov">         10 :                                 return size;</span>
+<span class="lineNum">     382 </span>            :                         }
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                         if (0 &lt; res) {</span>
+<span class="lineNum">     384 </span>            :                                 /* Successfully wrote part of the buffer.  Try to write the rest. */
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                                 written += res;</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                                 remaining -= res;</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     388 </span>            :                         }
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                         sslerr = SSL_get_error(stream-&gt;ssl, res);</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                         switch (sslerr) {</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                         case SSL_ERROR_ZERO_RETURN:</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;TLS clean shutdown alert writing data\n&quot;);</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                                 if (written) {</span>
+<span class="lineNum">     394 </span>            :                                         /* Report partial write. */
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                                         return written;</span>
+<span class="lineNum">     396 </span>            :                                 }
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                                 errno = EBADF;</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                         case SSL_ERROR_WANT_READ:</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                                 ms = ast_remaining_ms(start, stream-&gt;timeout);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                                 if (!ms) {</span>
+<span class="lineNum">     402 </span>            :                                         /* Report partial write. */
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                                         ast_debug(1, &quot;TLS timeout writing data (want read)\n&quot;);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                                         return written;</span>
+<span class="lineNum">     405 </span>            :                                 }
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                                 ast_wait_for_input(stream-&gt;fd, ms);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                         case SSL_ERROR_WANT_WRITE:</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                                 ms = ast_remaining_ms(start, stream-&gt;timeout);</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                                 if (!ms) {</span>
+<span class="lineNum">     411 </span>            :                                         /* Report partial write. */
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                                         ast_debug(1, &quot;TLS timeout writing data (want write)\n&quot;);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                                         return written;</span>
+<span class="lineNum">     414 </span>            :                                 }
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                                 ast_wait_for_output(stream-&gt;fd, ms);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :                         default:</span>
+<span class="lineNum">     418 </span>            :                                 /* Undecoded SSL or transport error. */
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;TLS transport or SSL error writing data: %s, %s\n&quot;, ERR_error_string(sslerr, err),</span>
+<span class="lineNum">     420 </span>            :                                         ssl_error_to_string(sslerr, res));
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                                 if (written) {</span>
+<span class="lineNum">     422 </span>            :                                         /* Report partial write. */
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                                         return written;</span>
+<span class="lineNum">     424 </span>            :                                 }
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :                                 errno = EBADF;</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     427 </span>            :                         }
+<span class="lineNum">     428 </span>            :                 }
+<span class="lineNum">     429 </span>            :         }
+<span class="lineNum">     430 </span>            : #endif  /* defined(DO_SSL) */
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">     151249 :         written = 0;</span>
+<span class="lineNum">     433 </span><span class="lineCov">     151249 :         remaining = size;</span>
+<span class="lineNum">     434 </span>            :         for (;;) {
+<span class="lineNum">     435 </span><span class="lineCov">     151249 :                 res = write(stream-&gt;fd, buffer + written, remaining);</span>
+<span class="lineNum">     436 </span><span class="lineCov">     151249 :                 if (res == remaining) {</span>
+<span class="lineNum">     437 </span>            :                         /* Yay everything was written. */
+<span class="lineNum">     438 </span><span class="lineCov">     151233 :                         return size;</span>
+<span class="lineNum">     439 </span>            :                 }
+<span class="lineNum">     440 </span><span class="lineCov">         16 :                 if (0 &lt; res) {</span>
+<span class="lineNum">     441 </span>            :                         /* Successfully wrote part of the buffer.  Try to write the rest. */
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                         written += res;</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                         remaining -= res;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     445 </span>            :                 }
+<span class="lineNum">     446 </span><span class="lineCov">         16 :                 if (errno != EINTR &amp;&amp; errno != EAGAIN) {</span>
+<span class="lineNum">     447 </span>            :                         /* Not a retryable error. */
+<span class="lineNum">     448 </span><span class="lineCov">         16 :                         ast_debug(1, &quot;TCP socket error writing: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     449 </span><span class="lineCov">         16 :                         if (written) {</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                                 return written;</span>
+<span class="lineNum">     451 </span>            :                         }
+<span class="lineNum">     452 </span><span class="lineCov">         16 :                         return -1;</span>
+<span class="lineNum">     453 </span>            :                 }
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                 ms = ast_remaining_ms(start, stream-&gt;timeout);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                 if (!ms) {</span>
+<span class="lineNum">     456 </span>            :                         /* Report partial write. */
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;TCP timeout writing data\n&quot;);</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                         return written;</span>
+<span class="lineNum">     459 </span>            :                 }
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 ast_wait_for_output(stream-&gt;fd, ms);</span>
+<span class="lineNum">     461 </span>            :         }
+<a name="462"><span class="lineNum">     462 </span>            : }</a>
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span><span class="lineCov">       1250 : ssize_t ast_iostream_printf(struct ast_iostream *stream, const char *format, ...)</span>
+<span class="lineNum">     465 </span>            : {
+<span class="lineNum">     466 </span><span class="lineCov">       1250 :         char sbuf[512], *buf = sbuf;</span>
+<span class="lineNum">     467 </span><span class="lineCov">       1250 :         int len, len2, ret = -1;</span>
+<span class="lineNum">     468 </span>            :         va_list va;
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineCov">       1250 :         va_start(va, format);</span>
+<span class="lineNum">     471 </span><span class="lineCov">       1250 :         len = vsnprintf(buf, sizeof(sbuf), format, va);</span>
+<span class="lineNum">     472 </span><span class="lineCov">       1250 :         va_end(va);</span>
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineCov">       1250 :         if (len &gt; sizeof(sbuf) - 1) {</span>
+<span class="lineNum">     475 </span>            :                 /* Add one to the string length to accommodate the NULL byte */
+<span class="lineNum">     476 </span><span class="lineCov">        210 :                 size_t buf_len = len + 1;</span>
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">        210 :                 buf = ast_malloc(buf_len);</span>
+<span class="lineNum">     479 </span><span class="lineCov">        210 :                 if (!buf) {</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     481 </span>            :                 }
+<span class="lineNum">     482 </span><span class="lineCov">        210 :                 va_start(va, format);</span>
+<span class="lineNum">     483 </span><span class="lineCov">        210 :                 len2 = vsnprintf(buf, buf_len, format, va);</span>
+<span class="lineNum">     484 </span><span class="lineCov">        210 :                 va_end(va);</span>
+<span class="lineNum">     485 </span><span class="lineCov">        210 :                 if (len2 != len) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">     487 </span>            :                 }
+<span class="lineNum">     488 </span>            :         }
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span><span class="lineCov">       1250 :         if (ast_iostream_write(stream, buf, len) == len)</span>
+<span class="lineNum">     491 </span><span class="lineCov">       1250 :                 ret = len;</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 : error:</span>
+<span class="lineNum">     494 </span><span class="lineCov">       1250 :         if (buf != sbuf) {</span>
+<span class="lineNum">     495 </span><span class="lineCov">        210 :                 ast_free(buf);</span>
+<span class="lineNum">     496 </span>            :         }
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">       1250 :         return ret;</span>
+<a name="499"><span class="lineNum">     499 </span>            : }</a>
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span><span class="lineCov">       2277 : int ast_iostream_close(struct ast_iostream *stream)</span>
+<span class="lineNum">     502 </span>            : {
+<span class="lineNum">     503 </span><span class="lineCov">       2277 :         if (!stream) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                 errno = EBADF;</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     506 </span>            :         }
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineCov">       2277 :         if (stream-&gt;fd != -1) {</span>
+<span class="lineNum">     509 </span>            : #if defined(DO_SSL)
+<span class="lineNum">     510 </span><span class="lineCov">       2277 :                 if (stream-&gt;ssl) {</span>
+<span class="lineNum">     511 </span>            :                         int res;
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            :                         /*
+<span class="lineNum">     514 </span>            :                          * According to the TLS standard, it is acceptable for an
+<span class="lineNum">     515 </span>            :                          * application to only send its shutdown alert and then
+<span class="lineNum">     516 </span>            :                          * close the underlying connection without waiting for
+<span class="lineNum">     517 </span>            :                          * the peer's response (this way resources can be saved,
+<span class="lineNum">     518 </span>            :                          * as the process can already terminate or serve another
+<span class="lineNum">     519 </span>            :                          * connection).
+<span class="lineNum">     520 </span>            :                          */
+<span class="lineNum">     521 </span><span class="lineCov">          3 :                         res = SSL_shutdown(stream-&gt;ssl);</span>
+<span class="lineNum">     522 </span><span class="lineCov">          3 :                         if (res &lt; 0) {</span>
+<span class="lineNum">     523 </span><span class="lineCov">          1 :                                 int sslerr = SSL_get_error(stream-&gt;ssl, res);</span>
+<span class="lineNum">     524 </span>            :                                 char err[256];
+<span class="lineNum">     525 </span><span class="lineCov">          1 :                                 ast_log(LOG_ERROR, &quot;SSL_shutdown() failed: %s, %s\n&quot;,</span>
+<span class="lineNum">     526 </span>            :                                         ERR_error_string(sslerr, err), ssl_error_to_string(sslerr, res));
+<span class="lineNum">     527 </span>            :                         }
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span>            : #if !defined(LIBRESSL_VERSION_NUMBER) &amp;&amp; (OPENSSL_VERSION_NUMBER &gt;= 0x10100000L)
+<span class="lineNum">     530 </span><span class="lineCov">          3 :                         if (!SSL_is_server(stream-&gt;ssl)) {</span>
+<span class="lineNum">     531 </span>            : #else
+<span class="lineNum">     532 </span>            :                         if (!stream-&gt;ssl-&gt;server) {
+<span class="lineNum">     533 </span>            : #endif
+<span class="lineNum">     534 </span>            :                                 /* For client threads, ensure that the error stack is cleared */
+<span class="lineNum">     535 </span>            : #if defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER &lt; 0x10100000L)
+<span class="lineNum">     536 </span>            : #if OPENSSL_VERSION_NUMBER &gt;= 0x10000000L
+<span class="lineNum">     537 </span>            :                                 ERR_remove_thread_state(NULL);
+<span class="lineNum">     538 </span>            : #else
+<span class="lineNum">     539 </span>            :                                 ERR_remove_state(0);
+<span class="lineNum">     540 </span>            : #endif  /* OPENSSL_VERSION_NUMBER &gt;= 0x10000000L */
+<span class="lineNum">     541 </span>            : #endif  /* OPENSSL_VERSION_NUMBER  &lt; 0x10100000L */
+<span class="lineNum">     542 </span>            :                         }
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">          3 :                         SSL_free(stream-&gt;ssl);</span>
+<span class="lineNum">     545 </span><span class="lineCov">          3 :                         stream-&gt;ssl = NULL;</span>
+<span class="lineNum">     546 </span>            :                 }
+<span class="lineNum">     547 </span>            : #endif  /* defined(DO_SSL) */
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span>            :                 /*
+<span class="lineNum">     550 </span>            :                  * Issuing shutdown() is necessary here to avoid a race
+<span class="lineNum">     551 </span>            :                  * condition where the last data written may not appear
+<span class="lineNum">     552 </span>            :                  * in the TCP stream.  See ASTERISK-23548
+<span class="lineNum">     553 </span>            :                  */
+<span class="lineNum">     554 </span><span class="lineCov">       2277 :                 shutdown(stream-&gt;fd, SHUT_RDWR);</span>
+<span class="lineNum">     555 </span><span class="lineCov">       2277 :                 if (close(stream-&gt;fd)) {</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;close() failed: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     557 </span>            :                 }
+<span class="lineNum">     558 </span><span class="lineCov">       2277 :                 stream-&gt;fd = -1;</span>
+<span class="lineNum">     559 </span>            :         }
+<span class="lineNum">     560 </span><span class="lineCov">       2277 :         ao2_t_ref(stream, -1, &quot;Closed ast_iostream&quot;);</span>
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span><span class="lineCov">       2277 :         return 0;</span>
+<a name="563"><span class="lineNum">     563 </span>            : }</a>
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span><span class="lineCov">       2277 : static void iostream_dtor(void *cookie)</span>
+<span class="lineNum">     566 </span>            : {
+<span class="lineNum">     567 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">     568 </span>            :         /* Since the ast_assert below is the only one using stream,
+<span class="lineNum">     569 </span>            :          * and ast_assert is only available with AST_DEVMODE, we
+<span class="lineNum">     570 </span>            :          * put this in a conditional to avoid compiler warnings. */
+<span class="lineNum">     571 </span><span class="lineCov">       2277 :         struct ast_iostream *stream = cookie;</span>
+<span class="lineNum">     572 </span>            : #endif
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span><span class="lineCov">       2277 :         ast_assert(stream-&gt;fd == -1);</span>
+<a name="575"><span class="lineNum">     575 </span><span class="lineCov">       2277 : }</span></a>
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineCov">       2339 : struct ast_iostream *ast_iostream_from_fd(int *fd)</span>
+<span class="lineNum">     578 </span>            : {
+<span class="lineNum">     579 </span>            :         struct ast_iostream *stream;
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span><span class="lineCov">       2339 :         stream = ao2_alloc_options(sizeof(*stream), iostream_dtor,</span>
+<span class="lineNum">     582 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     583 </span><span class="lineCov">       2339 :         if (stream) {</span>
+<span class="lineNum">     584 </span><span class="lineCov">       2339 :                 stream-&gt;timeout = -1;</span>
+<span class="lineNum">     585 </span><span class="lineCov">       2339 :                 stream-&gt;timeout_reset = -1;</span>
+<span class="lineNum">     586 </span><span class="lineCov">       2339 :                 stream-&gt;fd = *fd;</span>
+<span class="lineNum">     587 </span><span class="lineCov">       2339 :                 *fd = -1;</span>
+<span class="lineNum">     588 </span>            :         }
+<span class="lineNum">     589 </span>            : 
+<span class="lineNum">     590 </span><span class="lineCov">       2339 :         return stream;</span>
+<a name="591"><span class="lineNum">     591 </span>            : }</a>
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span><span class="lineCov">          3 : int ast_iostream_start_tls(struct ast_iostream **pstream, SSL_CTX *ssl_ctx, int client)</span>
+<span class="lineNum">     594 </span>            : {
+<span class="lineNum">     595 </span>            : #ifdef DO_SSL
+<span class="lineNum">     596 </span><span class="lineCov">          3 :         struct ast_iostream *stream = *pstream;</span>
+<span class="lineNum">     597 </span><span class="lineCov">          3 :         int (*ssl_setup)(SSL *) = client ? SSL_connect : SSL_accept;</span>
+<span class="lineNum">     598 </span>            :         int res;
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span><span class="lineCov">          3 :         stream-&gt;ssl = SSL_new(ssl_ctx);</span>
+<span class="lineNum">     601 </span><span class="lineCov">          3 :         if (!stream-&gt;ssl) {</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to create new SSL connection\n&quot;);</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 errno = ENOMEM;</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     605 </span>            :         }
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span>            :         /*
+<span class="lineNum">     608 </span>            :          * This function takes struct ast_iostream **, so it can chain
+<span class="lineNum">     609 </span>            :          * SSL over any ast_iostream. For now we assume it's a file descriptor.
+<span class="lineNum">     610 </span>            :          * But later this should instead use BIO wrapper to tie SSL to another
+<span class="lineNum">     611 </span>            :          * ast_iostream.
+<span class="lineNum">     612 </span>            :          */
+<span class="lineNum">     613 </span><span class="lineCov">          3 :         SSL_set_fd(stream-&gt;ssl, stream-&gt;fd);</span>
+<span class="lineNum">     614 </span>            : 
+<span class="lineNum">     615 </span><span class="lineCov">          3 :         res = ssl_setup(stream-&gt;ssl);</span>
+<span class="lineNum">     616 </span><span class="lineCov">          3 :         if (res &lt;= 0) {</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :                 int sslerr = SSL_get_error(stream-&gt;ssl, res);</span>
+<span class="lineNum">     618 </span>            :                 char err[256];
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Problem setting up ssl connection: %s, %s\n&quot;,</span>
+<span class="lineNum">     621 </span>            :                         ERR_error_string(sslerr, err), ssl_error_to_string(sslerr, res));
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                 errno = EIO;</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     624 </span>            :         }
+<span class="lineNum">     625 </span>            : 
+<span class="lineNum">     626 </span><span class="lineCov">          3 :         return 0;</span>
+<span class="lineNum">     627 </span>            : #else
+<span class="lineNum">     628 </span>            :         ast_log(LOG_ERROR, &quot;SSL not enabled in this build\n&quot;);
+<span class="lineNum">     629 </span>            :         errno = ENOTSUP;
+<span class="lineNum">     630 </span>            :         return -1;
+<span class="lineNum">     631 </span>            : #endif
+<span class="lineNum">     632 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

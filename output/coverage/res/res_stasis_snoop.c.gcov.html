@@ -1,0 +1,533 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_stasis_snoop.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_stasis_snoop.c<span style="font-size: 80%;"> (source / <a href="res_stasis_snoop.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">153</td>
+            <td class="headerCovTableEntry">188</td>
+            <td class="headerCovTableEntryMed">81.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntryHi">91.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stasis application snoop control support.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;depend type=&quot;module&quot;&gt;res_stasis&lt;/depend&gt;
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/stasis_app_impl.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/stasis_app_snoop.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/audiohook.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/timing.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/json.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*! \brief The interval (in milliseconds) that the Snoop timer is triggered, also controls length of audio within frames */
+<span class="lineNum">      44 </span>            : #define SNOOP_INTERVAL 20
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /*! \brief Index used to keep Snoop channel names unique */
+<span class="lineNum">      47 </span>            : static unsigned int chan_idx;
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : /*! \brief Structure which contains all of the snoop information */
+<span class="lineNum">      50 </span>            : struct stasis_app_snoop {
+<span class="lineNum">      51 </span>            :         /*! \brief Timer used for waking up Stasis thread */
+<span class="lineNum">      52 </span>            :         struct ast_timer *timer;
+<span class="lineNum">      53 </span>            :         /*! \brief Audiohook used to spy on the channel */
+<span class="lineNum">      54 </span>            :         struct ast_audiohook spy;
+<span class="lineNum">      55 </span>            :         /*! \brief Direction for spying */
+<span class="lineNum">      56 </span>            :         enum ast_audiohook_direction spy_direction;
+<span class="lineNum">      57 </span>            :         /*! \brief Number of samples to be read in when spying */
+<span class="lineNum">      58 </span>            :         unsigned int spy_samples;
+<span class="lineNum">      59 </span>            :         /*! \brief Format in use by the spy audiohook */
+<span class="lineNum">      60 </span>            :         struct ast_format *spy_format;
+<span class="lineNum">      61 </span>            :         /*! \brief Audiohook used to whisper on the channel */
+<span class="lineNum">      62 </span>            :         struct ast_audiohook whisper;
+<span class="lineNum">      63 </span>            :         /*! \brief Direction for whispering */
+<span class="lineNum">      64 </span>            :         enum ast_audiohook_direction whisper_direction;
+<span class="lineNum">      65 </span>            :         /*! \brief Stasis application and arguments */
+<span class="lineNum">      66 </span>            :         struct ast_str *app;
+<span class="lineNum">      67 </span>            :         /*! \brief Snoop channel */
+<span class="lineNum">      68 </span>            :         struct ast_channel *chan;
+<span class="lineNum">      69 </span>            :         /*! \brief Whether the spy capability is active or not */
+<span class="lineNum">      70 </span>            :         unsigned int spy_active:1;
+<span class="lineNum">      71 </span>            :         /*! \brief Whether the whisper capability is active or not */
+<span class="lineNum">      72 </span>            :         unsigned int whisper_active:1;
+<span class="lineNum">      73 </span>            :         /*! \brief Uniqueid of the channel this snoop is snooping on */
+<span class="lineNum">      74 </span>            :         char uniqueid[AST_MAX_UNIQUEID];
+<span class="lineNum">      75 </span>            :         /*! \brief A frame of silence to use when the audiohook returns null */
+<span class="lineNum">      76 </span>            :         struct ast_frame silence;
+<span class="lineNum">      77 </span>            : };
+<a name="78"><span class="lineNum">      78 </span>            : </a>
+<span class="lineNum">      79 </span>            : /*! \brief Destructor for snoop structure */
+<span class="lineNum">      80 </span><span class="lineCov">          3 : static void snoop_destroy(void *obj)</span>
+<span class="lineNum">      81 </span>            : {
+<span class="lineNum">      82 </span><span class="lineCov">          3 :         struct stasis_app_snoop *snoop = obj;</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineCov">          3 :         if (snoop-&gt;timer) {</span>
+<span class="lineNum">      85 </span><span class="lineCov">          3 :                 ast_timer_close(snoop-&gt;timer);</span>
+<span class="lineNum">      86 </span>            :         }
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineCov">          3 :         if (snoop-&gt;spy_active) {</span>
+<span class="lineNum">      89 </span><span class="lineCov">          2 :                 ast_audiohook_destroy(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">      90 </span>            :         }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">          3 :         if (snoop-&gt;whisper_active) {</span>
+<span class="lineNum">      93 </span><span class="lineCov">          1 :                 ast_audiohook_destroy(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">      94 </span>            :         }
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineCov">          3 :         if (snoop-&gt;silence.data.ptr) {</span>
+<span class="lineNum">      97 </span><span class="lineCov">          2 :                 ast_free(snoop-&gt;silence.data.ptr);</span>
+<span class="lineNum">      98 </span><span class="lineCov">          2 :                 snoop-&gt;silence.data.ptr = NULL;</span>
+<span class="lineNum">      99 </span>            :         }
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span><span class="lineCov">          3 :         ast_free(snoop-&gt;app);</span>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineCov">          3 :         ast_channel_cleanup(snoop-&gt;chan);</span>
+<span class="lineNum">     104 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            : /*! \internal
+<span class="lineNum">     107 </span>            :  * \brief Publish the chanspy message over Stasis-Core
+<span class="lineNum">     108 </span>            :  * \param snoop The snoop structure
+<span class="lineNum">     109 </span>            :  * \start start If non-zero, the spying is starting. Otherwise, the spyer is
+<a name="110"><span class="lineNum">     110 </span>            :  * finishing</a>
+<span class="lineNum">     111 </span>            :  */
+<a name="112"><span class="lineNum">     112 </span><span class="lineCov">          6 : static void publish_chanspy_message(struct stasis_app_snoop *snoop, int start)</span></a>
+<a name="113"><span class="lineNum">     113 </span>            : {</a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">         12 :         RAII_VAR(struct ast_json *, blob, NULL, ast_json_unref);</span></a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">         12 :         RAII_VAR(struct ast_multi_channel_blob *, payload, NULL, ao2_cleanup);</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineCov">         12 :         RAII_VAR(struct stasis_message *, message, NULL, ao2_cleanup);</span></a>
+<span class="lineNum">     117 </span><span class="lineCov">         12 :         RAII_VAR(struct ast_channel_snapshot *, snoop_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     118 </span><span class="lineCov">         12 :         RAII_VAR(struct ast_channel_snapshot *, spyee_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     119 </span><span class="lineCov">          6 :         struct stasis_message_type *type = start ? ast_channel_chanspy_start_type(): ast_channel_chanspy_stop_type();</span>
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">          6 :         blob = ast_json_null();</span>
+<span class="lineNum">     122 </span><span class="lineCov">          6 :         if (!blob || !type) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     124 </span>            :         }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">          6 :         payload = ast_multi_channel_blob_create(blob);</span>
+<span class="lineNum">     127 </span><span class="lineCov">          6 :         if (!payload) {</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     129 </span>            :         }
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineCov">          6 :         snoop_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(snoop-&gt;chan));</span>
+<span class="lineNum">     132 </span><span class="lineCov">          6 :         if (!snoop_snapshot) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span><span class="lineCov">          6 :         ast_multi_channel_blob_add_channel(payload, &quot;spyer_channel&quot;, snoop_snapshot);</span>
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span><span class="lineCov">          6 :         spyee_snapshot = ast_channel_snapshot_get_latest(snoop-&gt;uniqueid);</span>
+<span class="lineNum">     138 </span><span class="lineCov">          6 :         if (spyee_snapshot) {</span>
+<span class="lineNum">     139 </span><span class="lineCov">          4 :                 ast_multi_channel_blob_add_channel(payload, &quot;spyee_channel&quot;, spyee_snapshot);</span>
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineCov">          6 :         message = stasis_message_create(type, payload);</span>
+<span class="lineNum">     143 </span><span class="lineCov">          6 :         if (!message) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     145 </span>            :         }
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">          6 :         stasis_publish(ast_channel_topic(snoop-&gt;chan), message);</span>
+<span class="lineNum">     148 </span>            : }
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span>            : /*! \brief Callback function for writing to a Snoop whisper audiohook */
+<span class="lineNum">     151 </span><span class="lineCov">        115 : static int snoop_write(struct ast_channel *chan, struct ast_frame *frame)</span>
+<span class="lineNum">     152 </span>            : {
+<span class="lineNum">     153 </span><span class="lineCov">        115 :         struct stasis_app_snoop *snoop = ast_channel_tech_pvt(chan);</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">        115 :         if (!snoop-&gt;whisper_active) {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     157 </span>            :         }
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">        115 :         ast_audiohook_lock(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">     160 </span><span class="lineCov">        115 :         if (snoop-&gt;whisper_direction == AST_AUDIOHOOK_DIRECTION_BOTH) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 ast_audiohook_write_frame(&amp;snoop-&gt;whisper, AST_AUDIOHOOK_DIRECTION_READ, frame);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 ast_audiohook_write_frame(&amp;snoop-&gt;whisper, AST_AUDIOHOOK_DIRECTION_WRITE, frame);</span>
+<span class="lineNum">     163 </span>            :         } else {
+<span class="lineNum">     164 </span><span class="lineCov">        115 :                 ast_audiohook_write_frame(&amp;snoop-&gt;whisper, snoop-&gt;whisper_direction, frame);</span>
+<span class="lineNum">     165 </span>            :         }
+<span class="lineNum">     166 </span><span class="lineCov">        115 :         ast_audiohook_unlock(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">        115 :         return 0;</span>
+<span class="lineNum">     169 </span>            : }
+<a name="170"><span class="lineNum">     170 </span>            : </a>
+<span class="lineNum">     171 </span>            : /*! \brief Callback function for reading from a Snoop channel */
+<span class="lineNum">     172 </span><span class="lineCov">       1631 : static struct ast_frame *snoop_read(struct ast_channel *chan)</span>
+<span class="lineNum">     173 </span>            : {
+<span class="lineNum">     174 </span><span class="lineCov">       1631 :         struct stasis_app_snoop *snoop = ast_channel_tech_pvt(chan);</span>
+<span class="lineNum">     175 </span><span class="lineCov">       1631 :         struct ast_frame *frame = NULL;</span>
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :         /* If we fail to ack the timer OR if any active audiohooks are done hangup */
+<span class="lineNum">     178 </span><span class="lineCov">       1631 :         if ((ast_timer_ack(snoop-&gt;timer, 1) &lt; 0) ||</span>
+<span class="lineNum">     179 </span><span class="lineCov">       1631 :                 (snoop-&gt;spy_active &amp;&amp; snoop-&gt;spy.status != AST_AUDIOHOOK_STATUS_RUNNING) ||</span>
+<span class="lineNum">     180 </span><span class="lineCov">       1630 :                 (snoop-&gt;whisper_active &amp;&amp; snoop-&gt;whisper.status != AST_AUDIOHOOK_STATUS_RUNNING)) {</span>
+<span class="lineNum">     181 </span><span class="lineCov">          2 :                 return NULL;</span>
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            :         /* Only get audio from the spy audiohook if it is active */
+<span class="lineNum">     185 </span><span class="lineCov">       1629 :         if (!snoop-&gt;spy_active) {</span>
+<span class="lineNum">     186 </span><span class="lineCov">        115 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     187 </span>            :         }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">       1514 :         ast_audiohook_lock(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">     190 </span><span class="lineCov">       1514 :         if (snoop-&gt;spy_direction != AST_AUDIOHOOK_DIRECTION_BOTH) {</span>
+<span class="lineNum">     191 </span>            :                 /*
+<span class="lineNum">     192 </span>            :                  * When a singular direction is chosen frames are still written to the
+<span class="lineNum">     193 </span>            :                  * opposing direction's queue. Those frames must be read so the queue
+<span class="lineNum">     194 </span>            :                  * does not continue to grow, however since they are not needed for the
+<span class="lineNum">     195 </span>            :                  * selected direction they can be dropped.
+<span class="lineNum">     196 </span>            :                  */
+<span class="lineNum">     197 </span><span class="lineCov">       1512 :                 enum ast_audiohook_direction opposing_direction =</span>
+<span class="lineNum">     198 </span><span class="lineCov">       1512 :                         snoop-&gt;spy_direction == AST_AUDIOHOOK_DIRECTION_READ ?</span>
+<span class="lineNum">     199 </span><span class="lineCov">       1512 :                         AST_AUDIOHOOK_DIRECTION_WRITE : AST_AUDIOHOOK_DIRECTION_READ;</span>
+<span class="lineNum">     200 </span><span class="lineCov">       1512 :                 ast_frame_dtor(ast_audiohook_read_frame(&amp;snoop-&gt;spy, snoop-&gt;spy_samples,</span>
+<span class="lineNum">     201 </span>            :                                                         opposing_direction, snoop-&gt;spy_format));
+<span class="lineNum">     202 </span>            :         }
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">       1514 :         frame = ast_audiohook_read_frame(&amp;snoop-&gt;spy, snoop-&gt;spy_samples, snoop-&gt;spy_direction, snoop-&gt;spy_format);</span>
+<span class="lineNum">     205 </span><span class="lineCov">       1514 :         ast_audiohook_unlock(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">       1514 :         return frame ? frame : &amp;snoop-&gt;silence;</span>
+<span class="lineNum">     208 </span>            : }
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span>            : /*! \brief Callback function for hanging up a Snoop channel */
+<span class="lineNum">     211 </span><span class="lineCov">          3 : static int snoop_hangup(struct ast_channel *chan)</span>
+<span class="lineNum">     212 </span>            : {
+<span class="lineNum">     213 </span><span class="lineCov">          3 :         struct stasis_app_snoop *snoop = ast_channel_tech_pvt(chan);</span>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">          3 :         if (snoop-&gt;spy_active) {</span>
+<span class="lineNum">     216 </span><span class="lineCov">          2 :                 ast_audiohook_lock(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">     217 </span><span class="lineCov">          2 :                 ast_audiohook_detach(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">     218 </span><span class="lineCov">          2 :                 ast_audiohook_unlock(&amp;snoop-&gt;spy);</span>
+<span class="lineNum">     219 </span>            :         }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">          3 :         if (snoop-&gt;whisper_active) {</span>
+<span class="lineNum">     222 </span><span class="lineCov">          1 :                 ast_audiohook_lock(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">     223 </span><span class="lineCov">          1 :                 ast_audiohook_detach(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">     224 </span><span class="lineCov">          1 :                 ast_audiohook_unlock(&amp;snoop-&gt;whisper);</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">          3 :         publish_chanspy_message(snoop, 0);</span>
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">          3 :         ao2_cleanup(snoop);</span>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">          3 :         ast_channel_tech_pvt_set(chan, NULL);</span>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="234"><span class="lineNum">     234 </span>            : }</a>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 : static int snoop_fixup(struct ast_channel *oldchan, struct ast_channel *newchan)</span>
+<span class="lineNum">     237 </span>            : {
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :         struct stasis_app_snoop *snoop = ast_channel_tech_pvt(oldchan);</span>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         if (snoop-&gt;chan != oldchan) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     242 </span>            :         }
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         ast_channel_unref(snoop-&gt;chan);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :         ast_channel_ref(newchan);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         snoop-&gt;chan = newchan;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     249 </span>            : }
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span>            : /*! \brief Channel interface declaration */
+<span class="lineNum">     252 </span>            : static struct ast_channel_tech snoop_tech = {
+<span class="lineNum">     253 </span>            :         .type = &quot;Snoop&quot;,
+<span class="lineNum">     254 </span>            :         .description = &quot;Snoop Channel Driver&quot;,
+<span class="lineNum">     255 </span>            :         .write = snoop_write,
+<span class="lineNum">     256 </span>            :         .read = snoop_read,
+<span class="lineNum">     257 </span>            :         .hangup = snoop_hangup,
+<span class="lineNum">     258 </span>            :         .fixup = snoop_fixup,
+<span class="lineNum">     259 </span>            : };
+<a name="260"><span class="lineNum">     260 </span>            : </a>
+<span class="lineNum">     261 </span>            : /*! \brief Thread used for running the Stasis application */
+<a name="262"><span class="lineNum">     262 </span><span class="lineCov">          3 : static void *snoop_stasis_thread(void *obj)</span></a>
+<span class="lineNum">     263 </span>            : {
+<span class="lineNum">     264 </span><span class="lineCov">          6 :         RAII_VAR(struct stasis_app_snoop *, snoop, obj, ao2_cleanup);</span>
+<span class="lineNum">     265 </span><span class="lineCov">          3 :         struct ast_app *stasis = pbx_findapp(&quot;Stasis&quot;);</span>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">          3 :         if (!stasis) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     270 </span>            :         }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          3 :         pbx_exec(snoop-&gt;chan, stasis, ast_str_buffer(snoop-&gt;app));</span>
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">          3 :         ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">          3 :         return NULL;</span>
+<span class="lineNum">     277 </span>            : }
+<a name="278"><span class="lineNum">     278 </span>            : </a>
+<span class="lineNum">     279 </span>            : /*! \brief Internal helper function which sets up and attaches a snoop audiohook */
+<span class="lineNum">     280 </span><span class="lineCov">          3 : static int snoop_setup_audiohook(struct ast_channel *chan, enum ast_audiohook_type type, enum stasis_app_snoop_direction requested_direction,</span>
+<span class="lineNum">     281 </span>            :         enum ast_audiohook_direction *direction, struct ast_audiohook *audiohook)
+<span class="lineNum">     282 </span>            : {
+<span class="lineNum">     283 </span><span class="lineCov">          3 :         ast_audiohook_init(audiohook, type, &quot;Snoop&quot;, 0);</span>
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineCov">          3 :         if (requested_direction == STASIS_SNOOP_DIRECTION_OUT) {</span>
+<span class="lineNum">     286 </span><span class="lineCov">          1 :                 *direction = AST_AUDIOHOOK_DIRECTION_WRITE;</span>
+<span class="lineNum">     287 </span><span class="lineCov">          2 :         } else if (requested_direction == STASIS_SNOOP_DIRECTION_IN) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">          1 :                 *direction = AST_AUDIOHOOK_DIRECTION_READ;</span>
+<span class="lineNum">     289 </span><span class="lineCov">          1 :         } else if (requested_direction == STASIS_SNOOP_DIRECTION_BOTH) {</span>
+<span class="lineNum">     290 </span><span class="lineCov">          1 :                 *direction = AST_AUDIOHOOK_DIRECTION_BOTH;</span>
+<span class="lineNum">     291 </span>            :         } else {
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     293 </span>            :         }
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineCov">          3 :         return ast_audiohook_attach(chan, audiohook);</span>
+<span class="lineNum">     296 </span>            : }
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span>            : /*! \brief Helper function which gets the format for a Snoop channel based on the channel being snooped on */
+<a name="299"><span class="lineNum">     299 </span><span class="lineCov">          3 : static void snoop_determine_format(struct ast_channel *chan, struct stasis_app_snoop *snoop)</span></a>
+<span class="lineNum">     300 </span>            : {
+<span class="lineNum">     301 </span><span class="lineCov">          6 :         SCOPED_CHANNELLOCK(lock, chan);</span>
+<span class="lineNum">     302 </span><span class="lineCov">          3 :         unsigned int rate = MAX(ast_format_get_sample_rate(ast_channel_rawwriteformat(chan)),</span>
+<span class="lineNum">     303 </span>            :                 ast_format_get_sample_rate(ast_channel_rawreadformat(chan)));
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span><span class="lineCov">          3 :         snoop-&gt;spy_format = ast_format_cache_get_slin_by_rate(rate);</span>
+<a name="306"><span class="lineNum">     306 </span><span class="lineCov">          3 : }</span></a>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">          3 : struct ast_channel *stasis_app_control_snoop(struct ast_channel *chan,</span>
+<span class="lineNum">     309 </span>            :         enum stasis_app_snoop_direction spy, enum stasis_app_snoop_direction whisper,
+<a name="310"><span class="lineNum">     310 </span>            :         const char *app, const char *app_args, const char *snoop_id)</a>
+<span class="lineNum">     311 </span>            : {
+<span class="lineNum">     312 </span><span class="lineCov">          6 :         RAII_VAR(struct stasis_app_snoop *, snoop, NULL, ao2_cleanup);</span>
+<span class="lineNum">     313 </span>            :         struct ast_format_cap *caps;
+<span class="lineNum">     314 </span>            :         pthread_t thread;
+<span class="lineNum">     315 </span><span class="lineCov">          3 :         struct ast_assigned_ids assignedids = {</span>
+<span class="lineNum">     316 </span>            :                 .uniqueid = snoop_id,
+<span class="lineNum">     317 </span>            :         };
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineCov">          3 :         if (spy == STASIS_SNOOP_DIRECTION_NONE &amp;&amp;</span>
+<span class="lineNum">     320 </span>            :                 whisper == STASIS_SNOOP_DIRECTION_NONE) {
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     322 </span>            :         }
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineCov">          3 :         snoop = ao2_alloc_options(sizeof(*snoop), snoop_destroy, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">     325 </span><span class="lineCov">          3 :         if (!snoop) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            :         /* Allocate a buffer to store the Stasis application and arguments in */
+<span class="lineNum">     330 </span><span class="lineCov">          3 :         snoop-&gt;app = ast_str_create(64);</span>
+<span class="lineNum">     331 </span><span class="lineCov">          3 :         if (!snoop-&gt;app) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     333 </span>            :         }
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineCov">          3 :         ast_str_set(&amp;snoop-&gt;app, 0, &quot;%s&quot;, app);</span>
+<span class="lineNum">     336 </span><span class="lineCov">          3 :         if (!ast_strlen_zero(app_args)) {</span>
+<span class="lineNum">     337 </span><span class="lineCov">          2 :                 ast_str_append(&amp;snoop-&gt;app, 0, &quot;,%s&quot;, app_args);</span>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span>            :         /* Set up a timer for the Snoop channel so it wakes up at a specific interval */
+<span class="lineNum">     341 </span><span class="lineCov">          3 :         snoop-&gt;timer = ast_timer_open();</span>
+<span class="lineNum">     342 </span><span class="lineCov">          3 :         if (!snoop-&gt;timer) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span><span class="lineCov">          3 :         ast_timer_set_rate(snoop-&gt;timer, 1000 / SNOOP_INTERVAL);</span>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span>            :         /* Determine which signed linear format should be used */
+<span class="lineNum">     348 </span><span class="lineCov">          3 :         snoop_determine_format(chan, snoop);</span>
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span>            :         /* Allocate a Snoop channel and set up various parameters */
+<span class="lineNum">     351 </span><span class="lineCov">          3 :         snoop-&gt;chan = ast_channel_alloc(1, AST_STATE_UP, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &amp;assignedids, NULL, 0, &quot;Snoop/%s-%08x&quot;, ast_channel_uniqueid(chan),</span>
+<span class="lineNum">     352 </span>            :                 (unsigned)ast_atomic_fetchadd_int((int *)&amp;chan_idx, +1));
+<span class="lineNum">     353 </span><span class="lineCov">          3 :         if (!snoop-&gt;chan) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">          3 :         ast_copy_string(snoop-&gt;uniqueid, ast_channel_uniqueid(chan), sizeof(snoop-&gt;uniqueid));</span>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span>            :         /* To keep the channel valid on the Snoop structure until it is destroyed we bump the ref up here */
+<span class="lineNum">     360 </span><span class="lineCov">          3 :         ast_channel_ref(snoop-&gt;chan);</span>
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineCov">          3 :         ast_channel_tech_set(snoop-&gt;chan, &amp;snoop_tech);</span>
+<span class="lineNum">     363 </span><span class="lineCov">          3 :         ao2_ref(snoop, +1);</span>
+<span class="lineNum">     364 </span><span class="lineCov">          3 :         ast_channel_tech_pvt_set(snoop-&gt;chan, snoop);</span>
+<span class="lineNum">     365 </span><span class="lineCov">          3 :         ast_channel_set_fd(snoop-&gt;chan, 0, ast_timer_fd(snoop-&gt;timer));</span>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            :         /* The format on the Snoop channel will be this signed linear format, and it will never change */
+<span class="lineNum">     368 </span><span class="lineCov">          3 :         caps = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     369 </span><span class="lineCov">          3 :         if (!caps) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(snoop-&gt;chan);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     373 </span>            :         }
+<span class="lineNum">     374 </span><span class="lineCov">          3 :         ast_format_cap_append(caps, snoop-&gt;spy_format, 0);</span>
+<span class="lineNum">     375 </span><span class="lineCov">          3 :         ast_channel_nativeformats_set(snoop-&gt;chan, caps);</span>
+<span class="lineNum">     376 </span><span class="lineCov">          3 :         ao2_ref(caps, -1);</span>
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineCov">          3 :         ast_channel_set_writeformat(snoop-&gt;chan, snoop-&gt;spy_format);</span>
+<span class="lineNum">     379 </span><span class="lineCov">          3 :         ast_channel_set_rawwriteformat(snoop-&gt;chan, snoop-&gt;spy_format);</span>
+<span class="lineNum">     380 </span><span class="lineCov">          3 :         ast_channel_set_readformat(snoop-&gt;chan, snoop-&gt;spy_format);</span>
+<span class="lineNum">     381 </span><span class="lineCov">          3 :         ast_channel_set_rawreadformat(snoop-&gt;chan, snoop-&gt;spy_format);</span>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">          3 :         ast_channel_unlock(snoop-&gt;chan);</span>
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">          3 :         if (spy != STASIS_SNOOP_DIRECTION_NONE) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">          2 :                 if (snoop_setup_audiohook(chan, AST_AUDIOHOOK_TYPE_SPY, spy, &amp;snoop-&gt;spy_direction, &amp;snoop-&gt;spy)) {</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     389 </span>            :                 }
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">          2 :                 snoop-&gt;spy_samples = ast_format_get_sample_rate(snoop-&gt;spy_format) / (1000 / SNOOP_INTERVAL);</span>
+<span class="lineNum">     392 </span><span class="lineCov">          2 :                 snoop-&gt;spy_active = 1;</span>
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span><span class="lineCov">          2 :                 snoop-&gt;silence.frametype = AST_FRAME_VOICE,</span>
+<span class="lineNum">     395 </span><span class="lineCov">          2 :                 snoop-&gt;silence.datalen = snoop-&gt;spy_samples * sizeof(uint16_t),</span>
+<span class="lineNum">     396 </span><span class="lineCov">          2 :                 snoop-&gt;silence.samples = snoop-&gt;spy_samples,</span>
+<span class="lineNum">     397 </span><span class="lineCov">          2 :                 snoop-&gt;silence.mallocd = 0,</span>
+<span class="lineNum">     398 </span><span class="lineCov">          2 :                 snoop-&gt;silence.offset = 0,</span>
+<span class="lineNum">     399 </span><span class="lineCov">          2 :                 snoop-&gt;silence.src = __PRETTY_FUNCTION__,</span>
+<span class="lineNum">     400 </span><span class="lineCov">          2 :                 snoop-&gt;silence.subclass.format = snoop-&gt;spy_format,</span>
+<span class="lineNum">     401 </span><span class="lineCov">          2 :                 snoop-&gt;silence.data.ptr = ast_calloc(snoop-&gt;spy_samples, sizeof(uint16_t));</span>
+<span class="lineNum">     402 </span><span class="lineCov">          2 :                 if (!snoop-&gt;silence.data.ptr) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                         ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     405 </span>            :                 }
+<span class="lineNum">     406 </span>            :         }
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span>            :         /* If whispering is enabled set up the audiohook */
+<span class="lineNum">     409 </span><span class="lineCov">          3 :         if (whisper != STASIS_SNOOP_DIRECTION_NONE) {</span>
+<span class="lineNum">     410 </span><span class="lineCov">          1 :                 if (snoop_setup_audiohook(chan, AST_AUDIOHOOK_TYPE_WHISPER, whisper, &amp;snoop-&gt;whisper_direction, &amp;snoop-&gt;whisper)) {</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                         ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     413 </span>            :                 }
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">          1 :                 snoop-&gt;whisper_active = 1;</span>
+<span class="lineNum">     416 </span>            :         }
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span>            :         /* Create the thread which services the Snoop channel */
+<span class="lineNum">     419 </span><span class="lineCov">          3 :         ao2_ref(snoop, +1);</span>
+<span class="lineNum">     420 </span><span class="lineCov">          3 :         if (ast_pthread_create_detached_background(&amp;thread, NULL, snoop_stasis_thread, snoop)) {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 ao2_cleanup(snoop);</span>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span>            :                 /* No other thread is servicing this channel so we can immediately hang it up */
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 ast_hangup(snoop-&gt;chan);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     426 </span>            :         }
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineCov">          3 :         publish_chanspy_message(snoop, 1);</span>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            :         /* The caller of this has a reference as well */
+<span class="lineNum">     431 </span><span class="lineCov">          3 :         return ast_channel_ref(snoop-&gt;chan);</span>
+<a name="432"><span class="lineNum">     432 </span>            : }</a>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">       1118 : static int load_module(void)</span>
+<span class="lineNum">     435 </span>            : {
+<span class="lineNum">     436 </span><span class="lineCov">       1118 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="437"><span class="lineNum">     437 </span>            : }</a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">       1116 : static int unload_module(void)</span>
+<span class="lineNum">     440 </span>            : {
+<span class="lineNum">     441 </span><span class="lineCov">       1116 :         return 0;</span>
+<a name="442"><span class="lineNum">     442 </span>            : }</a>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineCov">       4514 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS, &quot;Stasis application snoop support&quot;,</span>
+<span class="lineNum">     445 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     446 </span>            :         .load = load_module,
+<span class="lineNum">     447 </span>            :         .unload = unload_module,
+<span class="lineNum">     448 </span>            :         .requires = &quot;res_stasis&quot;,
+<span class="lineNum">     449 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

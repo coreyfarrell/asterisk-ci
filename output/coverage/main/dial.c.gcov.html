@@ -1,0 +1,1434 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/dial.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - dial.c<span style="font-size: 80%;"> (source / <a href="dial.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">430</td>
+            <td class="headerCovTableEntry">637</td>
+            <td class="headerCovTableEntryLo">67.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">35</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntryMed">83.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2007, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Dialing API
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      33 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/dial.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/musiconhold.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/causes.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/max_forwards.h&quot;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*! \brief Main dialing structure. Contains global options, channels being dialed, and more! */
+<span class="lineNum">      48 </span>            : struct ast_dial {
+<span class="lineNum">      49 </span>            :         int num;                                           /*!&lt; Current number to give to next dialed channel */
+<span class="lineNum">      50 </span>            :         int timeout;                                       /*!&lt; Maximum time allowed for dial attempts */
+<span class="lineNum">      51 </span>            :         int actual_timeout;                                /*!&lt; Actual timeout based on all factors (ie: channels) */
+<span class="lineNum">      52 </span>            :         enum ast_dial_result state;                        /*!&lt; Status of dial */
+<span class="lineNum">      53 </span>            :         void *options[AST_DIAL_OPTION_MAX];                /*!&lt; Global options */
+<span class="lineNum">      54 </span>            :         ast_dial_state_callback state_callback;            /*!&lt; Status callback */
+<span class="lineNum">      55 </span>            :         void *user_data;                                   /*!&lt; Attached user data */
+<span class="lineNum">      56 </span>            :         AST_LIST_HEAD(, ast_dial_channel) channels; /*!&lt; Channels being dialed */
+<span class="lineNum">      57 </span>            :         pthread_t thread;                                  /*!&lt; Thread (if running in async) */
+<span class="lineNum">      58 </span>            :         ast_callid callid;                                 /*!&lt; callid (if running in async) */
+<span class="lineNum">      59 </span>            :         ast_mutex_t lock;                                  /*! Lock to protect the thread information above */
+<span class="lineNum">      60 </span>            : };
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : /*! \brief Dialing channel structure. Contains per-channel dialing options, asterisk channel, and more! */
+<span class="lineNum">      63 </span>            : struct ast_dial_channel {
+<span class="lineNum">      64 </span>            :         int num;                                /*!&lt; Unique number for dialed channel */
+<span class="lineNum">      65 </span>            :         int timeout;                            /*!&lt; Maximum time allowed for attempt */
+<span class="lineNum">      66 </span>            :         char *tech;                             /*!&lt; Technology being dialed */
+<span class="lineNum">      67 </span>            :         char *device;                           /*!&lt; Device being dialed */
+<span class="lineNum">      68 </span>            :         void *options[AST_DIAL_OPTION_MAX];     /*!&lt; Channel specific options */
+<span class="lineNum">      69 </span>            :         int cause;                              /*!&lt; Cause code in case of failure */
+<span class="lineNum">      70 </span>            :         unsigned int is_running_app:1;          /*!&lt; Is this running an application? */
+<span class="lineNum">      71 </span>            :         char *assignedid1;                              /*!&lt; UniqueID to assign channel */
+<span class="lineNum">      72 </span>            :         char *assignedid2;                              /*!&lt; UniqueID to assign 2nd channel */
+<span class="lineNum">      73 </span>            :         struct ast_channel *owner;              /*!&lt; Asterisk channel */
+<span class="lineNum">      74 </span>            :         AST_LIST_ENTRY(ast_dial_channel) list;  /*!&lt; Linked list information */
+<span class="lineNum">      75 </span>            : };
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : /*! \brief Typedef for dial option enable */
+<span class="lineNum">      78 </span>            : typedef void *(*ast_dial_option_cb_enable)(void *data);
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : /*! \brief Typedef for dial option disable */
+<span class="lineNum">      81 </span>            : typedef int (*ast_dial_option_cb_disable)(void *data);
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span>            : /*! \brief Structure for 'ANSWER_EXEC' option */
+<span class="lineNum">      84 </span>            : struct answer_exec_struct {
+<span class="lineNum">      85 </span>            :         char app[AST_MAX_APP]; /*!&lt; Application name */
+<span class="lineNum">      86 </span>            :         char *args;            /*!&lt; Application arguments */
+<span class="lineNum">      87 </span>            : };
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<span class="lineNum">      89 </span>            : /*! \brief Enable function for 'ANSWER_EXEC' option */
+<span class="lineNum">      90 </span><span class="lineCov">          6 : static void *answer_exec_enable(void *data)</span>
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span><span class="lineCov">          6 :         struct answer_exec_struct *answer_exec = NULL;</span>
+<span class="lineNum">      93 </span><span class="lineCov">          6 :         char *app = ast_strdupa((char*)data), *args = NULL;</span>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span>            :         /* Not giving any data to this option is bad, mmmk? */
+<span class="lineNum">      96 </span><span class="lineCov">          6 :         if (ast_strlen_zero(app))</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span>            :         /* Create new data structure */
+<span class="lineNum">     100 </span><span class="lineCov">          6 :         if (!(answer_exec = ast_calloc(1, sizeof(*answer_exec))))</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            :         /* Parse out application and arguments */
+<span class="lineNum">     104 </span><span class="lineCov">          6 :         if ((args = strchr(app, ','))) {</span>
+<span class="lineNum">     105 </span><span class="lineCov">          6 :                 *args++ = '\0';</span>
+<span class="lineNum">     106 </span><span class="lineCov">          6 :                 answer_exec-&gt;args = ast_strdup(args);</span>
+<span class="lineNum">     107 </span>            :         }
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            :         /* Copy application name */
+<span class="lineNum">     110 </span><span class="lineCov">          6 :         ast_copy_string(answer_exec-&gt;app, app, sizeof(answer_exec-&gt;app));</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">          6 :         return answer_exec;</span>
+<span class="lineNum">     113 </span>            : }
+<a name="114"><span class="lineNum">     114 </span>            : </a>
+<span class="lineNum">     115 </span>            : /*! \brief Disable function for 'ANSWER_EXEC' option */
+<span class="lineNum">     116 </span><span class="lineCov">          6 : static int answer_exec_disable(void *data)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span><span class="lineCov">          6 :         struct answer_exec_struct *answer_exec = data;</span>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :         /* Make sure we have a value */
+<span class="lineNum">     121 </span><span class="lineCov">          6 :         if (!answer_exec)</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :         /* If arguments are present, free them too */
+<span class="lineNum">     125 </span><span class="lineCov">          6 :         if (answer_exec-&gt;args)</span>
+<span class="lineNum">     126 </span><span class="lineCov">          6 :                 ast_free(answer_exec-&gt;args);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            :         /* This is simple - just free the structure */
+<span class="lineNum">     129 </span><span class="lineCov">          6 :         ast_free(answer_exec);</span>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineCov">          6 :         return 0;</span>
+<a name="132"><span class="lineNum">     132 </span>            : }</a>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 : static void *music_enable(void *data)</span>
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         return ast_strdup(data);</span>
+<a name="137"><span class="lineNum">     137 </span>            : }</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 : static int music_disable(void *data)</span>
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :         if (!data)</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         ast_free(data);</span>
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="147"><span class="lineNum">     147 </span>            : }</a>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">          3 : static void *predial_enable(void *data)</span>
+<span class="lineNum">     150 </span>            : {
+<span class="lineNum">     151 </span><span class="lineCov">          3 :         return ast_strdup(data);</span>
+<a name="152"><span class="lineNum">     152 </span>            : }</a>
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">          3 : static int predial_disable(void *data)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span><span class="lineCov">          3 :         if (!data) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     158 </span>            :         }
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">          3 :         ast_free(data);</span>
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span><span class="lineCov">          3 :         return 0;</span>
+<span class="lineNum">     163 </span>            : }
+<a name="164"><span class="lineNum">     164 </span>            : </a>
+<span class="lineNum">     165 </span>            : /*! \brief Application execution function for 'ANSWER_EXEC' option */
+<span class="lineNum">     166 </span><span class="lineCov">          6 : static void answer_exec_run(struct ast_dial *dial, struct ast_dial_channel *dial_channel, char *app, char *args)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span><span class="lineCov">          6 :         struct ast_channel *chan = dial_channel-&gt;owner;</span>
+<span class="lineNum">     169 </span><span class="lineCov">          6 :         struct ast_app *ast_app = pbx_findapp(app);</span>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            :         /* If the application was not found, return immediately */
+<span class="lineNum">     172 </span><span class="lineCov">          6 :         if (!ast_app)</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span>            :         /* All is well... execute the application */
+<span class="lineNum">     176 </span><span class="lineCov">          6 :         pbx_exec(chan, ast_app, args);</span>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span>            :         /* If another thread is not taking over hang up the channel */
+<span class="lineNum">     179 </span><span class="lineCov">          6 :         ast_mutex_lock(&amp;dial-&gt;lock);</span>
+<span class="lineNum">     180 </span><span class="lineCov">          6 :         if (dial-&gt;thread != AST_PTHREADT_STOP) {</span>
+<span class="lineNum">     181 </span><span class="lineCov">          2 :                 ast_hangup(chan);</span>
+<span class="lineNum">     182 </span><span class="lineCov">          2 :                 dial_channel-&gt;owner = NULL;</span>
+<span class="lineNum">     183 </span>            :         }
+<span class="lineNum">     184 </span><span class="lineCov">          6 :         ast_mutex_unlock(&amp;dial-&gt;lock);</span>
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">          6 :         return;</span>
+<span class="lineNum">     187 </span>            : }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            : struct ast_option_types {
+<span class="lineNum">     190 </span>            :         enum ast_dial_option option;
+<span class="lineNum">     191 </span>            :         ast_dial_option_cb_enable enable;
+<span class="lineNum">     192 </span>            :         ast_dial_option_cb_disable disable;
+<span class="lineNum">     193 </span>            : };
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span>            : /*!
+<span class="lineNum">     196 </span>            :  * \brief Map options to respective handlers (enable/disable).
+<span class="lineNum">     197 </span>            :  *
+<span class="lineNum">     198 </span>            :  * \note This list MUST be perfectly kept in order with enum
+<span class="lineNum">     199 </span>            :  * ast_dial_option, or else madness will happen.
+<span class="lineNum">     200 </span>            :  */
+<span class="lineNum">     201 </span>            : static const struct ast_option_types option_types[] = {
+<span class="lineNum">     202 </span>            :         { AST_DIAL_OPTION_RINGING, NULL, NULL },                                  /*!&lt; Always indicate ringing to caller */
+<span class="lineNum">     203 </span>            :         { AST_DIAL_OPTION_ANSWER_EXEC, answer_exec_enable, answer_exec_disable }, /*!&lt; Execute application upon answer in async mode */
+<span class="lineNum">     204 </span>            :         { AST_DIAL_OPTION_MUSIC, music_enable, music_disable },                   /*!&lt; Play music to the caller instead of ringing */
+<span class="lineNum">     205 </span>            :         { AST_DIAL_OPTION_DISABLE_CALL_FORWARDING, NULL, NULL },                  /*!&lt; Disable call forwarding on channels */
+<span class="lineNum">     206 </span>            :         { AST_DIAL_OPTION_PREDIAL, predial_enable, predial_disable },             /*!&lt; Execute a subroutine on the outbound channels prior to dialing */
+<span class="lineNum">     207 </span>            :         { AST_DIAL_OPTION_DIAL_REPLACES_SELF, NULL, NULL },                       /*!&lt; The dial operation is a replacement for the requester */
+<span class="lineNum">     208 </span>            :         { AST_DIAL_OPTION_SELF_DESTROY, NULL, NULL},                              /*!&lt; Destroy self at end of ast_dial_run */
+<span class="lineNum">     209 </span>            :         { AST_DIAL_OPTION_MAX, NULL, NULL },                                      /*!&lt; Terminator of list */
+<span class="lineNum">     210 </span>            : };
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span>            : /*! \brief Maximum number of channels we can watch at a time */
+<span class="lineNum">     213 </span>            : #define AST_MAX_WATCHERS 256
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            : /*! \brief Macro for finding the option structure to use on a dialed channel */
+<span class="lineNum">     216 </span>            : #define FIND_RELATIVE_OPTION(dial, dial_channel, ast_dial_option) (dial_channel-&gt;options[ast_dial_option] ? dial_channel-&gt;options[ast_dial_option] : dial-&gt;options[ast_dial_option])
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            : /*! \brief Macro that determines whether a channel is the caller or not */
+<span class="lineNum">     219 </span>            : #define IS_CALLER(chan, owner) (chan == owner ? 1 : 0)
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span>            : /*! \brief New dialing structure
+<span class="lineNum">     222 </span>            :  * \note Create a dialing structure
+<a name="223"><span class="lineNum">     223 </span>            :  * \return Returns a calloc'd ast_dial structure, NULL on failure</a>
+<span class="lineNum">     224 </span>            :  */
+<span class="lineNum">     225 </span><span class="lineCov">       1047 : struct ast_dial *ast_dial_create(void)</span>
+<span class="lineNum">     226 </span>            : {
+<span class="lineNum">     227 </span><span class="lineCov">       1047 :         struct ast_dial *dial = NULL;</span>
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span>            :         /* Allocate new memory for structure */
+<span class="lineNum">     230 </span><span class="lineCov">       1047 :         if (!(dial = ast_calloc(1, sizeof(*dial))))</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :         /* Initialize list of channels */
+<span class="lineNum">     234 </span><span class="lineCov">       1047 :         AST_LIST_HEAD_INIT(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span>            :         /* Initialize thread to NULL */
+<span class="lineNum">     237 </span><span class="lineCov">       1047 :         dial-&gt;thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            :         /* No timeout exists... yet */
+<span class="lineNum">     240 </span><span class="lineCov">       1047 :         dial-&gt;timeout = -1;</span>
+<span class="lineNum">     241 </span><span class="lineCov">       1047 :         dial-&gt;actual_timeout = -1;</span>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span>            :         /* Can't forget about the lock */
+<span class="lineNum">     244 </span><span class="lineCov">       1047 :         ast_mutex_init(&amp;dial-&gt;lock);</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">       1047 :         return dial;</span>
+<a name="247"><span class="lineNum">     247 </span>            : }</a>
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span><span class="lineCov">       1047 : static int dial_append_common(struct ast_dial *dial, struct ast_dial_channel *channel,</span>
+<span class="lineNum">     250 </span>            :                 const char *tech, const char *device, const struct ast_assigned_ids *assignedids)
+<span class="lineNum">     251 </span>            : {
+<span class="lineNum">     252 </span>            :         /* Record technology and device for when we actually dial */
+<span class="lineNum">     253 </span><span class="lineCov">       1047 :         channel-&gt;tech = ast_strdup(tech);</span>
+<span class="lineNum">     254 </span><span class="lineCov">       1047 :         channel-&gt;device = ast_strdup(device);</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span>            :         /* Store the assigned id */
+<span class="lineNum">     257 </span><span class="lineCov">       1047 :         if (assignedids &amp;&amp; !ast_strlen_zero(assignedids-&gt;uniqueid)) {</span>
+<span class="lineNum">     258 </span><span class="lineCov">        101 :                 channel-&gt;assignedid1 = ast_strdup(assignedids-&gt;uniqueid);</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">        101 :                 if (!ast_strlen_zero(assignedids-&gt;uniqueid2)) {</span>
+<span class="lineNum">     261 </span><span class="lineCov">         29 :                         channel-&gt;assignedid2 = ast_strdup(assignedids-&gt;uniqueid2);</span>
+<span class="lineNum">     262 </span>            :                 }
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            :         /* Grab reference number from dial structure */
+<span class="lineNum">     266 </span><span class="lineCov">       1047 :         channel-&gt;num = ast_atomic_fetchadd_int(&amp;dial-&gt;num, +1);</span>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span>            :         /* No timeout exists... yet */
+<span class="lineNum">     269 </span><span class="lineCov">       1047 :         channel-&gt;timeout = -1;</span>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            :         /* Insert into channels list */
+<span class="lineNum">     272 </span><span class="lineCov">       1047 :         AST_LIST_INSERT_TAIL(&amp;dial-&gt;channels, channel, list);</span>
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">       1047 :         return channel-&gt;num;</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : }
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            : /*! \brief Append a channel
+<span class="lineNum">     279 </span>            :  * \note Appends a channel to a dialing structure
+<a name="280"><span class="lineNum">     280 </span>            :  * \return Returns channel reference number on success, -1 on failure</a>
+<span class="lineNum">     281 </span>            :  */
+<span class="lineNum">     282 </span><span class="lineCov">       1047 : int ast_dial_append(struct ast_dial *dial, const char *tech, const char *device, const struct ast_assigned_ids *assignedids)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineCov">       1047 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span>            :         /* Make sure we have required arguments */
+<span class="lineNum">     287 </span><span class="lineCov">       1047 :         if (!dial || !tech || !device)</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span>            :         /* Allocate new memory for dialed channel structure */
+<span class="lineNum">     291 </span><span class="lineCov">       1047 :         if (!(channel = ast_calloc(1, sizeof(*channel))))</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">       1047 :         return dial_append_common(dial, channel, tech, device, assignedids);</span>
+<a name="295"><span class="lineNum">     295 </span>            : }</a>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 : int ast_dial_append_channel(struct ast_dial *dial, struct ast_channel *chan)</span>
+<span class="lineNum">     298 </span>            : {
+<span class="lineNum">     299 </span>            :         struct ast_dial_channel *channel;
+<span class="lineNum">     300 </span>            :         char *tech;
+<span class="lineNum">     301 </span>            :         char *device;
+<span class="lineNum">     302 </span>            :         char *dash;
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         if (!dial || !chan) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         channel = ast_calloc(1, sizeof(*channel));</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :         if (!channel) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     311 </span>            :         }
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         channel-&gt;owner = chan;</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         tech = ast_strdupa(ast_channel_name(chan));</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         device = strchr(tech, '/');</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :         if (!device) {</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 ast_free(channel);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     320 </span>            :         }
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :         *device++ = '\0';</span>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         dash = strrchr(device, '-');</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         if (dash) {</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 *dash = '\0';</span>
+<span class="lineNum">     326 </span>            :         }
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         return dial_append_common(dial, channel, tech, device, NULL);</span>
+<span class="lineNum">     329 </span>            : }
+<a name="330"><span class="lineNum">     330 </span>            : </a>
+<span class="lineNum">     331 </span>            : /*! \brief Helper function that requests all channels */
+<span class="lineNum">     332 </span><span class="lineCov">       1058 : static int begin_dial_prerun(struct ast_dial_channel *channel, struct ast_channel *chan, struct ast_format_cap *cap, const char *predial_string)</span>
+<span class="lineNum">     333 </span>            : {
+<span class="lineNum">     334 </span>            :         char numsubst[AST_MAX_EXTENSION];
+<span class="lineNum">     335 </span><span class="lineCov">       1058 :         struct ast_format_cap *cap_all_audio = NULL;</span>
+<span class="lineNum">     336 </span>            :         struct ast_format_cap *cap_request;
+<span class="lineNum">     337 </span><span class="lineCov">       1058 :         struct ast_format_cap *requester_cap = NULL;</span>
+<span class="lineNum">     338 </span><span class="lineCov">       2116 :         struct ast_assigned_ids assignedids = {</span>
+<span class="lineNum">     339 </span><span class="lineCov">       1058 :                 .uniqueid = channel-&gt;assignedid1,</span>
+<span class="lineNum">     340 </span><span class="lineCov">       1058 :                 .uniqueid2 = channel-&gt;assignedid2,</span>
+<span class="lineNum">     341 </span>            :         };
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">       1058 :         if (chan) {</span>
+<span class="lineNum">     344 </span>            :                 int max_forwards;
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineCov">          7 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     347 </span><span class="lineCov">          7 :                 max_forwards = ast_max_forwards_get(chan);</span>
+<span class="lineNum">     348 </span><span class="lineCov">          7 :                 requester_cap = ao2_bump(ast_channel_nativeformats(chan));</span>
+<span class="lineNum">     349 </span><span class="lineCov">          7 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">          7 :                 if (max_forwards &lt;= 0) {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Cannot dial from channel '%s'. Max forwards exceeded\n&quot;,</span>
+<span class="lineNum">     353 </span>            :                                         ast_channel_name(chan));
+<span class="lineNum">     354 </span>            :                 }
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">       1058 :         if (!channel-&gt;owner) {</span>
+<span class="lineNum">     358 </span>            :                 /* Copy device string over */
+<span class="lineNum">     359 </span><span class="lineCov">       1058 :                 ast_copy_string(numsubst, channel-&gt;device, sizeof(numsubst));</span>
+<span class="lineNum">     360 </span>            : 
+<span class="lineNum">     361 </span><span class="lineCov">       1058 :                 if (cap &amp;&amp; ast_format_cap_count(cap)) {</span>
+<span class="lineNum">     362 </span><span class="lineCov">        888 :                         cap_request = cap;</span>
+<span class="lineNum">     363 </span><span class="lineCov">        170 :                 } else if (requester_cap) {</span>
+<span class="lineNum">     364 </span><span class="lineCov">          7 :                         cap_request = requester_cap;</span>
+<span class="lineNum">     365 </span>            :                 } else {
+<span class="lineNum">     366 </span><span class="lineCov">        163 :                         cap_all_audio = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     367 </span><span class="lineCov">        163 :                         ast_format_cap_append_by_type(cap_all_audio, AST_MEDIA_TYPE_AUDIO);</span>
+<span class="lineNum">     368 </span><span class="lineCov">        163 :                         cap_request = cap_all_audio;</span>
+<span class="lineNum">     369 </span>            :                 }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            :                 /* If we fail to create our owner channel bail out */
+<span class="lineNum">     372 </span><span class="lineCov">       1058 :                 if (!(channel-&gt;owner = ast_request(channel-&gt;tech, cap_request, &amp;assignedids, chan, numsubst, &amp;channel-&gt;cause))) {</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         ao2_cleanup(cap_all_audio);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     375 </span>            :                 }
+<span class="lineNum">     376 </span><span class="lineCov">       1058 :                 cap_request = NULL;</span>
+<span class="lineNum">     377 </span><span class="lineCov">       1058 :                 ao2_cleanup(requester_cap);</span>
+<span class="lineNum">     378 </span><span class="lineCov">       1058 :                 ao2_cleanup(cap_all_audio);</span>
+<span class="lineNum">     379 </span>            :         }
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineCov">       1058 :         if (chan) {</span>
+<span class="lineNum">     382 </span><span class="lineCov">          7 :                 ast_channel_lock_both(chan, channel-&gt;owner);</span>
+<span class="lineNum">     383 </span>            :         } else {
+<span class="lineNum">     384 </span><span class="lineCov">       1051 :                 ast_channel_lock(channel-&gt;owner);</span>
+<span class="lineNum">     385 </span>            :         }
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineCov">       1058 :         ast_channel_stage_snapshot(channel-&gt;owner);</span>
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">       1058 :         ast_channel_appl_set(channel-&gt;owner, &quot;AppDial2&quot;);</span>
+<span class="lineNum">     390 </span><span class="lineCov">       1058 :         ast_channel_data_set(channel-&gt;owner, &quot;(Outgoing Line)&quot;);</span>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">       1058 :         memset(ast_channel_whentohangup(channel-&gt;owner), 0, sizeof(*ast_channel_whentohangup(channel-&gt;owner)));</span>
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span>            :         /* Inherit everything from he who spawned this dial */
+<span class="lineNum">     395 </span><span class="lineCov">       1058 :         if (chan) {</span>
+<span class="lineNum">     396 </span><span class="lineCov">          7 :                 ast_channel_inherit_variables(chan, channel-&gt;owner);</span>
+<span class="lineNum">     397 </span><span class="lineCov">          7 :                 ast_channel_datastore_inherit(chan, channel-&gt;owner);</span>
+<span class="lineNum">     398 </span><span class="lineCov">          7 :                 ast_max_forwards_decrement(channel-&gt;owner);</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            :                 /* Copy over callerid information */
+<span class="lineNum">     401 </span><span class="lineCov">          7 :                 ast_party_redirecting_copy(ast_channel_redirecting(channel-&gt;owner), ast_channel_redirecting(chan));</span>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineCov">          7 :                 ast_channel_dialed(channel-&gt;owner)-&gt;transit_network_select = ast_channel_dialed(chan)-&gt;transit_network_select;</span>
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineCov">          7 :                 ast_connected_line_copy_from_caller(ast_channel_connected(channel-&gt;owner), ast_channel_caller(chan));</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">          7 :                 ast_channel_language_set(channel-&gt;owner, ast_channel_language(chan));</span>
+<span class="lineNum">     408 </span><span class="lineCov">          7 :                 if (channel-&gt;options[AST_DIAL_OPTION_DIAL_REPLACES_SELF]) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                         ast_channel_req_accountcodes(channel-&gt;owner, chan, AST_CHANNEL_REQUESTOR_REPLACEMENT);</span>
+<span class="lineNum">     410 </span>            :                 } else {
+<span class="lineNum">     411 </span><span class="lineCov">          7 :                         ast_channel_req_accountcodes(channel-&gt;owner, chan, AST_CHANNEL_REQUESTOR_BRIDGE_PEER);</span>
+<span class="lineNum">     412 </span>            :                 }
+<span class="lineNum">     413 </span><span class="lineCov">          7 :                 if (ast_strlen_zero(ast_channel_musicclass(channel-&gt;owner)))</span>
+<span class="lineNum">     414 </span><span class="lineCov">          7 :                         ast_channel_musicclass_set(channel-&gt;owner, ast_channel_musicclass(chan));</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineCov">          7 :                 ast_channel_adsicpe_set(channel-&gt;owner, ast_channel_adsicpe(chan));</span>
+<span class="lineNum">     417 </span><span class="lineCov">          7 :                 ast_channel_transfercapability_set(channel-&gt;owner, ast_channel_transfercapability(chan));</span>
+<span class="lineNum">     418 </span><span class="lineCov">          7 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     419 </span>            :         }
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">       1058 :         ast_channel_stage_snapshot_done(channel-&gt;owner);</span>
+<span class="lineNum">     422 </span><span class="lineCov">       1058 :         ast_channel_unlock(channel-&gt;owner);</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">       1058 :         if (!ast_strlen_zero(predial_string)) {</span>
+<span class="lineNum">     425 </span><span class="lineCov">          3 :                 if (chan) {</span>
+<span class="lineNum">     426 </span><span class="lineCov">          3 :                         ast_autoservice_start(chan);</span>
+<span class="lineNum">     427 </span>            :                 }
+<span class="lineNum">     428 </span><span class="lineCov">          3 :                 ast_pre_call(channel-&gt;owner, predial_string);</span>
+<span class="lineNum">     429 </span><span class="lineCov">          3 :                 if (chan) {</span>
+<span class="lineNum">     430 </span><span class="lineCov">          3 :                         ast_autoservice_stop(chan);</span>
+<span class="lineNum">     431 </span>            :                 }
+<span class="lineNum">     432 </span>            :         }
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">       1058 :         return 0;</span>
+<a name="435"><span class="lineNum">     435 </span>            : }</a>
+<span class="lineNum">     436 </span>            : 
+<span class="lineNum">     437 </span><span class="lineCov">       1041 : int ast_dial_prerun(struct ast_dial *dial, struct ast_channel *chan, struct ast_format_cap *cap)</span>
+<span class="lineNum">     438 </span>            : {
+<span class="lineNum">     439 </span>            :         struct ast_dial_channel *channel;
+<span class="lineNum">     440 </span><span class="lineCov">       1041 :         int res = -1;</span>
+<span class="lineNum">     441 </span><span class="lineCov">       1041 :         char *predial_string = dial-&gt;options[AST_DIAL_OPTION_PREDIAL];</span>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">       1041 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     444 </span><span class="lineCov">       2082 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     445 </span><span class="lineCov">       1041 :                 if ((res = begin_dial_prerun(channel, chan, cap, predial_string))) {</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     447 </span>            :                 }
+<span class="lineNum">     448 </span>            :         }
+<span class="lineNum">     449 </span><span class="lineCov">       1041 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span><span class="lineCov">       1041 :         return res;</span>
+<span class="lineNum">     452 </span>            : }
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span>            : /*! \brief Helper function that does the beginning dialing per-appended channel */
+<span class="lineNum">     455 </span><span class="lineCov">       1058 : static int begin_dial_channel(struct ast_dial_channel *channel, struct ast_channel *chan, int async, const char *predial_string, struct ast_channel *forwarder_chan)</span>
+<span class="lineNum">     456 </span>            : {
+<span class="lineNum">     457 </span>            :         char numsubst[AST_MAX_EXTENSION];
+<span class="lineNum">     458 </span><span class="lineCov">       1058 :         int res = 1;</span>
+<span class="lineNum">     459 </span>            :         char forwarder[AST_CHANNEL_NAME];
+<span class="lineNum">     460 </span>            : 
+<span class="lineNum">     461 </span>            :         /* If no owner channel exists yet execute pre-run */
+<span class="lineNum">     462 </span><span class="lineCov">       1058 :         if (!channel-&gt;owner &amp;&amp; begin_dial_prerun(channel, chan, NULL, predial_string)) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     464 </span>            :         }
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineCov">       1058 :         if (forwarder_chan) {</span>
+<span class="lineNum">     467 </span><span class="lineCov">         11 :                 ast_copy_string(forwarder, ast_channel_name(forwarder_chan), sizeof(forwarder));</span>
+<span class="lineNum">     468 </span><span class="lineCov">         11 :                 ast_channel_lock(channel-&gt;owner);</span>
+<span class="lineNum">     469 </span><span class="lineCov">         11 :                 pbx_builtin_setvar_helper(channel-&gt;owner, &quot;FORWARDERNAME&quot;, forwarder);</span>
+<span class="lineNum">     470 </span><span class="lineCov">         11 :                 ast_channel_unlock(channel-&gt;owner);</span>
+<span class="lineNum">     471 </span>            :         }
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            :         /* Copy device string over */
+<span class="lineNum">     474 </span><span class="lineCov">       1058 :         ast_copy_string(numsubst, channel-&gt;device, sizeof(numsubst));</span>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span>            :         /* Attempt to actually call this device */
+<span class="lineNum">     477 </span><span class="lineCov">       1058 :         if ((res = ast_call(channel-&gt;owner, numsubst, 0))) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                 res = 0;</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                 channel-&gt;owner = NULL;</span>
+<span class="lineNum">     481 </span>            :         } else {
+<span class="lineNum">     482 </span><span class="lineCov">       1058 :                 ast_channel_publish_dial(async ? NULL : chan, channel-&gt;owner, channel-&gt;device, NULL);</span>
+<span class="lineNum">     483 </span><span class="lineCov">       1058 :                 res = 1;</span>
+<span class="lineNum">     484 </span><span class="lineCov">       1058 :                 ast_verb(3, &quot;Called %s\n&quot;, numsubst);</span>
+<span class="lineNum">     485 </span>            :         }
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">       1058 :         return res;</span>
+<span class="lineNum">     488 </span>            : }
+<a name="489"><span class="lineNum">     489 </span>            : </a>
+<span class="lineNum">     490 </span>            : /*! \brief Helper function that does the beginning dialing per dial structure */
+<span class="lineNum">     491 </span><span class="lineCov">       1047 : static int begin_dial(struct ast_dial *dial, struct ast_channel *chan, int async)</span>
+<span class="lineNum">     492 </span>            : {
+<span class="lineNum">     493 </span><span class="lineCov">       1047 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">     494 </span><span class="lineCov">       1047 :         int success = 0;</span>
+<span class="lineNum">     495 </span><span class="lineCov">       1047 :         char *predial_string = dial-&gt;options[AST_DIAL_OPTION_PREDIAL];</span>
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span>            :         /* Iterate through channel list, requesting and calling each one */
+<span class="lineNum">     498 </span><span class="lineCov">       1047 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     499 </span><span class="lineCov">       2094 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     500 </span><span class="lineCov">       1047 :                 success += begin_dial_channel(channel, chan, async, predial_string, NULL);</span>
+<span class="lineNum">     501 </span>            :         }
+<span class="lineNum">     502 </span><span class="lineCov">       1047 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span>            :         /* If number of failures matches the number of channels, then this truly failed */
+<span class="lineNum">     505 </span><span class="lineCov">       1047 :         return success;</span>
+<span class="lineNum">     506 </span>            : }
+<a name="507"><span class="lineNum">     507 </span>            : </a>
+<span class="lineNum">     508 </span>            : /*! \brief Helper function to handle channels that have been call forwarded */
+<span class="lineNum">     509 </span><span class="lineCov">         11 : static int handle_call_forward(struct ast_dial *dial, struct ast_dial_channel *channel, struct ast_channel *chan)</span>
+<span class="lineNum">     510 </span>            : {
+<span class="lineNum">     511 </span><span class="lineCov">         11 :         struct ast_channel *original = channel-&gt;owner;</span>
+<span class="lineNum">     512 </span><span class="lineCov">         11 :         char *tmp = ast_strdupa(ast_channel_call_forward(channel-&gt;owner));</span>
+<span class="lineNum">     513 </span><span class="lineCov">         11 :         char *tech = &quot;Local&quot;, *device = tmp, *stuff;</span>
+<span class="lineNum">     514 </span><span class="lineCov">         11 :         char *predial_string = dial-&gt;options[AST_DIAL_OPTION_PREDIAL];</span>
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span>            :         /* If call forwarding is disabled just drop the original channel and don't attempt to dial the new one */
+<span class="lineNum">     517 </span><span class="lineCov">         11 :         if (FIND_RELATIVE_OPTION(dial, channel, AST_DIAL_OPTION_DISABLE_CALL_FORWARDING)) {</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                 ast_hangup(original);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                 channel-&gt;owner = NULL;</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     521 </span>            :         }
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span>            :         /* Figure out the new destination */
+<span class="lineNum">     524 </span><span class="lineCov">         11 :         if ((stuff = strchr(tmp, '/'))) {</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                 *stuff++ = '\0';</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                 tech = tmp;</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                 device = stuff;</span>
+<span class="lineNum">     528 </span>            :         } else {
+<span class="lineNum">     529 </span>            :                 const char *forward_context;
+<span class="lineNum">     530 </span>            :                 char destination[AST_MAX_CONTEXT + AST_MAX_EXTENSION + 1];
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">         11 :                 ast_channel_lock(original);</span>
+<span class="lineNum">     533 </span><span class="lineCov">         11 :                 forward_context = pbx_builtin_getvar_helper(original, &quot;FORWARD_CONTEXT&quot;);</span>
+<span class="lineNum">     534 </span><span class="lineCov">         11 :                 snprintf(destination, sizeof(destination), &quot;%s@%s&quot;, tmp, S_OR(forward_context, ast_channel_context(original)));</span>
+<span class="lineNum">     535 </span><span class="lineCov">         11 :                 ast_channel_unlock(original);</span>
+<span class="lineNum">     536 </span><span class="lineCov">         11 :                 device = ast_strdupa(destination);</span>
+<span class="lineNum">     537 </span>            :         }
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span>            :         /* Drop old destination information */
+<span class="lineNum">     540 </span><span class="lineCov">         11 :         ast_free(channel-&gt;tech);</span>
+<span class="lineNum">     541 </span><span class="lineCov">         11 :         ast_free(channel-&gt;device);</span>
+<span class="lineNum">     542 </span><span class="lineCov">         11 :         ast_free(channel-&gt;assignedid1);</span>
+<span class="lineNum">     543 </span><span class="lineCov">         11 :         channel-&gt;assignedid1 = NULL;</span>
+<span class="lineNum">     544 </span><span class="lineCov">         11 :         ast_free(channel-&gt;assignedid2);</span>
+<span class="lineNum">     545 </span><span class="lineCov">         11 :         channel-&gt;assignedid2 = NULL;</span>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span>            :         /* Update the dial channel with the new destination information */
+<span class="lineNum">     548 </span><span class="lineCov">         11 :         channel-&gt;tech = ast_strdup(tech);</span>
+<span class="lineNum">     549 </span><span class="lineCov">         11 :         channel-&gt;device = ast_strdup(device);</span>
+<span class="lineNum">     550 </span><span class="lineCov">         11 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span>            :         /* Drop the original channel */
+<span class="lineNum">     553 </span><span class="lineCov">         11 :         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span>            :         /* Finally give it a go... send it out into the world */
+<span class="lineNum">     556 </span><span class="lineCov">         11 :         begin_dial_channel(channel, chan, chan ? 0 : 1, predial_string, original);</span>
+<span class="lineNum">     557 </span>            : 
+<span class="lineNum">     558 </span><span class="lineCov">         11 :         ast_channel_publish_dial_forward(chan, original, channel-&gt;owner, NULL, &quot;CANCEL&quot;,</span>
+<span class="lineNum">     559 </span>            :                 ast_channel_call_forward(original));
+<span class="lineNum">     560 </span>            : 
+<span class="lineNum">     561 </span><span class="lineCov">         11 :         ast_hangup(original);</span>
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineCov">         11 :         return 0;</span>
+<span class="lineNum">     564 </span>            : }
+<a name="565"><span class="lineNum">     565 </span>            : </a>
+<span class="lineNum">     566 </span>            : /*! \brief Helper function that finds the dialed channel based on owner */
+<span class="lineNum">     567 </span><span class="lineCov">       3630 : static struct ast_dial_channel *find_relative_dial_channel(struct ast_dial *dial, struct ast_channel *owner)</span>
+<span class="lineNum">     568 </span>            : {
+<span class="lineNum">     569 </span><span class="lineCov">       3630 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineCov">       3630 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     572 </span><span class="lineCov">       3630 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     573 </span><span class="lineCov">       3630 :                 if (channel-&gt;owner == owner)</span>
+<span class="lineNum">     574 </span><span class="lineCov">       3630 :                         break;</span>
+<span class="lineNum">     575 </span>            :         }
+<span class="lineNum">     576 </span><span class="lineCov">       3630 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span><span class="lineCov">       3630 :         return channel;</span>
+<a name="579"><span class="lineNum">     579 </span>            : }</a>
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span><span class="lineCov">       2163 : static void set_state(struct ast_dial *dial, enum ast_dial_result state)</span>
+<span class="lineNum">     582 </span>            : {
+<span class="lineNum">     583 </span><span class="lineCov">       2163 :         dial-&gt;state = state;</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span><span class="lineCov">       2163 :         if (dial-&gt;state_callback)</span>
+<span class="lineNum">     586 </span><span class="lineCov">         12 :                 dial-&gt;state_callback(dial);</span>
+<span class="lineNum">     587 </span><span class="lineCov">       2163 : }</span>
+<a name="588"><span class="lineNum">     588 </span>            : </a>
+<span class="lineNum">     589 </span>            : /*! \brief Helper function that handles frames */
+<span class="lineNum">     590 </span><span class="lineCov">       2588 : static void handle_frame(struct ast_dial *dial, struct ast_dial_channel *channel, struct ast_frame *fr, struct ast_channel *chan)</span>
+<span class="lineNum">     591 </span>            : {
+<span class="lineNum">     592 </span><span class="lineCov">       2588 :         if (fr-&gt;frametype == AST_FRAME_CONTROL) {</span>
+<span class="lineNum">     593 </span><span class="lineCov">       1877 :                 switch (fr-&gt;subclass.integer) {</span>
+<span class="lineNum">     594 </span><span class="lineCov">        933 :                 case AST_CONTROL_ANSWER:</span>
+<span class="lineNum">     595 </span><span class="lineCov">        933 :                         if (chan) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                                 ast_verb(3, &quot;%s answered %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     597 </span>            :                         } else {
+<span class="lineNum">     598 </span><span class="lineCov">        933 :                                 ast_verb(3, &quot;%s answered\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     599 </span>            :                         }
+<span class="lineNum">     600 </span><span class="lineCov">        933 :                         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     601 </span><span class="lineCov">        933 :                         AST_LIST_REMOVE(&amp;dial-&gt;channels, channel, list);</span>
+<span class="lineNum">     602 </span><span class="lineCov">        933 :                         AST_LIST_INSERT_HEAD(&amp;dial-&gt;channels, channel, list);</span>
+<span class="lineNum">     603 </span><span class="lineCov">        933 :                         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     604 </span><span class="lineCov">        933 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;ANSWER&quot;);</span>
+<span class="lineNum">     605 </span><span class="lineCov">        933 :                         set_state(dial, AST_DIAL_RESULT_ANSWERED);</span>
+<span class="lineNum">     606 </span><span class="lineCov">        933 :                         break;</span>
+<span class="lineNum">     607 </span><span class="lineCov">          9 :                 case AST_CONTROL_BUSY:</span>
+<span class="lineNum">     608 </span><span class="lineCov">          9 :                         ast_verb(3, &quot;%s is busy\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     609 </span><span class="lineCov">          9 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;BUSY&quot;);</span>
+<span class="lineNum">     610 </span><span class="lineCov">          9 :                         ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     611 </span><span class="lineCov">          9 :                         channel-&gt;cause = AST_CAUSE_USER_BUSY;</span>
+<span class="lineNum">     612 </span><span class="lineCov">          9 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     613 </span><span class="lineCov">          9 :                         break;</span>
+<span class="lineNum">     614 </span><span class="lineCov">          5 :                 case AST_CONTROL_CONGESTION:</span>
+<span class="lineNum">     615 </span><span class="lineCov">          5 :                         ast_verb(3, &quot;%s is circuit-busy\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     616 </span><span class="lineCov">          5 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;CONGESTION&quot;);</span>
+<span class="lineNum">     617 </span><span class="lineCov">          5 :                         ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     618 </span><span class="lineCov">          5 :                         channel-&gt;cause = AST_CAUSE_NORMAL_CIRCUIT_CONGESTION;</span>
+<span class="lineNum">     619 </span><span class="lineCov">          5 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     620 </span><span class="lineCov">          5 :                         break;</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_INCOMPLETE:</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;%s dialed Incomplete extension %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_exten(channel-&gt;owner));</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :                         if (chan) {</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                                 ast_indicate(chan, AST_CONTROL_INCOMPLETE);</span>
+<span class="lineNum">     625 </span>            :                         } else {
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :                                 ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :                                 channel-&gt;cause = AST_CAUSE_UNALLOCATED;</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                                 channel-&gt;owner = NULL;</span>
+<span class="lineNum">     629 </span>            :                         }
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     631 </span><span class="lineCov">         68 :                 case AST_CONTROL_RINGING:</span>
+<span class="lineNum">     632 </span><span class="lineCov">         68 :                         ast_verb(3, &quot;%s is ringing\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     633 </span><span class="lineCov">         68 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;RINGING&quot;);</span>
+<span class="lineNum">     634 </span><span class="lineCov">         68 :                         if (chan &amp;&amp; !dial-&gt;options[AST_DIAL_OPTION_MUSIC])</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                                 ast_indicate(chan, AST_CONTROL_RINGING);</span>
+<span class="lineNum">     636 </span><span class="lineCov">         68 :                         set_state(dial, AST_DIAL_RESULT_RINGING);</span>
+<span class="lineNum">     637 </span><span class="lineCov">         68 :                         break;</span>
+<span class="lineNum">     638 </span><span class="lineCov">          2 :                 case AST_CONTROL_PROGRESS:</span>
+<span class="lineNum">     639 </span><span class="lineCov">          2 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;PROGRESS&quot;);</span>
+<span class="lineNum">     640 </span><span class="lineCov">          2 :                         if (chan) {</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :                                 ast_verb(3, &quot;%s is making progress, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                                 ast_indicate(chan, AST_CONTROL_PROGRESS);</span>
+<span class="lineNum">     643 </span>            :                         } else {
+<span class="lineNum">     644 </span><span class="lineCov">          2 :                                 ast_verb(3, &quot;%s is making progress\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     645 </span>            :                         }
+<span class="lineNum">     646 </span><span class="lineCov">          2 :                         set_state(dial, AST_DIAL_RESULT_PROGRESS);</span>
+<span class="lineNum">     647 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_VIDUPDATE:</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                         if (!chan) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     651 </span>            :                         }
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;%s requested a video update, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                         ast_indicate(chan, AST_CONTROL_VIDUPDATE);</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_SRCUPDATE:</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                         if (!chan) {</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     658 </span>            :                         }
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;%s requested a source update, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :                         ast_indicate(chan, AST_CONTROL_SRCUPDATE);</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     662 </span><span class="lineCov">         97 :                 case AST_CONTROL_CONNECTED_LINE:</span>
+<span class="lineNum">     663 </span><span class="lineCov">         97 :                         if (!chan) {</span>
+<span class="lineNum">     664 </span><span class="lineCov">         97 :                                 break;</span>
+<span class="lineNum">     665 </span>            :                         }
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;%s connected line has changed, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                         if (ast_channel_connected_line_sub(channel-&gt;owner, chan, fr, 1) &amp;&amp;</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                                 ast_channel_connected_line_macro(channel-&gt;owner, chan, fr, 1, 1)) {</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :                                 ast_indicate_data(chan, AST_CONTROL_CONNECTED_LINE, fr-&gt;data.ptr, fr-&gt;datalen);</span>
+<span class="lineNum">     670 </span>            :                         }
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     672 </span><span class="lineCov">         12 :                 case AST_CONTROL_REDIRECTING:</span>
+<span class="lineNum">     673 </span><span class="lineCov">         12 :                         if (!chan) {</span>
+<span class="lineNum">     674 </span><span class="lineCov">         12 :                                 break;</span>
+<span class="lineNum">     675 </span>            :                         }
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;%s redirecting info has changed, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :                         if (ast_channel_redirecting_sub(channel-&gt;owner, chan, fr, 1) &amp;&amp;</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :                                 ast_channel_redirecting_macro(channel-&gt;owner, chan, fr, 1, 1)) {</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :                                 ast_indicate_data(chan, AST_CONTROL_REDIRECTING, fr-&gt;data.ptr, fr-&gt;datalen);</span>
+<span class="lineNum">     680 </span>            :                         }
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_PROCEEDING:</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;PROCEEDING&quot;);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                         if (chan) {</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                                 ast_verb(3, &quot;%s is proceeding, passing it to %s\n&quot;, ast_channel_name(channel-&gt;owner), ast_channel_name(chan));</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                                 ast_indicate(chan, AST_CONTROL_PROCEEDING);</span>
+<span class="lineNum">     687 </span>            :                         } else {
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :                                 ast_verb(3, &quot;%s is proceeding\n&quot;, ast_channel_name(channel-&gt;owner));</span>
+<span class="lineNum">     689 </span>            :                         }
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :                         set_state(dial, AST_DIAL_RESULT_PROCEEDING);</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_HOLD:</span>
+<span class="lineNum">     693 </span><span class="lineNoCov">          0 :                         if (!chan) {</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     695 </span>            :                         }
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;Call on %s placed on hold\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                         ast_indicate_data(chan, AST_CONTROL_HOLD, fr-&gt;data.ptr, fr-&gt;datalen);</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_UNHOLD:</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :                         if (!chan) {</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     702 </span>            :                         }
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                         ast_verb(3, &quot;Call on %s left from hold\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :                         ast_indicate(chan, AST_CONTROL_UNHOLD);</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_OFFHOOK:</span>
+<span class="lineNum">     707 </span>            :                 case AST_CONTROL_FLASH:
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     709 </span><span class="lineCov">        748 :                 case AST_CONTROL_PVT_CAUSE_CODE:</span>
+<span class="lineNum">     710 </span><span class="lineCov">        748 :                         if (chan) {</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                                 ast_indicate_data(chan, AST_CONTROL_PVT_CAUSE_CODE, fr-&gt;data.ptr, fr-&gt;datalen);</span>
+<span class="lineNum">     712 </span>            :                         }
+<span class="lineNum">     713 </span><span class="lineCov">        748 :                         break;</span>
+<span class="lineNum">     714 </span><span class="lineCov">          3 :                 case -1:</span>
+<span class="lineNum">     715 </span><span class="lineCov">          3 :                         if (chan) {</span>
+<span class="lineNum">     716 </span>            :                                 /* Prod the channel */
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :                                 ast_indicate(chan, -1);</span>
+<span class="lineNum">     718 </span>            :                         }
+<span class="lineNum">     719 </span><span class="lineCov">          3 :                         break;</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     722 </span>            :                 }
+<span class="lineNum">     723 </span><span class="lineCov">        711 :         }</span>
+<span class="lineNum">     724 </span><span class="lineCov">       2588 : }</span>
+<a name="725"><span class="lineNum">     725 </span>            : </a>
+<span class="lineNum">     726 </span>            : /*! \brief Helper function to handle when a timeout occurs on dialing attempt */
+<span class="lineNum">     727 </span><span class="lineCov">          1 : static int handle_timeout_trip(struct ast_dial *dial, struct timeval start)</span>
+<span class="lineNum">     728 </span>            : {
+<span class="lineNum">     729 </span><span class="lineCov">          1 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">     730 </span><span class="lineCov">          1 :         int diff = ast_tvdiff_ms(ast_tvnow(), start), lowest_timeout = -1, new_timeout = -1;</span>
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span>            :         /* If there is no difference yet return the dial timeout so we can go again, we were likely interrupted */
+<span class="lineNum">     733 </span><span class="lineCov">          1 :         if (!diff) {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :                 return dial-&gt;timeout;</span>
+<span class="lineNum">     735 </span>            :         }
+<span class="lineNum">     736 </span>            : 
+<span class="lineNum">     737 </span>            :         /* If the global dial timeout tripped switch the state to timeout so our channel loop will drop every channel */
+<span class="lineNum">     738 </span><span class="lineCov">          1 :         if (diff &gt;= dial-&gt;timeout) {</span>
+<span class="lineNum">     739 </span><span class="lineCov">          1 :                 set_state(dial, AST_DIAL_RESULT_TIMEOUT);</span>
+<span class="lineNum">     740 </span><span class="lineCov">          1 :                 new_timeout = 0;</span>
+<span class="lineNum">     741 </span>            :         }
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span>            :         /* Go through dropping out channels that have met their timeout */
+<span class="lineNum">     744 </span><span class="lineCov">          2 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     745 </span><span class="lineCov">          1 :                 if (dial-&gt;state == AST_DIAL_RESULT_TIMEOUT || diff &gt;= channel-&gt;timeout) {</span>
+<span class="lineNum">     746 </span><span class="lineCov">          1 :                         ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     747 </span><span class="lineCov">          1 :                         channel-&gt;cause = AST_CAUSE_NO_ANSWER;</span>
+<span class="lineNum">     748 </span><span class="lineCov">          1 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">          0 :                 } else if ((lowest_timeout == -1) || (lowest_timeout &gt; channel-&gt;timeout)) {</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :                         lowest_timeout = channel-&gt;timeout;</span>
+<span class="lineNum">     751 </span>            :                 }
+<span class="lineNum">     752 </span>            :         }
+<span class="lineNum">     753 </span>            : 
+<span class="lineNum">     754 </span>            :         /* Calculate the new timeout using the lowest timeout found */
+<span class="lineNum">     755 </span><span class="lineCov">          1 :         if (lowest_timeout &gt;= 0)</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :                 new_timeout = lowest_timeout - diff;</span>
+<span class="lineNum">     757 </span>            : 
+<span class="lineNum">     758 </span><span class="lineCov">          1 :         return new_timeout;</span>
+<a name="759"><span class="lineNum">     759 </span>            : }</a>
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineCov">        130 : const char *ast_hangup_cause_to_dial_status(int hangup_cause)</span>
+<span class="lineNum">     762 </span>            : {
+<span class="lineNum">     763 </span><span class="lineCov">        130 :         switch(hangup_cause) {</span>
+<span class="lineNum">     764 </span><span class="lineCov">         13 :         case AST_CAUSE_BUSY:</span>
+<span class="lineNum">     765 </span><span class="lineCov">         13 :                 return &quot;BUSY&quot;;</span>
+<span class="lineNum">     766 </span><span class="lineCov">         11 :         case AST_CAUSE_CONGESTION:</span>
+<span class="lineNum">     767 </span><span class="lineCov">         11 :                 return &quot;CONGESTION&quot;;</span>
+<span class="lineNum">     768 </span><span class="lineCov">          7 :         case AST_CAUSE_NO_ROUTE_DESTINATION:</span>
+<span class="lineNum">     769 </span>            :         case AST_CAUSE_UNREGISTERED:
+<span class="lineNum">     770 </span><span class="lineCov">          7 :                 return &quot;CHANUNAVAIL&quot;;</span>
+<span class="lineNum">     771 </span><span class="lineCov">         99 :         case AST_CAUSE_NO_ANSWER:</span>
+<span class="lineNum">     772 </span>            :         default:
+<span class="lineNum">     773 </span><span class="lineCov">         99 :                 return &quot;NOANSWER&quot;;</span>
+<span class="lineNum">     774 </span>            :         }
+<span class="lineNum">     775 </span>            : }
+<a name="776"><span class="lineNum">     776 </span>            : </a>
+<span class="lineNum">     777 </span>            : /*! \brief Helper function that basically keeps tabs on dialing attempts */
+<span class="lineNum">     778 </span><span class="lineCov">       1047 : static enum ast_dial_result monitor_dial(struct ast_dial *dial, struct ast_channel *chan)</span>
+<span class="lineNum">     779 </span>            : {
+<span class="lineNum">     780 </span><span class="lineCov">       1047 :         int timeout = -1;</span>
+<span class="lineNum">     781 </span><span class="lineCov">       1047 :         struct ast_channel *cs[AST_MAX_WATCHERS], *who = NULL;</span>
+<span class="lineNum">     782 </span><span class="lineCov">       1047 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">     783 </span><span class="lineCov">       1047 :         struct answer_exec_struct *answer_exec = NULL;</span>
+<span class="lineNum">     784 </span>            :         struct timeval start;
+<span class="lineNum">     785 </span>            : 
+<span class="lineNum">     786 </span><span class="lineCov">       1047 :         set_state(dial, AST_DIAL_RESULT_TRYING);</span>
+<span class="lineNum">     787 </span>            : 
+<span class="lineNum">     788 </span>            :         /* If the &quot;always indicate ringing&quot; option is set, change state to ringing and indicate to the owner if present */
+<span class="lineNum">     789 </span><span class="lineCov">       1047 :         if (dial-&gt;options[AST_DIAL_OPTION_RINGING]) {</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                 set_state(dial, AST_DIAL_RESULT_RINGING);</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :                 if (chan)</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :                         ast_indicate(chan, AST_CONTROL_RINGING);</span>
+<span class="lineNum">     793 </span><span class="lineCov">       1047 :         } else if (chan &amp;&amp; dial-&gt;options[AST_DIAL_OPTION_MUSIC] &amp;&amp;</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                 !ast_strlen_zero(dial-&gt;options[AST_DIAL_OPTION_MUSIC])) {</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :                 char *original_moh = ast_strdupa(ast_channel_musicclass(chan));</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :                 ast_indicate(chan, -1);</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">          0 :                 ast_channel_musicclass_set(chan, dial-&gt;options[AST_DIAL_OPTION_MUSIC]);</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                 ast_moh_start(chan, dial-&gt;options[AST_DIAL_OPTION_MUSIC], NULL);</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :                 ast_channel_musicclass_set(chan, original_moh);</span>
+<span class="lineNum">     800 </span>            :         }
+<span class="lineNum">     801 </span>            : 
+<span class="lineNum">     802 </span>            :         /* Record start time for timeout purposes */
+<span class="lineNum">     803 </span><span class="lineCov">       1047 :         start = ast_tvnow();</span>
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span>            :         /* We actually figured out the maximum timeout we can do as they were added, so we can directly access the info */
+<span class="lineNum">     806 </span><span class="lineCov">       1047 :         timeout = dial-&gt;actual_timeout;</span>
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span>            :         /* Go into an infinite loop while we are trying */
+<span class="lineNum">     809 </span><span class="lineCov">       3745 :         while ((dial-&gt;state != AST_DIAL_RESULT_UNANSWERED) &amp;&amp; (dial-&gt;state != AST_DIAL_RESULT_ANSWERED) &amp;&amp; (dial-&gt;state != AST_DIAL_RESULT_HANGUP) &amp;&amp; (dial-&gt;state != AST_DIAL_RESULT_TIMEOUT)) {</span>
+<span class="lineNum">     810 </span><span class="lineCov">       2811 :                 int pos = 0, count = 0;</span>
+<span class="lineNum">     811 </span><span class="lineCov">       2811 :                 struct ast_frame *fr = NULL;</span>
+<span class="lineNum">     812 </span>            : 
+<span class="lineNum">     813 </span>            :                 /* Set up channel structure array */
+<span class="lineNum">     814 </span><span class="lineCov">       2811 :                 pos = count = 0;</span>
+<span class="lineNum">     815 </span><span class="lineCov">       2811 :                 if (chan)</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :                         cs[pos++] = chan;</span>
+<span class="lineNum">     817 </span>            : 
+<span class="lineNum">     818 </span>            :                 /* Add channels we are attempting to dial */
+<span class="lineNum">     819 </span><span class="lineCov">       2811 :                 AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     820 </span><span class="lineCov">       5622 :                 AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     821 </span><span class="lineCov">       2811 :                         if (channel-&gt;owner) {</span>
+<span class="lineNum">     822 </span><span class="lineCov">       2699 :                                 cs[pos++] = channel-&gt;owner;</span>
+<span class="lineNum">     823 </span><span class="lineCov">       2699 :                                 count++;</span>
+<span class="lineNum">     824 </span>            :                         }
+<span class="lineNum">     825 </span>            :                 }
+<span class="lineNum">     826 </span><span class="lineCov">       2811 :                 AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span>            :                 /* If we have no outbound channels in progress, switch state to unanswered and stop */
+<span class="lineNum">     829 </span><span class="lineCov">       2811 :                 if (!count) {</span>
+<span class="lineNum">     830 </span><span class="lineCov">        112 :                         set_state(dial, AST_DIAL_RESULT_UNANSWERED);</span>
+<span class="lineNum">     831 </span><span class="lineCov">        112 :                         break;</span>
+<span class="lineNum">     832 </span>            :                 }
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span>            :                 /* Just to be safe... */
+<span class="lineNum">     835 </span><span class="lineCov">       2699 :                 if (dial-&gt;thread == AST_PTHREADT_STOP)</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     837 </span>            : 
+<span class="lineNum">     838 </span>            :                 /* Wait for frames from channels */
+<span class="lineNum">     839 </span><span class="lineCov">       2699 :                 who = ast_waitfor_n(cs, pos, &amp;timeout);</span>
+<span class="lineNum">     840 </span>            : 
+<span class="lineNum">     841 </span>            :                 /* Check to see if our thread is being canceled */
+<span class="lineNum">     842 </span><span class="lineCov">       2698 :                 if (dial-&gt;thread == AST_PTHREADT_STOP)</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     844 </span>            : 
+<span class="lineNum">     845 </span>            :                 /* If the timeout no longer exists OR if we got no channel it basically means the timeout was tripped, so handle it */
+<span class="lineNum">     846 </span><span class="lineCov">       2698 :                 if (!timeout || !who) {</span>
+<span class="lineNum">     847 </span><span class="lineCov">          1 :                         timeout = handle_timeout_trip(dial, start);</span>
+<span class="lineNum">     848 </span><span class="lineCov">          1 :                         continue;</span>
+<span class="lineNum">     849 </span>            :                 }
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span>            :                 /* Find relative dial channel */
+<span class="lineNum">     852 </span><span class="lineCov">       2697 :                 if (!chan || !IS_CALLER(chan, who))</span>
+<span class="lineNum">     853 </span><span class="lineCov">       2697 :                         channel = find_relative_dial_channel(dial, who);</span>
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span>            :                 /* See if this channel has been forwarded elsewhere */
+<span class="lineNum">     856 </span><span class="lineCov">       2697 :                 if (!ast_strlen_zero(ast_channel_call_forward(who))) {</span>
+<span class="lineNum">     857 </span><span class="lineCov">         11 :                         handle_call_forward(dial, channel, chan);</span>
+<span class="lineNum">     858 </span><span class="lineCov">         11 :                         continue;</span>
+<span class="lineNum">     859 </span>            :                 }
+<span class="lineNum">     860 </span>            : 
+<span class="lineNum">     861 </span>            :                 /* Attempt to read in a frame */
+<span class="lineNum">     862 </span><span class="lineCov">       2686 :                 if (!(fr = ast_read(who))) {</span>
+<span class="lineNum">     863 </span>            :                         /* If this is the caller then we switch state to hangup and stop */
+<span class="lineNum">     864 </span><span class="lineCov">         98 :                         if (chan &amp;&amp; IS_CALLER(chan, who)) {</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :                                 set_state(dial, AST_DIAL_RESULT_HANGUP);</span>
+<span class="lineNum">     866 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     867 </span>            :                         }
+<span class="lineNum">     868 </span><span class="lineCov">         98 :                         ast_channel_publish_dial(chan, who, channel-&gt;device, ast_hangup_cause_to_dial_status(ast_channel_hangupcause(who)));</span>
+<span class="lineNum">     869 </span><span class="lineCov">         98 :                         ast_hangup(who);</span>
+<span class="lineNum">     870 </span><span class="lineCov">         98 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     871 </span><span class="lineCov">         98 :                         continue;</span>
+<span class="lineNum">     872 </span>            :                 }
+<span class="lineNum">     873 </span>            : 
+<span class="lineNum">     874 </span>            :                 /* Process the frame */
+<span class="lineNum">     875 </span><span class="lineCov">       2588 :                 handle_frame(dial, channel, fr, chan);</span>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span>            :                 /* Free the received frame and start all over */
+<span class="lineNum">     878 </span><span class="lineCov">       2588 :                 ast_frfree(fr);</span>
+<span class="lineNum">     879 </span>            :         }
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span>            :         /* Do post-processing from loop */
+<span class="lineNum">     882 </span><span class="lineCov">       1046 :         if (dial-&gt;state == AST_DIAL_RESULT_ANSWERED) {</span>
+<span class="lineNum">     883 </span>            :                 /* Hangup everything except that which answered */
+<span class="lineNum">     884 </span><span class="lineCov">        933 :                 AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     885 </span><span class="lineCov">       1866 :                 AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     886 </span><span class="lineCov">        933 :                         if (!channel-&gt;owner || channel-&gt;owner == who)</span>
+<span class="lineNum">     887 </span><span class="lineCov">        933 :                                 continue;</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;CANCEL&quot;);</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">          0 :                         ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">          0 :                         channel-&gt;cause = AST_CAUSE_ANSWERED_ELSEWHERE;</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     892 </span>            :                 }
+<span class="lineNum">     893 </span><span class="lineCov">        933 :                 AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     894 </span>            :                 /* If ANSWER_EXEC is enabled as an option, execute application on answered channel */
+<span class="lineNum">     895 </span><span class="lineCov">        933 :                 if ((channel = find_relative_dial_channel(dial, who)) &amp;&amp; (answer_exec = FIND_RELATIVE_OPTION(dial, channel, AST_DIAL_OPTION_ANSWER_EXEC))) {</span>
+<span class="lineNum">     896 </span><span class="lineCov">          6 :                         channel-&gt;is_running_app = 1;</span>
+<span class="lineNum">     897 </span><span class="lineCov">          6 :                         answer_exec_run(dial, channel, answer_exec-&gt;app, answer_exec-&gt;args);</span>
+<span class="lineNum">     898 </span><span class="lineCov">          6 :                         channel-&gt;is_running_app = 0;</span>
+<span class="lineNum">     899 </span>            :                 }
+<span class="lineNum">     900 </span>            : 
+<span class="lineNum">     901 </span><span class="lineCov">        933 :                 if (chan &amp;&amp; dial-&gt;options[AST_DIAL_OPTION_MUSIC] &amp;&amp;</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">          0 :                         !ast_strlen_zero(dial-&gt;options[AST_DIAL_OPTION_MUSIC])) {</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                         ast_moh_stop(chan);</span>
+<span class="lineNum">     904 </span>            :                 }
+<span class="lineNum">     905 </span><span class="lineCov">        113 :         } else if (dial-&gt;state == AST_DIAL_RESULT_HANGUP) {</span>
+<span class="lineNum">     906 </span>            :                 /* Hangup everything */
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :                 AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">          0 :                 AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">     909 </span><span class="lineNoCov">          0 :                         if (!channel-&gt;owner)</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial(chan, channel-&gt;owner, channel-&gt;device, &quot;CANCEL&quot;);</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">          0 :                         channel-&gt;cause = AST_CAUSE_NORMAL_CLEARING;</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                         channel-&gt;owner = NULL;</span>
+<span class="lineNum">     915 </span>            :                 }
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :                 AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">     917 </span>            :         }
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineCov">       1046 :         if (dial-&gt;options[AST_DIAL_OPTION_SELF_DESTROY]) {</span>
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :                 enum ast_dial_result state = dial-&gt;state;</span>
+<span class="lineNum">     921 </span>            : 
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                 ast_dial_destroy(dial);</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :                 return state;</span>
+<span class="lineNum">     924 </span>            :         }
+<span class="lineNum">     925 </span>            : 
+<span class="lineNum">     926 </span><span class="lineCov">       1046 :         return dial-&gt;state;</span>
+<span class="lineNum">     927 </span>            : }
+<a name="928"><span class="lineNum">     928 </span>            : </a>
+<span class="lineNum">     929 </span>            : /*! \brief Dial async thread function */
+<span class="lineNum">     930 </span><span class="lineCov">          6 : static void *async_dial(void *data)</span>
+<span class="lineNum">     931 </span>            : {
+<span class="lineNum">     932 </span><span class="lineCov">          6 :         struct ast_dial *dial = data;</span>
+<span class="lineNum">     933 </span><span class="lineCov">          6 :         if (dial-&gt;callid) {</span>
+<span class="lineNum">     934 </span><span class="lineCov">          6 :                 ast_callid_threadassoc_add(dial-&gt;callid);</span>
+<span class="lineNum">     935 </span>            :         }
+<span class="lineNum">     936 </span>            : 
+<span class="lineNum">     937 </span>            :         /* This is really really simple... we basically pass monitor_dial a NULL owner and it changes it's behavior */
+<span class="lineNum">     938 </span><span class="lineCov">          6 :         monitor_dial(dial, NULL);</span>
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span><span class="lineCov">          6 :         return NULL;</span>
+<span class="lineNum">     941 </span>            : }
+<span class="lineNum">     942 </span>            : 
+<span class="lineNum">     943 </span>            : /*! \brief Execute dialing synchronously or asynchronously
+<span class="lineNum">     944 </span>            :  * \note Dials channels in a dial structure.
+<a name="945"><span class="lineNum">     945 </span>            :  * \return Returns dial result code. (TRYING/INVALID/FAILED/ANSWERED/TIMEOUT/UNANSWERED).</a>
+<span class="lineNum">     946 </span>            :  */
+<span class="lineNum">     947 </span><span class="lineCov">       1047 : enum ast_dial_result ast_dial_run(struct ast_dial *dial, struct ast_channel *chan, int async)</span>
+<span class="lineNum">     948 </span>            : {
+<span class="lineNum">     949 </span><span class="lineCov">       1047 :         enum ast_dial_result res = AST_DIAL_RESULT_TRYING;</span>
+<span class="lineNum">     950 </span>            : 
+<span class="lineNum">     951 </span>            :         /* Ensure required arguments are passed */
+<span class="lineNum">     952 </span><span class="lineCov">       1047 :         if (!dial) {</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;invalid #1\n&quot;);</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                 return AST_DIAL_RESULT_INVALID;</span>
+<span class="lineNum">     955 </span>            :         }
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span>            :         /* If there are no channels to dial we can't very well try to dial them */
+<span class="lineNum">     958 </span><span class="lineCov">       1047 :         if (AST_LIST_EMPTY(&amp;dial-&gt;channels)) {</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;invalid #2\n&quot;);</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                 return AST_DIAL_RESULT_INVALID;</span>
+<span class="lineNum">     961 </span>            :         }
+<span class="lineNum">     962 </span>            : 
+<span class="lineNum">     963 </span>            :         /* Dial each requested channel */
+<span class="lineNum">     964 </span><span class="lineCov">       1047 :         if (!begin_dial(dial, chan, async))</span>
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                 return AST_DIAL_RESULT_FAILED;</span>
+<span class="lineNum">     966 </span>            : 
+<span class="lineNum">     967 </span>            :         /* If we are running async spawn a thread and send it away... otherwise block here */
+<span class="lineNum">     968 </span><span class="lineCov">       1047 :         if (async) {</span>
+<span class="lineNum">     969 </span>            :                 /* reference be released at dial destruction if it isn't NULL */
+<span class="lineNum">     970 </span><span class="lineCov">          6 :                 dial-&gt;callid = ast_read_threadstorage_callid();</span>
+<span class="lineNum">     971 </span><span class="lineCov">          6 :                 dial-&gt;state = AST_DIAL_RESULT_TRYING;</span>
+<span class="lineNum">     972 </span>            :                 /* Try to create a thread */
+<span class="lineNum">     973 </span><span class="lineCov">          6 :                 if (ast_pthread_create(&amp;dial-&gt;thread, NULL, async_dial, dial)) {</span>
+<span class="lineNum">     974 </span>            :                         /* Failed to create the thread - hangup all dialed channels and return failed */
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :                         ast_dial_hangup(dial);</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :                         res = AST_DIAL_RESULT_FAILED;</span>
+<span class="lineNum">     977 </span>            :                 }
+<span class="lineNum">     978 </span>            :         } else {
+<span class="lineNum">     979 </span><span class="lineCov">       1041 :                 res = monitor_dial(dial, chan);</span>
+<span class="lineNum">     980 </span>            :         }
+<span class="lineNum">     981 </span>            : 
+<span class="lineNum">     982 </span><span class="lineCov">       1046 :         return res;</span>
+<span class="lineNum">     983 </span>            : }
+<span class="lineNum">     984 </span>            : 
+<span class="lineNum">     985 </span>            : /*! \brief Return channel that answered
+<span class="lineNum">     986 </span>            :  * \note Returns the Asterisk channel that answered
+<a name="987"><span class="lineNum">     987 </span>            :  * \param dial Dialing structure</a>
+<span class="lineNum">     988 </span>            :  */
+<span class="lineNum">     989 </span><span class="lineCov">       1217 : struct ast_channel *ast_dial_answered(struct ast_dial *dial)</span>
+<span class="lineNum">     990 </span>            : {
+<span class="lineNum">     991 </span><span class="lineCov">       1217 :         if (!dial)</span>
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     993 </span>            : 
+<span class="lineNum">     994 </span><span class="lineCov">       1217 :         return ((dial-&gt;state == AST_DIAL_RESULT_ANSWERED) ? AST_LIST_FIRST(&amp;dial-&gt;channels)-&gt;owner : NULL);</span>
+<span class="lineNum">     995 </span>            : }
+<span class="lineNum">     996 </span>            : 
+<span class="lineNum">     997 </span>            : /*! \brief Steal the channel that answered
+<span class="lineNum">     998 </span>            :  * \note Returns the Asterisk channel that answered and removes it from the dialing structure
+<a name="999"><span class="lineNum">     999 </span>            :  * \param dial Dialing structure</a>
+<span class="lineNum">    1000 </span>            :  */
+<span class="lineNum">    1001 </span><span class="lineCov">        643 : struct ast_channel *ast_dial_answered_steal(struct ast_dial *dial)</span>
+<span class="lineNum">    1002 </span>            : {
+<span class="lineNum">    1003 </span><span class="lineCov">        643 :         struct ast_channel *chan = NULL;</span>
+<span class="lineNum">    1004 </span>            : 
+<span class="lineNum">    1005 </span><span class="lineCov">        643 :         if (!dial)</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span><span class="lineCov">        643 :         if (dial-&gt;state == AST_DIAL_RESULT_ANSWERED) {</span>
+<span class="lineNum">    1009 </span><span class="lineCov">        643 :                 chan = AST_LIST_FIRST(&amp;dial-&gt;channels)-&gt;owner;</span>
+<span class="lineNum">    1010 </span><span class="lineCov">        643 :                 AST_LIST_FIRST(&amp;dial-&gt;channels)-&gt;owner = NULL;</span>
+<span class="lineNum">    1011 </span>            :         }
+<span class="lineNum">    1012 </span>            : 
+<span class="lineNum">    1013 </span><span class="lineCov">        643 :         return chan;</span>
+<span class="lineNum">    1014 </span>            : }
+<span class="lineNum">    1015 </span>            : 
+<span class="lineNum">    1016 </span>            : /*! \brief Return state of dial
+<span class="lineNum">    1017 </span>            :  * \note Returns the state of the dial attempt
+<a name="1018"><span class="lineNum">    1018 </span>            :  * \param dial Dialing structure</a>
+<span class="lineNum">    1019 </span>            :  */
+<span class="lineNum">    1020 </span><span class="lineCov">         12 : enum ast_dial_result ast_dial_state(struct ast_dial *dial)</span>
+<span class="lineNum">    1021 </span>            : {
+<span class="lineNum">    1022 </span><span class="lineCov">         12 :         return dial-&gt;state;</span>
+<span class="lineNum">    1023 </span>            : }
+<span class="lineNum">    1024 </span>            : 
+<span class="lineNum">    1025 </span>            : /*! \brief Cancel async thread
+<span class="lineNum">    1026 </span>            :  * \note Cancel a running async thread
+<a name="1027"><span class="lineNum">    1027 </span>            :  * \param dial Dialing structure</a>
+<span class="lineNum">    1028 </span>            :  */
+<span class="lineNum">    1029 </span><span class="lineCov">          6 : enum ast_dial_result ast_dial_join(struct ast_dial *dial)</span>
+<span class="lineNum">    1030 </span>            : {
+<span class="lineNum">    1031 </span>            :         pthread_t thread;
+<span class="lineNum">    1032 </span>            : 
+<span class="lineNum">    1033 </span>            :         /* If the dial structure is not running in async, return failed */
+<span class="lineNum">    1034 </span><span class="lineCov">          6 :         if (dial-&gt;thread == AST_PTHREADT_NULL)</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                 return AST_DIAL_RESULT_FAILED;</span>
+<span class="lineNum">    1036 </span>            : 
+<span class="lineNum">    1037 </span>            :         /* Record thread */
+<span class="lineNum">    1038 </span><span class="lineCov">          6 :         thread = dial-&gt;thread;</span>
+<span class="lineNum">    1039 </span>            : 
+<span class="lineNum">    1040 </span>            :         /* Boom, commence locking */
+<span class="lineNum">    1041 </span><span class="lineCov">          6 :         ast_mutex_lock(&amp;dial-&gt;lock);</span>
+<span class="lineNum">    1042 </span>            : 
+<span class="lineNum">    1043 </span>            :         /* Stop the thread */
+<span class="lineNum">    1044 </span><span class="lineCov">          6 :         dial-&gt;thread = AST_PTHREADT_STOP;</span>
+<span class="lineNum">    1045 </span>            : 
+<span class="lineNum">    1046 </span>            :         /* If the answered channel is running an application we have to soft hangup it, can't just poke the thread */
+<span class="lineNum">    1047 </span><span class="lineCov">          6 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1048 </span><span class="lineCov">          6 :         if (AST_LIST_FIRST(&amp;dial-&gt;channels)-&gt;is_running_app) {</span>
+<span class="lineNum">    1049 </span><span class="lineCov">          4 :                 struct ast_channel *chan = AST_LIST_FIRST(&amp;dial-&gt;channels)-&gt;owner;</span>
+<span class="lineNum">    1050 </span><span class="lineCov">          4 :                 if (chan) {</span>
+<span class="lineNum">    1051 </span><span class="lineCov">          4 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">    1052 </span><span class="lineCov">          4 :                         ast_softhangup(chan, AST_SOFTHANGUP_EXPLICIT);</span>
+<span class="lineNum">    1053 </span><span class="lineCov">          4 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1054 </span>            :                 }
+<span class="lineNum">    1055 </span>            :         } else {
+<span class="lineNum">    1056 </span>            :                 /* Now we signal it with SIGURG so it will break out of it's waitfor */
+<span class="lineNum">    1057 </span><span class="lineCov">          2 :                 pthread_kill(thread, SIGURG);</span>
+<span class="lineNum">    1058 </span>            :         }
+<span class="lineNum">    1059 </span><span class="lineCov">          6 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1060 </span>            : 
+<span class="lineNum">    1061 </span>            :         /* Yay done with it */
+<span class="lineNum">    1062 </span><span class="lineCov">          6 :         ast_mutex_unlock(&amp;dial-&gt;lock);</span>
+<span class="lineNum">    1063 </span>            : 
+<span class="lineNum">    1064 </span>            :         /* Finally wait for the thread to exit */
+<span class="lineNum">    1065 </span><span class="lineCov">          6 :         pthread_join(thread, NULL);</span>
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span>            :         /* Yay thread is all gone */
+<span class="lineNum">    1068 </span><span class="lineCov">          6 :         dial-&gt;thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">    1069 </span>            : 
+<span class="lineNum">    1070 </span><span class="lineCov">          6 :         return dial-&gt;state;</span>
+<span class="lineNum">    1071 </span>            : }
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span>            : /*! \brief Hangup channels
+<span class="lineNum">    1074 </span>            :  * \note Hangup all active channels
+<a name="1075"><span class="lineNum">    1075 </span>            :  * \param dial Dialing structure</a>
+<span class="lineNum">    1076 </span>            :  */
+<span class="lineNum">    1077 </span><span class="lineCov">          6 : void ast_dial_hangup(struct ast_dial *dial)</span>
+<span class="lineNum">    1078 </span>            : {
+<span class="lineNum">    1079 </span><span class="lineCov">          6 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">    1080 </span>            : 
+<span class="lineNum">    1081 </span><span class="lineCov">          6 :         if (!dial)</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1083 </span>            : 
+<span class="lineNum">    1084 </span><span class="lineCov">          6 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1085 </span><span class="lineCov">         12 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">    1086 </span><span class="lineCov">          6 :                 ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">    1087 </span><span class="lineCov">          6 :                 channel-&gt;owner = NULL;</span>
+<span class="lineNum">    1088 </span>            :         }
+<span class="lineNum">    1089 </span><span class="lineCov">          6 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1090 </span>            : 
+<span class="lineNum">    1091 </span><span class="lineCov">          6 :         return;</span>
+<span class="lineNum">    1092 </span>            : }
+<span class="lineNum">    1093 </span>            : 
+<span class="lineNum">    1094 </span>            : /*! \brief Destroys a dialing structure
+<span class="lineNum">    1095 </span>            :  * \note Destroys (free's) the given ast_dial structure
+<span class="lineNum">    1096 </span>            :  * \param dial Dialing structure to free
+<a name="1097"><span class="lineNum">    1097 </span>            :  * \return Returns 0 on success, -1 on failure</a>
+<span class="lineNum">    1098 </span>            :  */
+<span class="lineNum">    1099 </span><span class="lineCov">       1046 : int ast_dial_destroy(struct ast_dial *dial)</span>
+<span class="lineNum">    1100 </span>            : {
+<span class="lineNum">    1101 </span><span class="lineCov">       1046 :         int i = 0;</span>
+<span class="lineNum">    1102 </span><span class="lineCov">       1046 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">    1103 </span>            : 
+<span class="lineNum">    1104 </span><span class="lineCov">       1046 :         if (!dial)</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1106 </span>            : 
+<span class="lineNum">    1107 </span>            :         /* Hangup and deallocate all the dialed channels */
+<span class="lineNum">    1108 </span><span class="lineCov">       1046 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1109 </span><span class="lineCov">       2092 :         AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">    1110 </span>            :                 /* Disable any enabled options */
+<span class="lineNum">    1111 </span><span class="lineCov">       8368 :                 for (i = 0; i &lt; AST_DIAL_OPTION_MAX; i++) {</span>
+<span class="lineNum">    1112 </span><span class="lineCov">       7322 :                         if (!channel-&gt;options[i])</span>
+<span class="lineNum">    1113 </span><span class="lineCov">       7322 :                                 continue;</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">          0 :                         if (option_types[i].disable)</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                                 option_types[i].disable(channel-&gt;options[i]);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">          0 :                         channel-&gt;options[i] = NULL;</span>
+<span class="lineNum">    1117 </span>            :                 }
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span>            :                 /* Hang up channel if need be */
+<span class="lineNum">    1120 </span><span class="lineCov">       1046 :                 ast_hangup(channel-&gt;owner);</span>
+<span class="lineNum">    1121 </span><span class="lineCov">       1046 :                 channel-&gt;owner = NULL;</span>
+<span class="lineNum">    1122 </span>            : 
+<span class="lineNum">    1123 </span>            :                 /* Free structure */
+<span class="lineNum">    1124 </span><span class="lineCov">       1046 :                 ast_free(channel-&gt;tech);</span>
+<span class="lineNum">    1125 </span><span class="lineCov">       1046 :                 ast_free(channel-&gt;device);</span>
+<span class="lineNum">    1126 </span><span class="lineCov">       1046 :                 ast_free(channel-&gt;assignedid1);</span>
+<span class="lineNum">    1127 </span><span class="lineCov">       1046 :                 ast_free(channel-&gt;assignedid2);</span>
+<span class="lineNum">    1128 </span>            : 
+<span class="lineNum">    1129 </span><span class="lineCov">       1046 :                 AST_LIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">    1130 </span><span class="lineCov">       1046 :                 ast_free(channel);</span>
+<span class="lineNum">    1131 </span>            :         }
+<span class="lineNum">    1132 </span>            :         AST_LIST_TRAVERSE_SAFE_END;
+<span class="lineNum">    1133 </span><span class="lineCov">       1046 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1134 </span>            : 
+<span class="lineNum">    1135 </span>            :         /* Disable any enabled options globally */
+<span class="lineNum">    1136 </span><span class="lineCov">       8368 :         for (i = 0; i &lt; AST_DIAL_OPTION_MAX; i++) {</span>
+<span class="lineNum">    1137 </span><span class="lineCov">       7322 :                 if (!dial-&gt;options[i])</span>
+<span class="lineNum">    1138 </span><span class="lineCov">       7313 :                         continue;</span>
+<span class="lineNum">    1139 </span><span class="lineCov">          9 :                 if (option_types[i].disable)</span>
+<span class="lineNum">    1140 </span><span class="lineCov">          9 :                         option_types[i].disable(dial-&gt;options[i]);</span>
+<span class="lineNum">    1141 </span><span class="lineCov">          9 :                 dial-&gt;options[i] = NULL;</span>
+<span class="lineNum">    1142 </span>            :         }
+<span class="lineNum">    1143 </span>            : 
+<span class="lineNum">    1144 </span>            :         /* Lock be gone! */
+<span class="lineNum">    1145 </span><span class="lineCov">       1046 :         ast_mutex_destroy(&amp;dial-&gt;lock);</span>
+<span class="lineNum">    1146 </span>            : 
+<span class="lineNum">    1147 </span>            :         /* Free structure */
+<span class="lineNum">    1148 </span><span class="lineCov">       1046 :         ast_free(dial);</span>
+<span class="lineNum">    1149 </span>            : 
+<span class="lineNum">    1150 </span><span class="lineCov">       1046 :         return 0;</span>
+<span class="lineNum">    1151 </span>            : }
+<span class="lineNum">    1152 </span>            : 
+<span class="lineNum">    1153 </span>            : /*! \brief Enables an option globally
+<span class="lineNum">    1154 </span>            :  * \param dial Dial structure to enable option on
+<span class="lineNum">    1155 </span>            :  * \param option Option to enable
+<span class="lineNum">    1156 </span>            :  * \param data Data to pass to this option (not always needed)
+<a name="1157"><span class="lineNum">    1157 </span>            :  * \return Returns 0 on success, -1 on failure</a>
+<span class="lineNum">    1158 </span>            :  */
+<span class="lineNum">    1159 </span><span class="lineCov">          9 : int ast_dial_option_global_enable(struct ast_dial *dial, enum ast_dial_option option, void *data)</span>
+<span class="lineNum">    1160 </span>            : {
+<span class="lineNum">    1161 </span>            :         /* If the option is already enabled, return failure */
+<span class="lineNum">    1162 </span><span class="lineCov">          9 :         if (dial-&gt;options[option])</span>
+<span class="lineNum">    1163 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1164 </span>            : 
+<span class="lineNum">    1165 </span>            :         /* Execute enable callback if it exists, if not simply make sure the value is set */
+<span class="lineNum">    1166 </span><span class="lineCov">          9 :         if (option_types[option].enable)</span>
+<span class="lineNum">    1167 </span><span class="lineCov">          9 :                 dial-&gt;options[option] = option_types[option].enable(data);</span>
+<span class="lineNum">    1168 </span>            :         else
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                 dial-&gt;options[option] = (void*)1;</span>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineCov">          9 :         return 0;</span>
+<span class="lineNum">    1172 </span>            : }
+<span class="lineNum">    1173 </span>            : 
+<a name="1174"><span class="lineNum">    1174 </span>            : /*! \brief Helper function for finding a channel in a dial structure based on number</a>
+<span class="lineNum">    1175 </span>            :  */
+<span class="lineNum">    1176 </span><span class="lineCov">       1894 : static struct ast_dial_channel *find_dial_channel(struct ast_dial *dial, int num)</span>
+<span class="lineNum">    1177 </span>            : {
+<span class="lineNum">    1178 </span><span class="lineCov">       1894 :         struct ast_dial_channel *channel = AST_LIST_LAST(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1179 </span>            : 
+<span class="lineNum">    1180 </span>            :         /* We can try to predict programmer behavior, the last channel they added is probably the one they wanted to modify */
+<span class="lineNum">    1181 </span><span class="lineCov">       1894 :         if (channel-&gt;num == num)</span>
+<span class="lineNum">    1182 </span><span class="lineCov">       1894 :                 return channel;</span>
+<span class="lineNum">    1183 </span>            : 
+<span class="lineNum">    1184 </span>            :         /* Hrm not at the end... looking through the list it is! */
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(&amp;dial-&gt;channels, channel, list) {</span>
+<span class="lineNum">    1187 </span><span class="lineNoCov">          0 :                 if (channel-&gt;num == num)</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1189 </span>            :         }
+<span class="lineNum">    1190 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(&amp;dial-&gt;channels);</span>
+<span class="lineNum">    1191 </span>            : 
+<span class="lineNum">    1192 </span><span class="lineNoCov">          0 :         return channel;</span>
+<span class="lineNum">    1193 </span>            : }
+<span class="lineNum">    1194 </span>            : 
+<span class="lineNum">    1195 </span>            : /*! \brief Enables an option per channel
+<span class="lineNum">    1196 </span>            :  * \param dial Dial structure
+<span class="lineNum">    1197 </span>            :  * \param num Channel number to enable option on
+<span class="lineNum">    1198 </span>            :  * \param option Option to enable
+<span class="lineNum">    1199 </span>            :  * \param data Data to pass to this option (not always needed)
+<a name="1200"><span class="lineNum">    1200 </span>            :  * \return Returns 0 on success, -1 on failure</a>
+<span class="lineNum">    1201 </span>            :  */
+<span class="lineNum">    1202 </span><span class="lineNoCov">          0 : int ast_dial_option_enable(struct ast_dial *dial, int num, enum ast_dial_option option, void *data)</span>
+<span class="lineNum">    1203 </span>            : {
+<span class="lineNum">    1204 </span><span class="lineNoCov">          0 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">    1205 </span>            : 
+<span class="lineNum">    1206 </span>            :         /* Ensure we have required arguments */
+<span class="lineNum">    1207 </span><span class="lineNoCov">          0 :         if (!dial || AST_LIST_EMPTY(&amp;dial-&gt;channels))</span>
+<span class="lineNum">    1208 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1209 </span>            : 
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :         if (!(channel = find_dial_channel(dial, num)))</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1212 </span>            : 
+<span class="lineNum">    1213 </span>            :         /* If the option is already enabled, return failure */
+<span class="lineNum">    1214 </span><span class="lineNoCov">          0 :         if (channel-&gt;options[option])</span>
+<span class="lineNum">    1215 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1216 </span>            : 
+<span class="lineNum">    1217 </span>            :         /* Execute enable callback if it exists, if not simply make sure the value is set */
+<span class="lineNum">    1218 </span><span class="lineNoCov">          0 :         if (option_types[option].enable)</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">          0 :                 channel-&gt;options[option] = option_types[option].enable(data);</span>
+<span class="lineNum">    1220 </span>            :         else
+<span class="lineNum">    1221 </span><span class="lineNoCov">          0 :                 channel-&gt;options[option] = (void*)1;</span>
+<span class="lineNum">    1222 </span>            : 
+<span class="lineNum">    1223 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1224 </span>            : }
+<span class="lineNum">    1225 </span>            : 
+<span class="lineNum">    1226 </span>            : /*! \brief Disables an option globally
+<span class="lineNum">    1227 </span>            :  * \param dial Dial structure to disable option on
+<span class="lineNum">    1228 </span>            :  * \param option Option to disable
+<a name="1229"><span class="lineNum">    1229 </span>            :  * \return Returns 0 on success, -1 on failure</a>
+<span class="lineNum">    1230 </span>            :  */
+<span class="lineNum">    1231 </span><span class="lineNoCov">          0 : int ast_dial_option_global_disable(struct ast_dial *dial, enum ast_dial_option option)</span>
+<span class="lineNum">    1232 </span>            : {
+<span class="lineNum">    1233 </span>            :         /* If the option is not enabled, return failure */
+<span class="lineNum">    1234 </span><span class="lineNoCov">          0 :         if (!dial-&gt;options[option]) {</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1236 </span>            :         }
+<span class="lineNum">    1237 </span>            : 
+<span class="lineNum">    1238 </span>            :         /* Execute callback of option to disable if it exists */
+<span class="lineNum">    1239 </span><span class="lineNoCov">          0 :         if (option_types[option].disable)</span>
+<span class="lineNum">    1240 </span><span class="lineNoCov">          0 :                 option_types[option].disable(dial-&gt;options[option]);</span>
+<span class="lineNum">    1241 </span>            : 
+<span class="lineNum">    1242 </span>            :         /* Finally disable option on the structure */
+<span class="lineNum">    1243 </span><span class="lineNoCov">          0 :         dial-&gt;options[option] = NULL;</span>
+<span class="lineNum">    1244 </span>            : 
+<span class="lineNum">    1245 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1246 </span>            : }
+<span class="lineNum">    1247 </span>            : 
+<span class="lineNum">    1248 </span>            : /*! \brief Disables an option per channel
+<span class="lineNum">    1249 </span>            :  * \param dial Dial structure
+<span class="lineNum">    1250 </span>            :  * \param num Channel number to disable option on
+<span class="lineNum">    1251 </span>            :  * \param option Option to disable
+<a name="1252"><span class="lineNum">    1252 </span>            :  * \return Returns 0 on success, -1 on failure</a>
+<span class="lineNum">    1253 </span>            :  */
+<span class="lineNum">    1254 </span><span class="lineNoCov">          0 : int ast_dial_option_disable(struct ast_dial *dial, int num, enum ast_dial_option option)</span>
+<span class="lineNum">    1255 </span>            : {
+<span class="lineNum">    1256 </span><span class="lineNoCov">          0 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">    1257 </span>            : 
+<span class="lineNum">    1258 </span>            :         /* Ensure we have required arguments */
+<span class="lineNum">    1259 </span><span class="lineNoCov">          0 :         if (!dial || AST_LIST_EMPTY(&amp;dial-&gt;channels))</span>
+<span class="lineNum">    1260 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1261 </span>            : 
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :         if (!(channel = find_dial_channel(dial, num)))</span>
+<span class="lineNum">    1263 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1264 </span>            : 
+<span class="lineNum">    1265 </span>            :         /* If the option is not enabled, return failure */
+<span class="lineNum">    1266 </span><span class="lineNoCov">          0 :         if (!channel-&gt;options[option])</span>
+<span class="lineNum">    1267 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1268 </span>            : 
+<span class="lineNum">    1269 </span>            :         /* Execute callback of option to disable it if it exists */
+<span class="lineNum">    1270 </span><span class="lineNoCov">          0 :         if (option_types[option].disable)</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :                 option_types[option].disable(channel-&gt;options[option]);</span>
+<span class="lineNum">    1272 </span>            : 
+<span class="lineNum">    1273 </span>            :         /* Finally disable the option on the structure */
+<span class="lineNum">    1274 </span><span class="lineNoCov">          0 :         channel-&gt;options[option] = NULL;</span>
+<span class="lineNum">    1275 </span>            : 
+<span class="lineNum">    1276 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="1277"><span class="lineNum">    1277 </span>            : }</a>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineCov">        853 : int ast_dial_reason(struct ast_dial *dial, int num)</span>
+<span class="lineNum">    1280 </span>            : {
+<span class="lineNum">    1281 </span>            :         struct ast_dial_channel *channel;
+<span class="lineNum">    1282 </span>            : 
+<span class="lineNum">    1283 </span><span class="lineCov">        853 :         if (!dial || AST_LIST_EMPTY(&amp;dial-&gt;channels) || !(channel = find_dial_channel(dial, num))) {</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1285 </span>            :         }
+<span class="lineNum">    1286 </span>            : 
+<span class="lineNum">    1287 </span><span class="lineCov">        853 :         return channel-&gt;cause;</span>
+<a name="1288"><span class="lineNum">    1288 </span>            : }</a>
+<span class="lineNum">    1289 </span>            : 
+<span class="lineNum">    1290 </span><span class="lineCov">       1041 : struct ast_channel *ast_dial_get_channel(struct ast_dial *dial, int num)</span>
+<span class="lineNum">    1291 </span>            : {
+<span class="lineNum">    1292 </span>            :         struct ast_dial_channel *channel;
+<span class="lineNum">    1293 </span>            : 
+<span class="lineNum">    1294 </span><span class="lineCov">       1041 :         if (!dial || AST_LIST_EMPTY(&amp;dial-&gt;channels) || !(channel = find_dial_channel(dial, num))) {</span>
+<span class="lineNum">    1295 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1296 </span>            :         }
+<span class="lineNum">    1297 </span>            : 
+<span class="lineNum">    1298 </span><span class="lineCov">       1041 :         return channel-&gt;owner;</span>
+<a name="1299"><span class="lineNum">    1299 </span>            : }</a>
+<span class="lineNum">    1300 </span>            : 
+<span class="lineNum">    1301 </span><span class="lineCov">          6 : void ast_dial_set_state_callback(struct ast_dial *dial, ast_dial_state_callback callback)</span>
+<span class="lineNum">    1302 </span>            : {
+<span class="lineNum">    1303 </span><span class="lineCov">          6 :         dial-&gt;state_callback = callback;</span>
+<a name="1304"><span class="lineNum">    1304 </span><span class="lineCov">          6 : }</span></a>
+<span class="lineNum">    1305 </span>            : 
+<span class="lineNum">    1306 </span><span class="lineCov">        159 : void ast_dial_set_user_data(struct ast_dial *dial, void *user_data)</span>
+<span class="lineNum">    1307 </span>            : {
+<span class="lineNum">    1308 </span><span class="lineCov">        159 :         dial-&gt;user_data = user_data;</span>
+<a name="1309"><span class="lineNum">    1309 </span><span class="lineCov">        159 : }</span></a>
+<span class="lineNum">    1310 </span>            : 
+<span class="lineNum">    1311 </span><span class="lineCov">        159 : void *ast_dial_get_user_data(struct ast_dial *dial)</span>
+<span class="lineNum">    1312 </span>            : {
+<span class="lineNum">    1313 </span><span class="lineCov">        159 :         return dial-&gt;user_data;</span>
+<span class="lineNum">    1314 </span>            : }
+<span class="lineNum">    1315 </span>            : 
+<span class="lineNum">    1316 </span>            : /*! \brief Set the maximum time (globally) allowed for trying to ring phones
+<span class="lineNum">    1317 </span>            :  * \param dial The dial structure to apply the time limit to
+<span class="lineNum">    1318 </span>            :  * \param timeout Maximum time allowed
+<a name="1319"><span class="lineNum">    1319 </span>            :  * \return nothing</a>
+<span class="lineNum">    1320 </span>            :  */
+<span class="lineNum">    1321 </span><span class="lineCov">       1041 : void ast_dial_set_global_timeout(struct ast_dial *dial, int timeout)</span>
+<span class="lineNum">    1322 </span>            : {
+<span class="lineNum">    1323 </span><span class="lineCov">       1041 :         dial-&gt;timeout = timeout;</span>
+<span class="lineNum">    1324 </span>            : 
+<span class="lineNum">    1325 </span><span class="lineCov">       1041 :         if (dial-&gt;timeout &gt; 0 &amp;&amp; (dial-&gt;actual_timeout &gt; dial-&gt;timeout || dial-&gt;actual_timeout == -1))</span>
+<span class="lineNum">    1326 </span><span class="lineCov">       1033 :                 dial-&gt;actual_timeout = dial-&gt;timeout;</span>
+<span class="lineNum">    1327 </span>            : 
+<span class="lineNum">    1328 </span><span class="lineCov">       1041 :         return;</span>
+<span class="lineNum">    1329 </span>            : }
+<span class="lineNum">    1330 </span>            : 
+<span class="lineNum">    1331 </span>            : /*! \brief Set the maximum time (per channel) allowed for trying to ring the phone
+<span class="lineNum">    1332 </span>            :  * \param dial The dial structure the channel belongs to
+<span class="lineNum">    1333 </span>            :  * \param num Channel number to set timeout on
+<span class="lineNum">    1334 </span>            :  * \param timeout Maximum time allowed
+<a name="1335"><span class="lineNum">    1335 </span>            :  * \return nothing</a>
+<span class="lineNum">    1336 </span>            :  */
+<span class="lineNum">    1337 </span><span class="lineNoCov">          0 : void ast_dial_set_timeout(struct ast_dial *dial, int num, int timeout)</span>
+<span class="lineNum">    1338 </span>            : {
+<span class="lineNum">    1339 </span><span class="lineNoCov">          0 :         struct ast_dial_channel *channel = NULL;</span>
+<span class="lineNum">    1340 </span>            : 
+<span class="lineNum">    1341 </span><span class="lineNoCov">          0 :         if (!(channel = find_dial_channel(dial, num)))</span>
+<span class="lineNum">    1342 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1343 </span>            : 
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :         channel-&gt;timeout = timeout;</span>
+<span class="lineNum">    1345 </span>            : 
+<span class="lineNum">    1346 </span><span class="lineNoCov">          0 :         if (channel-&gt;timeout &gt; 0 &amp;&amp; (dial-&gt;actual_timeout &gt; channel-&gt;timeout || dial-&gt;actual_timeout == -1))</span>
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 :                 dial-&gt;actual_timeout = channel-&gt;timeout;</span>
+<span class="lineNum">    1348 </span>            : 
+<span class="lineNum">    1349 </span><span class="lineNoCov">          0 :         return;</span>
+<span class="lineNum">    1350 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

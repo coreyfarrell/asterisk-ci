@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -e
+
+OUTPUT_DIR=${OUTPUT_DIR:-tests/CI/output}
+
+output_dir="--output-dir=${OUTPUT_DIR}"
+testsuite_dir="--testsuite-dir=/usr/src/testsuite"
+cache_dir="--cache-dir=/usr/src/ci-cache"
+
+init_repo() {
+	(
+		set -x
+		cd /usr/src/$1
+		git remote add coreyfarrell https://github.com/coreyfarrell/$1 2>/dev/null || :
+		git fetch coreyfarrell --force
+		git checkout -B patches-16 coreyfarrell/patches-16
+	)
+}
+
+init_repo asterisk
+init_repo testsuite
+
+set -x
+./tests/CI/buildAsterisk.sh --coverage ${output_dir} ${cache_dir}
+./tests/CI/installAsterisk.sh
+./tests/CI/runUnittests.sh ${output_dir}/unittests
+./tests/CI/runTestsuite.sh ${testsuite_dir}
+./tests/CI/processCoverage.sh ${output_dir}

@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - funcs/func_jitterbuffer.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">funcs</a> - func_jitterbuffer.c<span style="font-size: 80%;"> (source / <a href="func_jitterbuffer.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">30</td>
+            <td class="headerCovTableEntry">36</td>
+            <td class="headerCovTableEntryMed">83.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2011, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David Vossel &lt;dvossel@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Put a jitterbuffer on the read side of a channel
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author David Vossel &lt;dvossel@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \ingroup functions
+<span class="lineNum">      26 </span>            :  */
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*** MODULEINFO
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/framehook.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/abstract_jb.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/timing.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      44 </span>            :         &lt;function name=&quot;JITTERBUFFER&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      45 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      46 </span>            :                         Add a Jitterbuffer to the Read side of the channel. This dejitters the audio stream before it reaches the Asterisk core. This is a write only function.
+<span class="lineNum">      47 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      48 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      49 </span>            :                         &lt;parameter name=&quot;jitterbuffer type&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      50 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      51 </span>            :                                         &lt;option name=&quot;fixed&quot;&gt;
+<span class="lineNum">      52 </span>            :                                                 &lt;para&gt;Set a fixed jitterbuffer on the channel.&lt;/para&gt;
+<span class="lineNum">      53 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      54 </span>            :                                         &lt;option name=&quot;adaptive&quot;&gt;
+<span class="lineNum">      55 </span>            :                                                 &lt;para&gt;Set an adaptive jitterbuffer on the channel.&lt;/para&gt;
+<span class="lineNum">      56 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      57 </span>            :                                         &lt;option name=&quot;disabled&quot;&gt;
+<span class="lineNum">      58 </span>            :                                                 &lt;para&gt;Remove a previously set jitterbuffer from the channel.&lt;/para&gt;
+<span class="lineNum">      59 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      60 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">      61 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      62 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      63 </span>            :                 &lt;description&gt;
+<span class="lineNum">      64 </span>            :                         &lt;para&gt;Jitterbuffers are constructed in two different ways.
+<span class="lineNum">      65 </span>            :                         The first always take three arguments: &lt;replaceable&gt;max_size&lt;/replaceable&gt;,
+<span class="lineNum">      66 </span>            :                         &lt;replaceable&gt;resync_threshold&lt;/replaceable&gt;, and &lt;replaceable&gt;target_extra&lt;/replaceable&gt;.
+<span class="lineNum">      67 </span>            :                         Alternatively, a single argument of &lt;literal&gt;default&lt;/literal&gt; can be provided,
+<span class="lineNum">      68 </span>            :                         which will construct the default jitterbuffer for the given
+<span class="lineNum">      69 </span>            :                         &lt;replaceable&gt;jitterbuffer type&lt;/replaceable&gt;.&lt;/para&gt;
+<span class="lineNum">      70 </span>            :                         &lt;para&gt;The arguments are:&lt;/para&gt;
+<span class="lineNum">      71 </span>            :                         &lt;para&gt;&lt;replaceable&gt;max_size&lt;/replaceable&gt;: Length in milliseconds of the buffer.
+<span class="lineNum">      72 </span>            :                         Defaults to 200 ms.&lt;/para&gt;
+<span class="lineNum">      73 </span>            :                         &lt;para&gt;&lt;replaceable&gt;resync_threshold&lt;/replaceable&gt;: The length in milliseconds over
+<span class="lineNum">      74 </span>            :                         which a timestamp difference will result in resyncing the jitterbuffer.
+<span class="lineNum">      75 </span>            :                         Defaults to 1000ms.&lt;/para&gt;
+<span class="lineNum">      76 </span>            :                         &lt;para&gt;target_extra: This option only affects the adaptive jitterbuffer. It represents
+<span class="lineNum">      77 </span>            :                         the amount time in milliseconds by which the new jitter buffer will pad its size.
+<span class="lineNum">      78 </span>            :                         Defaults to 40ms.&lt;/para&gt;
+<span class="lineNum">      79 </span>            :                         &lt;example title=&quot;Fixed with defaults&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      80 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(fixed)=default)
+<span class="lineNum">      81 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      82 </span>            :                         &lt;example title=&quot;Fixed with 200ms max size&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      83 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(fixed)=200)
+<span class="lineNum">      84 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      85 </span>            :                         &lt;example title=&quot;Fixed with 200ms max size, resync threshold 1500&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      86 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(fixed)=200,1500)
+<span class="lineNum">      87 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      88 </span>            :                         &lt;example title=&quot;Adaptive with defaults&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      89 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(adaptive)=default)
+<span class="lineNum">      90 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      91 </span>            :                         &lt;example title=&quot;Adaptive with 200ms max size, 60ms target extra&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      92 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(adaptive)=200,,60)
+<span class="lineNum">      93 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      94 </span>            :                         &lt;example title=&quot;Set a fixed jitterbuffer with defaults; then remove it&quot; language=&quot;text&quot;&gt;
+<span class="lineNum">      95 </span>            :                         exten =&gt; 1,1,Set(JITTERBUFFER(fixed)=default)
+<span class="lineNum">      96 </span>            :                         exten =&gt; 1,n,Set(JITTERBUFFER(disabled)=)
+<span class="lineNum">      97 </span>            :                         &lt;/example&gt;
+<span class="lineNum">      98 </span>            :                         &lt;note&gt;&lt;para&gt;If a channel specifies a jitterbuffer due to channel driver configuration and
+<span class="lineNum">      99 </span>            :                         the JITTERBUFFER function has set a jitterbuffer for that channel, the jitterbuffer set by
+<span class="lineNum">     100 </span>            :                         the JITTERBUFFER function will take priority and the jitterbuffer set by the channel
+<span class="lineNum">     101 </span>            :                         configuration will not be applied.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     102 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     103 </span>            :         &lt;/function&gt;
+<a name="104"><span class="lineNum">     104 </span>            :  ***/</a>
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">          8 : static int jb_helper(struct ast_channel *chan, const char *cmd, char *data, const char *value)</span>
+<span class="lineNum">     107 </span>            : {
+<span class="lineNum">     108 </span>            :         struct ast_jb_conf jb_conf;
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span><span class="lineCov">          8 :         if (!chan) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, cmd);</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     113 </span>            :         }
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            :         /* Initialize and set jb_conf */
+<span class="lineNum">     116 </span><span class="lineCov">          8 :         ast_jb_conf_default(&amp;jb_conf);</span>
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :         /* Now check user options to see if any of the defaults need to change. */
+<span class="lineNum">     119 </span><span class="lineCov">          8 :         if (!ast_strlen_zero(data)) {</span>
+<span class="lineNum">     120 </span><span class="lineCov">          8 :                 if (strcasecmp(data, &quot;fixed&quot;) &amp;&amp;</span>
+<span class="lineNum">     121 </span><span class="lineCov">          4 :                                 strcasecmp(data, &quot;adaptive&quot;) &amp;&amp;</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                                 strcasecmp(data, &quot;disabled&quot;)) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unknown Jitterbuffer type %s. Failed to create jitterbuffer.\n&quot;, data);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     125 </span>            :                 }
+<span class="lineNum">     126 </span><span class="lineCov">          8 :                 ast_copy_string(jb_conf.impl, data, sizeof(jb_conf.impl));</span>
+<span class="lineNum">     127 </span>            :         }
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">          8 :         if (!ast_strlen_zero(value) &amp;&amp; strcasecmp(value, &quot;default&quot;)) {</span>
+<span class="lineNum">     130 </span><span class="lineCov">          6 :                 char *parse = ast_strdupa(value);</span>
+<span class="lineNum">     131 </span><span class="lineCov">          6 :                 int res = 0;</span>
+<span class="lineNum">     132 </span><span class="lineCov">          6 :                 AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     133 </span>            :                         AST_APP_ARG(max_size);
+<span class="lineNum">     134 </span>            :                         AST_APP_ARG(resync_threshold);
+<span class="lineNum">     135 </span>            :                         AST_APP_ARG(target_extra);
+<span class="lineNum">     136 </span>            :                 );
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">          6 :                 AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">     139 </span><span class="lineCov">          6 :                 if (!ast_strlen_zero(args.max_size)) {</span>
+<span class="lineNum">     140 </span><span class="lineCov">          6 :                         res |= ast_jb_read_conf(&amp;jb_conf,</span>
+<span class="lineNum">     141 </span>            :                                 &quot;jbmaxsize&quot;,
+<span class="lineNum">     142 </span><span class="lineCov">          6 :                                 args.max_size);</span>
+<span class="lineNum">     143 </span>            :                 }
+<span class="lineNum">     144 </span><span class="lineCov">          6 :                 if (!ast_strlen_zero(args.resync_threshold)) {</span>
+<span class="lineNum">     145 </span><span class="lineCov">          4 :                         res |= ast_jb_read_conf(&amp;jb_conf,</span>
+<span class="lineNum">     146 </span>            :                                 &quot;jbresyncthreshold&quot;,
+<span class="lineNum">     147 </span><span class="lineCov">          4 :                                 args.resync_threshold);</span>
+<span class="lineNum">     148 </span>            :                 }
+<span class="lineNum">     149 </span><span class="lineCov">          6 :                 if (!ast_strlen_zero(args.target_extra)) {</span>
+<span class="lineNum">     150 </span><span class="lineCov">          4 :                         res |= ast_jb_read_conf(&amp;jb_conf,</span>
+<span class="lineNum">     151 </span>            :                                 &quot;jbtargetextra&quot;,
+<span class="lineNum">     152 </span><span class="lineCov">          4 :                                 args.target_extra);</span>
+<span class="lineNum">     153 </span>            :                 }
+<span class="lineNum">     154 </span><span class="lineCov">          6 :                 if (res) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Invalid jitterbuffer parameters %s\n&quot;, value);</span>
+<span class="lineNum">     156 </span>            :                 }
+<span class="lineNum">     157 </span>            :         }
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">          8 :         ast_jb_create_framehook(chan, &amp;jb_conf, 0);</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">          8 :         return 0;</span>
+<span class="lineNum">     162 </span>            : }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span>            : static struct ast_custom_function jb_function = {
+<span class="lineNum">     166 </span>            :         .name = &quot;JITTERBUFFER&quot;,
+<span class="lineNum">     167 </span>            :         .write = jb_helper,
+<a name="168"><span class="lineNum">     168 </span>            : };</a>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span><span class="lineCov">       1115 :         return ast_custom_function_unregister(&amp;jb_function);</span>
+<a name="173"><span class="lineNum">     173 </span>            : }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     176 </span>            : {
+<span class="lineNum">     177 </span><span class="lineCov">       1117 :         int res = ast_custom_function_register(&amp;jb_function);</span>
+<span class="lineNum">     178 </span><span class="lineCov">       1117 :         return res ? AST_MODULE_LOAD_DECLINE : AST_MODULE_LOAD_SUCCESS;</span>
+<a name="179"><span class="lineNum">     179 </span>            : }</a>
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Jitter buffer for read side of channel.&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

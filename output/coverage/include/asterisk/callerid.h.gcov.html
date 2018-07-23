@@ -1,0 +1,602 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - include/asterisk/callerid.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">include/asterisk</a> - callerid.h<span style="font-size: 80%;"> (source / <a href="callerid.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  * \brief CallerID (and other GR30) management and generation
+<span class="lineNum">      21 </span>            :  * Includes code and algorithms from the Zapata library.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \ref CID
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*!
+<span class="lineNum">      28 </span>            :  * \page CID Caller ID names and numbers
+<span class="lineNum">      29 </span>            :  *
+<span class="lineNum">      30 </span>            :  * Caller ID names are currently 8 bit characters, propably
+<span class="lineNum">      31 </span>            :  * ISO8859-1, depending on what your channel drivers handle.
+<span class="lineNum">      32 </span>            :  *
+<span class="lineNum">      33 </span>            :  * IAX2 and SIP caller ID names are UTF8
+<span class="lineNum">      34 </span>            :  * On ISDN Caller ID names are 7 bit, Almost ASCII
+<span class="lineNum">      35 </span>            :  * (See http://www.zytrax.com/tech/ia5.html )
+<span class="lineNum">      36 </span>            :  *
+<span class="lineNum">      37 </span>            :  * \note Asterisk does not currently support SIP utf8 caller ID names or caller ID's.
+<span class="lineNum">      38 </span>            :  *
+<span class="lineNum">      39 </span>            :  * \par See also
+<span class="lineNum">      40 </span>            :  *      \arg \ref callerid.c
+<span class="lineNum">      41 </span>            :  *      \arg \ref callerid.h
+<span class="lineNum">      42 </span>            :  *      \arg \ref Def_CallerPres
+<span class="lineNum">      43 </span>            :  */
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : #ifndef _ASTERISK_CALLERID_H
+<span class="lineNum">      46 </span>            : #define _ASTERISK_CALLERID_H
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/format.h&quot;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : #define MAX_CALLERID_SIZE 32000
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : #define CID_PRIVATE_NAME                (1 &lt;&lt; 0)
+<span class="lineNum">      53 </span>            : #define CID_PRIVATE_NUMBER              (1 &lt;&lt; 1)
+<span class="lineNum">      54 </span>            : #define CID_UNKNOWN_NAME                (1 &lt;&lt; 2)
+<span class="lineNum">      55 </span>            : #define CID_UNKNOWN_NUMBER              (1 &lt;&lt; 3)
+<span class="lineNum">      56 </span>            : #define CID_MSGWAITING                  (1 &lt;&lt; 4)
+<span class="lineNum">      57 </span>            : #define CID_NOMSGWAITING                (1 &lt;&lt; 5)
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : #define CID_SIG_BELL    1
+<span class="lineNum">      60 </span>            : #define CID_SIG_V23     2
+<span class="lineNum">      61 </span>            : #define CID_SIG_DTMF    3
+<span class="lineNum">      62 </span>            : #define CID_SIG_V23_JP  4
+<span class="lineNum">      63 </span>            : #define CID_SIG_SMDI    5
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : #define CID_START_RING                  1
+<span class="lineNum">      66 </span>            : #define CID_START_POLARITY              2
+<span class="lineNum">      67 </span>            : #define CID_START_POLARITY_IN   3
+<span class="lineNum">      68 </span>            : #define CID_START_DTMF_NOALERT  4
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            : /* defines dealing with message waiting indication generation */
+<span class="lineNum">      71 </span>            : /*! MWI SDMF format */
+<span class="lineNum">      72 </span>            : #define CID_MWI_TYPE_SDMF               0x00
+<span class="lineNum">      73 </span>            : /*! MWI MDMF format -- generate only MWI field */
+<span class="lineNum">      74 </span>            : #define CID_MWI_TYPE_MDMF               0x01
+<span class="lineNum">      75 </span>            : /*! MWI MDMF format -- generate name, callerid, date and MWI fields */
+<span class="lineNum">      76 </span>            : #define CID_MWI_TYPE_MDMF_FULL  0x02
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : #define AST_LIN2X(a) ((ast_format_cmp(codec, ast_format_alaw) == AST_FORMAT_CMP_EQUAL) ? (AST_LIN2A(a)) : (AST_LIN2MU(a)))
+<span class="lineNum">      79 </span>            : #define AST_XLAW(a) ((ast_format_cmp(codec, ast_format_alaw) == AST_FORMAT_CMP_EQUAL) ? (AST_ALAW(a)) : (AST_MULAW(a)))
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            : struct callerid_state;
+<span class="lineNum">      83 </span>            : typedef struct callerid_state CIDSTATE;
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            : /*! \brief CallerID Initialization
+<span class="lineNum">      86 </span>            :  * \par
+<span class="lineNum">      87 </span>            :  * Initializes the callerid system.  Mostly stuff for inverse FFT
+<span class="lineNum">      88 </span>            :  */
+<span class="lineNum">      89 </span>            : void callerid_init(void);
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span>            : /*! \brief Generates a CallerID FSK stream in ulaw format suitable for transmission.
+<span class="lineNum">      92 </span>            :  * \param buf Buffer to use. If &quot;buf&quot; is supplied, it will use that buffer instead of allocating its own.
+<span class="lineNum">      93 </span>            :  *   &quot;buf&quot; must be at least 32000 bytes in size of you want to be sure you don't have an overrun.
+<span class="lineNum">      94 </span>            :  * \param number Use NULL for no number or &quot;P&quot; for &quot;private&quot;
+<span class="lineNum">      95 </span>            :  * \param name name to be used
+<span class="lineNum">      96 </span>            :  * \param flags passed flags
+<span class="lineNum">      97 </span>            :  * \param callwaiting callwaiting flag
+<span class="lineNum">      98 </span>            :  * \param codec -- either AST_FORMAT_ULAW or AST_FORMAT_ALAW
+<span class="lineNum">      99 </span>            :  * \details
+<span class="lineNum">     100 </span>            :  * This function creates a stream of callerid (a callerid spill) data in ulaw format.
+<span class="lineNum">     101 </span>            :  * \return It returns the size
+<span class="lineNum">     102 </span>            :  * (in bytes) of the data (if it returns a size of 0, there is probably an error)
+<span class="lineNum">     103 </span>            :  */
+<span class="lineNum">     104 </span>            : int callerid_generate(unsigned char *buf, const char *number, const char *name, int flags, int callwaiting, struct ast_format *codec);
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            : /*! \brief Create a callerID state machine
+<span class="lineNum">     107 </span>            :  * \param cid_signalling Type of signalling in use
+<span class="lineNum">     108 </span>            :  *
+<span class="lineNum">     109 </span>            :  * \details
+<span class="lineNum">     110 </span>            :  * This function returns a malloc'd instance of the callerid_state data structure.
+<span class="lineNum">     111 </span>            :  * \return Returns a pointer to a malloc'd callerid_state structure, or NULL on error.
+<span class="lineNum">     112 </span>            :  */
+<span class="lineNum">     113 </span>            : struct callerid_state *callerid_new(int cid_signalling);
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : /*! \brief Read samples into the state machine.
+<span class="lineNum">     116 </span>            :  * \param cid Which state machine to act upon
+<span class="lineNum">     117 </span>            :  * \param ubuf containing your samples
+<span class="lineNum">     118 </span>            :  * \param samples number of samples contained within the buffer.
+<span class="lineNum">     119 </span>            :  * \param codec which codec (AST_FORMAT_ALAW or AST_FORMAT_ULAW)
+<span class="lineNum">     120 </span>            :  *
+<span class="lineNum">     121 </span>            :  * \details
+<span class="lineNum">     122 </span>            :  * Send received audio to the Caller*ID demodulator.
+<span class="lineNum">     123 </span>            :  * \retval -1 on error
+<span class="lineNum">     124 </span>            :  * \retval 0 for &quot;needs more samples&quot;
+<span class="lineNum">     125 </span>            :  * \retval 1 if the CallerID spill reception is complete.
+<span class="lineNum">     126 </span>            :  */
+<span class="lineNum">     127 </span>            : int callerid_feed(struct callerid_state *cid, unsigned char *ubuf, int samples, struct ast_format *codec);
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : /*! \brief Read samples into the state machine.
+<span class="lineNum">     130 </span>            :  * \param cid Which state machine to act upon
+<span class="lineNum">     131 </span>            :  * \param ubuf containing your samples
+<span class="lineNum">     132 </span>            :  * \param samples number of samples contained within the buffer.
+<span class="lineNum">     133 </span>            :  * \param codec which codec (AST_FORMAT_ALAW or AST_FORMAT_ULAW)
+<span class="lineNum">     134 </span>            :  *
+<span class="lineNum">     135 </span>            :  * \details
+<span class="lineNum">     136 </span>            :  * Send received audio to the Caller*ID demodulator (for japanese style lines).
+<span class="lineNum">     137 </span>            :  * \retval -1 on error
+<span class="lineNum">     138 </span>            :  * \retval 0 for &quot;needs more samples&quot;
+<span class="lineNum">     139 </span>            :  * \retval 1 if the CallerID spill reception is complete.
+<span class="lineNum">     140 </span>            :  */
+<span class="lineNum">     141 </span>            : int callerid_feed_jp(struct callerid_state *cid, unsigned char *ubuf, int samples, struct ast_format *codec);
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            : /*! \brief Extract info out of callerID state machine.  Flags are listed above
+<span class="lineNum">     144 </span>            :  * \param cid Callerid state machine to act upon
+<span class="lineNum">     145 </span>            :  * \param number Pass the address of a pointer-to-char (will contain the phone number)
+<span class="lineNum">     146 </span>            :  * \param name Pass the address of a pointer-to-char (will contain the name)
+<span class="lineNum">     147 </span>            :  * \param flags Pass the address of an int variable(will contain the various callerid flags)
+<span class="lineNum">     148 </span>            :  *
+<span class="lineNum">     149 </span>            :  * \details
+<span class="lineNum">     150 </span>            :  * This function extracts a callerid string out of a callerid_state state machine.
+<span class="lineNum">     151 </span>            :  * If no number is found, *number will be set to NULL.  Likewise for the name.
+<span class="lineNum">     152 </span>            :  * Flags can contain any of the following:
+<span class="lineNum">     153 </span>            :  *
+<span class="lineNum">     154 </span>            :  * \return Returns nothing.
+<span class="lineNum">     155 </span>            :  */
+<span class="lineNum">     156 </span>            : void callerid_get(struct callerid_state *cid, char **number, char **name, int *flags);
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : /*!
+<span class="lineNum">     159 </span>            :  * \brief Get and parse DTMF-based callerid
+<span class="lineNum">     160 </span>            :  * \param cidstring The actual transmitted string.
+<span class="lineNum">     161 </span>            :  * \param number The cid number is returned here.
+<span class="lineNum">     162 </span>            :  * \param flags The cid flags are returned here.
+<span class="lineNum">     163 </span>            :  */
+<span class="lineNum">     164 </span>            : void callerid_get_dtmf(char *cidstring, char *number, int *flags);
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            : /*! \brief This function frees callerid_state cid.
+<span class="lineNum">     167 </span>            :  * \param cid This is the callerid_state state machine to free
+<span class="lineNum">     168 </span>            :  */
+<span class="lineNum">     169 </span>            : void callerid_free(struct callerid_state *cid);
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            : /*! \brief Generate Caller-ID spill from the &quot;callerid&quot; field of asterisk (in e-mail address like format)
+<span class="lineNum">     172 </span>            :  * \param buf buffer for output samples. See callerid_generate() for details regarding buffer.
+<span class="lineNum">     173 </span>            :  * \param name Caller-ID Name
+<span class="lineNum">     174 </span>            :  * \param number Caller-ID Number
+<span class="lineNum">     175 </span>            :  * \param codec Asterisk codec (either AST_FORMAT_ALAW or AST_FORMAT_ULAW)
+<span class="lineNum">     176 </span>            :  *
+<span class="lineNum">     177 </span>            :  * \details
+<span class="lineNum">     178 </span>            :  * Acts like callerid_generate except uses an asterisk format callerid string.
+<span class="lineNum">     179 </span>            :  */
+<span class="lineNum">     180 </span>            : int ast_callerid_generate(unsigned char *buf, const char *name, const char *number, struct ast_format *codec);
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            : /*!
+<span class="lineNum">     183 </span>            :  * \brief Generate message waiting indicator
+<span class="lineNum">     184 </span>            :  * \param buf
+<span class="lineNum">     185 </span>            :  * \param active The message indicator state
+<span class="lineNum">     186 </span>            :  *  -- either 0 no messages in mailbox or 1 messages in mailbox
+<span class="lineNum">     187 </span>            :  * \param type Format of message (any of CID_MWI_TYPE_*)
+<span class="lineNum">     188 </span>            :  * \param codec
+<span class="lineNum">     189 </span>            :  * \param name
+<span class="lineNum">     190 </span>            :  * \param number
+<span class="lineNum">     191 </span>            :  * \param flags
+<span class="lineNum">     192 </span>            :  * \see callerid_generate() for more info as it uses the same encoding
+<span class="lineNum">     193 </span>            :  * \version 1.6.1 changed mdmf parameter to type, added name, number and flags for caller id message generation
+<span class="lineNum">     194 </span>            :  */
+<span class="lineNum">     195 </span>            : int ast_callerid_vmwi_generate(unsigned char *buf, int active, int type, struct ast_format *codec, const char *name,
+<span class="lineNum">     196 </span>            :         const char *number, int flags);
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            : /*! \brief Generate Caller-ID spill but in a format suitable for Call Waiting(tm)'s Caller*ID(tm)
+<span class="lineNum">     199 </span>            :  * \see ast_callerid_generate() for other details
+<span class="lineNum">     200 </span>            :  */
+<span class="lineNum">     201 </span>            : int ast_callerid_callwaiting_generate(unsigned char *buf, const char *name, const char *number, struct ast_format *codec);
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            : /*! \brief Destructively parse inbuf into name and location (or number)
+<span class="lineNum">     204 </span>            :  * \details
+<span class="lineNum">     205 </span>            :  * Parses callerid stream from inbuf and changes into useable form, outputed in name and location.
+<span class="lineNum">     206 </span>            :  * \param instr buffer of callerid stream (in audio form) to be parsed. Warning, data in buffer is changed.
+<span class="lineNum">     207 </span>            :  * \param name address of a pointer-to-char for the name value of the stream.
+<span class="lineNum">     208 </span>            :  * \param location address of a pointer-to-char for the phone number value of the stream.
+<span class="lineNum">     209 </span>            :  * \note XXX 'name' is not parsed consistently e.g. we have
+<span class="lineNum">     210 </span>            :  * input                   location        name
+<span class="lineNum">     211 </span>            :  * &quot; foo bar &quot; &lt;123&gt;       123             ' foo bar ' (with spaces around)
+<span class="lineNum">     212 </span>            :  * &quot; foo bar &quot;             NULL            'foo bar' (without spaces around)
+<span class="lineNum">     213 </span>            :  * The parsing of leading and trailing space/quotes should be more consistent.
+<span class="lineNum">     214 </span>            :  * \return Returns 0 on success, -1 on failure.
+<span class="lineNum">     215 </span>            :  */
+<span class="lineNum">     216 </span>            : int ast_callerid_parse(char *instr, char **name, char **location);
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            : /*!
+<span class="lineNum">     219 </span>            :  * \brief Generate a CAS (CPE Alert Signal) tone for 'n' samples
+<span class="lineNum">     220 </span>            :  * \param outbuf Allocated buffer for data.  Must be at least 2400 bytes unless no SAS is desired
+<span class="lineNum">     221 </span>            :  * \param sas Non-zero if CAS should be preceeded by SAS
+<span class="lineNum">     222 </span>            :  * \param len How many samples to generate.
+<span class="lineNum">     223 </span>            :  * \param codec Which codec (AST_FORMAT_ALAW or AST_FORMAT_ULAW)
+<span class="lineNum">     224 </span>            :  * \return Returns -1 on error (if len is less than 2400), 0 on success.
+<span class="lineNum">     225 </span>            :  */
+<span class="lineNum">     226 </span>            : int ast_gen_cas(unsigned char *outbuf, int sas, int len, struct ast_format *codec);
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span>            : /*!
+<span class="lineNum">     229 </span>            :  * \brief Shrink a phone number in place to just digits (more accurately it just removes ()'s, .'s, and -'s...
+<span class="lineNum">     230 </span>            :  * \param n The number to be stripped/shrunk
+<span class="lineNum">     231 </span>            :  * \return Returns nothing important
+<span class="lineNum">     232 </span>            :  */
+<span class="lineNum">     233 </span>            : void ast_shrink_phone_number(char *n);
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : /*!
+<span class="lineNum">     236 </span>            :  * \brief Check if a string consists only of digits and + \#
+<span class="lineNum">     237 </span>            :  * \param n number to be checked.
+<span class="lineNum">     238 </span>            :  * \return Returns 0 if n is a number, 1 if it's not.
+<span class="lineNum">     239 </span>            :  */
+<span class="lineNum">     240 </span>            : int ast_isphonenumber(const char *n);
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span>            : /*!
+<span class="lineNum">     243 </span>            :  * \brief Check if a string consists only of digits and + \# ( ) - .
+<span class="lineNum">     244 </span>            :  * (meaning it can be cleaned with ast_shrink_phone_number)
+<span class="lineNum">     245 </span>            :  * \param exten The extension (or URI) to be checked.
+<span class="lineNum">     246 </span>            :  * \retval 1 if string is valid AST shrinkable phone number
+<span class="lineNum">     247 </span>            :  * \retval 0 if not
+<span class="lineNum">     248 </span>            :  */
+<span class="lineNum">     249 </span>            : int ast_is_shrinkable_phonenumber(const char *exten);
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span>            : int ast_callerid_split(const char *src, char *name, int namelen, char *num, int numlen);
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            : char *ast_callerid_merge(char *buf, int bufsiz, const char *name, const char *num, const char *unknown);
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            : /*
+<span class="lineNum">     256 </span>            :  * Caller*ID and other GR-30 compatible generation
+<span class="lineNum">     257 </span>            :  * routines (used by ADSI for example)
+<span class="lineNum">     258 </span>            :  */
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            : extern float cid_dr[4];
+<span class="lineNum">     261 </span>            : extern float cid_di[4];
+<a name="262"><span class="lineNum">     262 </span>            : extern float clidsb;</a>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 : static inline float callerid_getcarrier(float *cr, float *ci, int bit)</span>
+<span class="lineNum">     265 </span>            : {
+<span class="lineNum">     266 </span>            :         /* Move along.  There's nothing to see here... */
+<span class="lineNum">     267 </span>            :         float t;
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         t = *cr * cid_dr[bit] - *ci * cid_di[bit];</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :         *ci = *cr * cid_di[bit] + *ci * cid_dr[bit];</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         *cr = t;</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         t = 2.0 - (*cr * *cr + *ci * *ci);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :         *cr *= t;</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         *ci *= t;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         return *cr;</span>
+<span class="lineNum">     276 </span>            : }
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            : #define PUT_BYTE(a) do { \
+<span class="lineNum">     279 </span>            :         *(buf++) = (a); \
+<span class="lineNum">     280 </span>            :         bytes++; \
+<span class="lineNum">     281 </span>            : } while(0)
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            : #define PUT_AUDIO_SAMPLE(y) do { \
+<span class="lineNum">     284 </span>            :         int __sample_idx = (short)(rint(8192.0 * (y))); \
+<span class="lineNum">     285 </span>            :         *(buf++) = AST_LIN2X(__sample_idx); \
+<span class="lineNum">     286 </span>            :         bytes++; \
+<span class="lineNum">     287 </span>            : } while(0)
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span>            : #define PUT_CLID_MARKMS do { \
+<span class="lineNum">     290 </span>            :         int __clid_x; \
+<span class="lineNum">     291 </span>            :         for (__clid_x=0;__clid_x&lt;8;__clid_x++) \
+<span class="lineNum">     292 </span>            :                 PUT_AUDIO_SAMPLE(callerid_getcarrier(&amp;cr, &amp;ci, 1)); \
+<span class="lineNum">     293 </span>            : } while(0)
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span>            : #define PUT_CLID_BAUD(bit) do { \
+<span class="lineNum">     296 </span>            :         while(scont &lt; clidsb) { \
+<span class="lineNum">     297 </span>            :                 PUT_AUDIO_SAMPLE(callerid_getcarrier(&amp;cr, &amp;ci, bit)); \
+<span class="lineNum">     298 </span>            :                 scont += 1.0; \
+<span class="lineNum">     299 </span>            :         } \
+<span class="lineNum">     300 </span>            :         scont -= clidsb; \
+<span class="lineNum">     301 </span>            : } while(0)
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span>            : #define PUT_CLID(byte) do { \
+<span class="lineNum">     305 </span>            :         int z; \
+<span class="lineNum">     306 </span>            :         unsigned char b = (byte); \
+<span class="lineNum">     307 </span>            :         PUT_CLID_BAUD(0);       /* Start bit */ \
+<span class="lineNum">     308 </span>            :         for (z=0;z&lt;8;z++) { \
+<span class="lineNum">     309 </span>            :                 PUT_CLID_BAUD(b &amp; 1); \
+<span class="lineNum">     310 </span>            :                 b &gt;&gt;= 1; \
+<span class="lineNum">     311 </span>            :         } \
+<span class="lineNum">     312 </span>            :         PUT_CLID_BAUD(1);       /* Stop bit */ \
+<span class="lineNum">     313 </span>            : } while(0)
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            : /* Various defines and bits for handling PRI- and SS7-type restriction */
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            : #define AST_PRES_NUMBER_TYPE                                    0x03
+<span class="lineNum">     318 </span>            : #define AST_PRES_USER_NUMBER_UNSCREENED                 0x00
+<span class="lineNum">     319 </span>            : #define AST_PRES_USER_NUMBER_PASSED_SCREEN              0x01
+<span class="lineNum">     320 </span>            : #define AST_PRES_USER_NUMBER_FAILED_SCREEN              0x02
+<span class="lineNum">     321 </span>            : #define AST_PRES_NETWORK_NUMBER                                 0x03
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span>            : #define AST_PRES_RESTRICTION                                    0x60
+<span class="lineNum">     324 </span>            : #define AST_PRES_ALLOWED                                                0x00
+<span class="lineNum">     325 </span>            : #define AST_PRES_RESTRICTED                                             0x20
+<span class="lineNum">     326 </span>            : #define AST_PRES_UNAVAILABLE                                    0x40
+<span class="lineNum">     327 </span>            : #define AST_PRES_RESERVED                                               0x60
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            : #define AST_PRES_ALLOWED_USER_NUMBER_NOT_SCREENED \
+<span class="lineNum">     330 </span>            :         (AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_UNSCREENED)
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            : #define AST_PRES_ALLOWED_USER_NUMBER_PASSED_SCREEN \
+<span class="lineNum">     333 </span>            :         (AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_PASSED_SCREEN)
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span>            : #define AST_PRES_ALLOWED_USER_NUMBER_FAILED_SCREEN \
+<span class="lineNum">     336 </span>            :         (AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_FAILED_SCREEN)
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span>            : #define AST_PRES_ALLOWED_NETWORK_NUMBER \
+<span class="lineNum">     339 </span>            :         (AST_PRES_ALLOWED | AST_PRES_NETWORK_NUMBER)
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span>            : #define AST_PRES_PROHIB_USER_NUMBER_NOT_SCREENED \
+<span class="lineNum">     342 </span>            :         (AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_UNSCREENED)
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            : #define AST_PRES_PROHIB_USER_NUMBER_PASSED_SCREEN \
+<span class="lineNum">     345 </span>            :         (AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_PASSED_SCREEN)
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span>            : #define AST_PRES_PROHIB_USER_NUMBER_FAILED_SCREEN \
+<span class="lineNum">     348 </span>            :         (AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_FAILED_SCREEN)
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span>            : #define AST_PRES_PROHIB_NETWORK_NUMBER \
+<span class="lineNum">     351 </span>            :         (AST_PRES_RESTRICTED | AST_PRES_NETWORK_NUMBER)
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            : #define AST_PRES_NUMBER_NOT_AVAILABLE \
+<span class="lineNum">     354 </span>            :         (AST_PRES_UNAVAILABLE | AST_PRES_NETWORK_NUMBER)
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span>            : int ast_parse_caller_presentation(const char *data);
+<span class="lineNum">     357 </span>            : const char *ast_describe_caller_presentation(int data);
+<span class="lineNum">     358 </span>            : const char *ast_named_caller_presentation(int data);
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span>            : /*!
+<span class="lineNum">     361 </span>            :  * \page Def_CallerPres Caller ID Presentation
+<span class="lineNum">     362 </span>            :  *
+<span class="lineNum">     363 </span>            :  * Caller ID presentation values are used to set properties to a
+<span class="lineNum">     364 </span>            :  * caller ID in PSTN networks, and as RPID value in SIP transactions.
+<span class="lineNum">     365 </span>            :  *
+<span class="lineNum">     366 </span>            :  * The following values are available to use:
+<span class="lineNum">     367 </span>            :  * \arg \b Defined value, text string in config file, explanation
+<span class="lineNum">     368 </span>            :  *
+<span class="lineNum">     369 </span>            :  * \arg \b AST_PRES_ALLOWED_USER_NUMBER_NOT_SCREENED, &quot;allowed_not_screened&quot;, Presentation Allowed, Not Screened,
+<span class="lineNum">     370 </span>            :  * \arg \b AST_PRES_ALLOWED_USER_NUMBER_PASSED_SCREEN, &quot;allowed_passed_screen&quot;, Presentation Allowed, Passed Screen,
+<span class="lineNum">     371 </span>            :  * \arg \b AST_PRES_ALLOWED_USER_NUMBER_FAILED_SCREEN, &quot;allowed_failed_screen&quot;, Presentation Allowed, Failed Screen,
+<span class="lineNum">     372 </span>            :  * \arg \b AST_PRES_ALLOWED_NETWORK_NUMBER, &quot;allowed&quot;, Presentation Allowed, Network Number,
+<span class="lineNum">     373 </span>            :  * \arg \b AST_PRES_PROHIB_USER_NUMBER_NOT_SCREENED, &quot;prohib_not_screened&quot;, Presentation Prohibited, Not Screened,
+<span class="lineNum">     374 </span>            :  * \arg \b AST_PRES_PROHIB_USER_NUMBER_PASSED_SCREEN, &quot;prohib_passed_screen&quot;, Presentation Prohibited, Passed Screen,
+<span class="lineNum">     375 </span>            :  * \arg \b AST_PRES_PROHIB_USER_NUMBER_FAILED_SCREEN, &quot;prohib_failed_screen&quot;, Presentation Prohibited, Failed Screen,
+<span class="lineNum">     376 </span>            :  * \arg \b AST_PRES_PROHIB_NETWORK_NUMBER, &quot;prohib&quot;, Presentation Prohibited, Network Number,
+<span class="lineNum">     377 </span>            :  *
+<span class="lineNum">     378 </span>            :  * \par References
+<span class="lineNum">     379 </span>            :  * \arg \ref callerid.h Definitions
+<span class="lineNum">     380 </span>            :  * \arg \ref callerid.c Functions
+<span class="lineNum">     381 </span>            :  * \arg \ref CID Caller ID names and numbers
+<span class="lineNum">     382 </span>            :  */
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span>            : /*!
+<span class="lineNum">     385 </span>            :  * \brief redirecting reason codes.
+<span class="lineNum">     386 </span>            :  *
+<span class="lineNum">     387 </span>            :  * This list attempts to encompass redirecting reasons
+<span class="lineNum">     388 </span>            :  * as defined by several channel technologies.
+<span class="lineNum">     389 </span>            :  */
+<span class="lineNum">     390 </span>            : enum AST_REDIRECTING_REASON {
+<span class="lineNum">     391 </span>            :         AST_REDIRECTING_REASON_UNKNOWN,
+<span class="lineNum">     392 </span>            :         AST_REDIRECTING_REASON_USER_BUSY,
+<span class="lineNum">     393 </span>            :         AST_REDIRECTING_REASON_NO_ANSWER,
+<span class="lineNum">     394 </span>            :         AST_REDIRECTING_REASON_UNAVAILABLE,
+<span class="lineNum">     395 </span>            :         AST_REDIRECTING_REASON_UNCONDITIONAL,
+<span class="lineNum">     396 </span>            :         AST_REDIRECTING_REASON_TIME_OF_DAY,
+<span class="lineNum">     397 </span>            :         AST_REDIRECTING_REASON_DO_NOT_DISTURB,
+<span class="lineNum">     398 </span>            :         AST_REDIRECTING_REASON_DEFLECTION,
+<span class="lineNum">     399 </span>            :         AST_REDIRECTING_REASON_FOLLOW_ME,
+<span class="lineNum">     400 </span>            :         AST_REDIRECTING_REASON_OUT_OF_ORDER,
+<span class="lineNum">     401 </span>            :         AST_REDIRECTING_REASON_AWAY,
+<span class="lineNum">     402 </span>            :         AST_REDIRECTING_REASON_CALL_FWD_DTE,           /* This is something defined in Q.931, and no I don't know what it means */
+<span class="lineNum">     403 </span>            :         AST_REDIRECTING_REASON_SEND_TO_VM,
+<span class="lineNum">     404 </span>            : };
+<span class="lineNum">     405 </span>            : 
+<span class="lineNum">     406 </span>            : /*!
+<span class="lineNum">     407 </span>            :  * \since 1.8
+<span class="lineNum">     408 </span>            :  * \brief Convert redirecting reason text code to value (used in config file parsing)
+<span class="lineNum">     409 </span>            :  *
+<span class="lineNum">     410 </span>            :  * \param data text string from config file
+<span class="lineNum">     411 </span>            :  *
+<span class="lineNum">     412 </span>            :  * \retval Q931_REDIRECTING_REASON from callerid.h
+<span class="lineNum">     413 </span>            :  * \retval -1 if not in table
+<span class="lineNum">     414 </span>            :  */
+<span class="lineNum">     415 </span>            : int ast_redirecting_reason_parse(const char *data);
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span>            : /*!
+<span class="lineNum">     418 </span>            :  * \since 1.8
+<span class="lineNum">     419 </span>            :  * \brief Convert redirecting reason value to explanatory string
+<span class="lineNum">     420 </span>            :  *
+<span class="lineNum">     421 </span>            :  * \param data Q931_REDIRECTING_REASON from callerid.h
+<span class="lineNum">     422 </span>            :  *
+<span class="lineNum">     423 </span>            :  * \return string for human presentation
+<span class="lineNum">     424 </span>            :  */
+<span class="lineNum">     425 </span>            : const char *ast_redirecting_reason_describe(int data);
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span>            : struct ast_party_redirecting_reason;
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span>            : /*!
+<span class="lineNum">     430 </span>            :  * \since 1.8
+<span class="lineNum">     431 </span>            :  * \brief Convert redirecting reason value to text code
+<span class="lineNum">     432 </span>            :  *
+<span class="lineNum">     433 </span>            :  * \param data ast_party_redirecting_reason structure from channel.h
+<span class="lineNum">     434 </span>            :  *
+<span class="lineNum">     435 </span>            :  * \return string for config file
+<span class="lineNum">     436 </span>            :  */
+<span class="lineNum">     437 </span>            : const char *ast_redirecting_reason_name(const struct ast_party_redirecting_reason *data);
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            : /*!
+<span class="lineNum">     440 </span>            :  * \brief Connected line update source code
+<span class="lineNum">     441 </span>            :  */
+<span class="lineNum">     442 </span>            : enum AST_CONNECTED_LINE_UPDATE_SOURCE {
+<span class="lineNum">     443 </span>            :         /*! Update for unknown reason (May be interpreted to mean from answer) */
+<span class="lineNum">     444 </span>            :         AST_CONNECTED_LINE_UPDATE_SOURCE_UNKNOWN,
+<span class="lineNum">     445 </span>            :         /*! Update from normal call answering */
+<span class="lineNum">     446 </span>            :         AST_CONNECTED_LINE_UPDATE_SOURCE_ANSWER,
+<span class="lineNum">     447 </span>            :         /*! Update from call diversion (Deprecated, use REDIRECTING updates instead.) */
+<span class="lineNum">     448 </span>            :         AST_CONNECTED_LINE_UPDATE_SOURCE_DIVERSION,
+<span class="lineNum">     449 </span>            :         /*! Update from call transfer(active) (Party has already answered) */
+<span class="lineNum">     450 </span>            :         AST_CONNECTED_LINE_UPDATE_SOURCE_TRANSFER,
+<span class="lineNum">     451 </span>            :         /*! Update from call transfer(alerting) (Party has not answered yet) */
+<span class="lineNum">     452 </span>            :         AST_CONNECTED_LINE_UPDATE_SOURCE_TRANSFER_ALERTING
+<span class="lineNum">     453 </span>            : };
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span>            : /*!
+<span class="lineNum">     456 </span>            :  * \since 1.8
+<span class="lineNum">     457 </span>            :  * \brief Convert connected line update source text code to value (used in config file parsing)
+<span class="lineNum">     458 </span>            :  *
+<span class="lineNum">     459 </span>            :  * \param data text string from config file
+<span class="lineNum">     460 </span>            :  *
+<span class="lineNum">     461 </span>            :  * \retval AST_CONNECTED_LINE_UPDATE_SOURCE from callerid.h
+<span class="lineNum">     462 </span>            :  * \retval -1 if not in table
+<span class="lineNum">     463 </span>            :  */
+<span class="lineNum">     464 </span>            : int ast_connected_line_source_parse(const char *data);
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span>            : /*!
+<span class="lineNum">     467 </span>            :  * \since 1.8
+<span class="lineNum">     468 </span>            :  * \brief Convert connected line update source value to explanatory string
+<span class="lineNum">     469 </span>            :  *
+<span class="lineNum">     470 </span>            :  * \param data AST_CONNECTED_LINE_UPDATE_SOURCE from callerid.h
+<span class="lineNum">     471 </span>            :  *
+<span class="lineNum">     472 </span>            :  * \return string for human presentation
+<span class="lineNum">     473 </span>            :  */
+<span class="lineNum">     474 </span>            : const char *ast_connected_line_source_describe(int data);
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span>            : /*!
+<span class="lineNum">     477 </span>            :  * \since 1.8
+<span class="lineNum">     478 </span>            :  * \brief Convert connected line update source value to text code
+<span class="lineNum">     479 </span>            :  *
+<span class="lineNum">     480 </span>            :  * \param data AST_CONNECTED_LINE_UPDATE_SOURCE from callerid.h
+<span class="lineNum">     481 </span>            :  *
+<span class="lineNum">     482 </span>            :  * \return string for config file
+<span class="lineNum">     483 </span>            :  */
+<span class="lineNum">     484 </span>            : const char *ast_connected_line_source_name(int data);
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span>            : /*!
+<span class="lineNum">     487 </span>            :  * \since 1.8
+<span class="lineNum">     488 </span>            :  * \brief Convert ast_party_name.char_set text code to value (used in config file parsing)
+<span class="lineNum">     489 </span>            :  *
+<span class="lineNum">     490 </span>            :  * \param data text string from config file
+<span class="lineNum">     491 </span>            :  *
+<span class="lineNum">     492 </span>            :  * \retval AST_PARTY_CHAR_SET from channel.h
+<span class="lineNum">     493 </span>            :  * \retval -1 if not in table
+<span class="lineNum">     494 </span>            :  */
+<span class="lineNum">     495 </span>            : int ast_party_name_charset_parse(const char *data);
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span>            : /*!
+<span class="lineNum">     498 </span>            :  * \since 1.8
+<span class="lineNum">     499 </span>            :  * \brief Convert ast_party_name.char_set value to explanatory string
+<span class="lineNum">     500 </span>            :  *
+<span class="lineNum">     501 </span>            :  * \param data AST_PARTY_CHAR_SET from channel.h
+<span class="lineNum">     502 </span>            :  *
+<span class="lineNum">     503 </span>            :  * \return string for human presentation
+<span class="lineNum">     504 </span>            :  */
+<span class="lineNum">     505 </span>            : const char *ast_party_name_charset_describe(int data);
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span>            : /*!
+<span class="lineNum">     508 </span>            :  * \since 1.8
+<span class="lineNum">     509 </span>            :  * \brief Convert ast_party_name.char_set value to text code
+<span class="lineNum">     510 </span>            :  *
+<span class="lineNum">     511 </span>            :  * \param data AST_PARTY_CHAR_SET from channel.h
+<span class="lineNum">     512 </span>            :  *
+<span class="lineNum">     513 </span>            :  * \return string for config file
+<span class="lineNum">     514 </span>            :  */
+<span class="lineNum">     515 </span>            : const char *ast_party_name_charset_str(int data);
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span>            : #endif /* _ASTERISK_CALLERID_H */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

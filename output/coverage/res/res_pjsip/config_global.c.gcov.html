@@ -1,0 +1,646 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_pjsip/config_global.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/res_pjsip</a> - config_global.c<span style="font-size: 80%;"> (source / <a href="config_global.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">166</td>
+            <td class="headerCovTableEntry">206</td>
+            <td class="headerCovTableEntryMed">80.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntryHi">95.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Michelson &lt;mmichelson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      22 </span>            : #include &lt;pjlib.h&gt;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;include/res_pjsip_private.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;asterisk/sorcery.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/ast_version.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/res_pjsip_cli.h&quot;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #define DEFAULT_MAX_FORWARDS 70
+<span class="lineNum">      32 </span>            : #define DEFAULT_KEEPALIVE_INTERVAL 0
+<span class="lineNum">      33 </span>            : #define DEFAULT_USERAGENT_PREFIX &quot;Asterisk PBX&quot;
+<span class="lineNum">      34 </span>            : #define DEFAULT_OUTBOUND_ENDPOINT &quot;default_outbound_endpoint&quot;
+<span class="lineNum">      35 </span>            : #define DEFAULT_DEBUG &quot;no&quot;
+<span class="lineNum">      36 </span>            : #define DEFAULT_ENDPOINT_IDENTIFIER_ORDER &quot;ip,username,anonymous&quot;
+<span class="lineNum">      37 </span>            : #define DEFAULT_MAX_INITIAL_QUALIFY_TIME 0
+<span class="lineNum">      38 </span>            : #define DEFAULT_FROM_USER &quot;asterisk&quot;
+<span class="lineNum">      39 </span>            : #define DEFAULT_REALM &quot;asterisk&quot;
+<span class="lineNum">      40 </span>            : #define DEFAULT_REGCONTEXT &quot;&quot;
+<span class="lineNum">      41 </span>            : #define DEFAULT_CONTACT_EXPIRATION_CHECK_INTERVAL 30
+<span class="lineNum">      42 </span>            : #define DEFAULT_DISABLE_MULTI_DOMAIN 0
+<span class="lineNum">      43 </span>            : #define DEFAULT_VOICEMAIL_EXTENSION &quot;&quot;
+<span class="lineNum">      44 </span>            : #define DEFAULT_UNIDENTIFIED_REQUEST_COUNT 5
+<span class="lineNum">      45 </span>            : #define DEFAULT_UNIDENTIFIED_REQUEST_PERIOD 5
+<span class="lineNum">      46 </span>            : #define DEFAULT_UNIDENTIFIED_REQUEST_PRUNE_INTERVAL 30
+<span class="lineNum">      47 </span>            : #define DEFAULT_MWI_TPS_QUEUE_HIGH AST_TASKPROCESSOR_HIGH_WATER_LEVEL
+<span class="lineNum">      48 </span>            : #define DEFAULT_MWI_TPS_QUEUE_LOW -1
+<span class="lineNum">      49 </span>            : #define DEFAULT_MWI_DISABLE_INITIAL_UNSOLICITED 0
+<span class="lineNum">      50 </span>            : #define DEFAULT_IGNORE_URI_USER_OPTIONS 0
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /*!
+<span class="lineNum">      53 </span>            :  * \brief Cached global config object
+<span class="lineNum">      54 </span>            :  *
+<span class="lineNum">      55 </span>            :  * \details
+<span class="lineNum">      56 </span>            :  * Cached so we don't have to keep asking sorcery for the config.
+<span class="lineNum">      57 </span>            :  * We could ask for it hundreds of times a second if not more.
+<span class="lineNum">      58 </span>            :  */
+<span class="lineNum">      59 </span>            : static AO2_GLOBAL_OBJ_STATIC(global_cfg);
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span>            : static char default_useragent[256];
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : struct global_config {
+<span class="lineNum">      64 </span>            :         SORCERY_OBJECT(details);
+<span class="lineNum">      65 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">      66 </span>            :                 AST_STRING_FIELD(useragent);
+<span class="lineNum">      67 </span>            :                 AST_STRING_FIELD(regcontext);
+<span class="lineNum">      68 </span>            :                 AST_STRING_FIELD(default_outbound_endpoint);
+<span class="lineNum">      69 </span>            :                 /*! Debug logging yes|no|host */
+<span class="lineNum">      70 </span>            :                 AST_STRING_FIELD(debug);
+<span class="lineNum">      71 </span>            :                 /*! Order by which endpoint identifiers are checked (comma separated list) */
+<span class="lineNum">      72 </span>            :                 AST_STRING_FIELD(endpoint_identifier_order);
+<span class="lineNum">      73 </span>            :                 /*! User name to place in From header if there is no better option */
+<span class="lineNum">      74 </span>            :                 AST_STRING_FIELD(default_from_user);
+<span class="lineNum">      75 </span>            :                 /*! Default voicemail extension */
+<span class="lineNum">      76 </span>            :                 AST_STRING_FIELD(default_voicemail_extension);
+<span class="lineNum">      77 </span>            :                 /*! Realm to use in challenges before an endpoint is identified */
+<span class="lineNum">      78 </span>            :                 AST_STRING_FIELD(default_realm);
+<span class="lineNum">      79 </span>            :         );
+<span class="lineNum">      80 </span>            :         /*! Value to put in Max-Forwards header */
+<span class="lineNum">      81 </span>            :         unsigned int max_forwards;
+<span class="lineNum">      82 </span>            :         /*! The interval at which to send keep alive messages to active connection-oriented transports */
+<span class="lineNum">      83 </span>            :         unsigned int keep_alive_interval;
+<span class="lineNum">      84 </span>            :         /*! The maximum time for all contacts to be qualified at startup */
+<span class="lineNum">      85 </span>            :         unsigned int max_initial_qualify_time;
+<span class="lineNum">      86 </span>            :         /*! The interval at which to check for expired contacts */
+<span class="lineNum">      87 </span>            :         unsigned int contact_expiration_check_interval;
+<span class="lineNum">      88 </span>            :         /*! Nonzero to disable multi domain support */
+<span class="lineNum">      89 </span>            :         unsigned int disable_multi_domain;
+<span class="lineNum">      90 </span>            :         /*! The maximum number of unidentified requests per source IP address before a security event is logged */
+<span class="lineNum">      91 </span>            :         unsigned int unidentified_request_count;
+<span class="lineNum">      92 </span>            :         /*! The period during which unidentified requests are accumulated */
+<span class="lineNum">      93 </span>            :         unsigned int unidentified_request_period;
+<span class="lineNum">      94 </span>            :         /*! Interval at which expired unidentifed requests will be pruned */
+<span class="lineNum">      95 </span>            :         unsigned int unidentified_request_prune_interval;
+<span class="lineNum">      96 </span>            :         struct {
+<span class="lineNum">      97 </span>            :                 /*! Taskprocessor high water alert trigger level */
+<span class="lineNum">      98 </span>            :                 unsigned int tps_queue_high;
+<span class="lineNum">      99 </span>            :                 /*! Taskprocessor low water clear alert level. */
+<span class="lineNum">     100 </span>            :                 int tps_queue_low;
+<span class="lineNum">     101 </span>            :                 /*! Nonzero to disable sending unsolicited mwi to all endpoints on startup */
+<span class="lineNum">     102 </span>            :                 unsigned int disable_initial_unsolicited;
+<span class="lineNum">     103 </span>            :         } mwi;
+<span class="lineNum">     104 </span>            :         /*! Nonzero if URI user field options are ignored. */
+<span class="lineNum">     105 </span>            :         unsigned int ignore_uri_user_options;
+<a name="106"><span class="lineNum">     106 </span>            : };</a>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">       4422 : static void global_destructor(void *obj)</span>
+<span class="lineNum">     109 </span>            : {
+<span class="lineNum">     110 </span><span class="lineCov">       4422 :         struct global_config *cfg = obj;</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">       4422 :         ast_string_field_free_memory(cfg);</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">       4422 : }</span></a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineCov">       4442 : static void *global_alloc(const char *name)</span>
+<span class="lineNum">     116 </span>            : {
+<span class="lineNum">     117 </span>            :         struct global_config *cfg;
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">       4442 :         cfg = ast_sorcery_generic_alloc(sizeof(*cfg), global_destructor);</span>
+<span class="lineNum">     120 </span><span class="lineCov">       4442 :         if (!cfg || ast_string_field_init(cfg, 100)) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :                 ao2_cleanup(cfg);</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     123 </span>            :         }
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">       4442 :         return cfg;</span>
+<a name="126"><span class="lineNum">     126 </span>            : }</a>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">       4442 : static int global_apply(const struct ast_sorcery *sorcery, void *obj)</span>
+<span class="lineNum">     129 </span>            : {
+<span class="lineNum">     130 </span><span class="lineCov">       4442 :         struct global_config *cfg = obj;</span>
+<span class="lineNum">     131 </span>            :         char max_forwards[10];
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineCov">       4442 :         if (ast_strlen_zero(cfg-&gt;debug)) {</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR,</span>
+<span class="lineNum">     135 </span>            :                         &quot;Global option 'debug' can't be empty.  Set it to a valid value or remove the entry to accept 'no' as the default\n&quot;);
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     137 </span>            :         }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">       4442 :         if (ast_strlen_zero(cfg-&gt;default_from_user)) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR,</span>
+<span class="lineNum">     141 </span>            :                         &quot;Global option 'default_from_user' can't be empty.  Set it to a valid value or remove the entry to accept 'asterisk' as the default\n&quot;);
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineCov">       4442 :         snprintf(max_forwards, sizeof(max_forwards), &quot;%u&quot;, cfg-&gt;max_forwards);</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">       4442 :         ast_sip_add_global_request_header(&quot;Max-Forwards&quot;, max_forwards, 1);</span>
+<span class="lineNum">     148 </span><span class="lineCov">       4442 :         ast_sip_add_global_request_header(&quot;User-Agent&quot;, cfg-&gt;useragent, 1);</span>
+<span class="lineNum">     149 </span><span class="lineCov">       4442 :         ast_sip_add_global_response_header(&quot;Server&quot;, cfg-&gt;useragent, 1);</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">       4442 :         ao2_t_global_obj_replace_unref(global_cfg, cfg, &quot;Applying global settings&quot;);</span>
+<span class="lineNum">     152 </span><span class="lineCov">       4442 :         return 0;</span>
+<a name="153"><span class="lineNum">     153 </span>            : }</a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">      31218 : static struct global_config *get_global_cfg(void)</span>
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span><span class="lineCov">      31218 :         return ao2_global_obj_ref(global_cfg);</span>
+<a name="158"><span class="lineNum">     158 </span>            : }</a>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">          7 : char *ast_sip_global_default_outbound_endpoint(void)</span>
+<span class="lineNum">     161 </span>            : {
+<span class="lineNum">     162 </span>            :         char *str;
+<span class="lineNum">     163 </span>            :         struct global_config *cfg;
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineCov">          7 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     166 </span><span class="lineCov">          7 :         if (!cfg) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 return ast_strdup(DEFAULT_OUTBOUND_ENDPOINT);</span>
+<span class="lineNum">     168 </span>            :         }
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">          7 :         str = ast_strdup(cfg-&gt;default_outbound_endpoint);</span>
+<span class="lineNum">     171 </span><span class="lineCov">          7 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     172 </span><span class="lineCov">          7 :         return str;</span>
+<a name="173"><span class="lineNum">     173 </span>            : }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">        852 : char *ast_sip_get_debug(void)</span>
+<span class="lineNum">     176 </span>            : {
+<span class="lineNum">     177 </span>            :         char *res;
+<span class="lineNum">     178 </span>            :         struct global_config *cfg;
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineCov">        852 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     181 </span><span class="lineCov">        852 :         if (!cfg) {</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                 return ast_strdup(DEFAULT_DEBUG);</span>
+<span class="lineNum">     183 </span>            :         }
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineCov">        852 :         res = ast_strdup(cfg-&gt;debug);</span>
+<span class="lineNum">     186 </span><span class="lineCov">        852 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     187 </span><span class="lineCov">        852 :         return res;</span>
+<a name="188"><span class="lineNum">     188 </span>            : }</a>
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">        633 : char *ast_sip_get_regcontext(void)</span>
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span>            :         char *res;
+<span class="lineNum">     193 </span>            :         struct global_config *cfg;
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">        633 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     196 </span><span class="lineCov">        633 :         if (!cfg) {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 return ast_strdup(DEFAULT_REGCONTEXT);</span>
+<span class="lineNum">     198 </span>            :         }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineCov">        633 :         res = ast_strdup(cfg-&gt;regcontext);</span>
+<span class="lineNum">     201 </span><span class="lineCov">        633 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">        633 :         return res;</span>
+<a name="204"><span class="lineNum">     204 </span>            : }</a>
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">        852 : char *ast_sip_get_default_voicemail_extension(void)</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span>            :         char *res;
+<span class="lineNum">     209 </span>            :         struct global_config *cfg;
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">        852 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     212 </span><span class="lineCov">        852 :         if (!cfg) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 return ast_strdup(DEFAULT_VOICEMAIL_EXTENSION);</span>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">        852 :         res = ast_strdup(cfg-&gt;default_voicemail_extension);</span>
+<span class="lineNum">     217 </span><span class="lineCov">        852 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">        852 :         return res;</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span><span class="lineCov">       7714 : char *ast_sip_get_endpoint_identifier_order(void)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span>            :         char *res;
+<span class="lineNum">     225 </span>            :         struct global_config *cfg;
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">       7714 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     228 </span><span class="lineCov">       7714 :         if (!cfg) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 return ast_strdup(DEFAULT_ENDPOINT_IDENTIFIER_ORDER);</span>
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineCov">       7714 :         res = ast_strdup(cfg-&gt;endpoint_identifier_order);</span>
+<span class="lineNum">     233 </span><span class="lineCov">       7714 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     234 </span><span class="lineCov">       7714 :         return res;</span>
+<a name="235"><span class="lineNum">     235 </span>            : }</a>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineCov">       4260 : unsigned int ast_sip_get_keep_alive_interval(void)</span>
+<span class="lineNum">     238 </span>            : {
+<span class="lineNum">     239 </span>            :         unsigned int interval;
+<span class="lineNum">     240 </span>            :         struct global_config *cfg;
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineCov">       4260 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     243 </span><span class="lineCov">       4260 :         if (!cfg) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 return DEFAULT_KEEPALIVE_INTERVAL;</span>
+<span class="lineNum">     245 </span>            :         }
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">       4260 :         interval = cfg-&gt;keep_alive_interval;</span>
+<span class="lineNum">     248 </span><span class="lineCov">       4260 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     249 </span><span class="lineCov">       4260 :         return interval;</span>
+<a name="250"><span class="lineNum">     250 </span>            : }</a>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">       1704 : unsigned int ast_sip_get_contact_expiration_check_interval(void)</span>
+<span class="lineNum">     253 </span>            : {
+<span class="lineNum">     254 </span>            :         unsigned int interval;
+<span class="lineNum">     255 </span>            :         struct global_config *cfg;
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">       1704 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     258 </span><span class="lineCov">       1704 :         if (!cfg) {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 return DEFAULT_CONTACT_EXPIRATION_CHECK_INTERVAL;</span>
+<span class="lineNum">     260 </span>            :         }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">       1704 :         interval = cfg-&gt;contact_expiration_check_interval;</span>
+<span class="lineNum">     263 </span><span class="lineCov">       1704 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     264 </span><span class="lineCov">       1704 :         return interval;</span>
+<a name="265"><span class="lineNum">     265 </span>            : }</a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">       1733 : unsigned int ast_sip_get_disable_multi_domain(void)</span>
+<span class="lineNum">     268 </span>            : {
+<span class="lineNum">     269 </span>            :         unsigned int disable_multi_domain;
+<span class="lineNum">     270 </span>            :         struct global_config *cfg;
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">       1733 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     273 </span><span class="lineCov">       1733 :         if (!cfg) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 return DEFAULT_DISABLE_MULTI_DOMAIN;</span>
+<span class="lineNum">     275 </span>            :         }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">       1733 :         disable_multi_domain = cfg-&gt;disable_multi_domain;</span>
+<span class="lineNum">     278 </span><span class="lineCov">       1733 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     279 </span><span class="lineCov">       1733 :         return disable_multi_domain;</span>
+<a name="280"><span class="lineNum">     280 </span>            : }</a>
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">         10 : unsigned int ast_sip_get_max_initial_qualify_time(void)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span>            :         unsigned int time;
+<span class="lineNum">     285 </span>            :         struct global_config *cfg;
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineCov">         10 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     288 </span><span class="lineCov">         10 :         if (!cfg) {</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 return DEFAULT_MAX_INITIAL_QUALIFY_TIME;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">         10 :         time = cfg-&gt;max_initial_qualify_time;</span>
+<span class="lineNum">     293 </span><span class="lineCov">         10 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     294 </span><span class="lineCov">         10 :         return time;</span>
+<a name="295"><span class="lineNum">     295 </span>            : }</a>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">       3599 : void ast_sip_get_unidentified_request_thresholds(unsigned int *count, unsigned int *period,</span>
+<span class="lineNum">     298 </span>            :         unsigned int *prune_interval)
+<span class="lineNum">     299 </span>            : {
+<span class="lineNum">     300 </span>            :         struct global_config *cfg;
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">       3599 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     303 </span><span class="lineCov">       3599 :         if (!cfg) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 *count = DEFAULT_UNIDENTIFIED_REQUEST_COUNT;</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 *period = DEFAULT_UNIDENTIFIED_REQUEST_PERIOD;</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 *prune_interval = DEFAULT_UNIDENTIFIED_REQUEST_PRUNE_INTERVAL;</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineCov">       3599 :         *count = cfg-&gt;unidentified_request_count;</span>
+<span class="lineNum">     311 </span><span class="lineCov">       3599 :         *period = cfg-&gt;unidentified_request_period;</span>
+<span class="lineNum">     312 </span><span class="lineCov">       3599 :         *prune_interval = cfg-&gt;unidentified_request_prune_interval;</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineCov">       3599 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     315 </span><span class="lineCov">       3599 :         return;</span>
+<a name="316"><span class="lineNum">     316 </span>            : }</a>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">       6862 : void ast_sip_get_default_realm(char *realm, size_t size)</span>
+<span class="lineNum">     319 </span>            : {
+<span class="lineNum">     320 </span>            :         struct global_config *cfg;
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">       6862 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     323 </span><span class="lineCov">       6862 :         if (!cfg) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 ast_copy_string(realm, DEFAULT_REALM, size);</span>
+<span class="lineNum">     325 </span>            :         } else {
+<span class="lineNum">     326 </span><span class="lineCov">       6862 :                 ast_copy_string(realm, cfg-&gt;default_realm, size);</span>
+<span class="lineNum">     327 </span><span class="lineCov">       6862 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">     328 </span>            :         }
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">       6862 : }</span></a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">        212 : void ast_sip_get_default_from_user(char *from_user, size_t size)</span>
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span>            :         struct global_config *cfg;
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineCov">        212 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     336 </span><span class="lineCov">        212 :         if (!cfg) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 ast_copy_string(from_user, DEFAULT_FROM_USER, size);</span>
+<span class="lineNum">     338 </span>            :         } else {
+<span class="lineNum">     339 </span><span class="lineCov">        212 :                 ast_copy_string(from_user, cfg-&gt;default_from_user, size);</span>
+<span class="lineNum">     340 </span><span class="lineCov">        212 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">     341 </span>            :         }
+<span class="lineNum">     342 </span><span class="lineCov">        212 : }</span>
+<a name="343"><span class="lineNum">     343 </span>            : </a>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">        852 : unsigned int ast_sip_get_mwi_tps_queue_high(void)</span>
+<span class="lineNum">     346 </span>            : {
+<span class="lineNum">     347 </span>            :         unsigned int tps_queue_high;
+<span class="lineNum">     348 </span>            :         struct global_config *cfg;
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineCov">        852 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     351 </span><span class="lineCov">        852 :         if (!cfg) {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 return DEFAULT_MWI_TPS_QUEUE_HIGH;</span>
+<span class="lineNum">     353 </span>            :         }
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">        852 :         tps_queue_high = cfg-&gt;mwi.tps_queue_high;</span>
+<span class="lineNum">     356 </span><span class="lineCov">        852 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     357 </span><span class="lineCov">        852 :         return tps_queue_high;</span>
+<a name="358"><span class="lineNum">     358 </span>            : }</a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">        852 : int ast_sip_get_mwi_tps_queue_low(void)</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span>            :         int tps_queue_low;
+<span class="lineNum">     363 </span>            :         struct global_config *cfg;
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">        852 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     366 </span><span class="lineCov">        852 :         if (!cfg) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 return DEFAULT_MWI_TPS_QUEUE_LOW;</span>
+<span class="lineNum">     368 </span>            :         }
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span><span class="lineCov">        852 :         tps_queue_low = cfg-&gt;mwi.tps_queue_low;</span>
+<span class="lineNum">     371 </span><span class="lineCov">        852 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     372 </span><span class="lineCov">        852 :         return tps_queue_low;</span>
+<a name="373"><span class="lineNum">     373 </span>            : }</a>
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineCov">        852 : unsigned int ast_sip_get_mwi_disable_initial_unsolicited(void)</span>
+<span class="lineNum">     376 </span>            : {
+<span class="lineNum">     377 </span>            :         unsigned int disable_initial_unsolicited;
+<span class="lineNum">     378 </span>            :         struct global_config *cfg;
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">        852 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     381 </span><span class="lineCov">        852 :         if (!cfg) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 return DEFAULT_MWI_DISABLE_INITIAL_UNSOLICITED;</span>
+<span class="lineNum">     383 </span>            :         }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">        852 :         disable_initial_unsolicited = cfg-&gt;mwi.disable_initial_unsolicited;</span>
+<span class="lineNum">     386 </span><span class="lineCov">        852 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     387 </span><span class="lineCov">        852 :         return disable_initial_unsolicited;</span>
+<a name="388"><span class="lineNum">     388 </span>            : }</a>
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineCov">        224 : unsigned int ast_sip_get_ignore_uri_user_options(void)</span>
+<span class="lineNum">     391 </span>            : {
+<span class="lineNum">     392 </span>            :         unsigned int ignore_uri_user_options;
+<span class="lineNum">     393 </span>            :         struct global_config *cfg;
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineCov">        224 :         cfg = get_global_cfg();</span>
+<span class="lineNum">     396 </span><span class="lineCov">        224 :         if (!cfg) {</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 return DEFAULT_IGNORE_URI_USER_OPTIONS;</span>
+<span class="lineNum">     398 </span>            :         }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">        224 :         ignore_uri_user_options = cfg-&gt;ignore_uri_user_options;</span>
+<span class="lineNum">     401 </span><span class="lineCov">        224 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     402 </span><span class="lineCov">        224 :         return ignore_uri_user_options;</span>
+<span class="lineNum">     403 </span>            : }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span>            : /*!
+<span class="lineNum">     406 </span>            :  * \internal
+<span class="lineNum">     407 </span>            :  * \brief Observer to set default global object if none exist.
+<span class="lineNum">     408 </span>            :  *
+<span class="lineNum">     409 </span>            :  * \param name Module name owning the sorcery instance.
+<span class="lineNum">     410 </span>            :  * \param sorcery Instance being observed.
+<span class="lineNum">     411 </span>            :  * \param object_type Name of object being observed.
+<span class="lineNum">     412 </span>            :  * \param reloaded Non-zero if the object is being reloaded.
+<span class="lineNum">     413 </span>            :  *
+<a name="414"><span class="lineNum">     414 </span>            :  * \return Nothing</a>
+<span class="lineNum">     415 </span>            :  */
+<span class="lineNum">     416 </span><span class="lineCov">      19596 : static void global_loaded_observer(const char *name, const struct ast_sorcery *sorcery, const char *object_type, int reloaded)</span>
+<span class="lineNum">     417 </span>            : {
+<span class="lineNum">     418 </span>            :         struct ao2_container *globals;
+<span class="lineNum">     419 </span>            :         struct global_config *cfg;
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">      19596 :         if (strcmp(object_type, &quot;global&quot;)) {</span>
+<span class="lineNum">     422 </span>            :                 /* Not interested */
+<span class="lineNum">     423 </span><span class="lineCov">      14484 :                 return;</span>
+<span class="lineNum">     424 </span>            :         }
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">       5112 :         globals = ast_sorcery_retrieve_by_fields(sorcery, &quot;global&quot;,</span>
+<span class="lineNum">     427 </span>            :                 AST_RETRIEVE_FLAG_MULTIPLE | AST_RETRIEVE_FLAG_ALL, NULL);
+<span class="lineNum">     428 </span><span class="lineCov">       5112 :         if (globals) {</span>
+<span class="lineNum">     429 </span>            :                 int count;
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">       5112 :                 count = ao2_container_count(globals);</span>
+<span class="lineNum">     432 </span><span class="lineCov">       5112 :                 ao2_ref(globals, -1);</span>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">       5112 :                 if (1 &lt; count) {</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR,</span>
+<span class="lineNum">     436 </span>            :                                 &quot;At most one pjsip.conf type=global object can be defined.  You have %d defined.\n&quot;,
+<span class="lineNum">     437 </span>            :                                 count);
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     439 </span>            :                 }
+<span class="lineNum">     440 </span><span class="lineCov">       5112 :                 if (count) {</span>
+<span class="lineNum">     441 </span><span class="lineCov">        804 :                         return;</span>
+<span class="lineNum">     442 </span>            :                 }
+<span class="lineNum">     443 </span>            :         }
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineCov">       4308 :         ast_debug(1, &quot;No pjsip.conf type=global object exists so applying defaults.\n&quot;);</span>
+<span class="lineNum">     446 </span><span class="lineCov">       4308 :         cfg = ast_sorcery_alloc(sorcery, &quot;global&quot;, NULL);</span>
+<span class="lineNum">     447 </span><span class="lineCov">       4308 :         if (!cfg) {</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     449 </span>            :         }
+<span class="lineNum">     450 </span><span class="lineCov">       4308 :         global_apply(sorcery, cfg);</span>
+<span class="lineNum">     451 </span><span class="lineCov">       4308 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     452 </span>            : }
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span>            : static const struct ast_sorcery_instance_observer observer_callbacks_global = {
+<span class="lineNum">     455 </span>            :         .object_type_loaded = global_loaded_observer,
+<a name="456"><span class="lineNum">     456 </span>            : };</a>
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 : int sip_cli_print_global(struct ast_sip_cli_context *context)</span>
+<span class="lineNum">     459 </span>            : {
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :         struct global_config *cfg = get_global_cfg();</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :         if (!cfg) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 cfg = ast_sorcery_alloc(ast_sip_get_sorcery(), &quot;global&quot;, NULL);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 if (!cfg) {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     466 </span>            :                 }
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :         ast_str_append(&amp;context-&gt;output_buffer, 0, &quot;\nGlobal Settings:\n\n&quot;);</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :         ast_sip_cli_print_sorcery_objectset(cfg, context, 0);</span>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="474"><span class="lineNum">     474 </span>            : }</a>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">        832 : int ast_sip_destroy_sorcery_global(void)</span>
+<span class="lineNum">     477 </span>            : {
+<span class="lineNum">     478 </span><span class="lineCov">        832 :         struct ast_sorcery *sorcery = ast_sip_get_sorcery();</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineCov">        832 :         ast_sorcery_instance_observer_remove(sorcery, &amp;observer_callbacks_global);</span>
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span><span class="lineCov">        832 :         ao2_t_global_obj_release(global_cfg, &quot;Module is unloading&quot;);</span>
+<span class="lineNum">     483 </span>            : 
+<span class="lineNum">     484 </span><span class="lineCov">        832 :         return 0;</span>
+<a name="485"><span class="lineNum">     485 </span>            : }</a>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">        852 : int ast_sip_initialize_sorcery_global(void)</span>
+<span class="lineNum">     488 </span>            : {
+<span class="lineNum">     489 </span><span class="lineCov">        852 :         struct ast_sorcery *sorcery = ast_sip_get_sorcery();</span>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">        852 :         snprintf(default_useragent, sizeof(default_useragent), &quot;%s %s&quot;,</span>
+<span class="lineNum">     492 </span>            :                 DEFAULT_USERAGENT_PREFIX, ast_get_version());
+<span class="lineNum">     493 </span>            : 
+<span class="lineNum">     494 </span><span class="lineCov">        852 :         ast_sorcery_apply_default(sorcery, &quot;global&quot;, &quot;config&quot;, &quot;pjsip.conf,criteria=type=global,single_object=yes,explicit_name=global&quot;);</span>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">        852 :         if (ast_sorcery_object_register(sorcery, &quot;global&quot;, global_alloc, NULL, global_apply)) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     498 </span>            :         }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;type&quot;, &quot;&quot;, OPT_NOOP_T, 0, 0);</span>
+<span class="lineNum">     501 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;max_forwards&quot;,</span>
+<span class="lineNum">     502 </span>            :                 __stringify(DEFAULT_MAX_FORWARDS),
+<span class="lineNum">     503 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, max_forwards));
+<span class="lineNum">     504 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;user_agent&quot;, default_useragent,</span>
+<span class="lineNum">     505 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, useragent));
+<span class="lineNum">     506 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;default_outbound_endpoint&quot;,</span>
+<span class="lineNum">     507 </span>            :                 DEFAULT_OUTBOUND_ENDPOINT,
+<span class="lineNum">     508 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, default_outbound_endpoint));
+<span class="lineNum">     509 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;debug&quot;, DEFAULT_DEBUG,</span>
+<span class="lineNum">     510 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, debug));
+<span class="lineNum">     511 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;endpoint_identifier_order&quot;,</span>
+<span class="lineNum">     512 </span>            :                 DEFAULT_ENDPOINT_IDENTIFIER_ORDER,
+<span class="lineNum">     513 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, endpoint_identifier_order));
+<span class="lineNum">     514 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;keep_alive_interval&quot;,</span>
+<span class="lineNum">     515 </span>            :                 __stringify(DEFAULT_KEEPALIVE_INTERVAL),
+<span class="lineNum">     516 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, keep_alive_interval));
+<span class="lineNum">     517 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;max_initial_qualify_time&quot;,</span>
+<span class="lineNum">     518 </span>            :                 __stringify(DEFAULT_MAX_INITIAL_QUALIFY_TIME),
+<span class="lineNum">     519 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, max_initial_qualify_time));
+<span class="lineNum">     520 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;default_from_user&quot;, DEFAULT_FROM_USER,</span>
+<span class="lineNum">     521 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, default_from_user));
+<span class="lineNum">     522 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;default_voicemail_extension&quot;,</span>
+<span class="lineNum">     523 </span>            :                 DEFAULT_VOICEMAIL_EXTENSION, OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config,
+<span class="lineNum">     524 </span>            :                 default_voicemail_extension));
+<span class="lineNum">     525 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;regcontext&quot;, DEFAULT_REGCONTEXT,</span>
+<span class="lineNum">     526 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, regcontext));
+<span class="lineNum">     527 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;contact_expiration_check_interval&quot;,</span>
+<span class="lineNum">     528 </span>            :                 __stringify(DEFAULT_CONTACT_EXPIRATION_CHECK_INTERVAL),
+<span class="lineNum">     529 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, contact_expiration_check_interval));
+<span class="lineNum">     530 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;disable_multi_domain&quot;,</span>
+<span class="lineNum">     531 </span>            :                 DEFAULT_DISABLE_MULTI_DOMAIN ? &quot;yes&quot; : &quot;no&quot;,
+<span class="lineNum">     532 </span>            :                 OPT_BOOL_T, 1, FLDSET(struct global_config, disable_multi_domain));
+<span class="lineNum">     533 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;unidentified_request_count&quot;,</span>
+<span class="lineNum">     534 </span>            :                 __stringify(DEFAULT_UNIDENTIFIED_REQUEST_COUNT),
+<span class="lineNum">     535 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, unidentified_request_count));
+<span class="lineNum">     536 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;unidentified_request_period&quot;,</span>
+<span class="lineNum">     537 </span>            :                 __stringify(DEFAULT_UNIDENTIFIED_REQUEST_PERIOD),
+<span class="lineNum">     538 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, unidentified_request_period));
+<span class="lineNum">     539 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;unidentified_request_prune_interval&quot;,</span>
+<span class="lineNum">     540 </span>            :                 __stringify(DEFAULT_UNIDENTIFIED_REQUEST_PRUNE_INTERVAL),
+<span class="lineNum">     541 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, unidentified_request_prune_interval));
+<span class="lineNum">     542 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;default_realm&quot;, DEFAULT_REALM,</span>
+<span class="lineNum">     543 </span>            :                 OPT_STRINGFIELD_T, 0, STRFLDSET(struct global_config, default_realm));
+<span class="lineNum">     544 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;mwi_tps_queue_high&quot;,</span>
+<span class="lineNum">     545 </span>            :                 __stringify(DEFAULT_MWI_TPS_QUEUE_HIGH),
+<span class="lineNum">     546 </span>            :                 OPT_UINT_T, 0, FLDSET(struct global_config, mwi.tps_queue_high));
+<span class="lineNum">     547 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;mwi_tps_queue_low&quot;,</span>
+<span class="lineNum">     548 </span>            :                 __stringify(DEFAULT_MWI_TPS_QUEUE_LOW),
+<span class="lineNum">     549 </span>            :                 OPT_INT_T, 0, FLDSET(struct global_config, mwi.tps_queue_low));
+<span class="lineNum">     550 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;mwi_disable_initial_unsolicited&quot;,</span>
+<span class="lineNum">     551 </span>            :                 DEFAULT_MWI_DISABLE_INITIAL_UNSOLICITED ? &quot;yes&quot; : &quot;no&quot;,
+<span class="lineNum">     552 </span>            :                 OPT_BOOL_T, 1, FLDSET(struct global_config, mwi.disable_initial_unsolicited));
+<span class="lineNum">     553 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(sorcery, &quot;global&quot;, &quot;ignore_uri_user_options&quot;,</span>
+<span class="lineNum">     554 </span>            :                 DEFAULT_IGNORE_URI_USER_OPTIONS ? &quot;yes&quot; : &quot;no&quot;,
+<span class="lineNum">     555 </span>            :                 OPT_BOOL_T, 1, FLDSET(struct global_config, ignore_uri_user_options));
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span><span class="lineCov">        852 :         if (ast_sorcery_instance_observer_add(sorcery, &amp;observer_callbacks_global)) {</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     559 </span>            :         }
+<span class="lineNum">     560 </span>            : 
+<span class="lineNum">     561 </span><span class="lineCov">        852 :         return 0;</span>
+<span class="lineNum">     562 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

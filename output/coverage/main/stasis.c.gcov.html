@@ -1,0 +1,1771 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/stasis.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - stasis.c<span style="font-size: 80%;"> (source / <a href="stasis.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">494</td>
+            <td class="headerCovTableEntry">603</td>
+            <td class="headerCovTableEntryMed">81.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">60</td>
+            <td class="headerCovTableEntry">62</td>
+            <td class="headerCovTableEntryHi">96.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stasis Message Bus API.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/stasis_internal.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/stasis.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/threadpool.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/uuid.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/stasis_bridges.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/stasis_endpoints.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/config_options.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      46 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;UserEvent&quot;&gt;
+<span class="lineNum">      47 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_USER&quot;&gt;
+<span class="lineNum">      48 </span>            :                         &lt;synopsis&gt;A user defined event raised from the dialplan.&lt;/synopsis&gt;
+<span class="lineNum">      49 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      50 </span>            :                                 &lt;channel_snapshot/&gt;
+<span class="lineNum">      51 </span>            :                                 &lt;parameter name=&quot;UserEvent&quot;&gt;
+<span class="lineNum">      52 </span>            :                                         &lt;para&gt;The event name, as specified in the dialplan.&lt;/para&gt;
+<span class="lineNum">      53 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      54 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      55 </span>            :                         &lt;description&gt;
+<span class="lineNum">      56 </span>            :                                 &lt;para&gt;Event may contain additional arbitrary parameters in addition to optional bridge and endpoint snapshots.  Multiple snapshots of the same type are prefixed with a numeric value.&lt;/para&gt;
+<span class="lineNum">      57 </span>            :                         &lt;/description&gt;
+<span class="lineNum">      58 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;ref type=&quot;application&quot;&gt;UserEvent&lt;/ref&gt;
+<span class="lineNum">      60 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;UserEvent&lt;/ref&gt;
+<span class="lineNum">      61 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">      62 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      63 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">      64 </span>            :         &lt;configInfo name=&quot;stasis&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      65 </span>            :                 &lt;configFile name=&quot;stasis.conf&quot;&gt;
+<span class="lineNum">      66 </span>            :                         &lt;configObject name=&quot;threadpool&quot;&gt;
+<span class="lineNum">      67 </span>            :                                 &lt;synopsis&gt;Settings that configure the threadpool Stasis uses to deliver some messages.&lt;/synopsis&gt;
+<span class="lineNum">      68 </span>            :                                 &lt;configOption name=&quot;initial_size&quot; default=&quot;5&quot;&gt;
+<span class="lineNum">      69 </span>            :                                         &lt;synopsis&gt;Initial number of threads in the message bus threadpool.&lt;/synopsis&gt;
+<span class="lineNum">      70 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      71 </span>            :                                 &lt;configOption name=&quot;idle_timeout_sec&quot; default=&quot;20&quot;&gt;
+<span class="lineNum">      72 </span>            :                                         &lt;synopsis&gt;Number of seconds before an idle thread is disposed of.&lt;/synopsis&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      74 </span>            :                                 &lt;configOption name=&quot;max_size&quot; default=&quot;50&quot;&gt;
+<span class="lineNum">      75 </span>            :                                         &lt;synopsis&gt;Maximum number of threads in the threadpool.&lt;/synopsis&gt;
+<span class="lineNum">      76 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      77 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">      78 </span>            :                         &lt;configObject name=&quot;declined_message_types&quot;&gt;
+<span class="lineNum">      79 </span>            :                                 &lt;synopsis&gt;Stasis message types for which to decline creation.&lt;/synopsis&gt;
+<span class="lineNum">      80 </span>            :                                 &lt;configOption name=&quot;decline&quot;&gt;
+<span class="lineNum">      81 </span>            :                                         &lt;synopsis&gt;The message type to decline.&lt;/synopsis&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;description&gt;
+<span class="lineNum">      83 </span>            :                                                 &lt;para&gt;This configuration option defines the name of the Stasis
+<span class="lineNum">      84 </span>            :                                                 message type that Asterisk is forbidden from creating and can be
+<span class="lineNum">      85 </span>            :                                                 specified as many times as necessary to achieve the desired result.&lt;/para&gt;
+<span class="lineNum">      86 </span>            :                                                 &lt;enumlist&gt;
+<span class="lineNum">      87 </span>            :                                                         &lt;enum name=&quot;stasis_app_recording_snapshot_type&quot; /&gt;
+<span class="lineNum">      88 </span>            :                                                         &lt;enum name=&quot;stasis_app_playback_snapshot_type&quot; /&gt;
+<span class="lineNum">      89 </span>            :                                                         &lt;enum name=&quot;stasis_test_message_type&quot; /&gt;
+<span class="lineNum">      90 </span>            :                                                         &lt;enum name=&quot;confbridge_start_type&quot; /&gt;
+<span class="lineNum">      91 </span>            :                                                         &lt;enum name=&quot;confbridge_end_type&quot; /&gt;
+<span class="lineNum">      92 </span>            :                                                         &lt;enum name=&quot;confbridge_join_type&quot; /&gt;
+<span class="lineNum">      93 </span>            :                                                         &lt;enum name=&quot;confbridge_leave_type&quot; /&gt;
+<span class="lineNum">      94 </span>            :                                                         &lt;enum name=&quot;confbridge_start_record_type&quot; /&gt;
+<span class="lineNum">      95 </span>            :                                                         &lt;enum name=&quot;confbridge_stop_record_type&quot; /&gt;
+<span class="lineNum">      96 </span>            :                                                         &lt;enum name=&quot;confbridge_mute_type&quot; /&gt;
+<span class="lineNum">      97 </span>            :                                                         &lt;enum name=&quot;confbridge_unmute_type&quot; /&gt;
+<span class="lineNum">      98 </span>            :                                                         &lt;enum name=&quot;confbridge_talking_type&quot; /&gt;
+<span class="lineNum">      99 </span>            :                                                         &lt;enum name=&quot;cel_generic_type&quot; /&gt;
+<span class="lineNum">     100 </span>            :                                                         &lt;enum name=&quot;ast_bridge_snapshot_type&quot; /&gt;
+<span class="lineNum">     101 </span>            :                                                         &lt;enum name=&quot;ast_bridge_merge_message_type&quot; /&gt;
+<span class="lineNum">     102 </span>            :                                                         &lt;enum name=&quot;ast_channel_entered_bridge_type&quot; /&gt;
+<span class="lineNum">     103 </span>            :                                                         &lt;enum name=&quot;ast_channel_left_bridge_type&quot; /&gt;
+<span class="lineNum">     104 </span>            :                                                         &lt;enum name=&quot;ast_blind_transfer_type&quot; /&gt;
+<span class="lineNum">     105 </span>            :                                                         &lt;enum name=&quot;ast_attended_transfer_type&quot; /&gt;
+<span class="lineNum">     106 </span>            :                                                         &lt;enum name=&quot;ast_endpoint_snapshot_type&quot; /&gt;
+<span class="lineNum">     107 </span>            :                                                         &lt;enum name=&quot;ast_endpoint_state_type&quot; /&gt;
+<span class="lineNum">     108 </span>            :                                                         &lt;enum name=&quot;ast_device_state_message_type&quot; /&gt;
+<span class="lineNum">     109 </span>            :                                                         &lt;enum name=&quot;ast_test_suite_message_type&quot; /&gt;
+<span class="lineNum">     110 </span>            :                                                         &lt;enum name=&quot;ast_mwi_state_type&quot; /&gt;
+<span class="lineNum">     111 </span>            :                                                         &lt;enum name=&quot;ast_mwi_vm_app_type&quot; /&gt;
+<span class="lineNum">     112 </span>            :                                                         &lt;enum name=&quot;ast_format_register_type&quot; /&gt;
+<span class="lineNum">     113 </span>            :                                                         &lt;enum name=&quot;ast_format_unregister_type&quot; /&gt;
+<span class="lineNum">     114 </span>            :                                                         &lt;enum name=&quot;ast_manager_get_generic_type&quot; /&gt;
+<span class="lineNum">     115 </span>            :                                                         &lt;enum name=&quot;ast_parked_call_type&quot; /&gt;
+<span class="lineNum">     116 </span>            :                                                         &lt;enum name=&quot;ast_channel_snapshot_type&quot; /&gt;
+<span class="lineNum">     117 </span>            :                                                         &lt;enum name=&quot;ast_channel_dial_type&quot; /&gt;
+<span class="lineNum">     118 </span>            :                                                         &lt;enum name=&quot;ast_channel_varset_type&quot; /&gt;
+<span class="lineNum">     119 </span>            :                                                         &lt;enum name=&quot;ast_channel_hangup_request_type&quot; /&gt;
+<span class="lineNum">     120 </span>            :                                                         &lt;enum name=&quot;ast_channel_dtmf_begin_type&quot; /&gt;
+<span class="lineNum">     121 </span>            :                                                         &lt;enum name=&quot;ast_channel_dtmf_end_type&quot; /&gt;
+<span class="lineNum">     122 </span>            :                                                         &lt;enum name=&quot;ast_channel_hold_type&quot; /&gt;
+<span class="lineNum">     123 </span>            :                                                         &lt;enum name=&quot;ast_channel_unhold_type&quot; /&gt;
+<span class="lineNum">     124 </span>            :                                                         &lt;enum name=&quot;ast_channel_chanspy_start_type&quot; /&gt;
+<span class="lineNum">     125 </span>            :                                                         &lt;enum name=&quot;ast_channel_chanspy_stop_type&quot; /&gt;
+<span class="lineNum">     126 </span>            :                                                         &lt;enum name=&quot;ast_channel_fax_type&quot; /&gt;
+<span class="lineNum">     127 </span>            :                                                         &lt;enum name=&quot;ast_channel_hangup_handler_type&quot; /&gt;
+<span class="lineNum">     128 </span>            :                                                         &lt;enum name=&quot;ast_channel_moh_start_type&quot; /&gt;
+<span class="lineNum">     129 </span>            :                                                         &lt;enum name=&quot;ast_channel_moh_stop_type&quot; /&gt;
+<span class="lineNum">     130 </span>            :                                                         &lt;enum name=&quot;ast_channel_monitor_start_type&quot; /&gt;
+<span class="lineNum">     131 </span>            :                                                         &lt;enum name=&quot;ast_channel_monitor_stop_type&quot; /&gt;
+<span class="lineNum">     132 </span>            :                                                         &lt;enum name=&quot;ast_channel_agent_login_type&quot; /&gt;
+<span class="lineNum">     133 </span>            :                                                         &lt;enum name=&quot;ast_channel_agent_logoff_type&quot; /&gt;
+<span class="lineNum">     134 </span>            :                                                         &lt;enum name=&quot;ast_channel_talking_start&quot; /&gt;
+<span class="lineNum">     135 </span>            :                                                         &lt;enum name=&quot;ast_channel_talking_stop&quot; /&gt;
+<span class="lineNum">     136 </span>            :                                                         &lt;enum name=&quot;ast_security_event_type&quot; /&gt;
+<span class="lineNum">     137 </span>            :                                                         &lt;enum name=&quot;ast_named_acl_change_type&quot; /&gt;
+<span class="lineNum">     138 </span>            :                                                         &lt;enum name=&quot;ast_local_bridge_type&quot; /&gt;
+<span class="lineNum">     139 </span>            :                                                         &lt;enum name=&quot;ast_local_optimization_begin_type&quot; /&gt;
+<span class="lineNum">     140 </span>            :                                                         &lt;enum name=&quot;ast_local_optimization_end_type&quot; /&gt;
+<span class="lineNum">     141 </span>            :                                                         &lt;enum name=&quot;stasis_subscription_change_type&quot; /&gt;
+<span class="lineNum">     142 </span>            :                                                         &lt;enum name=&quot;ast_multi_user_event_type&quot; /&gt;
+<span class="lineNum">     143 </span>            :                                                         &lt;enum name=&quot;stasis_cache_clear_type&quot; /&gt;
+<span class="lineNum">     144 </span>            :                                                         &lt;enum name=&quot;stasis_cache_update_type&quot; /&gt;
+<span class="lineNum">     145 </span>            :                                                         &lt;enum name=&quot;ast_network_change_type&quot; /&gt;
+<span class="lineNum">     146 </span>            :                                                         &lt;enum name=&quot;ast_system_registry_type&quot; /&gt;
+<span class="lineNum">     147 </span>            :                                                         &lt;enum name=&quot;ast_cc_available_type&quot; /&gt;
+<span class="lineNum">     148 </span>            :                                                         &lt;enum name=&quot;ast_cc_offertimerstart_type&quot; /&gt;
+<span class="lineNum">     149 </span>            :                                                         &lt;enum name=&quot;ast_cc_requested_type&quot; /&gt;
+<span class="lineNum">     150 </span>            :                                                         &lt;enum name=&quot;ast_cc_requestacknowledged_type&quot; /&gt;
+<span class="lineNum">     151 </span>            :                                                         &lt;enum name=&quot;ast_cc_callerstopmonitoring_type&quot; /&gt;
+<span class="lineNum">     152 </span>            :                                                         &lt;enum name=&quot;ast_cc_callerstartmonitoring_type&quot; /&gt;
+<span class="lineNum">     153 </span>            :                                                         &lt;enum name=&quot;ast_cc_callerrecalling_type&quot; /&gt;
+<span class="lineNum">     154 </span>            :                                                         &lt;enum name=&quot;ast_cc_recallcomplete_type&quot; /&gt;
+<span class="lineNum">     155 </span>            :                                                         &lt;enum name=&quot;ast_cc_failure_type&quot; /&gt;
+<span class="lineNum">     156 </span>            :                                                         &lt;enum name=&quot;ast_cc_monitorfailed_type&quot; /&gt;
+<span class="lineNum">     157 </span>            :                                                         &lt;enum name=&quot;ast_presence_state_message_type&quot; /&gt;
+<span class="lineNum">     158 </span>            :                                                         &lt;enum name=&quot;ast_rtp_rtcp_sent_type&quot; /&gt;
+<span class="lineNum">     159 </span>            :                                                         &lt;enum name=&quot;ast_rtp_rtcp_received_type&quot; /&gt;
+<span class="lineNum">     160 </span>            :                                                         &lt;enum name=&quot;ast_call_pickup_type&quot; /&gt;
+<span class="lineNum">     161 </span>            :                                                         &lt;enum name=&quot;aoc_s_type&quot; /&gt;
+<span class="lineNum">     162 </span>            :                                                         &lt;enum name=&quot;aoc_d_type&quot; /&gt;
+<span class="lineNum">     163 </span>            :                                                         &lt;enum name=&quot;aoc_e_type&quot; /&gt;
+<span class="lineNum">     164 </span>            :                                                         &lt;enum name=&quot;dahdichannel_type&quot; /&gt;
+<span class="lineNum">     165 </span>            :                                                         &lt;enum name=&quot;mcid_type&quot; /&gt;
+<span class="lineNum">     166 </span>            :                                                         &lt;enum name=&quot;session_timeout_type&quot; /&gt;
+<span class="lineNum">     167 </span>            :                                                         &lt;enum name=&quot;cdr_read_message_type&quot; /&gt;
+<span class="lineNum">     168 </span>            :                                                         &lt;enum name=&quot;cdr_write_message_type&quot; /&gt;
+<span class="lineNum">     169 </span>            :                                                         &lt;enum name=&quot;cdr_prop_write_message_type&quot; /&gt;
+<span class="lineNum">     170 </span>            :                                                         &lt;enum name=&quot;corosync_ping_message_type&quot; /&gt;
+<span class="lineNum">     171 </span>            :                                                         &lt;enum name=&quot;agi_exec_start_type&quot; /&gt;
+<span class="lineNum">     172 </span>            :                                                         &lt;enum name=&quot;agi_exec_end_type&quot; /&gt;
+<span class="lineNum">     173 </span>            :                                                         &lt;enum name=&quot;agi_async_start_type&quot; /&gt;
+<span class="lineNum">     174 </span>            :                                                         &lt;enum name=&quot;agi_async_exec_type&quot; /&gt;
+<span class="lineNum">     175 </span>            :                                                         &lt;enum name=&quot;agi_async_end_type&quot; /&gt;
+<span class="lineNum">     176 </span>            :                                                         &lt;enum name=&quot;queue_caller_join_type&quot; /&gt;
+<span class="lineNum">     177 </span>            :                                                         &lt;enum name=&quot;queue_caller_leave_type&quot; /&gt;
+<span class="lineNum">     178 </span>            :                                                         &lt;enum name=&quot;queue_caller_abandon_type&quot; /&gt;
+<span class="lineNum">     179 </span>            :                                                         &lt;enum name=&quot;queue_member_status_type&quot; /&gt;
+<span class="lineNum">     180 </span>            :                                                         &lt;enum name=&quot;queue_member_added_type&quot; /&gt;
+<span class="lineNum">     181 </span>            :                                                         &lt;enum name=&quot;queue_member_removed_type&quot; /&gt;
+<span class="lineNum">     182 </span>            :                                                         &lt;enum name=&quot;queue_member_pause_type&quot; /&gt;
+<span class="lineNum">     183 </span>            :                                                         &lt;enum name=&quot;queue_member_penalty_type&quot; /&gt;
+<span class="lineNum">     184 </span>            :                                                         &lt;enum name=&quot;queue_member_ringinuse_type&quot; /&gt;
+<span class="lineNum">     185 </span>            :                                                         &lt;enum name=&quot;queue_agent_called_type&quot; /&gt;
+<span class="lineNum">     186 </span>            :                                                         &lt;enum name=&quot;queue_agent_connect_type&quot; /&gt;
+<span class="lineNum">     187 </span>            :                                                         &lt;enum name=&quot;queue_agent_complete_type&quot; /&gt;
+<span class="lineNum">     188 </span>            :                                                         &lt;enum name=&quot;queue_agent_dump_type&quot; /&gt;
+<span class="lineNum">     189 </span>            :                                                         &lt;enum name=&quot;queue_agent_ringnoanswer_type&quot; /&gt;
+<span class="lineNum">     190 </span>            :                                                         &lt;enum name=&quot;meetme_join_type&quot; /&gt;
+<span class="lineNum">     191 </span>            :                                                         &lt;enum name=&quot;meetme_leave_type&quot; /&gt;
+<span class="lineNum">     192 </span>            :                                                         &lt;enum name=&quot;meetme_end_type&quot; /&gt;
+<span class="lineNum">     193 </span>            :                                                         &lt;enum name=&quot;meetme_mute_type&quot; /&gt;
+<span class="lineNum">     194 </span>            :                                                         &lt;enum name=&quot;meetme_talking_type&quot; /&gt;
+<span class="lineNum">     195 </span>            :                                                         &lt;enum name=&quot;meetme_talk_request_type&quot; /&gt;
+<span class="lineNum">     196 </span>            :                                                         &lt;enum name=&quot;appcdr_message_type&quot; /&gt;
+<span class="lineNum">     197 </span>            :                                                         &lt;enum name=&quot;forkcdr_message_type&quot; /&gt;
+<span class="lineNum">     198 </span>            :                                                         &lt;enum name=&quot;cdr_sync_message_type&quot; /&gt;
+<span class="lineNum">     199 </span>            :                                                 &lt;/enumlist&gt;
+<span class="lineNum">     200 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">     201 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     202 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">     203 </span>            :                 &lt;/configFile&gt;
+<span class="lineNum">     204 </span>            :         &lt;/configInfo&gt;
+<span class="lineNum">     205 </span>            : ***/
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            : /*!
+<span class="lineNum">     208 </span>            :  * \page stasis-impl Stasis Implementation Notes
+<span class="lineNum">     209 </span>            :  *
+<span class="lineNum">     210 </span>            :  * \par Reference counting
+<span class="lineNum">     211 </span>            :  *
+<span class="lineNum">     212 </span>            :  * Stasis introduces a number of objects, which are tightly related to one
+<span class="lineNum">     213 </span>            :  * another. Because we rely on ref-counting for memory management, understanding
+<span class="lineNum">     214 </span>            :  * these relationships is important to understanding this code.
+<span class="lineNum">     215 </span>            :  *
+<span class="lineNum">     216 </span>            :  * \code{.txt}
+<span class="lineNum">     217 </span>            :  *
+<span class="lineNum">     218 </span>            :  *   stasis_topic &lt;----&gt; stasis_subscription
+<span class="lineNum">     219 </span>            :  *             ^          ^
+<span class="lineNum">     220 </span>            :  *              \        /
+<span class="lineNum">     221 </span>            :  *               \      /
+<span class="lineNum">     222 </span>            :  *               dispatch
+<span class="lineNum">     223 </span>            :  *                  |
+<span class="lineNum">     224 </span>            :  *                  |
+<span class="lineNum">     225 </span>            :  *                  v
+<span class="lineNum">     226 </span>            :  *            stasis_message
+<span class="lineNum">     227 </span>            :  *                  |
+<span class="lineNum">     228 </span>            :  *                  |
+<span class="lineNum">     229 </span>            :  *                  v
+<span class="lineNum">     230 </span>            :  *          stasis_message_type
+<span class="lineNum">     231 </span>            :  *
+<span class="lineNum">     232 </span>            :  * \endcode
+<span class="lineNum">     233 </span>            :  *
+<span class="lineNum">     234 </span>            :  * The most troubling thing in this chart is the cyclic reference between
+<span class="lineNum">     235 </span>            :  * stasis_topic and stasis_subscription. This is both unfortunate, and
+<span class="lineNum">     236 </span>            :  * necessary. Topics need the subscription in order to dispatch messages;
+<span class="lineNum">     237 </span>            :  * subscriptions need the topics to unsubscribe and check subscription status.
+<span class="lineNum">     238 </span>            :  *
+<span class="lineNum">     239 </span>            :  * The cycle is broken by stasis_unsubscribe(). The unsubscribe will remove the
+<span class="lineNum">     240 </span>            :  * topic's reference to a subscription. When the subcription is destroyed, it
+<span class="lineNum">     241 </span>            :  * will remove its reference to the topic.
+<span class="lineNum">     242 </span>            :  *
+<span class="lineNum">     243 </span>            :  * This means that until a subscription has be explicitly unsubscribed, it will
+<span class="lineNum">     244 </span>            :  * not be destroyed. Neither will a topic be destroyed while it has subscribers.
+<span class="lineNum">     245 </span>            :  * The destructors of both have assertions regarding this to catch ref-counting
+<span class="lineNum">     246 </span>            :  * problems where a subscription or topic has had an extra ao2_cleanup().
+<span class="lineNum">     247 </span>            :  *
+<span class="lineNum">     248 </span>            :  * The \ref dispatch object is a transient object, which is posted to a
+<span class="lineNum">     249 </span>            :  * subscription's taskprocessor to send a message to the subscriber. They have
+<span class="lineNum">     250 </span>            :  * short life cycles, allocated on one thread, destroyed on another.
+<span class="lineNum">     251 </span>            :  *
+<span class="lineNum">     252 </span>            :  * During shutdown, or the deletion of a domain object, there are a flurry of
+<span class="lineNum">     253 </span>            :  * ao2_cleanup()s on subscriptions and topics, as the final in-flight messages
+<span class="lineNum">     254 </span>            :  * are processed. Any one of these cleanups could be the one to actually destroy
+<span class="lineNum">     255 </span>            :  * a given object, so care must be taken to ensure that an object isn't
+<span class="lineNum">     256 </span>            :  * referenced after an ao2_cleanup(). This includes the implicit ao2_unlock()
+<span class="lineNum">     257 </span>            :  * that might happen when a RAII_VAR() goes out of scope.
+<span class="lineNum">     258 </span>            :  *
+<span class="lineNum">     259 </span>            :  * \par Typical life cycles
+<span class="lineNum">     260 </span>            :  *
+<span class="lineNum">     261 </span>            :  *  \li stasis_topic - There are several topics which live for the duration of
+<span class="lineNum">     262 </span>            :  *      the Asterisk process (ast_channel_topic_all(), etc.) but most of these
+<span class="lineNum">     263 </span>            :  *      are actually fed by shorter-lived topics whose lifetime is associated
+<span class="lineNum">     264 </span>            :  *      with some domain object (like ast_channel_topic() for a given
+<span class="lineNum">     265 </span>            :  *      ast_channel).
+<span class="lineNum">     266 </span>            :  *
+<span class="lineNum">     267 </span>            :  *  \li stasis_subscription - Subscriptions have a similar mix of lifetimes as
+<span class="lineNum">     268 </span>            :  *      topics, for similar reasons.
+<span class="lineNum">     269 </span>            :  *
+<span class="lineNum">     270 </span>            :  *  \li dispatch - Very short lived; just long enough to post a message to a
+<span class="lineNum">     271 </span>            :  *      subscriber.
+<span class="lineNum">     272 </span>            :  *
+<span class="lineNum">     273 </span>            :  *  \li stasis_message - Short to intermediate lifetimes, but that is mostly
+<span class="lineNum">     274 </span>            :  *      irrelevant. Messages are strictly data and have no behavior associated
+<span class="lineNum">     275 </span>            :  *      with them, so it doesn't really matter if/when they are destroyed. By
+<span class="lineNum">     276 </span>            :  *      design, a component could hold a ref to a message forever without any
+<span class="lineNum">     277 </span>            :  *      ill consequences (aside from consuming more memory).
+<span class="lineNum">     278 </span>            :  *
+<span class="lineNum">     279 </span>            :  *  \li stasis_message_type - Long life cycles, typically only destroyed on
+<span class="lineNum">     280 </span>            :  *      module unloading or _clean_ process exit.
+<span class="lineNum">     281 </span>            :  *
+<span class="lineNum">     282 </span>            :  * \par Subscriber shutdown sequencing
+<span class="lineNum">     283 </span>            :  *
+<span class="lineNum">     284 </span>            :  * Subscribers are sensitive to shutdown sequencing, specifically in how the
+<span class="lineNum">     285 </span>            :  * reference message types. This is fully detailed on the wiki at
+<span class="lineNum">     286 </span>            :  * https://wiki.asterisk.org/wiki/x/K4BqAQ.
+<span class="lineNum">     287 </span>            :  *
+<span class="lineNum">     288 </span>            :  * In short, the lifetime of the \a data (and \a callback, if in a module) must
+<span class="lineNum">     289 </span>            :  * be held until the stasis_subscription_final_message() has been received.
+<span class="lineNum">     290 </span>            :  * Depending on the structure of the subscriber code, this can be handled by
+<span class="lineNum">     291 </span>            :  * using stasis_subscription_final_message() to free resources on the final
+<span class="lineNum">     292 </span>            :  * message, or using stasis_subscription_join()/stasis_unsubscribe_and_join() to
+<span class="lineNum">     293 </span>            :  * block until the unsubscribe has completed.
+<span class="lineNum">     294 </span>            :  */
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span>            : /*! Initial size of the subscribers list. */
+<span class="lineNum">     297 </span>            : #define INITIAL_SUBSCRIBERS_MAX 4
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span>            : /*! The number of buckets to use for topic pools */
+<span class="lineNum">     300 </span>            : #define TOPIC_POOL_BUCKETS 57
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span>            : /*! Thread pool for topics that don't want a dedicated taskprocessor */
+<a name="303"><span class="lineNum">     303 </span>            : static struct ast_threadpool *pool;</a>
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span><span class="lineCov">    7160807 : STASIS_MESSAGE_TYPE_DEFN(stasis_subscription_change_type);</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            : /*! \internal */
+<span class="lineNum">     308 </span>            : struct stasis_topic {
+<span class="lineNum">     309 </span>            :         char *name;
+<span class="lineNum">     310 </span>            :         /*! Variable length array of the subscribers */
+<span class="lineNum">     311 </span>            :         AST_VECTOR(, struct stasis_subscription *) subscribers;
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span>            :         /*! Topics forwarding into this topic */
+<span class="lineNum">     314 </span>            :         AST_VECTOR(, struct stasis_topic *) upstream_topics;
+<span class="lineNum">     315 </span>            : };
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            : /* Forward declarations for the tightly-coupled subscription object */
+<span class="lineNum">     318 </span>            : static int topic_add_subscription(struct stasis_topic *topic,
+<span class="lineNum">     319 </span>            :         struct stasis_subscription *sub);
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span>            : static int topic_remove_subscription(struct stasis_topic *topic, struct stasis_subscription *sub);
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span>            : /*! \brief Lock two topics. */
+<span class="lineNum">     324 </span>            : #define topic_lock_both(topic1, topic2) \
+<span class="lineNum">     325 </span>            :         do { \
+<span class="lineNum">     326 </span>            :                 ao2_lock(topic1); \
+<span class="lineNum">     327 </span>            :                 while (ao2_trylock(topic2)) { \
+<span class="lineNum">     328 </span>            :                         AO2_DEADLOCK_AVOIDANCE(topic1); \
+<span class="lineNum">     329 </span>            :                 } \
+<a name="330"><span class="lineNum">     330 </span>            :         } while (0)</a>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">      90636 : static void topic_dtor(void *obj)</span>
+<span class="lineNum">     333 </span>            : {
+<span class="lineNum">     334 </span><span class="lineCov">      90636 :         struct stasis_topic *topic = obj;</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span>            :         /* Subscribers hold a reference to topics, so they should all be
+<span class="lineNum">     337 </span>            :          * unsubscribed before we get here. */
+<span class="lineNum">     338 </span><span class="lineCov">      90636 :         ast_assert(AST_VECTOR_SIZE(&amp;topic-&gt;subscribers) == 0);</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">      90636 :         ast_free(topic-&gt;name);</span>
+<span class="lineNum">     341 </span><span class="lineCov">      90636 :         topic-&gt;name = NULL;</span>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">      90636 :         AST_VECTOR_FREE(&amp;topic-&gt;subscribers);</span>
+<span class="lineNum">     344 </span><span class="lineCov">      90636 :         AST_VECTOR_FREE(&amp;topic-&gt;upstream_topics);</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">      90636 : }</span></a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">      93739 : struct stasis_topic *stasis_topic_create(const char *name)</span>
+<span class="lineNum">     348 </span>            : {
+<span class="lineNum">     349 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">     350 </span><span class="lineCov">      93739 :         int res = 0;</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineCov">      93739 :         topic = ao2_t_alloc(sizeof(*topic), topic_dtor, name);</span>
+<span class="lineNum">     353 </span><span class="lineCov">      93739 :         if (!topic) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">      93739 :         topic-&gt;name = ast_strdup(name);</span>
+<span class="lineNum">     358 </span><span class="lineCov">      93739 :         res |= AST_VECTOR_INIT(&amp;topic-&gt;subscribers, INITIAL_SUBSCRIBERS_MAX);</span>
+<span class="lineNum">     359 </span><span class="lineCov">      93739 :         res |= AST_VECTOR_INIT(&amp;topic-&gt;upstream_topics, 0);</span>
+<span class="lineNum">     360 </span><span class="lineCov">      93739 :         if (!topic-&gt;name || res) {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                 ao2_cleanup(topic);</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     363 </span>            :         }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">      93739 :         return topic;</span>
+<a name="366"><span class="lineNum">     366 </span>            : }</a>
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineCov">     161274 : const char *stasis_topic_name(const struct stasis_topic *topic)</span>
+<span class="lineNum">     369 </span>            : {
+<span class="lineNum">     370 </span><span class="lineCov">     161274 :         return topic-&gt;name;</span>
+<span class="lineNum">     371 </span>            : }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span>            : /*! \internal */
+<span class="lineNum">     374 </span>            : struct stasis_subscription {
+<span class="lineNum">     375 </span>            :         /*! Unique ID for this subscription */
+<span class="lineNum">     376 </span>            :         char uniqueid[AST_UUID_STR_LEN];
+<span class="lineNum">     377 </span>            :         /*! Topic subscribed to. */
+<span class="lineNum">     378 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">     379 </span>            :         /*! Mailbox for processing incoming messages. */
+<span class="lineNum">     380 </span>            :         struct ast_taskprocessor *mailbox;
+<span class="lineNum">     381 </span>            :         /*! Callback function for incoming message processing. */
+<span class="lineNum">     382 </span>            :         stasis_subscription_cb callback;
+<span class="lineNum">     383 </span>            :         /*! Data pointer to be handed to the callback. */
+<span class="lineNum">     384 </span>            :         void *data;
+<span class="lineNum">     385 </span>            : 
+<span class="lineNum">     386 </span>            :         /*! Condition for joining with subscription. */
+<span class="lineNum">     387 </span>            :         ast_cond_t join_cond;
+<span class="lineNum">     388 </span>            :         /*! Flag set when final message for sub has been received.
+<span class="lineNum">     389 </span>            :          *  Be sure join_lock is held before reading/setting. */
+<span class="lineNum">     390 </span>            :         int final_message_rxed;
+<span class="lineNum">     391 </span>            :         /*! Flag set when final message for sub has been processed.
+<span class="lineNum">     392 </span>            :          *  Be sure join_lock is held before reading/setting. */
+<span class="lineNum">     393 </span>            :         int final_message_processed;
+<a name="394"><span class="lineNum">     394 </span>            : };</a>
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineCov">      60195 : static void subscription_dtor(void *obj)</span>
+<span class="lineNum">     397 </span>            : {
+<span class="lineNum">     398 </span><span class="lineCov">      60195 :         struct stasis_subscription *sub = obj;</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            :         /* Subscriptions need to be manually unsubscribed before destruction
+<span class="lineNum">     401 </span>            :          * b/c there's a cyclic reference between topics and subscriptions */
+<span class="lineNum">     402 </span><span class="lineCov">      60195 :         ast_assert(!stasis_subscription_is_subscribed(sub));</span>
+<span class="lineNum">     403 </span>            :         /* If there are any messages in flight to this subscription; that would
+<span class="lineNum">     404 </span>            :          * be bad. */
+<span class="lineNum">     405 </span><span class="lineCov">      60195 :         ast_assert(stasis_subscription_is_done(sub));</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">      60195 :         ao2_cleanup(sub-&gt;topic);</span>
+<span class="lineNum">     408 </span><span class="lineCov">      60195 :         sub-&gt;topic = NULL;</span>
+<span class="lineNum">     409 </span><span class="lineCov">      60195 :         ast_taskprocessor_unreference(sub-&gt;mailbox);</span>
+<span class="lineNum">     410 </span><span class="lineCov">      60195 :         sub-&gt;mailbox = NULL;</span>
+<span class="lineNum">     411 </span><span class="lineCov">      60195 :         ast_cond_destroy(&amp;sub-&gt;join_cond);</span>
+<span class="lineNum">     412 </span><span class="lineCov">      60195 : }</span>
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span>            : /*!
+<span class="lineNum">     415 </span>            :  * \brief Invoke the subscription's callback.
+<span class="lineNum">     416 </span>            :  * \param sub Subscription to invoke.
+<span class="lineNum">     417 </span>            :  * \param topic Topic message was published to.
+<a name="418"><span class="lineNum">     418 </span>            :  * \param message Message to send.</a>
+<span class="lineNum">     419 </span>            :  */
+<span class="lineNum">     420 </span><span class="lineCov">    2339887 : static void subscription_invoke(struct stasis_subscription *sub,</span>
+<span class="lineNum">     421 </span>            :                                   struct stasis_message *message)
+<span class="lineNum">     422 </span>            : {
+<span class="lineNum">     423 </span>            :         /* Notify that the final message has been received */
+<span class="lineNum">     424 </span><span class="lineCov">    2339887 :         if (stasis_subscription_final_message(sub, message)) {</span>
+<span class="lineNum">     425 </span><span class="lineCov">      60195 :                 ao2_lock(sub);</span>
+<span class="lineNum">     426 </span><span class="lineCov">      60195 :                 sub-&gt;final_message_rxed = 1;</span>
+<span class="lineNum">     427 </span><span class="lineCov">      60195 :                 ast_cond_signal(&amp;sub-&gt;join_cond);</span>
+<span class="lineNum">     428 </span><span class="lineCov">      60195 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     429 </span>            :         }
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span>            :         /* Since sub is mostly immutable, no need to lock sub */
+<span class="lineNum">     432 </span><span class="lineCov">    2339887 :         sub-&gt;callback(sub-&gt;data, sub, message);</span>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span>            :         /* Notify that the final message has been processed */
+<span class="lineNum">     435 </span><span class="lineCov">    2339887 :         if (stasis_subscription_final_message(sub, message)) {</span>
+<span class="lineNum">     436 </span><span class="lineCov">      60195 :                 ao2_lock(sub);</span>
+<span class="lineNum">     437 </span><span class="lineCov">      60195 :                 sub-&gt;final_message_processed = 1;</span>
+<span class="lineNum">     438 </span><span class="lineCov">      60195 :                 ast_cond_signal(&amp;sub-&gt;join_cond);</span>
+<span class="lineNum">     439 </span><span class="lineCov">      60195 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     440 </span>            :         }
+<span class="lineNum">     441 </span><span class="lineCov">    2339887 : }</span>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span>            : static void send_subscription_subscribe(struct stasis_topic *topic, struct stasis_subscription *sub);
+<a name="444"><span class="lineNum">     444 </span>            : static void send_subscription_unsubscribe(struct stasis_topic *topic, struct stasis_subscription *sub);</a>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 : void stasis_subscription_cb_noop(void *data, struct stasis_subscription *sub, struct stasis_message *message)</span>
+<span class="lineNum">     447 </span>            : {
+<a name="448"><span class="lineNum">     448 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineCov">      61347 : struct stasis_subscription *internal_stasis_subscribe(</span>
+<span class="lineNum">     451 </span>            :         struct stasis_topic *topic,
+<span class="lineNum">     452 </span>            :         stasis_subscription_cb callback,
+<span class="lineNum">     453 </span>            :         void *data,
+<span class="lineNum">     454 </span>            :         int needs_mailbox,
+<span class="lineNum">     455 </span>            :         int use_thread_pool)
+<span class="lineNum">     456 </span>            : {
+<span class="lineNum">     457 </span>            :         struct stasis_subscription *sub;
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">      61347 :         if (!topic) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     461 </span>            :         }
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span>            :         /* The ao2 lock is used for join_cond. */
+<span class="lineNum">     464 </span><span class="lineCov">      61347 :         sub = ao2_t_alloc(sizeof(*sub), subscription_dtor, stasis_topic_name(topic));</span>
+<span class="lineNum">     465 </span><span class="lineCov">      61347 :         if (!sub) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span><span class="lineCov">      61347 :         ast_uuid_generate_str(sub-&gt;uniqueid, sizeof(sub-&gt;uniqueid));</span>
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineCov">      61347 :         if (needs_mailbox) {</span>
+<span class="lineNum">     471 </span>            :                 char tps_name[AST_TASKPROCESSOR_MAX_NAME + 1];
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            :                 /* Create name with seq number appended. */
+<span class="lineNum">     474 </span><span class="lineCov">      25234 :                 ast_taskprocessor_build_name(tps_name, sizeof(tps_name), &quot;sub%c:%s&quot;,</span>
+<span class="lineNum">     475 </span>            :                         use_thread_pool ? 'p' : 'm',
+<span class="lineNum">     476 </span>            :                         stasis_topic_name(topic));
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span>            :                 /*
+<span class="lineNum">     479 </span>            :                  * With a small number of subscribers, a thread-per-sub is
+<span class="lineNum">     480 </span>            :                  * acceptable. For a large number of subscribers, a thread
+<span class="lineNum">     481 </span>            :                  * pool should be used.
+<span class="lineNum">     482 </span>            :                  */
+<span class="lineNum">     483 </span><span class="lineCov">      25234 :                 if (use_thread_pool) {</span>
+<span class="lineNum">     484 </span><span class="lineCov">       3221 :                         sub-&gt;mailbox = ast_threadpool_serializer(tps_name, pool);</span>
+<span class="lineNum">     485 </span>            :                 } else {
+<span class="lineNum">     486 </span><span class="lineCov">      22013 :                         sub-&gt;mailbox = ast_taskprocessor_get(tps_name, TPS_REF_DEFAULT);</span>
+<span class="lineNum">     487 </span>            :                 }
+<span class="lineNum">     488 </span><span class="lineCov">      25234 :                 if (!sub-&gt;mailbox) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         ao2_ref(sub, -1);</span>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     492 </span>            :                 }
+<span class="lineNum">     493 </span><span class="lineCov">      25234 :                 ast_taskprocessor_set_local(sub-&gt;mailbox, sub);</span>
+<span class="lineNum">     494 </span>            :                 /* Taskprocessor has a reference */
+<span class="lineNum">     495 </span><span class="lineCov">      25234 :                 ao2_ref(sub, +1);</span>
+<span class="lineNum">     496 </span>            :         }
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">      61347 :         ao2_ref(topic, +1);</span>
+<span class="lineNum">     499 </span><span class="lineCov">      61347 :         sub-&gt;topic = topic;</span>
+<span class="lineNum">     500 </span><span class="lineCov">      61347 :         sub-&gt;callback = callback;</span>
+<span class="lineNum">     501 </span><span class="lineCov">      61347 :         sub-&gt;data = data;</span>
+<span class="lineNum">     502 </span><span class="lineCov">      61347 :         ast_cond_init(&amp;sub-&gt;join_cond, NULL);</span>
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">      61347 :         if (topic_add_subscription(topic, sub) != 0) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     508 </span>            :         }
+<span class="lineNum">     509 </span><span class="lineCov">      61347 :         send_subscription_subscribe(topic, sub);</span>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">      61347 :         return sub;</span>
+<a name="512"><span class="lineNum">     512 </span>            : }</a>
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span><span class="lineCov">      22013 : struct stasis_subscription *stasis_subscribe(</span>
+<span class="lineNum">     515 </span>            :         struct stasis_topic *topic,
+<span class="lineNum">     516 </span>            :         stasis_subscription_cb callback,
+<span class="lineNum">     517 </span>            :         void *data)
+<span class="lineNum">     518 </span>            : {
+<span class="lineNum">     519 </span><span class="lineCov">      22013 :         return internal_stasis_subscribe(topic, callback, data, 1, 0);</span>
+<a name="520"><span class="lineNum">     520 </span>            : }</a>
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span><span class="lineCov">       3221 : struct stasis_subscription *stasis_subscribe_pool(</span>
+<span class="lineNum">     523 </span>            :         struct stasis_topic *topic,
+<span class="lineNum">     524 </span>            :         stasis_subscription_cb callback,
+<span class="lineNum">     525 </span>            :         void *data)
+<span class="lineNum">     526 </span>            : {
+<span class="lineNum">     527 </span><span class="lineCov">       3221 :         return internal_stasis_subscribe(topic, callback, data, 1, 1);</span>
+<a name="528"><span class="lineNum">     528 </span>            : }</a>
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span><span class="lineCov">      24825 : static int sub_cleanup(void *data)</span>
+<span class="lineNum">     531 </span>            : {
+<span class="lineNum">     532 </span><span class="lineCov">      24825 :         struct stasis_subscription *sub = data;</span>
+<span class="lineNum">     533 </span><span class="lineCov">      24825 :         ao2_cleanup(sub);</span>
+<span class="lineNum">     534 </span><span class="lineCov">      24825 :         return 0;</span>
+<a name="535"><span class="lineNum">     535 </span>            : }</a>
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">      83907 : struct stasis_subscription *stasis_unsubscribe(struct stasis_subscription *sub)</span>
+<span class="lineNum">     538 </span>            : {
+<span class="lineNum">     539 </span>            :         /* The subscription may be the last ref to this topic. Hold
+<span class="lineNum">     540 </span>            :          * the topic ref open until after the unlock. */
+<span class="lineNum">     541 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">      83907 :         if (!sub) {</span>
+<span class="lineNum">     544 </span><span class="lineCov">      23712 :                 return NULL;</span>
+<span class="lineNum">     545 </span>            :         }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">      60195 :         topic = ao2_bump(sub-&gt;topic);</span>
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span>            :         /* We have to remove the subscription first, to ensure the unsubscribe
+<span class="lineNum">     550 </span>            :          * is the final message */
+<span class="lineNum">     551 </span><span class="lineCov">      60195 :         if (topic_remove_subscription(sub-&gt;topic, sub) != 0) {</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR,</span>
+<span class="lineNum">     553 </span>            :                         &quot;Internal error: subscription has invalid topic\n&quot;);
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :                 ao2_cleanup(topic);</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     557 </span>            :         }
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span>            :         /* Now let everyone know about the unsubscribe */
+<span class="lineNum">     560 </span><span class="lineCov">      60195 :         send_subscription_unsubscribe(topic, sub);</span>
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span>            :         /* When all that's done, remove the ref the mailbox has on the sub */
+<span class="lineNum">     563 </span><span class="lineCov">      60195 :         if (sub-&gt;mailbox) {</span>
+<span class="lineNum">     564 </span><span class="lineCov">      24825 :                 ast_taskprocessor_push(sub-&gt;mailbox, sub_cleanup, sub);</span>
+<span class="lineNum">     565 </span>            :         }
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span>            :         /* Unsubscribing unrefs the subscription */
+<span class="lineNum">     568 </span><span class="lineCov">      60195 :         ao2_cleanup(sub);</span>
+<span class="lineNum">     569 </span><span class="lineCov">      60195 :         ao2_cleanup(topic);</span>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineCov">      60195 :         return NULL;</span>
+<a name="572"><span class="lineNum">     572 </span>            : }</a>
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span><span class="lineCov">       3393 : int stasis_subscription_set_congestion_limits(struct stasis_subscription *subscription,</span>
+<span class="lineNum">     575 </span>            :         long low_water, long high_water)
+<span class="lineNum">     576 </span>            : {
+<span class="lineNum">     577 </span><span class="lineCov">       3393 :         int res = -1;</span>
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span><span class="lineCov">       3393 :         if (subscription) {</span>
+<span class="lineNum">     580 </span><span class="lineCov">       3393 :                 res = ast_taskprocessor_alert_set_levels(subscription-&gt;mailbox,</span>
+<span class="lineNum">     581 </span>            :                         low_water, high_water);
+<span class="lineNum">     582 </span>            :         }
+<span class="lineNum">     583 </span><span class="lineCov">       3393 :         return res;</span>
+<a name="584"><span class="lineNum">     584 </span>            : }</a>
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">      23359 : void stasis_subscription_join(struct stasis_subscription *subscription)</span>
+<span class="lineNum">     587 </span>            : {
+<span class="lineNum">     588 </span><span class="lineCov">      23359 :         if (subscription) {</span>
+<span class="lineNum">     589 </span><span class="lineCov">      23359 :                 ao2_lock(subscription);</span>
+<span class="lineNum">     590 </span>            :                 /* Wait until the processed flag has been set */
+<span class="lineNum">     591 </span><span class="lineCov">      44613 :                 while (!subscription-&gt;final_message_processed) {</span>
+<span class="lineNum">     592 </span><span class="lineCov">      21254 :                         ast_cond_wait(&amp;subscription-&gt;join_cond,</span>
+<span class="lineNum">     593 </span>            :                                 ao2_object_get_lockaddr(subscription));
+<span class="lineNum">     594 </span>            :                 }
+<span class="lineNum">     595 </span><span class="lineCov">      23359 :                 ao2_unlock(subscription);</span>
+<span class="lineNum">     596 </span>            :         }
+<a name="597"><span class="lineNum">     597 </span><span class="lineCov">      23359 : }</span></a>
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineCov">     108974 : int stasis_subscription_is_done(struct stasis_subscription *subscription)</span>
+<span class="lineNum">     600 </span>            : {
+<span class="lineNum">     601 </span><span class="lineCov">     108974 :         if (subscription) {</span>
+<span class="lineNum">     602 </span>            :                 int ret;
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineCov">     104443 :                 ao2_lock(subscription);</span>
+<span class="lineNum">     605 </span><span class="lineCov">     104443 :                 ret = subscription-&gt;final_message_rxed;</span>
+<span class="lineNum">     606 </span><span class="lineCov">     104443 :                 ao2_unlock(subscription);</span>
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineCov">     104443 :                 return ret;</span>
+<span class="lineNum">     609 </span>            :         }
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span>            :         /* Null subscription is about as done as you can get */
+<span class="lineNum">     612 </span><span class="lineCov">       4531 :         return 1;</span>
+<a name="613"><span class="lineNum">     613 </span>            : }</a>
+<span class="lineNum">     614 </span>            : 
+<span class="lineNum">     615 </span><span class="lineCov">      22978 : struct stasis_subscription *stasis_unsubscribe_and_join(</span>
+<span class="lineNum">     616 </span>            :         struct stasis_subscription *subscription)
+<span class="lineNum">     617 </span>            : {
+<span class="lineNum">     618 </span><span class="lineCov">      22978 :         if (!subscription) {</span>
+<span class="lineNum">     619 </span><span class="lineCov">       3864 :                 return NULL;</span>
+<span class="lineNum">     620 </span>            :         }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            :         /* Bump refcount to hold it past the unsubscribe */
+<span class="lineNum">     623 </span><span class="lineCov">      19114 :         ao2_ref(subscription, +1);</span>
+<span class="lineNum">     624 </span><span class="lineCov">      19114 :         stasis_unsubscribe(subscription);</span>
+<span class="lineNum">     625 </span><span class="lineCov">      19114 :         stasis_subscription_join(subscription);</span>
+<span class="lineNum">     626 </span>            :         /* Now decrement the refcount back */
+<span class="lineNum">     627 </span><span class="lineCov">      19114 :         ao2_cleanup(subscription);</span>
+<span class="lineNum">     628 </span><span class="lineCov">      19114 :         return NULL;</span>
+<a name="629"><span class="lineNum">     629 </span>            : }</a>
+<span class="lineNum">     630 </span>            : 
+<span class="lineNum">     631 </span><span class="lineCov">     264916 : int stasis_subscription_is_subscribed(const struct stasis_subscription *sub)</span>
+<span class="lineNum">     632 </span>            : {
+<span class="lineNum">     633 </span><span class="lineCov">     264916 :         if (sub) {</span>
+<span class="lineNum">     634 </span>            :                 size_t i;
+<span class="lineNum">     635 </span><span class="lineCov">     261379 :                 struct stasis_topic *topic = sub-&gt;topic;</span>
+<span class="lineNum">     636 </span>            : 
+<span class="lineNum">     637 </span><span class="lineCov">     261379 :                 ao2_lock(topic);</span>
+<span class="lineNum">     638 </span><span class="lineCov">     446308 :                 for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;topic-&gt;subscribers); ++i) {</span>
+<span class="lineNum">     639 </span><span class="lineCov">     281668 :                         if (AST_VECTOR_GET(&amp;topic-&gt;subscribers, i) == sub) {</span>
+<span class="lineNum">     640 </span><span class="lineCov">      96739 :                                 ao2_unlock(topic);</span>
+<span class="lineNum">     641 </span><span class="lineCov">      96739 :                                 return 1;</span>
+<span class="lineNum">     642 </span>            :                         }
+<span class="lineNum">     643 </span>            :                 }
+<span class="lineNum">     644 </span><span class="lineCov">     164640 :                 ao2_unlock(topic);</span>
+<span class="lineNum">     645 </span>            :         }
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineCov">     168177 :         return 0;</span>
+<a name="648"><span class="lineNum">     648 </span>            : }</a>
+<span class="lineNum">     649 </span>            : 
+<span class="lineNum">     650 </span><span class="lineCov">     325614 : const char *stasis_subscription_uniqueid(const struct stasis_subscription *sub)</span>
+<span class="lineNum">     651 </span>            : {
+<span class="lineNum">     652 </span><span class="lineCov">     325614 :         return sub-&gt;uniqueid;</span>
+<a name="653"><span class="lineNum">     653 </span>            : }</a>
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span><span class="lineCov">    6915384 : int stasis_subscription_final_message(struct stasis_subscription *sub, struct stasis_message *msg)</span>
+<span class="lineNum">     656 </span>            : {
+<span class="lineNum">     657 </span>            :         struct stasis_subscription_change *change;
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span><span class="lineCov">    6915384 :         if (stasis_message_type(msg) != stasis_subscription_change_type()) {</span>
+<span class="lineNum">     660 </span><span class="lineCov">    6230604 :                 return 0;</span>
+<span class="lineNum">     661 </span>            :         }
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span><span class="lineCov">     684780 :         change = stasis_message_data(msg);</span>
+<span class="lineNum">     664 </span><span class="lineCov">     684780 :         if (strcmp(&quot;Unsubscribe&quot;, change-&gt;description)) {</span>
+<span class="lineNum">     665 </span><span class="lineCov">     359168 :                 return 0;</span>
+<span class="lineNum">     666 </span>            :         }
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span><span class="lineCov">     325612 :         if (strcmp(stasis_subscription_uniqueid(sub), change-&gt;uniqueid)) {</span>
+<span class="lineNum">     669 </span><span class="lineCov">     153027 :                 return 0;</span>
+<span class="lineNum">     670 </span>            :         }
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineCov">     172585 :         return 1;</span>
+<span class="lineNum">     673 </span>            : }
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span>            : /*!
+<span class="lineNum">     676 </span>            :  * \brief Add a subscriber to a topic.
+<span class="lineNum">     677 </span>            :  * \param topic Topic
+<span class="lineNum">     678 </span>            :  * \param sub Subscriber
+<span class="lineNum">     679 </span>            :  * \return 0 on success
+<a name="680"><span class="lineNum">     680 </span>            :  * \return Non-zero on error</a>
+<span class="lineNum">     681 </span>            :  */
+<span class="lineNum">     682 </span><span class="lineCov">     535362 : static int topic_add_subscription(struct stasis_topic *topic, struct stasis_subscription *sub)</span>
+<span class="lineNum">     683 </span>            : {
+<span class="lineNum">     684 </span>            :         size_t idx;
+<span class="lineNum">     685 </span>            : 
+<span class="lineNum">     686 </span><span class="lineCov">     535362 :         ao2_lock(topic);</span>
+<span class="lineNum">     687 </span>            :         /* The reference from the topic to the subscription is shared with
+<span class="lineNum">     688 </span>            :          * the owner of the subscription, which will explicitly unsubscribe
+<span class="lineNum">     689 </span>            :          * to release it.
+<span class="lineNum">     690 </span>            :          *
+<span class="lineNum">     691 </span>            :          * If we bumped the refcount here, the owner would have to unsubscribe
+<span class="lineNum">     692 </span>            :          * and cleanup, which is a bit awkward. */
+<span class="lineNum">     693 </span><span class="lineCov">     535362 :         AST_VECTOR_APPEND(&amp;topic-&gt;subscribers, sub);</span>
+<span class="lineNum">     694 </span>            : 
+<span class="lineNum">     695 </span><span class="lineCov">     577794 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;topic-&gt;upstream_topics); ++idx) {</span>
+<span class="lineNum">     696 </span><span class="lineCov">      42432 :                 topic_add_subscription(</span>
+<span class="lineNum">     697 </span><span class="lineCov">      42432 :                         AST_VECTOR_GET(&amp;topic-&gt;upstream_topics, idx), sub);</span>
+<span class="lineNum">     698 </span>            :         }
+<span class="lineNum">     699 </span><span class="lineCov">     535362 :         ao2_unlock(topic);</span>
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">     535362 :         return 0;</span>
+<a name="702"><span class="lineNum">     702 </span>            : }</a>
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineCov">     532473 : static int topic_remove_subscription(struct stasis_topic *topic, struct stasis_subscription *sub)</span>
+<span class="lineNum">     705 </span>            : {
+<span class="lineNum">     706 </span>            :         size_t idx;
+<span class="lineNum">     707 </span>            :         int res;
+<span class="lineNum">     708 </span>            : 
+<span class="lineNum">     709 </span><span class="lineCov">     532473 :         ao2_lock(topic);</span>
+<span class="lineNum">     710 </span><span class="lineCov">     593815 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;topic-&gt;upstream_topics); ++idx) {</span>
+<span class="lineNum">     711 </span><span class="lineCov">      61342 :                 topic_remove_subscription(</span>
+<span class="lineNum">     712 </span><span class="lineCov">      61342 :                         AST_VECTOR_GET(&amp;topic-&gt;upstream_topics, idx), sub);</span>
+<span class="lineNum">     713 </span>            :         }
+<span class="lineNum">     714 </span><span class="lineCov">    1535149 :         res = AST_VECTOR_REMOVE_ELEM_UNORDERED(&amp;topic-&gt;subscribers, sub,</span>
+<span class="lineNum">     715 </span>            :                 AST_VECTOR_ELEM_CLEANUP_NOOP);
+<span class="lineNum">     716 </span><span class="lineCov">     532473 :         ao2_unlock(topic);</span>
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">     532473 :         return res;</span>
+<span class="lineNum">     719 </span>            : }
+<span class="lineNum">     720 </span>            : 
+<span class="lineNum">     721 </span>            : /*!
+<span class="lineNum">     722 </span>            :  * \internal \brief Dispatch a message to a subscriber asynchronously
+<span class="lineNum">     723 </span>            :  * \param local \ref ast_taskprocessor_local object
+<a name="724"><span class="lineNum">     724 </span>            :  * \return 0</a>
+<span class="lineNum">     725 </span>            :  */
+<span class="lineNum">     726 </span><span class="lineCov">    1865022 : static int dispatch_exec_async(struct ast_taskprocessor_local *local)</span>
+<span class="lineNum">     727 </span>            : {
+<span class="lineNum">     728 </span><span class="lineCov">    1865022 :         struct stasis_subscription *sub = local-&gt;local_data;</span>
+<span class="lineNum">     729 </span><span class="lineCov">    1865022 :         struct stasis_message *message = local-&gt;data;</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineCov">    1865022 :         subscription_invoke(sub, message);</span>
+<span class="lineNum">     732 </span><span class="lineCov">    1865022 :         ao2_cleanup(message);</span>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineCov">    1865022 :         return 0;</span>
+<span class="lineNum">     735 </span>            : }
+<span class="lineNum">     736 </span>            : 
+<span class="lineNum">     737 </span>            : /*!
+<span class="lineNum">     738 </span>            :  * \internal \brief Data passed to \ref dispatch_exec_sync to synchronize
+<span class="lineNum">     739 </span>            :  * a published message to a subscriber
+<span class="lineNum">     740 </span>            :  */
+<span class="lineNum">     741 </span>            : struct sync_task_data {
+<span class="lineNum">     742 </span>            :         ast_mutex_t lock;
+<span class="lineNum">     743 </span>            :         ast_cond_t cond;
+<span class="lineNum">     744 </span>            :         int complete;
+<span class="lineNum">     745 </span>            :         void *task_data;
+<span class="lineNum">     746 </span>            : };
+<span class="lineNum">     747 </span>            : 
+<span class="lineNum">     748 </span>            : /*!
+<span class="lineNum">     749 </span>            :  * \internal \brief Dispatch a message to a subscriber synchronously
+<span class="lineNum">     750 </span>            :  * \param local \ref ast_taskprocessor_local object
+<a name="751"><span class="lineNum">     751 </span>            :  * \return 0</a>
+<span class="lineNum">     752 </span>            :  */
+<span class="lineNum">     753 </span><span class="lineCov">       1253 : static int dispatch_exec_sync(struct ast_taskprocessor_local *local)</span>
+<span class="lineNum">     754 </span>            : {
+<span class="lineNum">     755 </span><span class="lineCov">       1253 :         struct stasis_subscription *sub = local-&gt;local_data;</span>
+<span class="lineNum">     756 </span><span class="lineCov">       1253 :         struct sync_task_data *std = local-&gt;data;</span>
+<span class="lineNum">     757 </span><span class="lineCov">       1253 :         struct stasis_message *message = std-&gt;task_data;</span>
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">       1253 :         subscription_invoke(sub, message);</span>
+<span class="lineNum">     760 </span><span class="lineCov">       1253 :         ao2_cleanup(message);</span>
+<span class="lineNum">     761 </span>            : 
+<span class="lineNum">     762 </span><span class="lineCov">       1253 :         ast_mutex_lock(&amp;std-&gt;lock);</span>
+<span class="lineNum">     763 </span><span class="lineCov">       1253 :         std-&gt;complete = 1;</span>
+<span class="lineNum">     764 </span><span class="lineCov">       1253 :         ast_cond_signal(&amp;std-&gt;cond);</span>
+<span class="lineNum">     765 </span><span class="lineCov">       1253 :         ast_mutex_unlock(&amp;std-&gt;lock);</span>
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span><span class="lineCov">       1253 :         return 0;</span>
+<span class="lineNum">     768 </span>            : }
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span>            : /*!
+<span class="lineNum">     771 </span>            :  * \internal \brief Dispatch a message to a subscriber
+<span class="lineNum">     772 </span>            :  * \param sub The subscriber to dispatch to
+<span class="lineNum">     773 </span>            :  * \param message The message to send
+<span class="lineNum">     774 </span>            :  * \param synchronous If non-zero, synchronize on the subscriber receiving
+<a name="775"><span class="lineNum">     775 </span>            :  * the message</a>
+<span class="lineNum">     776 </span>            :  */
+<span class="lineNum">     777 </span><span class="lineCov">    2339887 : static void dispatch_message(struct stasis_subscription *sub,</span>
+<span class="lineNum">     778 </span>            :         struct stasis_message *message,
+<span class="lineNum">     779 </span>            :         int synchronous)
+<span class="lineNum">     780 </span>            : {
+<span class="lineNum">     781 </span><span class="lineCov">    2339887 :         if (!sub-&gt;mailbox) {</span>
+<span class="lineNum">     782 </span>            :                 /* Dispatch directly */
+<span class="lineNum">     783 </span><span class="lineCov">     473612 :                 subscription_invoke(sub, message);</span>
+<span class="lineNum">     784 </span><span class="lineCov">     473612 :                 return;</span>
+<span class="lineNum">     785 </span>            :         }
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span>            :         /* Bump the message for the taskprocessor push. This will get de-ref'd
+<span class="lineNum">     788 </span>            :          * by the task processor callback.
+<span class="lineNum">     789 </span>            :          */
+<span class="lineNum">     790 </span><span class="lineCov">    1866275 :         ao2_bump(message);</span>
+<span class="lineNum">     791 </span><span class="lineCov">    1866275 :         if (!synchronous) {</span>
+<span class="lineNum">     792 </span><span class="lineCov">    1865022 :                 if (ast_taskprocessor_push_local(sub-&gt;mailbox, dispatch_exec_async, message)) {</span>
+<span class="lineNum">     793 </span>            :                         /* Push failed; ugh. */
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Dropping async dispatch\n&quot;);</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :                         ao2_cleanup(message);</span>
+<span class="lineNum">     796 </span>            :                 }
+<span class="lineNum">     797 </span>            :         } else {
+<span class="lineNum">     798 </span>            :                 struct sync_task_data std;
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineCov">       1253 :                 ast_mutex_init(&amp;std.lock);</span>
+<span class="lineNum">     801 </span><span class="lineCov">       1253 :                 ast_cond_init(&amp;std.cond, NULL);</span>
+<span class="lineNum">     802 </span><span class="lineCov">       1253 :                 std.complete = 0;</span>
+<span class="lineNum">     803 </span><span class="lineCov">       1253 :                 std.task_data = message;</span>
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span><span class="lineCov">       1253 :                 if (ast_taskprocessor_push_local(sub-&gt;mailbox, dispatch_exec_sync, &amp;std)) {</span>
+<span class="lineNum">     806 </span>            :                         /* Push failed; ugh. */
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Dropping sync dispatch\n&quot;);</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :                         ao2_cleanup(message);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">          0 :                         ast_mutex_destroy(&amp;std.lock);</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                         ast_cond_destroy(&amp;std.cond);</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     812 </span>            :                 }
+<span class="lineNum">     813 </span>            : 
+<span class="lineNum">     814 </span><span class="lineCov">       1253 :                 ast_mutex_lock(&amp;std.lock);</span>
+<span class="lineNum">     815 </span><span class="lineCov">       2243 :                 while (!std.complete) {</span>
+<span class="lineNum">     816 </span><span class="lineCov">        990 :                         ast_cond_wait(&amp;std.cond, &amp;std.lock);</span>
+<span class="lineNum">     817 </span>            :                 }
+<span class="lineNum">     818 </span><span class="lineCov">       1253 :                 ast_mutex_unlock(&amp;std.lock);</span>
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span><span class="lineCov">       1253 :                 ast_mutex_destroy(&amp;std.lock);</span>
+<span class="lineNum">     821 </span><span class="lineCov">       1253 :                 ast_cond_destroy(&amp;std.cond);</span>
+<span class="lineNum">     822 </span>            :         }
+<span class="lineNum">     823 </span>            : }
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span>            : /*!
+<span class="lineNum">     826 </span>            :  * \internal \brief Publish a message to a topic's subscribers
+<span class="lineNum">     827 </span>            :  * \brief topic The topic to publish to
+<span class="lineNum">     828 </span>            :  * \brief message The message to publish
+<span class="lineNum">     829 </span>            :  * \brief sync_sub An optional subscriber of the topic to publish synchronously
+<a name="830"><span class="lineNum">     830 </span>            :  * to</a>
+<span class="lineNum">     831 </span>            :  */
+<span class="lineNum">     832 </span><span class="lineCov">     514681 : static void publish_msg(struct stasis_topic *topic,</span>
+<span class="lineNum">     833 </span>            :         struct stasis_message *message, struct stasis_subscription *sync_sub)
+<span class="lineNum">     834 </span>            : {
+<span class="lineNum">     835 </span>            :         size_t i;
+<span class="lineNum">     836 </span>            : 
+<span class="lineNum">     837 </span><span class="lineCov">     514681 :         ast_assert(topic != NULL);</span>
+<span class="lineNum">     838 </span><span class="lineCov">     514681 :         ast_assert(message != NULL);</span>
+<span class="lineNum">     839 </span>            : 
+<span class="lineNum">     840 </span>            :         /*
+<span class="lineNum">     841 </span>            :          * The topic may be unref'ed by the subscription invocation.
+<span class="lineNum">     842 </span>            :          * Make sure we hold onto a reference while dispatching.
+<span class="lineNum">     843 </span>            :          */
+<span class="lineNum">     844 </span><span class="lineCov">     514681 :         ao2_ref(topic, +1);</span>
+<span class="lineNum">     845 </span><span class="lineCov">     514681 :         ao2_lock(topic);</span>
+<span class="lineNum">     846 </span><span class="lineCov">    2794373 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;topic-&gt;subscribers); ++i) {</span>
+<span class="lineNum">     847 </span><span class="lineCov">    2279692 :                 struct stasis_subscription *sub = AST_VECTOR_GET(&amp;topic-&gt;subscribers, i);</span>
+<span class="lineNum">     848 </span>            : 
+<span class="lineNum">     849 </span><span class="lineCov">    2279692 :                 ast_assert(sub != NULL);</span>
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineCov">    2279692 :                 dispatch_message(sub, message, (sub == sync_sub));</span>
+<span class="lineNum">     852 </span>            :         }
+<span class="lineNum">     853 </span><span class="lineCov">     514681 :         ao2_unlock(topic);</span>
+<span class="lineNum">     854 </span><span class="lineCov">     514681 :         ao2_ref(topic, -1);</span>
+<a name="855"><span class="lineNum">     855 </span><span class="lineCov">     514681 : }</span></a>
+<span class="lineNum">     856 </span>            : 
+<span class="lineNum">     857 </span><span class="lineCov">     513428 : void stasis_publish(struct stasis_topic *topic, struct stasis_message *message)</span>
+<span class="lineNum">     858 </span>            : {
+<span class="lineNum">     859 </span><span class="lineCov">     513428 :         publish_msg(topic, message, NULL);</span>
+<a name="860"><span class="lineNum">     860 </span><span class="lineCov">     513428 : }</span></a>
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span><span class="lineCov">       1253 : void stasis_publish_sync(struct stasis_subscription *sub, struct stasis_message *message)</span>
+<span class="lineNum">     863 </span>            : {
+<span class="lineNum">     864 </span><span class="lineCov">       1253 :         ast_assert(sub != NULL);</span>
+<span class="lineNum">     865 </span>            : 
+<span class="lineNum">     866 </span><span class="lineCov">       1253 :         publish_msg(sub-&gt;topic, message, sub);</span>
+<span class="lineNum">     867 </span><span class="lineCov">       1253 : }</span>
+<span class="lineNum">     868 </span>            : 
+<span class="lineNum">     869 </span>            : /*!
+<span class="lineNum">     870 </span>            :  * \brief Forwarding information
+<span class="lineNum">     871 </span>            :  *
+<span class="lineNum">     872 </span>            :  * Any message posted to \a from_topic is forwarded to \a to_topic.
+<span class="lineNum">     873 </span>            :  *
+<span class="lineNum">     874 </span>            :  * In cases where both the \a from_topic and \a to_topic need to be locked,
+<span class="lineNum">     875 </span>            :  * always lock the \a to_topic first, then the \a from_topic. Lest you deadlock.
+<span class="lineNum">     876 </span>            :  */
+<span class="lineNum">     877 </span>            : struct stasis_forward {
+<span class="lineNum">     878 </span>            :         /*! Originating topic */
+<span class="lineNum">     879 </span>            :         struct stasis_topic *from_topic;
+<span class="lineNum">     880 </span>            :         /*! Destination topic */
+<span class="lineNum">     881 </span>            :         struct stasis_topic *to_topic;
+<a name="882"><span class="lineNum">     882 </span>            : };</a>
+<span class="lineNum">     883 </span>            : 
+<span class="lineNum">     884 </span><span class="lineCov">      92069 : static void forward_dtor(void *obj)</span>
+<span class="lineNum">     885 </span>            : {
+<span class="lineNum">     886 </span><span class="lineCov">      92069 :         struct stasis_forward *forward = obj;</span>
+<span class="lineNum">     887 </span>            : 
+<span class="lineNum">     888 </span><span class="lineCov">      92069 :         ao2_cleanup(forward-&gt;from_topic);</span>
+<span class="lineNum">     889 </span><span class="lineCov">      92069 :         forward-&gt;from_topic = NULL;</span>
+<span class="lineNum">     890 </span><span class="lineCov">      92069 :         ao2_cleanup(forward-&gt;to_topic);</span>
+<span class="lineNum">     891 </span><span class="lineCov">      92069 :         forward-&gt;to_topic = NULL;</span>
+<a name="892"><span class="lineNum">     892 </span><span class="lineCov">      92069 : }</span></a>
+<span class="lineNum">     893 </span>            : 
+<span class="lineNum">     894 </span><span class="lineCov">     153007 : struct stasis_forward *stasis_forward_cancel(struct stasis_forward *forward)</span>
+<span class="lineNum">     895 </span>            : {
+<span class="lineNum">     896 </span>            :         int idx;
+<span class="lineNum">     897 </span>            :         struct stasis_topic *from;
+<span class="lineNum">     898 </span>            :         struct stasis_topic *to;
+<span class="lineNum">     899 </span>            : 
+<span class="lineNum">     900 </span><span class="lineCov">     153007 :         if (!forward) {</span>
+<span class="lineNum">     901 </span><span class="lineCov">      60938 :                 return NULL;</span>
+<span class="lineNum">     902 </span>            :         }
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span><span class="lineCov">      92069 :         from = forward-&gt;from_topic;</span>
+<span class="lineNum">     905 </span><span class="lineCov">      92069 :         to = forward-&gt;to_topic;</span>
+<span class="lineNum">     906 </span>            : 
+<span class="lineNum">     907 </span><span class="lineCov">      92069 :         if (from &amp;&amp; to) {</span>
+<span class="lineNum">     908 </span><span class="lineCov">      92104 :                 topic_lock_both(to, from);</span>
+<span class="lineNum">     909 </span><span class="lineCov">     710657 :                 AST_VECTOR_REMOVE_ELEM_UNORDERED(&amp;to-&gt;upstream_topics, from,</span>
+<span class="lineNum">     910 </span>            :                         AST_VECTOR_ELEM_CLEANUP_NOOP);
+<span class="lineNum">     911 </span>            : 
+<span class="lineNum">     912 </span><span class="lineCov">     503005 :                 for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;to-&gt;subscribers); ++idx) {</span>
+<span class="lineNum">     913 </span><span class="lineCov">     410936 :                         topic_remove_subscription(from, AST_VECTOR_GET(&amp;to-&gt;subscribers, idx));</span>
+<span class="lineNum">     914 </span>            :                 }
+<span class="lineNum">     915 </span><span class="lineCov">      92069 :                 ao2_unlock(from);</span>
+<span class="lineNum">     916 </span><span class="lineCov">      92069 :                 ao2_unlock(to);</span>
+<span class="lineNum">     917 </span>            :         }
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineCov">      92069 :         ao2_cleanup(forward);</span>
+<span class="lineNum">     920 </span>            : 
+<span class="lineNum">     921 </span><span class="lineCov">      92069 :         return NULL;</span>
+<a name="922"><span class="lineNum">     922 </span>            : }</a>
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span><span class="lineCov">      93938 : struct stasis_forward *stasis_forward_all(struct stasis_topic *from_topic,</span>
+<span class="lineNum">     925 </span>            :         struct stasis_topic *to_topic)
+<span class="lineNum">     926 </span>            : {
+<span class="lineNum">     927 </span>            :         int res;
+<span class="lineNum">     928 </span>            :         size_t idx;
+<span class="lineNum">     929 </span>            :         struct stasis_forward *forward;
+<span class="lineNum">     930 </span>            : 
+<span class="lineNum">     931 </span><span class="lineCov">      93938 :         if (!from_topic || !to_topic) {</span>
+<span class="lineNum">     932 </span><span class="lineCov">         16 :                 return NULL;</span>
+<span class="lineNum">     933 </span>            :         }
+<span class="lineNum">     934 </span>            : 
+<span class="lineNum">     935 </span><span class="lineCov">      93922 :         forward = ao2_alloc_options(sizeof(*forward), forward_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">     936 </span><span class="lineCov">      93922 :         if (!forward) {</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     938 </span>            :         }
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span>            :         /* Forwards to ourselves are implicit. */
+<span class="lineNum">     941 </span><span class="lineCov">      93922 :         if (to_topic == from_topic) {</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">          0 :                 return forward;</span>
+<span class="lineNum">     943 </span>            :         }
+<span class="lineNum">     944 </span>            : 
+<span class="lineNum">     945 </span><span class="lineCov">      93922 :         forward-&gt;from_topic = ao2_bump(from_topic);</span>
+<span class="lineNum">     946 </span><span class="lineCov">      93922 :         forward-&gt;to_topic = ao2_bump(to_topic);</span>
+<span class="lineNum">     947 </span>            : 
+<span class="lineNum">     948 </span><span class="lineCov">      93922 :         topic_lock_both(to_topic, from_topic);</span>
+<span class="lineNum">     949 </span><span class="lineCov">      93922 :         res = AST_VECTOR_APPEND(&amp;to_topic-&gt;upstream_topics, from_topic);</span>
+<span class="lineNum">     950 </span><span class="lineCov">      93922 :         if (res != 0) {</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                 ao2_unlock(from_topic);</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :                 ao2_unlock(to_topic);</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">          0 :                 ao2_ref(forward, -1);</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     955 </span>            :         }
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span><span class="lineCov">     525505 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;to_topic-&gt;subscribers); ++idx) {</span>
+<span class="lineNum">     958 </span><span class="lineCov">     431583 :                 topic_add_subscription(from_topic, AST_VECTOR_GET(&amp;to_topic-&gt;subscribers, idx));</span>
+<span class="lineNum">     959 </span>            :         }
+<span class="lineNum">     960 </span><span class="lineCov">      93922 :         ao2_unlock(from_topic);</span>
+<span class="lineNum">     961 </span><span class="lineCov">      93922 :         ao2_unlock(to_topic);</span>
+<span class="lineNum">     962 </span>            : 
+<span class="lineNum">     963 </span><span class="lineCov">      93922 :         return forward;</span>
+<a name="964"><span class="lineNum">     964 </span>            : }</a>
+<span class="lineNum">     965 </span>            : 
+<span class="lineNum">     966 </span><span class="lineCov">     121472 : static void subscription_change_dtor(void *obj)</span>
+<span class="lineNum">     967 </span>            : {
+<span class="lineNum">     968 </span><span class="lineCov">     121472 :         struct stasis_subscription_change *change = obj;</span>
+<span class="lineNum">     969 </span>            : 
+<span class="lineNum">     970 </span><span class="lineCov">     121472 :         ast_string_field_free_memory(change);</span>
+<span class="lineNum">     971 </span><span class="lineCov">     121472 :         ao2_cleanup(change-&gt;topic);</span>
+<a name="972"><span class="lineNum">     972 </span><span class="lineCov">     121472 : }</span></a>
+<span class="lineNum">     973 </span>            : 
+<span class="lineNum">     974 </span><span class="lineCov">     121542 : static struct stasis_subscription_change *subscription_change_alloc(struct stasis_topic *topic, const char *uniqueid, const char *description)</span>
+<span class="lineNum">     975 </span>            : {
+<span class="lineNum">     976 </span>            :         struct stasis_subscription_change *change;
+<span class="lineNum">     977 </span>            : 
+<span class="lineNum">     978 </span><span class="lineCov">     121542 :         change = ao2_alloc(sizeof(struct stasis_subscription_change), subscription_change_dtor);</span>
+<span class="lineNum">     979 </span><span class="lineCov">     121542 :         if (!change || ast_string_field_init(change, 128)) {</span>
+<span class="lineNum">     980 </span><span class="lineNoCov">          0 :                 ao2_cleanup(change);</span>
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     982 </span>            :         }
+<span class="lineNum">     983 </span>            : 
+<span class="lineNum">     984 </span><span class="lineCov">     121542 :         ast_string_field_set(change, uniqueid, uniqueid);</span>
+<span class="lineNum">     985 </span><span class="lineCov">     121542 :         ast_string_field_set(change, description, description);</span>
+<span class="lineNum">     986 </span><span class="lineCov">     121542 :         ao2_ref(topic, +1);</span>
+<span class="lineNum">     987 </span><span class="lineCov">     121542 :         change-&gt;topic = topic;</span>
+<span class="lineNum">     988 </span>            : 
+<span class="lineNum">     989 </span><span class="lineCov">     121542 :         return change;</span>
+<a name="990"><span class="lineNum">     990 </span>            : }</a>
+<span class="lineNum">     991 </span>            : 
+<span class="lineNum">     992 </span><span class="lineCov">      61347 : static void send_subscription_subscribe(struct stasis_topic *topic, struct stasis_subscription *sub)</span>
+<span class="lineNum">     993 </span>            : {
+<span class="lineNum">     994 </span>            :         struct stasis_subscription_change *change;
+<span class="lineNum">     995 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     996 </span>            : 
+<span class="lineNum">     997 </span>            :         /* This assumes that we have already unsubscribed */
+<span class="lineNum">     998 </span><span class="lineCov">      61347 :         ast_assert(stasis_subscription_is_subscribed(sub));</span>
+<span class="lineNum">     999 </span>            : 
+<span class="lineNum">    1000 </span><span class="lineCov">      61347 :         if (!stasis_subscription_change_type()) {</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1002 </span>            :         }
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineCov">      61347 :         change = subscription_change_alloc(topic, sub-&gt;uniqueid, &quot;Subscribe&quot;);</span>
+<span class="lineNum">    1005 </span><span class="lineCov">      61347 :         if (!change) {</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1007 </span>            :         }
+<span class="lineNum">    1008 </span>            : 
+<span class="lineNum">    1009 </span><span class="lineCov">      61347 :         msg = stasis_message_create(stasis_subscription_change_type(), change);</span>
+<span class="lineNum">    1010 </span><span class="lineCov">      61347 :         if (!msg) {</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :                 ao2_cleanup(change);</span>
+<span class="lineNum">    1012 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1013 </span>            :         }
+<span class="lineNum">    1014 </span>            : 
+<span class="lineNum">    1015 </span><span class="lineCov">      61347 :         stasis_publish(topic, msg);</span>
+<span class="lineNum">    1016 </span><span class="lineCov">      61347 :         ao2_cleanup(msg);</span>
+<span class="lineNum">    1017 </span><span class="lineCov">      61347 :         ao2_cleanup(change);</span>
+<a name="1018"><span class="lineNum">    1018 </span>            : }</a>
+<span class="lineNum">    1019 </span>            : 
+<span class="lineNum">    1020 </span><span class="lineCov">      60195 : static void send_subscription_unsubscribe(struct stasis_topic *topic,</span>
+<span class="lineNum">    1021 </span>            :         struct stasis_subscription *sub)
+<span class="lineNum">    1022 </span>            : {
+<span class="lineNum">    1023 </span>            :         struct stasis_subscription_change *change;
+<span class="lineNum">    1024 </span>            :         struct stasis_message *msg;
+<span class="lineNum">    1025 </span>            : 
+<span class="lineNum">    1026 </span>            :         /* This assumes that we have already unsubscribed */
+<span class="lineNum">    1027 </span><span class="lineCov">      60195 :         ast_assert(!stasis_subscription_is_subscribed(sub));</span>
+<span class="lineNum">    1028 </span>            : 
+<span class="lineNum">    1029 </span><span class="lineCov">      60195 :         if (!stasis_subscription_change_type()) {</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1031 </span>            :         }
+<span class="lineNum">    1032 </span>            : 
+<span class="lineNum">    1033 </span><span class="lineCov">      60195 :         change = subscription_change_alloc(topic, sub-&gt;uniqueid, &quot;Unsubscribe&quot;);</span>
+<span class="lineNum">    1034 </span><span class="lineCov">      60195 :         if (!change) {</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1036 </span>            :         }
+<span class="lineNum">    1037 </span>            : 
+<span class="lineNum">    1038 </span><span class="lineCov">      60195 :         msg = stasis_message_create(stasis_subscription_change_type(), change);</span>
+<span class="lineNum">    1039 </span><span class="lineCov">      60195 :         if (!msg) {</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :                 ao2_cleanup(change);</span>
+<span class="lineNum">    1041 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1042 </span>            :         }
+<span class="lineNum">    1043 </span>            : 
+<span class="lineNum">    1044 </span><span class="lineCov">      60195 :         stasis_publish(topic, msg);</span>
+<span class="lineNum">    1045 </span>            : 
+<span class="lineNum">    1046 </span>            :         /* Now we have to dispatch to the subscription itself */
+<span class="lineNum">    1047 </span><span class="lineCov">      60195 :         dispatch_message(sub, msg, 0);</span>
+<span class="lineNum">    1048 </span>            : 
+<span class="lineNum">    1049 </span><span class="lineCov">      60195 :         ao2_cleanup(msg);</span>
+<span class="lineNum">    1050 </span><span class="lineCov">      60195 :         ao2_cleanup(change);</span>
+<span class="lineNum">    1051 </span>            : }
+<span class="lineNum">    1052 </span>            : 
+<span class="lineNum">    1053 </span>            : struct topic_pool_entry {
+<span class="lineNum">    1054 </span>            :         struct stasis_forward *forward;
+<span class="lineNum">    1055 </span>            :         struct stasis_topic *topic;
+<a name="1056"><span class="lineNum">    1056 </span>            : };</a>
+<span class="lineNum">    1057 </span>            : 
+<span class="lineNum">    1058 </span><span class="lineCov">       4181 : static void topic_pool_entry_dtor(void *obj)</span>
+<span class="lineNum">    1059 </span>            : {
+<span class="lineNum">    1060 </span><span class="lineCov">       4181 :         struct topic_pool_entry *entry = obj;</span>
+<span class="lineNum">    1061 </span>            : 
+<span class="lineNum">    1062 </span><span class="lineCov">       4181 :         entry-&gt;forward = stasis_forward_cancel(entry-&gt;forward);</span>
+<span class="lineNum">    1063 </span><span class="lineCov">       4181 :         ao2_cleanup(entry-&gt;topic);</span>
+<span class="lineNum">    1064 </span><span class="lineCov">       4181 :         entry-&gt;topic = NULL;</span>
+<a name="1065"><span class="lineNum">    1065 </span><span class="lineCov">       4181 : }</span></a>
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span><span class="lineCov">       4480 : static struct topic_pool_entry *topic_pool_entry_alloc(void)</span>
+<span class="lineNum">    1068 </span>            : {
+<span class="lineNum">    1069 </span><span class="lineCov">       4480 :         return ao2_alloc_options(sizeof(struct topic_pool_entry), topic_pool_entry_dtor,</span>
+<span class="lineNum">    1070 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">    1071 </span>            : }
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span>            : struct stasis_topic_pool {
+<span class="lineNum">    1074 </span>            :         struct ao2_container *pool_container;
+<span class="lineNum">    1075 </span>            :         struct stasis_topic *pool_topic;
+<a name="1076"><span class="lineNum">    1076 </span>            : };</a>
+<span class="lineNum">    1077 </span>            : 
+<span class="lineNum">    1078 </span><span class="lineCov">       3183 : static void topic_pool_dtor(void *obj)</span>
+<span class="lineNum">    1079 </span>            : {
+<span class="lineNum">    1080 </span><span class="lineCov">       3183 :         struct stasis_topic_pool *pool = obj;</span>
+<span class="lineNum">    1081 </span>            : 
+<span class="lineNum">    1082 </span><span class="lineCov">       3183 :         ao2_cleanup(pool-&gt;pool_container);</span>
+<span class="lineNum">    1083 </span><span class="lineCov">       3183 :         pool-&gt;pool_container = NULL;</span>
+<span class="lineNum">    1084 </span><span class="lineCov">       3183 :         ao2_cleanup(pool-&gt;pool_topic);</span>
+<span class="lineNum">    1085 </span><span class="lineCov">       3183 :         pool-&gt;pool_topic = NULL;</span>
+<a name="1086"><span class="lineNum">    1086 </span><span class="lineCov">       3183 : }</span></a>
+<span class="lineNum">    1087 </span>            : 
+<span class="lineNum">    1088 </span><span class="lineCov">      26688 : static int topic_pool_entry_hash(const void *obj, const int flags)</span>
+<span class="lineNum">    1089 </span>            : {
+<span class="lineNum">    1090 </span>            :         const struct topic_pool_entry *object;
+<span class="lineNum">    1091 </span>            :         const char *key;
+<span class="lineNum">    1092 </span>            : 
+<span class="lineNum">    1093 </span><span class="lineCov">      26688 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">    1094 </span><span class="lineCov">      22208 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">    1095 </span><span class="lineCov">      22208 :                 key = obj;</span>
+<span class="lineNum">    1096 </span><span class="lineCov">      22208 :                 break;</span>
+<span class="lineNum">    1097 </span><span class="lineCov">       4480 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">    1098 </span><span class="lineCov">       4480 :                 object = obj;</span>
+<span class="lineNum">    1099 </span><span class="lineCov">       4480 :                 key = stasis_topic_name(object-&gt;topic);</span>
+<span class="lineNum">    1100 </span><span class="lineCov">       4480 :                 break;</span>
+<span class="lineNum">    1101 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">    1102 </span>            :                 /* Hash can only work on something with a full key. */
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1105 </span>            :         }
+<span class="lineNum">    1106 </span><span class="lineCov">      26688 :         return ast_str_case_hash(key);</span>
+<a name="1107"><span class="lineNum">    1107 </span>            : }</a>
+<span class="lineNum">    1108 </span>            : 
+<span class="lineNum">    1109 </span><span class="lineCov">      21088 : static int topic_pool_entry_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1110 </span>            : {
+<span class="lineNum">    1111 </span><span class="lineCov">      21088 :         const struct topic_pool_entry *object_left = obj;</span>
+<span class="lineNum">    1112 </span><span class="lineCov">      21088 :         const struct topic_pool_entry *object_right = arg;</span>
+<span class="lineNum">    1113 </span><span class="lineCov">      21088 :         const char *right_key = arg;</span>
+<span class="lineNum">    1114 </span>            :         int cmp;
+<span class="lineNum">    1115 </span>            : 
+<span class="lineNum">    1116 </span><span class="lineCov">      21088 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">    1117 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">    1118 </span><span class="lineNoCov">          0 :                 right_key = stasis_topic_name(object_right-&gt;topic);</span>
+<span class="lineNum">    1119 </span>            :                 /* Fall through */
+<span class="lineNum">    1120 </span><span class="lineCov">      21088 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">    1121 </span><span class="lineCov">      21088 :                 cmp = strcasecmp(stasis_topic_name(object_left-&gt;topic), right_key);</span>
+<span class="lineNum">    1122 </span><span class="lineCov">      21088 :                 break;</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">    1124 </span>            :                 /* Not supported by container */
+<span class="lineNum">    1125 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">    1126 </span><span class="lineNoCov">          0 :                 cmp = -1;</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">    1129 </span>            :                 /*
+<span class="lineNum">    1130 </span>            :                  * What arg points to is specific to this traversal callback
+<span class="lineNum">    1131 </span>            :                  * and has no special meaning to astobj2.
+<span class="lineNum">    1132 </span>            :                  */
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">    1135 </span>            :         }
+<span class="lineNum">    1136 </span><span class="lineCov">      21088 :         if (cmp) {</span>
+<span class="lineNum">    1137 </span><span class="lineCov">       3360 :                 return 0;</span>
+<span class="lineNum">    1138 </span>            :         }
+<span class="lineNum">    1139 </span>            :         /*
+<span class="lineNum">    1140 </span>            :          * At this point the traversal callback is identical to a sorted
+<span class="lineNum">    1141 </span>            :          * container.
+<span class="lineNum">    1142 </span>            :          */
+<span class="lineNum">    1143 </span><span class="lineCov">      17728 :         return CMP_MATCH;</span>
+<a name="1144"><span class="lineNum">    1144 </span>            : }</a>
+<span class="lineNum">    1145 </span>            : 
+<span class="lineNum">    1146 </span><span class="lineCov">       3372 : struct stasis_topic_pool *stasis_topic_pool_create(struct stasis_topic *pooled_topic)</span>
+<span class="lineNum">    1147 </span>            : {
+<span class="lineNum">    1148 </span>            :         struct stasis_topic_pool *pool;
+<span class="lineNum">    1149 </span>            : 
+<span class="lineNum">    1150 </span><span class="lineCov">       3372 :         pool = ao2_alloc_options(sizeof(*pool), topic_pool_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">    1151 </span><span class="lineCov">       3372 :         if (!pool) {</span>
+<span class="lineNum">    1152 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1153 </span>            :         }
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span><span class="lineCov">       3372 :         pool-&gt;pool_container = ao2_container_alloc(TOPIC_POOL_BUCKETS,</span>
+<span class="lineNum">    1156 </span>            :                 topic_pool_entry_hash, topic_pool_entry_cmp);
+<span class="lineNum">    1157 </span><span class="lineCov">       3372 :         if (!pool-&gt;pool_container) {</span>
+<span class="lineNum">    1158 </span><span class="lineNoCov">          0 :                 ao2_cleanup(pool);</span>
+<span class="lineNum">    1159 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1160 </span>            :         }
+<span class="lineNum">    1161 </span><span class="lineCov">       3372 :         ao2_ref(pooled_topic, +1);</span>
+<span class="lineNum">    1162 </span><span class="lineCov">       3372 :         pool-&gt;pool_topic = pooled_topic;</span>
+<span class="lineNum">    1163 </span>            : 
+<span class="lineNum">    1164 </span><span class="lineCov">       3372 :         return pool;</span>
+<a name="1165"><span class="lineNum">    1165 </span>            : }</a>
+<span class="lineNum">    1166 </span>            : 
+<a name="1167"><span class="lineNum">    1167 </span><span class="lineCov">      22208 : struct stasis_topic *stasis_topic_pool_get_topic(struct stasis_topic_pool *pool, const char *topic_name)</span></a>
+<a name="1168"><span class="lineNum">    1168 </span>            : {</a>
+<span class="lineNum">    1169 </span><span class="lineCov">      44416 :         RAII_VAR(struct topic_pool_entry *, topic_pool_entry, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1170 </span><span class="lineCov">      66624 :         SCOPED_AO2LOCK(topic_container_lock, pool-&gt;pool_container);</span>
+<span class="lineNum">    1171 </span>            : 
+<span class="lineNum">    1172 </span><span class="lineCov">      22208 :         topic_pool_entry = ao2_find(pool-&gt;pool_container, topic_name, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">    1173 </span><span class="lineCov">      22208 :         if (topic_pool_entry) {</span>
+<span class="lineNum">    1174 </span><span class="lineCov">      17728 :                 return topic_pool_entry-&gt;topic;</span>
+<span class="lineNum">    1175 </span>            :         }
+<span class="lineNum">    1176 </span>            : 
+<span class="lineNum">    1177 </span><span class="lineCov">       4480 :         topic_pool_entry = topic_pool_entry_alloc();</span>
+<span class="lineNum">    1178 </span><span class="lineCov">       4480 :         if (!topic_pool_entry) {</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1180 </span>            :         }
+<span class="lineNum">    1181 </span>            : 
+<span class="lineNum">    1182 </span><span class="lineCov">       4480 :         topic_pool_entry-&gt;topic = stasis_topic_create(topic_name);</span>
+<span class="lineNum">    1183 </span><span class="lineCov">       4480 :         if (!topic_pool_entry-&gt;topic) {</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1185 </span>            :         }
+<span class="lineNum">    1186 </span>            : 
+<span class="lineNum">    1187 </span><span class="lineCov">       4480 :         topic_pool_entry-&gt;forward = stasis_forward_all(topic_pool_entry-&gt;topic, pool-&gt;pool_topic);</span>
+<span class="lineNum">    1188 </span><span class="lineCov">       4480 :         if (!topic_pool_entry-&gt;forward) {</span>
+<span class="lineNum">    1189 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1190 </span>            :         }
+<span class="lineNum">    1191 </span>            : 
+<span class="lineNum">    1192 </span><span class="lineCov">       4480 :         if (!ao2_link_flags(pool-&gt;pool_container, topic_pool_entry, OBJ_NOLOCK)) {</span>
+<span class="lineNum">    1193 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1194 </span>            :         }
+<span class="lineNum">    1195 </span>            : 
+<span class="lineNum">    1196 </span><span class="lineCov">       4480 :         return topic_pool_entry-&gt;topic;</span>
+<a name="1197"><span class="lineNum">    1197 </span>            : }</a>
+<span class="lineNum">    1198 </span>            : 
+<span class="lineNum">    1199 </span><span class="lineCov">          3 : void stasis_log_bad_type_access(const char *name)</span>
+<span class="lineNum">    1200 </span>            : {
+<span class="lineNum">    1201 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">    1202 </span><span class="lineCov">          3 :         if (!stasis_message_type_declined(name)) {</span>
+<span class="lineNum">    1203 </span><span class="lineCov">          3 :                 ast_log(LOG_ERROR, &quot;Use of %s() before init/after destruction\n&quot;, name);</span>
+<span class="lineNum">    1204 </span>            :         }
+<span class="lineNum">    1205 </span>            : #endif
+<span class="lineNum">    1206 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">    1207 </span>            : 
+<span class="lineNum">    1208 </span>            : /*! \brief A multi object blob data structure to carry user event stasis messages */
+<span class="lineNum">    1209 </span>            : struct ast_multi_object_blob {
+<span class="lineNum">    1210 </span>            :         struct ast_json *blob;                             /*&lt; A blob of JSON data */
+<span class="lineNum">    1211 </span>            :         AST_VECTOR(, void *) snapshots[STASIS_UMOS_MAX];   /*&lt; Vector of snapshots for each type */
+<span class="lineNum">    1212 </span>            : };
+<span class="lineNum">    1213 </span>            : 
+<span class="lineNum">    1214 </span>            : /*!
+<span class="lineNum">    1215 </span>            :  * \internal
+<a name="1216"><span class="lineNum">    1216 </span>            :  * \brief Destructor for \ref ast_multi_object_blob objects</a>
+<span class="lineNum">    1217 </span>            :  */
+<span class="lineNum">    1218 </span><span class="lineCov">       1503 : static void multi_object_blob_dtor(void *obj)</span>
+<span class="lineNum">    1219 </span>            : {
+<span class="lineNum">    1220 </span><span class="lineCov">       1503 :         struct ast_multi_object_blob *multi = obj;</span>
+<span class="lineNum">    1221 </span>            :         int type;
+<span class="lineNum">    1222 </span>            :         int i;
+<span class="lineNum">    1223 </span>            : 
+<span class="lineNum">    1224 </span><span class="lineCov">       6012 :         for (type = 0; type &lt; STASIS_UMOS_MAX; ++type) {</span>
+<span class="lineNum">    1225 </span><span class="lineCov">       6009 :                 for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;multi-&gt;snapshots[type]); ++i) {</span>
+<span class="lineNum">    1226 </span><span class="lineCov">       1500 :                         ao2_cleanup(AST_VECTOR_GET(&amp;multi-&gt;snapshots[type], i));</span>
+<span class="lineNum">    1227 </span>            :                 }
+<span class="lineNum">    1228 </span><span class="lineCov">       4509 :                 AST_VECTOR_FREE(&amp;multi-&gt;snapshots[type]);</span>
+<span class="lineNum">    1229 </span>            :         }
+<span class="lineNum">    1230 </span><span class="lineCov">       1503 :         ast_json_unref(multi-&gt;blob);</span>
+<span class="lineNum">    1231 </span><span class="lineCov">       1503 : }</span>
+<a name="1232"><span class="lineNum">    1232 </span>            : </a>
+<span class="lineNum">    1233 </span>            : /*! \brief Create a stasis user event multi object blob */
+<span class="lineNum">    1234 </span><span class="lineCov">       1503 : struct ast_multi_object_blob *ast_multi_object_blob_create(struct ast_json *blob)</span>
+<span class="lineNum">    1235 </span>            : {
+<span class="lineNum">    1236 </span>            :         int type;
+<span class="lineNum">    1237 </span>            :         struct ast_multi_object_blob *multi;
+<span class="lineNum">    1238 </span>            : 
+<span class="lineNum">    1239 </span><span class="lineCov">       1503 :         ast_assert(blob != NULL);</span>
+<span class="lineNum">    1240 </span>            : 
+<span class="lineNum">    1241 </span><span class="lineCov">       1503 :         multi = ao2_alloc(sizeof(*multi), multi_object_blob_dtor);</span>
+<span class="lineNum">    1242 </span><span class="lineCov">       1503 :         if (!multi) {</span>
+<span class="lineNum">    1243 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1244 </span>            :         }
+<span class="lineNum">    1245 </span>            : 
+<span class="lineNum">    1246 </span><span class="lineCov">       6012 :         for (type = 0; type &lt; STASIS_UMOS_MAX; ++type) {</span>
+<span class="lineNum">    1247 </span><span class="lineCov">       4509 :                 if (AST_VECTOR_INIT(&amp;multi-&gt;snapshots[type], 0)) {</span>
+<span class="lineNum">    1248 </span><span class="lineNoCov">          0 :                         ao2_ref(multi, -1);</span>
+<span class="lineNum">    1249 </span>            : 
+<span class="lineNum">    1250 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1251 </span>            :                 }
+<span class="lineNum">    1252 </span>            :         }
+<span class="lineNum">    1253 </span>            : 
+<span class="lineNum">    1254 </span><span class="lineCov">       1503 :         multi-&gt;blob = ast_json_ref(blob);</span>
+<span class="lineNum">    1255 </span>            : 
+<span class="lineNum">    1256 </span><span class="lineCov">       1503 :         return multi;</span>
+<span class="lineNum">    1257 </span>            : }
+<a name="1258"><span class="lineNum">    1258 </span>            : </a>
+<span class="lineNum">    1259 </span>            : /*! \brief Add an object (snapshot) to the blob */
+<span class="lineNum">    1260 </span><span class="lineCov">       1500 : void ast_multi_object_blob_add(struct ast_multi_object_blob *multi,</span>
+<span class="lineNum">    1261 </span>            :         enum stasis_user_multi_object_snapshot_type type, void *object)
+<span class="lineNum">    1262 </span>            : {
+<span class="lineNum">    1263 </span><span class="lineCov">       1500 :         if (!multi || !object || AST_VECTOR_APPEND(&amp;multi-&gt;snapshots[type], object)) {</span>
+<span class="lineNum">    1264 </span><span class="lineNoCov">          0 :                 ao2_cleanup(object);</span>
+<span class="lineNum">    1265 </span>            :         }
+<span class="lineNum">    1266 </span><span class="lineCov">       1500 : }</span>
+<a name="1267"><span class="lineNum">    1267 </span>            : </a>
+<span class="lineNum">    1268 </span>            : /*! \brief Publish single channel user event (for app_userevent compatibility) */
+<span class="lineNum">    1269 </span><span class="lineCov">       1491 : void ast_multi_object_blob_single_channel_publish(struct ast_channel *chan,</span>
+<span class="lineNum">    1270 </span>            :         struct stasis_message_type *type, struct ast_json *blob)
+<span class="lineNum">    1271 </span>            : {
+<span class="lineNum">    1272 </span>            :         struct stasis_message *message;
+<span class="lineNum">    1273 </span>            :         struct ast_channel_snapshot *channel_snapshot;
+<span class="lineNum">    1274 </span>            :         struct ast_multi_object_blob *multi;
+<span class="lineNum">    1275 </span>            : 
+<span class="lineNum">    1276 </span><span class="lineCov">       1491 :         if (!type) {</span>
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1278 </span>            :         }
+<span class="lineNum">    1279 </span>            : 
+<span class="lineNum">    1280 </span><span class="lineCov">       1491 :         multi = ast_multi_object_blob_create(blob);</span>
+<span class="lineNum">    1281 </span><span class="lineCov">       1491 :         if (!multi) {</span>
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1283 </span>            :         }
+<span class="lineNum">    1284 </span>            : 
+<span class="lineNum">    1285 </span><span class="lineCov">       1491 :         channel_snapshot = ast_channel_snapshot_create(chan);</span>
+<span class="lineNum">    1286 </span><span class="lineCov">       1491 :         if (!channel_snapshot) {</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                 ao2_ref(multi, -1);</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1289 </span>            :         }
+<span class="lineNum">    1290 </span>            : 
+<span class="lineNum">    1291 </span>            :         /* this call steals the channel_snapshot reference */
+<span class="lineNum">    1292 </span><span class="lineCov">       1491 :         ast_multi_object_blob_add(multi, STASIS_UMOS_CHANNEL, channel_snapshot);</span>
+<span class="lineNum">    1293 </span>            : 
+<span class="lineNum">    1294 </span><span class="lineCov">       1491 :         message = stasis_message_create(type, multi);</span>
+<span class="lineNum">    1295 </span><span class="lineCov">       1491 :         ao2_ref(multi, -1);</span>
+<span class="lineNum">    1296 </span><span class="lineCov">       1491 :         if (message) {</span>
+<span class="lineNum">    1297 </span>            :                 /* app_userevent still publishes to channel */
+<span class="lineNum">    1298 </span><span class="lineCov">       1491 :                 stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">    1299 </span><span class="lineCov">       1491 :                 ao2_ref(message, -1);</span>
+<span class="lineNum">    1300 </span>            :         }
+<span class="lineNum">    1301 </span>            : }
+<a name="1302"><span class="lineNum">    1302 </span>            : </a>
+<span class="lineNum">    1303 </span>            : /*! \internal \brief convert multi object blob to ari json */
+<span class="lineNum">    1304 </span><span class="lineCov">         13 : static struct ast_json *multi_user_event_to_json(</span>
+<span class="lineNum">    1305 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1306 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1307 </span>            : {
+<span class="lineNum">    1308 </span>            :         struct ast_json *out;
+<span class="lineNum">    1309 </span><span class="lineCov">         13 :         struct ast_multi_object_blob *multi = stasis_message_data(message);</span>
+<span class="lineNum">    1310 </span><span class="lineCov">         13 :         struct ast_json *blob = multi-&gt;blob;</span>
+<span class="lineNum">    1311 </span><span class="lineCov">         13 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1312 </span>            :         enum stasis_user_multi_object_snapshot_type type;
+<span class="lineNum">    1313 </span>            :         int i;
+<span class="lineNum">    1314 </span>            : 
+<span class="lineNum">    1315 </span><span class="lineCov">         13 :         out = ast_json_object_create();</span>
+<span class="lineNum">    1316 </span><span class="lineCov">         13 :         if (!out) {</span>
+<span class="lineNum">    1317 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1318 </span>            :         }
+<span class="lineNum">    1319 </span>            : 
+<span class="lineNum">    1320 </span><span class="lineCov">         13 :         ast_json_object_set(out, &quot;type&quot;, ast_json_string_create(&quot;ChannelUserevent&quot;));</span>
+<span class="lineNum">    1321 </span><span class="lineCov">         13 :         ast_json_object_set(out, &quot;timestamp&quot;, ast_json_timeval(*tv, NULL));</span>
+<span class="lineNum">    1322 </span><span class="lineCov">         13 :         ast_json_object_set(out, &quot;eventname&quot;, ast_json_string_create(ast_json_string_get((ast_json_object_get(blob, &quot;eventname&quot;)))));</span>
+<span class="lineNum">    1323 </span><span class="lineCov">         13 :         ast_json_object_set(out, &quot;userevent&quot;, ast_json_deep_copy(blob));</span>
+<span class="lineNum">    1324 </span>            : 
+<span class="lineNum">    1325 </span><span class="lineCov">         52 :         for (type = 0; type &lt; STASIS_UMOS_MAX; ++type) {</span>
+<span class="lineNum">    1326 </span><span class="lineCov">         51 :                 for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;multi-&gt;snapshots[type]); ++i) {</span>
+<span class="lineNum">    1327 </span><span class="lineCov">         12 :                         struct ast_json *json_object = NULL;</span>
+<span class="lineNum">    1328 </span><span class="lineCov">         12 :                         char *name = NULL;</span>
+<span class="lineNum">    1329 </span><span class="lineCov">         12 :                         void *snapshot = AST_VECTOR_GET(&amp;multi-&gt;snapshots[type], i);</span>
+<span class="lineNum">    1330 </span>            : 
+<span class="lineNum">    1331 </span><span class="lineCov">         12 :                         switch (type) {</span>
+<span class="lineNum">    1332 </span><span class="lineCov">          9 :                         case STASIS_UMOS_CHANNEL:</span>
+<span class="lineNum">    1333 </span><span class="lineCov">          9 :                                 json_object = ast_channel_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1334 </span><span class="lineCov">          9 :                                 name = &quot;channel&quot;;</span>
+<span class="lineNum">    1335 </span><span class="lineCov">          9 :                                 break;</span>
+<span class="lineNum">    1336 </span><span class="lineCov">          2 :                         case STASIS_UMOS_BRIDGE:</span>
+<span class="lineNum">    1337 </span><span class="lineCov">          2 :                                 json_object = ast_bridge_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1338 </span><span class="lineCov">          2 :                                 name = &quot;bridge&quot;;</span>
+<span class="lineNum">    1339 </span><span class="lineCov">          2 :                                 break;</span>
+<span class="lineNum">    1340 </span><span class="lineCov">          1 :                         case STASIS_UMOS_ENDPOINT:</span>
+<span class="lineNum">    1341 </span><span class="lineCov">          1 :                                 json_object = ast_endpoint_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1342 </span><span class="lineCov">          1 :                                 name = &quot;endpoint&quot;;</span>
+<span class="lineNum">    1343 </span><span class="lineCov">          1 :                                 break;</span>
+<span class="lineNum">    1344 </span>            :                         }
+<span class="lineNum">    1345 </span><span class="lineCov">         12 :                         if (json_object) {</span>
+<span class="lineNum">    1346 </span><span class="lineCov">         12 :                                 ast_json_object_set(out, name, json_object);</span>
+<span class="lineNum">    1347 </span>            :                         }
+<span class="lineNum">    1348 </span>            :                 }
+<span class="lineNum">    1349 </span>            :         }
+<span class="lineNum">    1350 </span>            : 
+<span class="lineNum">    1351 </span><span class="lineCov">         13 :         return out;</span>
+<span class="lineNum">    1352 </span>            : }
+<a name="1353"><span class="lineNum">    1353 </span>            : </a>
+<span class="lineNum">    1354 </span>            : /*! \internal \brief convert multi object blob to ami string */
+<span class="lineNum">    1355 </span><span class="lineCov">       1497 : static struct ast_str *multi_object_blob_to_ami(void *obj)</span>
+<span class="lineNum">    1356 </span>            : {
+<span class="lineNum">    1357 </span><span class="lineCov">       1497 :         struct ast_str *ami_str=ast_str_create(1024);</span>
+<span class="lineNum">    1358 </span>            :         struct ast_str *ami_snapshot;
+<span class="lineNum">    1359 </span><span class="lineCov">       1497 :         const struct ast_multi_object_blob *multi = obj;</span>
+<span class="lineNum">    1360 </span>            :         enum stasis_user_multi_object_snapshot_type type;
+<span class="lineNum">    1361 </span>            :         int i;
+<span class="lineNum">    1362 </span>            : 
+<span class="lineNum">    1363 </span><span class="lineCov">       1497 :         if (!ami_str) {</span>
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1365 </span>            :         }
+<span class="lineNum">    1366 </span><span class="lineCov">       1497 :         if (!multi) {</span>
+<span class="lineNum">    1367 </span><span class="lineNoCov">          0 :                 ast_free(ami_str);</span>
+<span class="lineNum">    1368 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1369 </span>            :         }
+<span class="lineNum">    1370 </span>            : 
+<span class="lineNum">    1371 </span><span class="lineCov">       5988 :         for (type = 0; type &lt; STASIS_UMOS_MAX; ++type) {</span>
+<span class="lineNum">    1372 </span><span class="lineCov">       5989 :                 for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;multi-&gt;snapshots[type]); ++i) {</span>
+<span class="lineNum">    1373 </span><span class="lineCov">       1498 :                         char *name = NULL;</span>
+<span class="lineNum">    1374 </span><span class="lineCov">       1498 :                         void *snapshot = AST_VECTOR_GET(&amp;multi-&gt;snapshots[type], i);</span>
+<span class="lineNum">    1375 </span><span class="lineCov">       1498 :                         ami_snapshot = NULL;</span>
+<span class="lineNum">    1376 </span>            : 
+<span class="lineNum">    1377 </span><span class="lineCov">       1498 :                         if (i &gt; 0) {</span>
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :                                 ast_asprintf(&amp;name, &quot;%d&quot;, i + 1);</span>
+<span class="lineNum">    1379 </span>            :                         }
+<span class="lineNum">    1380 </span>            : 
+<span class="lineNum">    1381 </span><span class="lineCov">       1498 :                         switch (type) {</span>
+<span class="lineNum">    1382 </span><span class="lineCov">       1497 :                         case STASIS_UMOS_CHANNEL:</span>
+<span class="lineNum">    1383 </span><span class="lineCov">       1497 :                                 ami_snapshot = ast_manager_build_channel_state_string_prefix(snapshot, name ?: &quot;&quot;);</span>
+<span class="lineNum">    1384 </span><span class="lineCov">       1497 :                                 break;</span>
+<span class="lineNum">    1385 </span>            : 
+<span class="lineNum">    1386 </span><span class="lineCov">          1 :                         case STASIS_UMOS_BRIDGE:</span>
+<span class="lineNum">    1387 </span><span class="lineCov">          1 :                                 ami_snapshot = ast_manager_build_bridge_state_string_prefix(snapshot, name ?: &quot;&quot;);</span>
+<span class="lineNum">    1388 </span><span class="lineCov">          1 :                                 break;</span>
+<span class="lineNum">    1389 </span>            : 
+<span class="lineNum">    1390 </span><span class="lineNoCov">          0 :                         case STASIS_UMOS_ENDPOINT:</span>
+<span class="lineNum">    1391 </span>            :                                 /* currently not sending endpoint snapshots to AMI */
+<span class="lineNum">    1392 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1393 </span>            :                         }
+<span class="lineNum">    1394 </span><span class="lineCov">       1498 :                         if (ami_snapshot) {</span>
+<span class="lineNum">    1395 </span><span class="lineCov">       1498 :                                 ast_str_append(&amp;ami_str, 0, &quot;%s&quot;, ast_str_buffer(ami_snapshot));</span>
+<span class="lineNum">    1396 </span><span class="lineCov">       1498 :                                 ast_free(ami_snapshot);</span>
+<span class="lineNum">    1397 </span>            :                         }
+<span class="lineNum">    1398 </span><span class="lineCov">       1498 :                         ast_free(name);</span>
+<span class="lineNum">    1399 </span>            :                 }
+<span class="lineNum">    1400 </span>            :         }
+<span class="lineNum">    1401 </span>            : 
+<span class="lineNum">    1402 </span><span class="lineCov">       1497 :         return ami_str;</span>
+<span class="lineNum">    1403 </span>            : }
+<a name="1404"><span class="lineNum">    1404 </span>            : </a>
+<span class="lineNum">    1405 </span>            : /*! \internal \brief Callback to pass only user defined parameters from blob */
+<span class="lineNum">    1406 </span><span class="lineCov">       4158 : static int userevent_exclusion_cb(const char *key)</span>
+<span class="lineNum">    1407 </span>            : {
+<span class="lineNum">    1408 </span><span class="lineCov">       4158 :         if (!strcmp(&quot;eventname&quot;, key)) {</span>
+<span class="lineNum">    1409 </span><span class="lineCov">       1497 :                 return 1;</span>
+<span class="lineNum">    1410 </span>            :         }
+<span class="lineNum">    1411 </span><span class="lineCov">       2661 :         return 0;</span>
+<a name="1412"><span class="lineNum">    1412 </span>            : }</a>
+<span class="lineNum">    1413 </span>            : 
+<span class="lineNum">    1414 </span><span class="lineCov">       1497 : static struct ast_manager_event_blob *multi_user_event_to_ami(</span>
+<a name="1415"><span class="lineNum">    1415 </span>            :         struct stasis_message *message)</a>
+<a name="1416"><span class="lineNum">    1416 </span>            : {</a>
+<span class="lineNum">    1417 </span><span class="lineCov">       2994 :         RAII_VAR(struct ast_str *, object_string, NULL, ast_free);</span>
+<span class="lineNum">    1418 </span><span class="lineCov">       2994 :         RAII_VAR(struct ast_str *, body, NULL, ast_free);</span>
+<span class="lineNum">    1419 </span><span class="lineCov">       1497 :         struct ast_multi_object_blob *multi = stasis_message_data(message);</span>
+<span class="lineNum">    1420 </span>            :         const char *eventname;
+<span class="lineNum">    1421 </span>            : 
+<span class="lineNum">    1422 </span><span class="lineCov">       1497 :         eventname = ast_json_string_get(ast_json_object_get(multi-&gt;blob, &quot;eventname&quot;));</span>
+<span class="lineNum">    1423 </span><span class="lineCov">       1497 :         body = ast_manager_str_from_json_object(multi-&gt;blob, userevent_exclusion_cb);</span>
+<span class="lineNum">    1424 </span><span class="lineCov">       1497 :         object_string = multi_object_blob_to_ami(multi);</span>
+<span class="lineNum">    1425 </span><span class="lineCov">       1497 :         if (!object_string || !body) {</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1427 </span>            :         }
+<span class="lineNum">    1428 </span>            : 
+<span class="lineNum">    1429 </span><span class="lineCov">       1497 :         return ast_manager_event_blob_create(EVENT_FLAG_USER, &quot;UserEvent&quot;,</span>
+<span class="lineNum">    1430 </span>            :                 &quot;%s&quot;
+<span class="lineNum">    1431 </span>            :                 &quot;UserEvent: %s\r\n&quot;
+<span class="lineNum">    1432 </span>            :                 &quot;%s&quot;,
+<span class="lineNum">    1433 </span>            :                 ast_str_buffer(object_string),
+<span class="lineNum">    1434 </span>            :                 eventname,
+<span class="lineNum">    1435 </span>            :                 ast_str_buffer(body));
+<span class="lineNum">    1436 </span>            : }
+<span class="lineNum">    1437 </span>            : 
+<span class="lineNum">    1438 </span>            : /*! \brief A structure to hold global configuration-related options */
+<span class="lineNum">    1439 </span>            : struct stasis_declined_config {
+<span class="lineNum">    1440 </span>            :         /*! The list of message types to decline */
+<span class="lineNum">    1441 </span>            :         struct ao2_container *declined;
+<span class="lineNum">    1442 </span>            : };
+<span class="lineNum">    1443 </span>            : 
+<span class="lineNum">    1444 </span>            : /*! \brief Threadpool configuration options */
+<span class="lineNum">    1445 </span>            : struct stasis_threadpool_conf {
+<span class="lineNum">    1446 </span>            :         /*! Initial size of the thread pool */
+<span class="lineNum">    1447 </span>            :         int initial_size;
+<span class="lineNum">    1448 </span>            :         /*! Time, in seconds, before we expire a thread */
+<span class="lineNum">    1449 </span>            :         int idle_timeout_sec;
+<span class="lineNum">    1450 </span>            :         /*! Maximum number of thread to allow */
+<span class="lineNum">    1451 </span>            :         int max_size;
+<span class="lineNum">    1452 </span>            : };
+<span class="lineNum">    1453 </span>            : 
+<span class="lineNum">    1454 </span>            : struct stasis_config {
+<span class="lineNum">    1455 </span>            :         /*! Thread pool configuration options */
+<span class="lineNum">    1456 </span>            :         struct stasis_threadpool_conf *threadpool_options;
+<span class="lineNum">    1457 </span>            :         /*! Declined message types */
+<span class="lineNum">    1458 </span>            :         struct stasis_declined_config *declined_message_types;
+<span class="lineNum">    1459 </span>            : };
+<span class="lineNum">    1460 </span>            : 
+<span class="lineNum">    1461 </span>            : static struct aco_type threadpool_option = {
+<span class="lineNum">    1462 </span>            :         .type = ACO_GLOBAL,
+<span class="lineNum">    1463 </span>            :         .name = &quot;threadpool&quot;,
+<span class="lineNum">    1464 </span>            :         .item_offset = offsetof(struct stasis_config, threadpool_options),
+<span class="lineNum">    1465 </span>            :         .category = &quot;threadpool&quot;,
+<span class="lineNum">    1466 </span>            :         .category_match = ACO_WHITELIST_EXACT,
+<span class="lineNum">    1467 </span>            : };
+<span class="lineNum">    1468 </span>            : 
+<span class="lineNum">    1469 </span>            : static struct aco_type *threadpool_options[] = ACO_TYPES(&amp;threadpool_option);
+<span class="lineNum">    1470 </span>            : 
+<span class="lineNum">    1471 </span>            : /*! \brief An aco_type structure to link the &quot;declined_message_types&quot; category to the stasis_declined_config type */
+<span class="lineNum">    1472 </span>            : static struct aco_type declined_option = {
+<span class="lineNum">    1473 </span>            :         .type = ACO_GLOBAL,
+<span class="lineNum">    1474 </span>            :         .name = &quot;declined_message_types&quot;,
+<span class="lineNum">    1475 </span>            :         .item_offset = offsetof(struct stasis_config, declined_message_types),
+<span class="lineNum">    1476 </span>            :         .category_match = ACO_WHITELIST_EXACT,
+<span class="lineNum">    1477 </span>            :         .category = &quot;declined_message_types&quot;,
+<span class="lineNum">    1478 </span>            : };
+<span class="lineNum">    1479 </span>            : 
+<span class="lineNum">    1480 </span>            : struct aco_type *declined_options[] = ACO_TYPES(&amp;declined_option);
+<span class="lineNum">    1481 </span>            : 
+<span class="lineNum">    1482 </span>            : struct aco_file stasis_conf = {
+<span class="lineNum">    1483 </span>            :         .filename = &quot;stasis.conf&quot;,
+<span class="lineNum">    1484 </span>            :         .types = ACO_TYPES(&amp;declined_option, &amp;threadpool_option),
+<span class="lineNum">    1485 </span>            : };
+<span class="lineNum">    1486 </span>            : 
+<span class="lineNum">    1487 </span>            : /*! \brief A global object container that will contain the stasis_config that gets swapped out on reloads */
+<span class="lineNum">    1488 </span>            : static AO2_GLOBAL_OBJ_STATIC(globals);
+<span class="lineNum">    1489 </span>            : 
+<span class="lineNum">    1490 </span>            : static void *stasis_config_alloc(void);
+<span class="lineNum">    1491 </span>            : 
+<span class="lineNum">    1492 </span>            : /*! \brief Register information about the configs being processed by this module */
+<span class="lineNum">    1493 </span>            : CONFIG_INFO_CORE(&quot;stasis&quot;, cfg_info, globals, stasis_config_alloc,
+<span class="lineNum">    1494 </span>            :         .files = ACO_FILES(&amp;stasis_conf),
+<a name="1495"><span class="lineNum">    1495 </span>            : );</a>
+<span class="lineNum">    1496 </span>            : 
+<span class="lineNum">    1497 </span><span class="lineCov">       1061 : static void stasis_declined_config_destructor(void *obj)</span>
+<span class="lineNum">    1498 </span>            : {
+<span class="lineNum">    1499 </span><span class="lineCov">       1061 :         struct stasis_declined_config *declined = obj;</span>
+<span class="lineNum">    1500 </span>            : 
+<span class="lineNum">    1501 </span><span class="lineCov">       1061 :         ao2_cleanup(declined-&gt;declined);</span>
+<a name="1502"><span class="lineNum">    1502 </span><span class="lineCov">       1061 : }</span></a>
+<span class="lineNum">    1503 </span>            : 
+<span class="lineNum">    1504 </span><span class="lineCov">       1061 : static void stasis_config_destructor(void *obj)</span>
+<span class="lineNum">    1505 </span>            : {
+<span class="lineNum">    1506 </span><span class="lineCov">       1061 :         struct stasis_config *cfg = obj;</span>
+<span class="lineNum">    1507 </span>            : 
+<span class="lineNum">    1508 </span><span class="lineCov">       1061 :         ao2_cleanup(cfg-&gt;declined_message_types);</span>
+<span class="lineNum">    1509 </span><span class="lineCov">       1061 :         ast_free(cfg-&gt;threadpool_options);</span>
+<a name="1510"><span class="lineNum">    1510 </span><span class="lineCov">       1061 : }</span></a>
+<span class="lineNum">    1511 </span>            : 
+<span class="lineNum">    1512 </span><span class="lineCov">       1124 : static void *stasis_config_alloc(void)</span>
+<span class="lineNum">    1513 </span>            : {
+<span class="lineNum">    1514 </span>            :         struct stasis_config *cfg;
+<span class="lineNum">    1515 </span>            : 
+<span class="lineNum">    1516 </span><span class="lineCov">       1124 :         if (!(cfg = ao2_alloc(sizeof(*cfg), stasis_config_destructor))) {</span>
+<span class="lineNum">    1517 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1518 </span>            :         }
+<span class="lineNum">    1519 </span>            : 
+<span class="lineNum">    1520 </span><span class="lineCov">       1124 :         cfg-&gt;threadpool_options = ast_calloc(1, sizeof(*cfg-&gt;threadpool_options));</span>
+<span class="lineNum">    1521 </span><span class="lineCov">       1124 :         if (!cfg-&gt;threadpool_options) {</span>
+<span class="lineNum">    1522 </span><span class="lineNoCov">          0 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1523 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1524 </span>            :         }
+<span class="lineNum">    1525 </span>            : 
+<span class="lineNum">    1526 </span><span class="lineCov">       1124 :         cfg-&gt;declined_message_types = ao2_alloc(sizeof(*cfg-&gt;declined_message_types),</span>
+<span class="lineNum">    1527 </span>            :                 stasis_declined_config_destructor);
+<span class="lineNum">    1528 </span><span class="lineCov">       1124 :         if (!cfg-&gt;declined_message_types) {</span>
+<span class="lineNum">    1529 </span><span class="lineNoCov">          0 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1530 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1531 </span>            :         }
+<span class="lineNum">    1532 </span>            : 
+<span class="lineNum">    1533 </span><span class="lineCov">       1124 :         cfg-&gt;declined_message_types-&gt;declined = ast_str_container_alloc(13);</span>
+<span class="lineNum">    1534 </span><span class="lineCov">       1124 :         if (!cfg-&gt;declined_message_types-&gt;declined) {</span>
+<span class="lineNum">    1535 </span><span class="lineNoCov">          0 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1536 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1537 </span>            :         }
+<span class="lineNum">    1538 </span>            : 
+<span class="lineNum">    1539 </span><span class="lineCov">       1124 :         return cfg;</span>
+<a name="1540"><span class="lineNum">    1540 </span>            : }</a>
+<span class="lineNum">    1541 </span>            : 
+<span class="lineNum">    1542 </span><span class="lineCov">     121938 : int stasis_message_type_declined(const char *name)</span>
+<span class="lineNum">    1543 </span>            : {
+<span class="lineNum">    1544 </span><span class="lineCov">     121938 :         struct stasis_config *cfg = ao2_global_obj_ref(globals);</span>
+<span class="lineNum">    1545 </span>            :         char *name_in_declined;
+<span class="lineNum">    1546 </span>            :         int res;
+<span class="lineNum">    1547 </span>            : 
+<span class="lineNum">    1548 </span><span class="lineCov">     121938 :         if (!cfg || !cfg-&gt;declined_message_types) {</span>
+<span class="lineNum">    1549 </span><span class="lineCov">       5620 :                 ao2_cleanup(cfg);</span>
+<span class="lineNum">    1550 </span><span class="lineCov">       5620 :                 return 0;</span>
+<span class="lineNum">    1551 </span>            :         }
+<span class="lineNum">    1552 </span>            : 
+<span class="lineNum">    1553 </span><span class="lineCov">     116318 :         name_in_declined = ao2_find(cfg-&gt;declined_message_types-&gt;declined, name, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">    1554 </span><span class="lineCov">     116318 :         res = name_in_declined ? 1 : 0;</span>
+<span class="lineNum">    1555 </span><span class="lineCov">     116318 :         ao2_cleanup(name_in_declined);</span>
+<span class="lineNum">    1556 </span><span class="lineCov">     116318 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1557 </span><span class="lineCov">     116318 :         if (res) {</span>
+<span class="lineNum">    1558 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;Declining to allocate Stasis message type '%s' due to configuration\n&quot;, name);</span>
+<span class="lineNum">    1559 </span>            :         }
+<span class="lineNum">    1560 </span><span class="lineCov">     116318 :         return res;</span>
+<a name="1561"><span class="lineNum">    1561 </span>            : }</a>
+<span class="lineNum">    1562 </span>            : 
+<span class="lineNum">    1563 </span><span class="lineNoCov">          0 : static int declined_handler(const struct aco_option *opt, struct ast_variable *var, void *obj)</span>
+<span class="lineNum">    1564 </span>            : {
+<span class="lineNum">    1565 </span><span class="lineNoCov">          0 :         struct stasis_declined_config *declined = obj;</span>
+<span class="lineNum">    1566 </span>            : 
+<span class="lineNum">    1567 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(var-&gt;value)) {</span>
+<span class="lineNum">    1568 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1569 </span>            :         }
+<span class="lineNum">    1570 </span>            : 
+<span class="lineNum">    1571 </span><span class="lineNoCov">          0 :         if (ast_str_container_add(declined-&gt;declined, var-&gt;value)) {</span>
+<span class="lineNum">    1572 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1573 </span>            :         }
+<span class="lineNum">    1574 </span>            : 
+<span class="lineNum">    1575 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1576 </span>            : }
+<span class="lineNum">    1577 </span>            : 
+<span class="lineNum">    1578 </span>            : /*!
+<span class="lineNum">    1579 </span>            :  * @{ \brief Define multi user event message type(s).
+<a name="1580"><span class="lineNum">    1580 </span>            :  */</a>
+<span class="lineNum">    1581 </span>            : 
+<span class="lineNum">    1582 </span><span class="lineCov">       1513 : STASIS_MESSAGE_TYPE_DEFN(ast_multi_user_event_type,</span>
+<span class="lineNum">    1583 </span>            :         .to_json = multi_user_event_to_json,
+<span class="lineNum">    1584 </span>            :         .to_ami = multi_user_event_to_ami,
+<span class="lineNum">    1585 </span>            :         );
+<span class="lineNum">    1586 </span>            : 
+<span class="lineNum">    1587 </span>            : /*! @} */
+<a name="1588"><span class="lineNum">    1588 </span>            : </a>
+<span class="lineNum">    1589 </span>            : /*! \brief Cleanup function for graceful shutdowns */
+<span class="lineNum">    1590 </span><span class="lineCov">       1061 : static void stasis_cleanup(void)</span>
+<span class="lineNum">    1591 </span>            : {
+<span class="lineNum">    1592 </span><span class="lineCov">       1061 :         ast_threadpool_shutdown(pool);</span>
+<span class="lineNum">    1593 </span><span class="lineCov">       1061 :         pool = NULL;</span>
+<span class="lineNum">    1594 </span><span class="lineCov">       1061 :         STASIS_MESSAGE_TYPE_CLEANUP(stasis_subscription_change_type);</span>
+<span class="lineNum">    1595 </span><span class="lineCov">       1061 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_multi_user_event_type);</span>
+<span class="lineNum">    1596 </span><span class="lineCov">       1061 :         aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">    1597 </span><span class="lineCov">       1061 :         ao2_global_obj_release(globals);</span>
+<a name="1598"><span class="lineNum">    1598 </span><span class="lineCov">       1061 : }</span></a>
+<span class="lineNum">    1599 </span>            : 
+<span class="lineNum">    1600 </span><span class="lineCov">       1124 : int stasis_init(void)</span>
+<span class="lineNum">    1601 </span>            : {
+<span class="lineNum">    1602 </span>            :         struct stasis_config *cfg;
+<span class="lineNum">    1603 </span>            :         int cache_init;
+<span class="lineNum">    1604 </span><span class="lineCov">       1124 :         struct ast_threadpool_options threadpool_opts = { 0, };</span>
+<span class="lineNum">    1605 </span>            : 
+<span class="lineNum">    1606 </span>            :         /* Be sure the types are cleaned up after the message bus */
+<span class="lineNum">    1607 </span><span class="lineCov">       1124 :         ast_register_cleanup(stasis_cleanup);</span>
+<span class="lineNum">    1608 </span>            : 
+<span class="lineNum">    1609 </span><span class="lineCov">       1124 :         if (aco_info_init(&amp;cfg_info)) {</span>
+<span class="lineNum">    1610 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1611 </span>            :         }
+<span class="lineNum">    1612 </span>            : 
+<span class="lineNum">    1613 </span><span class="lineCov">       1124 :         aco_option_register_custom(&amp;cfg_info, &quot;decline&quot;, ACO_EXACT,</span>
+<span class="lineNum">    1614 </span>            :                 declined_options, &quot;&quot;, declined_handler, 0);
+<span class="lineNum">    1615 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;initial_size&quot;, ACO_EXACT,</span>
+<span class="lineNum">    1616 </span>            :                 threadpool_options, &quot;5&quot;, OPT_INT_T, PARSE_IN_RANGE,
+<span class="lineNum">    1617 </span>            :                 FLDSET(struct stasis_threadpool_conf, initial_size), 0,
+<span class="lineNum">    1618 </span>            :                 INT_MAX);
+<span class="lineNum">    1619 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;idle_timeout_sec&quot;, ACO_EXACT,</span>
+<span class="lineNum">    1620 </span>            :                 threadpool_options, &quot;20&quot;, OPT_INT_T, PARSE_IN_RANGE,
+<span class="lineNum">    1621 </span>            :                 FLDSET(struct stasis_threadpool_conf, idle_timeout_sec), 0,
+<span class="lineNum">    1622 </span>            :                 INT_MAX);
+<span class="lineNum">    1623 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;max_size&quot;, ACO_EXACT,</span>
+<span class="lineNum">    1624 </span>            :                 threadpool_options, &quot;50&quot;, OPT_INT_T, PARSE_IN_RANGE,
+<span class="lineNum">    1625 </span>            :                 FLDSET(struct stasis_threadpool_conf, max_size), 0,
+<span class="lineNum">    1626 </span>            :                 INT_MAX);
+<span class="lineNum">    1627 </span>            : 
+<span class="lineNum">    1628 </span><span class="lineCov">       1124 :         if (aco_process_config(&amp;cfg_info, 0) == ACO_PROCESS_ERROR) {</span>
+<span class="lineNum">    1629 </span><span class="lineNoCov">          0 :                 struct stasis_config *default_cfg = stasis_config_alloc();</span>
+<span class="lineNum">    1630 </span>            : 
+<span class="lineNum">    1631 </span><span class="lineNoCov">          0 :                 if (!default_cfg) {</span>
+<span class="lineNum">    1632 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1633 </span>            :                 }
+<span class="lineNum">    1634 </span>            : 
+<span class="lineNum">    1635 </span><span class="lineNoCov">          0 :                 if (aco_set_defaults(&amp;threadpool_option, &quot;threadpool&quot;, default_cfg-&gt;threadpool_options)) {</span>
+<span class="lineNum">    1636 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to initialize defaults on Stasis configuration object\n&quot;);</span>
+<span class="lineNum">    1637 </span><span class="lineNoCov">          0 :                         ao2_ref(default_cfg, -1);</span>
+<span class="lineNum">    1638 </span>            : 
+<span class="lineNum">    1639 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1640 </span>            :                 }
+<span class="lineNum">    1641 </span>            : 
+<span class="lineNum">    1642 </span><span class="lineNoCov">          0 :                 if (aco_set_defaults(&amp;declined_option, &quot;declined_message_types&quot;, default_cfg-&gt;declined_message_types)) {</span>
+<span class="lineNum">    1643 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to load stasis.conf and failed to initialize defaults.\n&quot;);</span>
+<span class="lineNum">    1644 </span><span class="lineNoCov">          0 :                         ao2_ref(default_cfg, -1);</span>
+<span class="lineNum">    1645 </span>            : 
+<span class="lineNum">    1646 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1647 </span>            :                 }
+<span class="lineNum">    1648 </span>            : 
+<span class="lineNum">    1649 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;Could not load Stasis configuration; using defaults\n&quot;);</span>
+<span class="lineNum">    1650 </span><span class="lineNoCov">          0 :                 ao2_global_obj_replace_unref(globals, default_cfg);</span>
+<span class="lineNum">    1651 </span><span class="lineNoCov">          0 :                 cfg = default_cfg;</span>
+<span class="lineNum">    1652 </span>            :         } else {
+<span class="lineNum">    1653 </span><span class="lineCov">       1124 :                 cfg = ao2_global_obj_ref(globals);</span>
+<span class="lineNum">    1654 </span><span class="lineCov">       1124 :                 if (!cfg) {</span>
+<span class="lineNum">    1655 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to obtain Stasis configuration object\n&quot;);</span>
+<span class="lineNum">    1656 </span>            : 
+<span class="lineNum">    1657 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1658 </span>            :                 }
+<span class="lineNum">    1659 </span>            :         }
+<span class="lineNum">    1660 </span>            : 
+<span class="lineNum">    1661 </span><span class="lineCov">       1124 :         threadpool_opts.version = AST_THREADPOOL_OPTIONS_VERSION;</span>
+<span class="lineNum">    1662 </span><span class="lineCov">       1124 :         threadpool_opts.initial_size = cfg-&gt;threadpool_options-&gt;initial_size;</span>
+<span class="lineNum">    1663 </span><span class="lineCov">       1124 :         threadpool_opts.auto_increment = 1;</span>
+<span class="lineNum">    1664 </span><span class="lineCov">       1124 :         threadpool_opts.max_size = cfg-&gt;threadpool_options-&gt;max_size;</span>
+<span class="lineNum">    1665 </span><span class="lineCov">       1124 :         threadpool_opts.idle_timeout = cfg-&gt;threadpool_options-&gt;idle_timeout_sec;</span>
+<span class="lineNum">    1666 </span><span class="lineCov">       1124 :         pool = ast_threadpool_create(&quot;stasis-core&quot;, NULL, &amp;threadpool_opts);</span>
+<span class="lineNum">    1667 </span><span class="lineCov">       1124 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1668 </span><span class="lineCov">       1124 :         if (!pool) {</span>
+<span class="lineNum">    1669 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to create 'stasis-core' threadpool\n&quot;);</span>
+<span class="lineNum">    1670 </span>            : 
+<span class="lineNum">    1671 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1672 </span>            :         }
+<span class="lineNum">    1673 </span>            : 
+<span class="lineNum">    1674 </span><span class="lineCov">       1124 :         cache_init = stasis_cache_init();</span>
+<span class="lineNum">    1675 </span><span class="lineCov">       1124 :         if (cache_init != 0) {</span>
+<span class="lineNum">    1676 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1677 </span>            :         }
+<span class="lineNum">    1678 </span>            : 
+<span class="lineNum">    1679 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(stasis_subscription_change_type) != 0) {</span>
+<span class="lineNum">    1680 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1681 </span>            :         }
+<span class="lineNum">    1682 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(ast_multi_user_event_type) != 0) {</span>
+<span class="lineNum">    1683 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1684 </span>            :         }
+<span class="lineNum">    1685 </span>            : 
+<span class="lineNum">    1686 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">    1687 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,1186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/astobj2_hash.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - astobj2_hash.c<span style="font-size: 80%;"> (source / <a href="astobj2_hash.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">223</td>
+            <td class="headerCovTableEntry">240</td>
+            <td class="headerCovTableEntryHi">92.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * astobj2_hash - Hash table implementation for astobj2.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2006 Marta Carbone, Luigi Rizzo - Univ. di Pisa, Italy
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       7 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       8 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">       9 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      10 </span>            :  * channels for your use.
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      13 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      14 </span>            :  * at the top of the source tree.
+<span class="lineNum">      15 </span>            :  */
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : /*! \file
+<span class="lineNum">      18 </span>            :  *
+<span class="lineNum">      19 </span>            :  * \brief Hash table functions implementing astobj2 containers.
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \author Richard Mudgett &lt;rmudgett@digium.com&gt;
+<span class="lineNum">      22 </span>            :  */
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;astobj2_private.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;astobj2_container_private.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/dlinkedlists.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : /*!
+<span class="lineNum">      34 </span>            :  * A structure to create a linked list of entries,
+<span class="lineNum">      35 </span>            :  * used within a bucket.
+<span class="lineNum">      36 </span>            :  */
+<span class="lineNum">      37 </span>            : struct hash_bucket_node {
+<span class="lineNum">      38 </span>            :         /*!
+<span class="lineNum">      39 </span>            :          * \brief Items common to all container nodes.
+<span class="lineNum">      40 </span>            :          * \note Must be first in the specific node struct.
+<span class="lineNum">      41 </span>            :          */
+<span class="lineNum">      42 </span>            :         struct ao2_container_node common;
+<span class="lineNum">      43 </span>            :         /*! Next node links in the list. */
+<span class="lineNum">      44 </span>            :         AST_DLLIST_ENTRY(hash_bucket_node) links;
+<span class="lineNum">      45 </span>            :         /*! Hash bucket holding the node. */
+<span class="lineNum">      46 </span>            :         int my_bucket;
+<span class="lineNum">      47 </span>            : };
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : struct hash_bucket {
+<span class="lineNum">      50 </span>            :         /*! List of objects held in the bucket. */
+<span class="lineNum">      51 </span>            :         AST_DLLIST_HEAD_NOLOCK(, hash_bucket_node) list;
+<span class="lineNum">      52 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">      53 </span>            :         /*! Number of elements currently in the bucket. */
+<span class="lineNum">      54 </span>            :         int elements;
+<span class="lineNum">      55 </span>            :         /*! Maximum number of elements in the bucket. */
+<span class="lineNum">      56 </span>            :         int max_elements;
+<span class="lineNum">      57 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">      58 </span>            : };
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : /*!
+<span class="lineNum">      61 </span>            :  * A hash container in addition to values common to all
+<span class="lineNum">      62 </span>            :  * container types, stores the hash callback function, the
+<span class="lineNum">      63 </span>            :  * number of hash buckets, and the hash bucket heads.
+<span class="lineNum">      64 </span>            :  */
+<span class="lineNum">      65 </span>            : struct ao2_container_hash {
+<span class="lineNum">      66 </span>            :         /*!
+<span class="lineNum">      67 </span>            :          * \brief Items common to all containers.
+<span class="lineNum">      68 </span>            :          * \note Must be first in the specific container struct.
+<span class="lineNum">      69 </span>            :          */
+<span class="lineNum">      70 </span>            :         struct ao2_container common;
+<span class="lineNum">      71 </span>            :         ao2_hash_fn *hash_fn;
+<span class="lineNum">      72 </span>            :         /*! Number of hash buckets in this container. */
+<span class="lineNum">      73 </span>            :         int n_buckets;
+<span class="lineNum">      74 </span>            :         /*! Hash bucket array of n_buckets.  Variable size. */
+<span class="lineNum">      75 </span>            :         struct hash_bucket buckets[0];
+<span class="lineNum">      76 </span>            : };
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : /*! Traversal state to restart a hash container traversal. */
+<span class="lineNum">      79 </span>            : struct hash_traversal_state {
+<span class="lineNum">      80 </span>            :         /*! Active sort function in the traversal if not NULL. */
+<span class="lineNum">      81 </span>            :         ao2_sort_fn *sort_fn;
+<span class="lineNum">      82 </span>            :         /*! Saved comparison callback arg pointer. */
+<span class="lineNum">      83 </span>            :         void *arg;
+<span class="lineNum">      84 </span>            :         /*! Starting hash bucket */
+<span class="lineNum">      85 </span>            :         int bucket_start;
+<span class="lineNum">      86 </span>            :         /*! Stopping hash bucket */
+<span class="lineNum">      87 </span>            :         int bucket_last;
+<span class="lineNum">      88 </span>            :         /*! Saved search flags to control traversing the container. */
+<span class="lineNum">      89 </span>            :         enum search_flags flags;
+<span class="lineNum">      90 </span>            :         /*! TRUE if it is a descending search */
+<span class="lineNum">      91 </span>            :         unsigned int descending:1;
+<span class="lineNum">      92 </span>            : };
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span>            : struct hash_traversal_state_check {
+<span class="lineNum">      95 </span>            :         /*
+<span class="lineNum">      96 </span>            :          * If we have a division by zero compile error here then there
+<span class="lineNum">      97 </span>            :          * is not enough room for the state.  Increase AO2_TRAVERSAL_STATE_SIZE.
+<span class="lineNum">      98 </span>            :          */
+<span class="lineNum">      99 </span>            :         char check[1 / (AO2_TRAVERSAL_STATE_SIZE / sizeof(struct hash_traversal_state))];
+<span class="lineNum">     100 </span>            : };
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : /*!
+<span class="lineNum">     103 </span>            :  * \internal
+<span class="lineNum">     104 </span>            :  * \brief Create an empty copy of this container.
+<span class="lineNum">     105 </span>            :  * \since 14.0.0
+<span class="lineNum">     106 </span>            :  *
+<span class="lineNum">     107 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     108 </span>            :  * \param tag used for debugging.
+<span class="lineNum">     109 </span>            :  * \param file Debug file name invoked from
+<span class="lineNum">     110 </span>            :  * \param line Debug line invoked from
+<span class="lineNum">     111 </span>            :  * \param func Debug function name invoked from
+<span class="lineNum">     112 </span>            :  *
+<span class="lineNum">     113 </span>            :  * \retval empty-clone-container on success.
+<a name="114"><span class="lineNum">     114 </span>            :  * \retval NULL on error.</a>
+<span class="lineNum">     115 </span>            :  */
+<span class="lineNum">     116 </span><span class="lineCov">        648 : static struct ao2_container *hash_ao2_alloc_empty_clone(struct ao2_container_hash *self,</span>
+<span class="lineNum">     117 </span>            :         const char *tag, const char *file, int line, const char *func)
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineCov">        648 :         if (!__is_ao2_object(self, file, line, func)) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     121 </span>            :         }
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineCov">        648 :         return __ao2_container_alloc_hash(ao2_options_get(self), self-&gt;common.options,</span>
+<span class="lineNum">     124 </span><span class="lineCov">        648 :                 self-&gt;n_buckets, self-&gt;hash_fn, self-&gt;common.sort_fn, self-&gt;common.cmp_fn,</span>
+<span class="lineNum">     125 </span>            :                 tag, file, line, func);
+<span class="lineNum">     126 </span>            : }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : /*!
+<span class="lineNum">     129 </span>            :  * \internal
+<span class="lineNum">     130 </span>            :  * \brief Destroy a hash container list node.
+<span class="lineNum">     131 </span>            :  * \since 12.0.0
+<span class="lineNum">     132 </span>            :  *
+<span class="lineNum">     133 </span>            :  * \param v_doomed Container node to destroy.
+<span class="lineNum">     134 </span>            :  *
+<span class="lineNum">     135 </span>            :  * \details
+<span class="lineNum">     136 </span>            :  * The container node unlinks itself from the container as part
+<span class="lineNum">     137 </span>            :  * of its destruction.  The node must be destroyed while the
+<span class="lineNum">     138 </span>            :  * container is already locked.
+<span class="lineNum">     139 </span>            :  *
+<span class="lineNum">     140 </span>            :  * \note The container must be locked when the node is
+<span class="lineNum">     141 </span>            :  * unreferenced.
+<span class="lineNum">     142 </span>            :  *
+<a name="143"><span class="lineNum">     143 </span>            :  * \return Nothing</a>
+<span class="lineNum">     144 </span>            :  */
+<span class="lineNum">     145 </span><span class="lineCov">   21208676 : static void hash_ao2_node_destructor(void *v_doomed)</span>
+<span class="lineNum">     146 </span>            : {
+<span class="lineNum">     147 </span><span class="lineCov">   21208676 :         struct hash_bucket_node *doomed = v_doomed;</span>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">   21208676 :         if (doomed-&gt;common.is_linked) {</span>
+<span class="lineNum">     150 </span>            :                 struct ao2_container_hash *my_container;
+<span class="lineNum">     151 </span>            :                 struct hash_bucket *bucket;
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            :                 /*
+<span class="lineNum">     154 </span>            :                  * Promote to write lock if not already there.  Since
+<span class="lineNum">     155 </span>            :                  * adjust_lock() can potentially release and block waiting for a
+<span class="lineNum">     156 </span>            :                  * write lock, care must be taken to ensure that node references
+<span class="lineNum">     157 </span>            :                  * are released before releasing the container references.
+<span class="lineNum">     158 </span>            :                  *
+<span class="lineNum">     159 </span>            :                  * Node references held by an iterator can only be held while
+<span class="lineNum">     160 </span>            :                  * the iterator also holds a reference to the container.  These
+<span class="lineNum">     161 </span>            :                  * node references must be unreferenced before the container can
+<span class="lineNum">     162 </span>            :                  * be unreferenced to ensure that the node will not get a
+<span class="lineNum">     163 </span>            :                  * negative reference and the destructor called twice for the
+<span class="lineNum">     164 </span>            :                  * same node.
+<span class="lineNum">     165 </span>            :                  */
+<span class="lineNum">     166 </span><span class="lineCov">   21208626 :                 my_container = (struct ao2_container_hash *) doomed-&gt;common.my_container;</span>
+<span class="lineNum">     167 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">     168 </span><span class="lineCov">   21208626 :                 is_ao2_object(my_container);</span>
+<span class="lineNum">     169 </span>            : #endif
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">   21208626 :                 __adjust_lock(my_container, AO2_LOCK_REQ_WRLOCK, 1);</span>
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     174 </span>            :                 if (!my_container-&gt;common.destroying
+<span class="lineNum">     175 </span>            :                         &amp;&amp; ao2_container_check(doomed-&gt;common.my_container, OBJ_NOLOCK)) {
+<span class="lineNum">     176 </span>            :                         ast_log(LOG_ERROR, &quot;Container integrity failed before node deletion.\n&quot;);
+<span class="lineNum">     177 </span>            :                 }
+<span class="lineNum">     178 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">     179 </span><span class="lineCov">   21208626 :                 bucket = &amp;my_container-&gt;buckets[doomed-&gt;my_bucket];</span>
+<span class="lineNum">     180 </span><span class="lineCov">   21208626 :                 AST_DLLIST_REMOVE(&amp;bucket-&gt;list, doomed, links);</span>
+<span class="lineNum">     181 </span>            :                 AO2_DEVMODE_STAT(--my_container-&gt;common.nodes);
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            :         /*
+<span class="lineNum">     185 </span>            :          * We could have an object in the node if the container is being
+<span class="lineNum">     186 </span>            :          * destroyed or the node had not been linked in yet.
+<span class="lineNum">     187 </span>            :          */
+<span class="lineNum">     188 </span><span class="lineCov">   21208676 :         if (doomed-&gt;common.obj) {</span>
+<span class="lineNum">     189 </span><span class="lineCov">         50 :                 __container_unlink_node(&amp;doomed-&gt;common, AO2_UNLINK_NODE_UNLINK_OBJECT);</span>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span><span class="lineCov">   21208676 : }</span>
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            : /*!
+<span class="lineNum">     194 </span>            :  * \internal
+<span class="lineNum">     195 </span>            :  * \brief Create a new container node.
+<span class="lineNum">     196 </span>            :  * \since 12.0.0
+<span class="lineNum">     197 </span>            :  *
+<span class="lineNum">     198 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     199 </span>            :  * \param obj_new Object to put into the node.
+<span class="lineNum">     200 </span>            :  * \param tag used for debugging.
+<span class="lineNum">     201 </span>            :  * \param file Debug file name invoked from
+<span class="lineNum">     202 </span>            :  * \param line Debug line invoked from
+<span class="lineNum">     203 </span>            :  * \param func Debug function name invoked from
+<span class="lineNum">     204 </span>            :  *
+<span class="lineNum">     205 </span>            :  * \retval initialized-node on success.
+<a name="206"><span class="lineNum">     206 </span>            :  * \retval NULL on error.</a>
+<span class="lineNum">     207 </span>            :  */
+<span class="lineNum">     208 </span><span class="lineCov">   21254715 : static struct hash_bucket_node *hash_ao2_new_node(struct ao2_container_hash *self, void *obj_new, const char *tag, const char *file, int line, const char *func)</span>
+<span class="lineNum">     209 </span>            : {
+<span class="lineNum">     210 </span>            :         struct hash_bucket_node *node;
+<span class="lineNum">     211 </span>            :         int i;
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">   21254715 :         node = ao2_t_alloc_options(sizeof(*node), hash_ao2_node_destructor, AO2_ALLOC_OPT_LOCK_NOLOCK, NULL);</span>
+<span class="lineNum">     214 </span><span class="lineCov">   21254715 :         if (!node) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     216 </span>            :         }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineCov">   21254715 :         i = abs(self-&gt;hash_fn(obj_new, OBJ_SEARCH_OBJECT) % self-&gt;n_buckets);</span>
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineCov">   21254715 :         __ao2_ref(obj_new, +1, tag ?: &quot;Container node creation&quot;, file, line, func);</span>
+<span class="lineNum">     221 </span><span class="lineCov">   21254715 :         node-&gt;common.obj = obj_new;</span>
+<span class="lineNum">     222 </span><span class="lineCov">   21254715 :         node-&gt;common.my_container = (struct ao2_container *) self;</span>
+<span class="lineNum">     223 </span><span class="lineCov">   21254715 :         node-&gt;my_bucket = i;</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">   21254715 :         return node;</span>
+<span class="lineNum">     226 </span>            : }
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span>            : /*!
+<span class="lineNum">     229 </span>            :  * \internal
+<span class="lineNum">     230 </span>            :  * \brief Insert a node into this container.
+<span class="lineNum">     231 </span>            :  * \since 12.0.0
+<span class="lineNum">     232 </span>            :  *
+<span class="lineNum">     233 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     234 </span>            :  * \param node Container node to insert into the container.
+<span class="lineNum">     235 </span>            :  *
+<a name="236"><span class="lineNum">     236 </span>            :  * \return enum ao2_container_insert value.</a>
+<span class="lineNum">     237 </span>            :  */
+<span class="lineNum">     238 </span><span class="lineCov">   21254715 : static enum ao2_container_insert hash_ao2_insert_node(struct ao2_container_hash *self,</span>
+<span class="lineNum">     239 </span>            :         struct hash_bucket_node *node)
+<span class="lineNum">     240 </span>            : {
+<span class="lineNum">     241 </span>            :         int cmp;
+<span class="lineNum">     242 </span>            :         struct hash_bucket *bucket;
+<span class="lineNum">     243 </span>            :         struct hash_bucket_node *cur;
+<span class="lineNum">     244 </span>            :         ao2_sort_fn *sort_fn;
+<span class="lineNum">     245 </span>            :         uint32_t options;
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">   21254715 :         bucket = &amp;self-&gt;buckets[node-&gt;my_bucket];</span>
+<span class="lineNum">     248 </span><span class="lineCov">   21254715 :         sort_fn = self-&gt;common.sort_fn;</span>
+<span class="lineNum">     249 </span><span class="lineCov">   21254715 :         options = self-&gt;common.options;</span>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">   21254715 :         if (options &amp; AO2_CONTAINER_ALLOC_OPT_INSERT_BEGIN) {</span>
+<span class="lineNum">     252 </span><span class="lineCov">        146 :                 if (sort_fn) {</span>
+<span class="lineNum">     253 </span><span class="lineCov">        192 :                         AST_DLLIST_TRAVERSE_BACKWARDS_SAFE_BEGIN(&amp;bucket-&gt;list, cur, links) {</span>
+<span class="lineNum">     254 </span><span class="lineCov">        164 :                                 cmp = sort_fn(cur-&gt;common.obj, node-&gt;common.obj, OBJ_SEARCH_OBJECT);</span>
+<span class="lineNum">     255 </span><span class="lineCov">        164 :                                 if (cmp &gt; 0) {</span>
+<span class="lineNum">     256 </span><span class="lineCov">         36 :                                         continue;</span>
+<span class="lineNum">     257 </span>            :                                 }
+<span class="lineNum">     258 </span><span class="lineCov">        128 :                                 if (cmp &lt; 0) {</span>
+<span class="lineNum">     259 </span><span class="lineCov">         74 :                                         AST_DLLIST_INSERT_AFTER_CURRENT(node, links);</span>
+<span class="lineNum">     260 </span><span class="lineCov">         74 :                                         return AO2_CONTAINER_INSERT_NODE_INSERTED;</span>
+<span class="lineNum">     261 </span>            :                                 }
+<span class="lineNum">     262 </span><span class="lineCov">         54 :                                 switch (options &amp; AO2_CONTAINER_ALLOC_OPT_DUPS_MASK) {</span>
+<span class="lineNum">     263 </span><span class="lineCov">         20 :                                 default:</span>
+<span class="lineNum">     264 </span>            :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_ALLOW:
+<span class="lineNum">     265 </span><span class="lineCov">         20 :                                         break;</span>
+<span class="lineNum">     266 </span><span class="lineCov">          8 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_REJECT:</span>
+<span class="lineNum">     267 </span>            :                                         /* Reject all objects with the same key. */
+<span class="lineNum">     268 </span><span class="lineCov">          8 :                                         return AO2_CONTAINER_INSERT_NODE_REJECTED;</span>
+<span class="lineNum">     269 </span><span class="lineCov">         18 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_OBJ_REJECT:</span>
+<span class="lineNum">     270 </span><span class="lineCov">         18 :                                         if (cur-&gt;common.obj == node-&gt;common.obj) {</span>
+<span class="lineNum">     271 </span>            :                                                 /* Reject inserting the same object */
+<span class="lineNum">     272 </span><span class="lineCov">          2 :                                                 return AO2_CONTAINER_INSERT_NODE_REJECTED;</span>
+<span class="lineNum">     273 </span>            :                                         }
+<span class="lineNum">     274 </span><span class="lineCov">         16 :                                         break;</span>
+<span class="lineNum">     275 </span><span class="lineCov">          8 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_REPLACE:</span>
+<span class="lineNum">     276 </span><span class="lineCov">          8 :                                         SWAP(cur-&gt;common.obj, node-&gt;common.obj);</span>
+<span class="lineNum">     277 </span><span class="lineCov">          8 :                                         ao2_t_ref(node, -1, NULL);</span>
+<span class="lineNum">     278 </span><span class="lineCov">          8 :                                         return AO2_CONTAINER_INSERT_NODE_OBJ_REPLACED;</span>
+<span class="lineNum">     279 </span>            :                                 }
+<span class="lineNum">     280 </span>            :                         }
+<span class="lineNum">     281 </span>            :                         AST_DLLIST_TRAVERSE_BACKWARDS_SAFE_END;
+<span class="lineNum">     282 </span>            :                 }
+<span class="lineNum">     283 </span><span class="lineCov">         54 :                 AST_DLLIST_INSERT_HEAD(&amp;bucket-&gt;list, node, links);</span>
+<span class="lineNum">     284 </span>            :         } else {
+<span class="lineNum">     285 </span><span class="lineCov">   21254569 :                 if (sort_fn) {</span>
+<span class="lineNum">     286 </span><span class="lineCov">  289649076 :                         AST_DLLIST_TRAVERSE_SAFE_BEGIN(&amp;bucket-&gt;list, cur, links) {</span>
+<span class="lineNum">     287 </span><span class="lineCov">  275018275 :                                 cmp = sort_fn(cur-&gt;common.obj, node-&gt;common.obj, OBJ_SEARCH_OBJECT);</span>
+<span class="lineNum">     288 </span><span class="lineCov">  275018275 :                                 if (cmp &lt; 0) {</span>
+<span class="lineNum">     289 </span><span class="lineCov">  275013423 :                                         continue;</span>
+<span class="lineNum">     290 </span>            :                                 }
+<span class="lineNum">     291 </span><span class="lineCov">       4852 :                                 if (cmp &gt; 0) {</span>
+<span class="lineNum">     292 </span><span class="lineCov">       4784 :                                         AST_DLLIST_INSERT_BEFORE_CURRENT(node, links);</span>
+<span class="lineNum">     293 </span><span class="lineCov">       4784 :                                         return AO2_CONTAINER_INSERT_NODE_INSERTED;</span>
+<span class="lineNum">     294 </span>            :                                 }
+<span class="lineNum">     295 </span><span class="lineCov">         68 :                                 switch (options &amp; AO2_CONTAINER_ALLOC_OPT_DUPS_MASK) {</span>
+<span class="lineNum">     296 </span><span class="lineCov">         20 :                                 default:</span>
+<span class="lineNum">     297 </span>            :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_ALLOW:
+<span class="lineNum">     298 </span><span class="lineCov">         20 :                                         break;</span>
+<span class="lineNum">     299 </span><span class="lineCov">         10 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_REJECT:</span>
+<span class="lineNum">     300 </span>            :                                         /* Reject all objects with the same key. */
+<span class="lineNum">     301 </span><span class="lineCov">         10 :                                         return AO2_CONTAINER_INSERT_NODE_REJECTED;</span>
+<span class="lineNum">     302 </span><span class="lineCov">         18 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_OBJ_REJECT:</span>
+<span class="lineNum">     303 </span><span class="lineCov">         18 :                                         if (cur-&gt;common.obj == node-&gt;common.obj) {</span>
+<span class="lineNum">     304 </span>            :                                                 /* Reject inserting the same object */
+<span class="lineNum">     305 </span><span class="lineCov">          2 :                                                 return AO2_CONTAINER_INSERT_NODE_REJECTED;</span>
+<span class="lineNum">     306 </span>            :                                         }
+<span class="lineNum">     307 </span><span class="lineCov">         16 :                                         break;</span>
+<span class="lineNum">     308 </span><span class="lineCov">         20 :                                 case AO2_CONTAINER_ALLOC_OPT_DUPS_REPLACE:</span>
+<span class="lineNum">     309 </span><span class="lineCov">         20 :                                         SWAP(cur-&gt;common.obj, node-&gt;common.obj);</span>
+<span class="lineNum">     310 </span><span class="lineCov">         20 :                                         ao2_t_ref(node, -1, NULL);</span>
+<span class="lineNum">     311 </span><span class="lineCov">         20 :                                         return AO2_CONTAINER_INSERT_NODE_OBJ_REPLACED;</span>
+<span class="lineNum">     312 </span>            :                                 }
+<span class="lineNum">     313 </span>            :                         }
+<span class="lineNum">     314 </span>            :                         AST_DLLIST_TRAVERSE_SAFE_END;
+<span class="lineNum">     315 </span>            :                 }
+<span class="lineNum">     316 </span><span class="lineCov">   21249753 :                 AST_DLLIST_INSERT_TAIL(&amp;bucket-&gt;list, node, links);</span>
+<span class="lineNum">     317 </span>            :         }
+<span class="lineNum">     318 </span><span class="lineCov">   21249807 :         return AO2_CONTAINER_INSERT_NODE_INSERTED;</span>
+<span class="lineNum">     319 </span>            : }
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span>            : /*!
+<span class="lineNum">     322 </span>            :  * \internal
+<span class="lineNum">     323 </span>            :  * \brief Find the first hash container node in a traversal.
+<span class="lineNum">     324 </span>            :  * \since 12.0.0
+<span class="lineNum">     325 </span>            :  *
+<span class="lineNum">     326 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     327 </span>            :  * \param flags search_flags to control traversing the container
+<span class="lineNum">     328 </span>            :  * \param arg Comparison callback arg parameter.
+<span class="lineNum">     329 </span>            :  * \param state Traversal state to restart hash container traversal.
+<span class="lineNum">     330 </span>            :  *
+<span class="lineNum">     331 </span>            :  * \retval node-ptr of found node (Reffed).
+<a name="332"><span class="lineNum">     332 </span>            :  * \retval NULL when no node found.</a>
+<span class="lineNum">     333 </span>            :  */
+<span class="lineNum">     334 </span><span class="lineCov">   30425129 : static struct hash_bucket_node *hash_ao2_find_first(struct ao2_container_hash *self, enum search_flags flags, void *arg, struct hash_traversal_state *state)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span>            :         struct hash_bucket_node *node;
+<span class="lineNum">     337 </span>            :         int bucket_cur;
+<span class="lineNum">     338 </span>            :         int cmp;
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">   30425129 :         memset(state, 0, sizeof(*state));</span>
+<span class="lineNum">     341 </span><span class="lineCov">   30425129 :         state-&gt;arg = arg;</span>
+<span class="lineNum">     342 </span><span class="lineCov">   30425129 :         state-&gt;flags = flags;</span>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            :         /* Determine traversal order. */
+<span class="lineNum">     345 </span><span class="lineCov">   30425129 :         switch (flags &amp; OBJ_ORDER_MASK) {</span>
+<span class="lineNum">     346 </span><span class="lineCov">         18 :         case OBJ_ORDER_POST:</span>
+<span class="lineNum">     347 </span>            :         case OBJ_ORDER_DESCENDING:
+<span class="lineNum">     348 </span><span class="lineCov">         18 :                 state-&gt;descending = 1;</span>
+<span class="lineNum">     349 </span><span class="lineCov">         18 :                 break;</span>
+<span class="lineNum">     350 </span><span class="lineCov">   30425111 :         case OBJ_ORDER_PRE:</span>
+<span class="lineNum">     351 </span>            :         case OBJ_ORDER_ASCENDING:
+<span class="lineNum">     352 </span>            :         default:
+<span class="lineNum">     353 </span><span class="lineCov">   30425111 :                 break;</span>
+<span class="lineNum">     354 </span>            :         }
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span>            :         /*
+<span class="lineNum">     357 </span>            :          * If lookup by pointer or search key, run the hash and optional
+<span class="lineNum">     358 </span>            :          * sort functions.  Otherwise, traverse the whole container.
+<span class="lineNum">     359 </span>            :          */
+<span class="lineNum">     360 </span><span class="lineCov">   30425129 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     361 </span><span class="lineCov">   26699610 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     362 </span>            :         case OBJ_SEARCH_KEY:
+<span class="lineNum">     363 </span>            :                 /* we know hash can handle this case */
+<span class="lineNum">     364 </span><span class="lineCov">   26699610 :                 bucket_cur = abs(self-&gt;hash_fn(arg, flags &amp; OBJ_SEARCH_MASK)</span>
+<span class="lineNum">     365 </span><span class="lineCov">   26699610 :                                 % self-&gt;n_buckets);</span>
+<span class="lineNum">     366 </span><span class="lineCov">   26699610 :                 state-&gt;sort_fn = self-&gt;common.sort_fn;</span>
+<span class="lineNum">     367 </span><span class="lineCov">   26699610 :                 break;</span>
+<span class="lineNum">     368 </span><span class="lineCov">       1202 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     369 </span>            :                 /* scan all buckets for partial key matches */
+<span class="lineNum">     370 </span><span class="lineCov">       1202 :                 bucket_cur = -1;</span>
+<span class="lineNum">     371 </span><span class="lineCov">       1202 :                 state-&gt;sort_fn = self-&gt;common.sort_fn;</span>
+<span class="lineNum">     372 </span><span class="lineCov">       1202 :                 break;</span>
+<span class="lineNum">     373 </span><span class="lineCov">    3724317 :         default:</span>
+<span class="lineNum">     374 </span>            :                 /* don't know, let's scan all buckets */
+<span class="lineNum">     375 </span><span class="lineCov">    3724317 :                 bucket_cur = -1;</span>
+<span class="lineNum">     376 </span><span class="lineCov">    3724317 :                 state-&gt;sort_fn = NULL;</span>
+<span class="lineNum">     377 </span><span class="lineCov">    3724317 :                 break;</span>
+<span class="lineNum">     378 </span>            :         }
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">   30425129 :         if (state-&gt;descending) {</span>
+<span class="lineNum">     381 </span>            :                 /*
+<span class="lineNum">     382 </span>            :                  * Determine the search boundaries of a descending traversal.
+<span class="lineNum">     383 </span>            :                  *
+<span class="lineNum">     384 </span>            :                  * bucket_cur downto state-&gt;bucket_last
+<span class="lineNum">     385 </span>            :                  */
+<span class="lineNum">     386 </span><span class="lineCov">         18 :                 if (bucket_cur &lt; 0) {</span>
+<span class="lineNum">     387 </span><span class="lineCov">         10 :                         bucket_cur = self-&gt;n_buckets - 1;</span>
+<span class="lineNum">     388 </span><span class="lineCov">         10 :                         state-&gt;bucket_last = 0;</span>
+<span class="lineNum">     389 </span>            :                 } else {
+<span class="lineNum">     390 </span><span class="lineCov">          8 :                         state-&gt;bucket_last = bucket_cur;</span>
+<span class="lineNum">     391 </span>            :                 }
+<span class="lineNum">     392 </span><span class="lineCov">         18 :                 state-&gt;bucket_start = bucket_cur;</span>
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span>            :                 /* For each bucket */
+<span class="lineNum">     395 </span><span class="lineCov">         20 :                 for (; state-&gt;bucket_last &lt;= bucket_cur; --bucket_cur) {</span>
+<span class="lineNum">     396 </span>            :                         /* For each node in the bucket. */
+<span class="lineNum">     397 </span><span class="lineCov">         24 :                         for (node = AST_DLLIST_LAST(&amp;self-&gt;buckets[bucket_cur].list);</span>
+<span class="lineNum">     398 </span>            :                                 node;
+<span class="lineNum">     399 </span><span class="lineCov">          4 :                                 node = AST_DLLIST_PREV(node, links)) {</span>
+<span class="lineNum">     400 </span><span class="lineCov">         24 :                                 if (!node-&gt;common.obj) {</span>
+<span class="lineNum">     401 </span>            :                                         /* Node is empty */
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     403 </span>            :                                 }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineCov">         24 :                                 if (state-&gt;sort_fn) {</span>
+<span class="lineNum">     406 </span>            :                                         /* Filter node through the sort_fn */
+<span class="lineNum">     407 </span><span class="lineCov">         16 :                                         cmp = state-&gt;sort_fn(node-&gt;common.obj, arg, flags &amp; OBJ_SEARCH_MASK);</span>
+<span class="lineNum">     408 </span><span class="lineCov">         16 :                                         if (cmp &gt; 0) {</span>
+<span class="lineNum">     409 </span><span class="lineCov">          4 :                                                 continue;</span>
+<span class="lineNum">     410 </span>            :                                         }
+<span class="lineNum">     411 </span><span class="lineCov">         12 :                                         if (cmp &lt; 0) {</span>
+<span class="lineNum">     412 </span>            :                                                 /* No more nodes in this bucket are possible to match. */
+<span class="lineNum">     413 </span><span class="lineCov">          2 :                                                 break;</span>
+<span class="lineNum">     414 </span>            :                                         }
+<span class="lineNum">     415 </span>            :                                 }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span>            :                                 /* We have the first traversal node */
+<span class="lineNum">     418 </span><span class="lineCov">         18 :                                 ao2_t_ref(node, +1, NULL);</span>
+<span class="lineNum">     419 </span><span class="lineCov">         18 :                                 return node;</span>
+<span class="lineNum">     420 </span>            :                         }
+<span class="lineNum">     421 </span>            :                 }
+<span class="lineNum">     422 </span>            :         } else {
+<span class="lineNum">     423 </span>            :                 /*
+<span class="lineNum">     424 </span>            :                  * Determine the search boundaries of an ascending traversal.
+<span class="lineNum">     425 </span>            :                  *
+<span class="lineNum">     426 </span>            :                  * bucket_cur to state-&gt;bucket_last-1
+<span class="lineNum">     427 </span>            :                  */
+<span class="lineNum">     428 </span><span class="lineCov">   30425111 :                 if (bucket_cur &lt; 0) {</span>
+<span class="lineNum">     429 </span><span class="lineCov">    3725509 :                         bucket_cur = 0;</span>
+<span class="lineNum">     430 </span><span class="lineCov">    3725509 :                         state-&gt;bucket_last = self-&gt;n_buckets;</span>
+<span class="lineNum">     431 </span>            :                 } else {
+<span class="lineNum">     432 </span><span class="lineCov">   26699602 :                         state-&gt;bucket_last = bucket_cur + 1;</span>
+<span class="lineNum">     433 </span>            :                 }
+<span class="lineNum">     434 </span><span class="lineCov">   30425111 :                 state-&gt;bucket_start = bucket_cur;</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span>            :                 /* For each bucket */
+<span class="lineNum">     437 </span><span class="lineCov">  162301283 :                 for (; bucket_cur &lt; state-&gt;bucket_last; ++bucket_cur) {</span>
+<span class="lineNum">     438 </span>            :                         /* For each node in the bucket. */
+<span class="lineNum">     439 </span><span class="lineCov">  436026763 :                         for (node = AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket_cur].list);</span>
+<span class="lineNum">     440 </span>            :                                 node;
+<span class="lineNum">     441 </span><span class="lineCov">  275037892 :                                 node = AST_DLLIST_NEXT(node, links)) {</span>
+<span class="lineNum">     442 </span><span class="lineCov">  304156538 :                                 if (!node-&gt;common.obj) {</span>
+<span class="lineNum">     443 </span>            :                                         /* Node is empty */
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     445 </span>            :                                 }
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineCov">  304156538 :                                 if (state-&gt;sort_fn) {</span>
+<span class="lineNum">     448 </span>            :                                         /* Filter node through the sort_fn */
+<span class="lineNum">     449 </span><span class="lineCov">  289660163 :                                         cmp = state-&gt;sort_fn(node-&gt;common.obj, arg, flags &amp; OBJ_SEARCH_MASK);</span>
+<span class="lineNum">     450 </span><span class="lineCov">  289660163 :                                         if (cmp &lt; 0) {</span>
+<span class="lineNum">     451 </span><span class="lineCov">  275037892 :                                                 continue;</span>
+<span class="lineNum">     452 </span>            :                                         }
+<span class="lineNum">     453 </span><span class="lineCov">   14622271 :                                         if (cmp &gt; 0) {</span>
+<span class="lineNum">     454 </span>            :                                                 /* No more nodes in this bucket are possible to match. */
+<span class="lineNum">     455 </span><span class="lineCov">       5947 :                                                 break;</span>
+<span class="lineNum">     456 </span>            :                                         }
+<span class="lineNum">     457 </span>            :                                 }
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span>            :                                 /* We have the first traversal node */
+<span class="lineNum">     460 </span><span class="lineCov">   29112699 :                                 ao2_t_ref(node, +1, NULL);</span>
+<span class="lineNum">     461 </span><span class="lineCov">   29112699 :                                 return node;</span>
+<span class="lineNum">     462 </span>            :                         }
+<span class="lineNum">     463 </span>            :                 }
+<span class="lineNum">     464 </span>            :         }
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineCov">    1312412 :         return NULL;</span>
+<span class="lineNum">     467 </span>            : }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span>            : /*!
+<span class="lineNum">     470 </span>            :  * \internal
+<span class="lineNum">     471 </span>            :  * \brief Find the next hash container node in a traversal.
+<span class="lineNum">     472 </span>            :  * \since 12.0.0
+<span class="lineNum">     473 </span>            :  *
+<span class="lineNum">     474 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     475 </span>            :  * \param state Traversal state to restart hash container traversal.
+<span class="lineNum">     476 </span>            :  * \param prev Previous node returned by the traversal search functions.
+<span class="lineNum">     477 </span>            :  *    The ref ownership is passed back to this function.
+<span class="lineNum">     478 </span>            :  *
+<span class="lineNum">     479 </span>            :  * \retval node-ptr of found node (Reffed).
+<a name="480"><span class="lineNum">     480 </span>            :  * \retval NULL when no node found.</a>
+<span class="lineNum">     481 </span>            :  */
+<span class="lineNum">     482 </span><span class="lineCov">  135406093 : static struct hash_bucket_node *hash_ao2_find_next(struct ao2_container_hash *self, struct hash_traversal_state *state, struct hash_bucket_node *prev)</span>
+<span class="lineNum">     483 </span>            : {
+<span class="lineNum">     484 </span>            :         struct hash_bucket_node *node;
+<span class="lineNum">     485 </span>            :         void *arg;
+<span class="lineNum">     486 </span>            :         enum search_flags flags;
+<span class="lineNum">     487 </span>            :         int bucket_cur;
+<span class="lineNum">     488 </span>            :         int cmp;
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span><span class="lineCov">  135406093 :         arg = state-&gt;arg;</span>
+<span class="lineNum">     491 </span><span class="lineCov">  135406093 :         flags = state-&gt;flags;</span>
+<span class="lineNum">     492 </span><span class="lineCov">  135406093 :         bucket_cur = prev-&gt;my_bucket;</span>
+<span class="lineNum">     493 </span><span class="lineCov">  135406093 :         node = prev;</span>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span>            :         /*
+<span class="lineNum">     496 </span>            :          * This function is structured the same as hash_ao2_find_first()
+<span class="lineNum">     497 </span>            :          * intentionally.  We are resuming the search loops from
+<span class="lineNum">     498 </span>            :          * hash_ao2_find_first() in order to find the next node.  The
+<span class="lineNum">     499 </span>            :          * search loops must be resumed where hash_ao2_find_first()
+<span class="lineNum">     500 </span>            :          * returned with the first node.
+<span class="lineNum">     501 </span>            :          */
+<span class="lineNum">     502 </span><span class="lineCov">  135406093 :         if (state-&gt;descending) {</span>
+<span class="lineNum">     503 </span><span class="lineCov">        108 :                 goto hash_descending_resume;</span>
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span>            :                 /* For each bucket */
+<span class="lineNum">     506 </span><span class="lineCov">         36 :                 for (; state-&gt;bucket_last &lt;= bucket_cur; --bucket_cur) {</span>
+<span class="lineNum">     507 </span>            :                         /* For each node in the bucket. */
+<span class="lineNum">     508 </span><span class="lineCov">        126 :                         for (node = AST_DLLIST_LAST(&amp;self-&gt;buckets[bucket_cur].list);</span>
+<span class="lineNum">     509 </span>            :                                 node;
+<span class="lineNum">     510 </span><span class="lineCov">        108 :                                 node = AST_DLLIST_PREV(node, links)) {</span>
+<span class="lineNum">     511 </span><span class="lineCov">        102 :                                 if (!node-&gt;common.obj) {</span>
+<span class="lineNum">     512 </span>            :                                         /* Node is empty */
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     514 </span>            :                                 }
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineCov">        102 :                                 if (state-&gt;sort_fn) {</span>
+<span class="lineNum">     517 </span>            :                                         /* Filter node through the sort_fn */
+<span class="lineNum">     518 </span><span class="lineCov">         30 :                                         cmp = state-&gt;sort_fn(node-&gt;common.obj, arg, flags &amp; OBJ_SEARCH_MASK);</span>
+<span class="lineNum">     519 </span><span class="lineCov">         30 :                                         if (cmp &gt; 0) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                                                 continue;</span>
+<span class="lineNum">     521 </span>            :                                         }
+<span class="lineNum">     522 </span><span class="lineCov">         30 :                                         if (cmp &lt; 0) {</span>
+<span class="lineNum">     523 </span>            :                                                 /* No more nodes in this bucket are possible to match. */
+<span class="lineNum">     524 </span><span class="lineCov">         12 :                                                 break;</span>
+<span class="lineNum">     525 </span>            :                                         }
+<span class="lineNum">     526 </span>            :                                 }
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span>            :                                 /* We have the next traversal node */
+<span class="lineNum">     529 </span><span class="lineCov">         90 :                                 ao2_t_ref(node, +1, NULL);</span>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span>            :                                 /*
+<span class="lineNum">     532 </span>            :                                  * Dereferencing the prev node may result in our next node
+<span class="lineNum">     533 </span>            :                                  * object being removed by another thread.  This could happen if
+<span class="lineNum">     534 </span>            :                                  * the container uses RW locks and the container was read
+<span class="lineNum">     535 </span>            :                                  * locked.
+<span class="lineNum">     536 </span>            :                                  */
+<span class="lineNum">     537 </span><span class="lineCov">         90 :                                 ao2_t_ref(prev, -1, NULL);</span>
+<span class="lineNum">     538 </span><span class="lineCov">         90 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     539 </span><span class="lineCov">         90 :                                         return node;</span>
+<span class="lineNum">     540 </span>            :                                 }
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :                                 prev = node;</span>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">        108 : hash_descending_resume:;</span>
+<span class="lineNum">     544 </span>            :                         }
+<span class="lineNum">     545 </span>            :                 }
+<span class="lineNum">     546 </span>            :         } else {
+<span class="lineNum">     547 </span><span class="lineCov">  135405985 :                 goto hash_ascending_resume;</span>
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span>            :                 /* For each bucket */
+<span class="lineNum">     550 </span><span class="lineCov">   29718388 :                 for (; bucket_cur &lt; state-&gt;bucket_last; ++bucket_cur) {</span>
+<span class="lineNum">     551 </span>            :                         /* For each node in the bucket. */
+<span class="lineNum">     552 </span><span class="lineCov">  160140549 :                         for (node = AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket_cur].list);</span>
+<span class="lineNum">     553 </span>            :                                 node;
+<span class="lineNum">     554 </span><span class="lineCov">  135405989 :                                 node = AST_DLLIST_NEXT(node, links)) {</span>
+<span class="lineNum">     555 </span><span class="lineCov">  130422164 :                                 if (!node-&gt;common.obj) {</span>
+<span class="lineNum">     556 </span>            :                                         /* Node is empty */
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     558 </span>            :                                 }
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineCov">  130422164 :                                 if (state-&gt;sort_fn) {</span>
+<span class="lineNum">     561 </span>            :                                         /* Filter node through the sort_fn */
+<span class="lineNum">     562 </span><span class="lineCov">         25 :                                         cmp = state-&gt;sort_fn(node-&gt;common.obj, arg, flags &amp; OBJ_SEARCH_MASK);</span>
+<span class="lineNum">     563 </span><span class="lineCov">         25 :                                         if (cmp &lt; 0) {</span>
+<span class="lineNum">     564 </span><span class="lineCov">          4 :                                                 continue;</span>
+<span class="lineNum">     565 </span>            :                                         }
+<span class="lineNum">     566 </span><span class="lineCov">         21 :                                         if (cmp &gt; 0) {</span>
+<span class="lineNum">     567 </span>            :                                                 /* No more nodes in this bucket are possible to match. */
+<span class="lineNum">     568 </span><span class="lineCov">          3 :                                                 break;</span>
+<span class="lineNum">     569 </span>            :                                         }
+<span class="lineNum">     570 </span>            :                                 }
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span>            :                                 /* We have the next traversal node */
+<span class="lineNum">     573 </span><span class="lineCov">  130422157 :                                 ao2_t_ref(node, +1, NULL);</span>
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span>            :                                 /*
+<span class="lineNum">     576 </span>            :                                  * Dereferencing the prev node may result in our next node
+<span class="lineNum">     577 </span>            :                                  * object being removed by another thread.  This could happen if
+<span class="lineNum">     578 </span>            :                                  * the container uses RW locks and the container was read
+<span class="lineNum">     579 </span>            :                                  * locked.
+<span class="lineNum">     580 </span>            :                                  */
+<span class="lineNum">     581 </span><span class="lineCov">  130422157 :                                 ao2_t_ref(prev, -1, NULL);</span>
+<span class="lineNum">     582 </span><span class="lineCov">  130422157 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     583 </span><span class="lineCov">  130422157 :                                         return node;</span>
+<span class="lineNum">     584 </span>            :                                 }
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :                                 prev = node;</span>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineCov">  135405989 : hash_ascending_resume:;</span>
+<span class="lineNum">     588 </span>            :                         }
+<span class="lineNum">     589 </span>            :                 }
+<span class="lineNum">     590 </span>            :         }
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span>            :         /* No more nodes in the container left to traverse. */
+<span class="lineNum">     593 </span><span class="lineCov">    4983846 :         ao2_t_ref(prev, -1, NULL);</span>
+<span class="lineNum">     594 </span><span class="lineCov">    4983846 :         return NULL;</span>
+<span class="lineNum">     595 </span>            : }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span>            : /*!
+<span class="lineNum">     598 </span>            :  * \internal
+<span class="lineNum">     599 </span>            :  * \brief Find the next non-empty iteration node in the container.
+<span class="lineNum">     600 </span>            :  * \since 12.0.0
+<span class="lineNum">     601 </span>            :  *
+<span class="lineNum">     602 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     603 </span>            :  * \param node Previous node returned by the iterator.
+<span class="lineNum">     604 </span>            :  * \param flags search_flags to control iterating the container.
+<span class="lineNum">     605 </span>            :  *   Only AO2_ITERATOR_DESCENDING is useful by the method.
+<span class="lineNum">     606 </span>            :  *
+<span class="lineNum">     607 </span>            :  * \note The container is already locked.
+<span class="lineNum">     608 </span>            :  *
+<span class="lineNum">     609 </span>            :  * \retval node on success.
+<a name="610"><span class="lineNum">     610 </span>            :  * \retval NULL on error or no more nodes in the container.</a>
+<span class="lineNum">     611 </span>            :  */
+<span class="lineNum">     612 </span><span class="lineCov">    1687290 : static struct hash_bucket_node *hash_ao2_iterator_next(struct ao2_container_hash *self, struct hash_bucket_node *node, enum ao2_iterator_flags flags)</span>
+<span class="lineNum">     613 </span>            : {
+<span class="lineNum">     614 </span>            :         int cur_bucket;
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">    1687290 :         if (flags &amp; AO2_ITERATOR_DESCENDING) {</span>
+<span class="lineNum">     617 </span><span class="lineCov">         66 :                 if (node) {</span>
+<span class="lineNum">     618 </span><span class="lineCov">         60 :                         cur_bucket = node-&gt;my_bucket;</span>
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span>            :                         /* Find next non-empty node. */
+<span class="lineNum">     621 </span>            :                         for (;;) {
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                                 node = AST_DLLIST_PREV(node, links);</span>
+<span class="lineNum">     623 </span><span class="lineCov">         60 :                                 if (!node) {</span>
+<span class="lineNum">     624 </span><span class="lineCov">         18 :                                         break;</span>
+<span class="lineNum">     625 </span>            :                                 }
+<span class="lineNum">     626 </span><span class="lineCov">         42 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     627 </span>            :                                         /* Found a non-empty node. */
+<span class="lineNum">     628 </span><span class="lineCov">         42 :                                         return node;</span>
+<span class="lineNum">     629 </span>            :                                 }
+<span class="lineNum">     630 </span>            :                         }
+<span class="lineNum">     631 </span>            :                 } else {
+<span class="lineNum">     632 </span>            :                         /* Find first non-empty node. */
+<span class="lineNum">     633 </span><span class="lineCov">          6 :                         cur_bucket = self-&gt;n_buckets;</span>
+<span class="lineNum">     634 </span>            :                 }
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span>            :                 /* Find a non-empty node in the remaining buckets */
+<span class="lineNum">     637 </span><span class="lineCov">         24 :                 while (0 &lt;= --cur_bucket) {</span>
+<span class="lineNum">     638 </span><span class="lineCov">         18 :                         node = AST_DLLIST_LAST(&amp;self-&gt;buckets[cur_bucket].list);</span>
+<span class="lineNum">     639 </span><span class="lineCov">         18 :                         while (node) {</span>
+<span class="lineNum">     640 </span><span class="lineCov">         18 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     641 </span>            :                                         /* Found a non-empty node. */
+<span class="lineNum">     642 </span><span class="lineCov">         18 :                                         return node;</span>
+<span class="lineNum">     643 </span>            :                                 }
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :                                 node = AST_DLLIST_PREV(node, links);</span>
+<span class="lineNum">     645 </span>            :                         }
+<span class="lineNum">     646 </span>            :                 }
+<span class="lineNum">     647 </span>            :         } else {
+<span class="lineNum">     648 </span><span class="lineCov">    1687224 :                 if (node) {</span>
+<span class="lineNum">     649 </span><span class="lineCov">    1200840 :                         cur_bucket = node-&gt;my_bucket;</span>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span>            :                         /* Find next non-empty node. */
+<span class="lineNum">     652 </span>            :                         for (;;) {
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                                 node = AST_DLLIST_NEXT(node, links);</span>
+<span class="lineNum">     654 </span><span class="lineCov">    1200840 :                                 if (!node) {</span>
+<span class="lineNum">     655 </span><span class="lineCov">     755213 :                                         break;</span>
+<span class="lineNum">     656 </span>            :                                 }
+<span class="lineNum">     657 </span><span class="lineCov">     445627 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     658 </span>            :                                         /* Found a non-empty node. */
+<span class="lineNum">     659 </span><span class="lineCov">     445627 :                                         return node;</span>
+<span class="lineNum">     660 </span>            :                                 }
+<span class="lineNum">     661 </span>            :                         }
+<span class="lineNum">     662 </span>            :                 } else {
+<span class="lineNum">     663 </span>            :                         /* Find first non-empty node. */
+<span class="lineNum">     664 </span><span class="lineCov">     486384 :                         cur_bucket = -1;</span>
+<span class="lineNum">     665 </span>            :                 }
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span>            :                 /* Find a non-empty node in the remaining buckets */
+<span class="lineNum">     668 </span><span class="lineCov">   11466054 :                 while (++cur_bucket &lt; self-&gt;n_buckets) {</span>
+<span class="lineNum">     669 </span><span class="lineCov">   10986052 :                         node = AST_DLLIST_FIRST(&amp;self-&gt;buckets[cur_bucket].list);</span>
+<span class="lineNum">     670 </span><span class="lineCov">   10986052 :                         while (node) {</span>
+<span class="lineNum">     671 </span><span class="lineCov">     761595 :                                 if (node-&gt;common.obj) {</span>
+<span class="lineNum">     672 </span>            :                                         /* Found a non-empty node. */
+<span class="lineNum">     673 </span><span class="lineCov">     761595 :                                         return node;</span>
+<span class="lineNum">     674 </span>            :                                 }
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                                 node = AST_DLLIST_NEXT(node, links);</span>
+<span class="lineNum">     676 </span>            :                         }
+<span class="lineNum">     677 </span>            :                 }
+<span class="lineNum">     678 </span>            :         }
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span>            :         /* No more nodes to visit in the container. */
+<span class="lineNum">     681 </span><span class="lineCov">     480008 :         return NULL;</span>
+<span class="lineNum">     682 </span>            : }
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     685 </span>            : /*!
+<span class="lineNum">     686 </span>            :  * \internal
+<span class="lineNum">     687 </span>            :  * \brief Increment the hash container linked object statistic.
+<span class="lineNum">     688 </span>            :  * \since 12.0.0
+<span class="lineNum">     689 </span>            :  *
+<span class="lineNum">     690 </span>            :  * \param hash Container to operate upon.
+<span class="lineNum">     691 </span>            :  * \param hash_node Container node linking object to.
+<span class="lineNum">     692 </span>            :  *
+<span class="lineNum">     693 </span>            :  * \return Nothing
+<span class="lineNum">     694 </span>            :  */
+<span class="lineNum">     695 </span>            : static void hash_ao2_link_node_stat(struct ao2_container *hash, struct ao2_container_node *hash_node)
+<span class="lineNum">     696 </span>            : {
+<span class="lineNum">     697 </span>            :         struct ao2_container_hash *self = (struct ao2_container_hash *) hash;
+<span class="lineNum">     698 </span>            :         struct hash_bucket_node *node = (struct hash_bucket_node *) hash_node;
+<span class="lineNum">     699 </span>            :         int i = node-&gt;my_bucket;
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span>            :         ++self-&gt;buckets[i].elements;
+<span class="lineNum">     702 </span>            :         if (self-&gt;buckets[i].max_elements &lt; self-&gt;buckets[i].elements) {
+<span class="lineNum">     703 </span>            :                 self-&gt;buckets[i].max_elements = self-&gt;buckets[i].elements;
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span>            : }
+<span class="lineNum">     706 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     709 </span>            : /*!
+<span class="lineNum">     710 </span>            :  * \internal
+<span class="lineNum">     711 </span>            :  * \brief Decrement the hash container linked object statistic.
+<span class="lineNum">     712 </span>            :  * \since 12.0.0
+<span class="lineNum">     713 </span>            :  *
+<span class="lineNum">     714 </span>            :  * \param hash Container to operate upon.
+<span class="lineNum">     715 </span>            :  * \param hash_node Container node unlinking object from.
+<span class="lineNum">     716 </span>            :  *
+<span class="lineNum">     717 </span>            :  * \return Nothing
+<span class="lineNum">     718 </span>            :  */
+<span class="lineNum">     719 </span>            : static void hash_ao2_unlink_node_stat(struct ao2_container *hash, struct ao2_container_node *hash_node)
+<span class="lineNum">     720 </span>            : {
+<span class="lineNum">     721 </span>            :         struct ao2_container_hash *self = (struct ao2_container_hash *) hash;
+<span class="lineNum">     722 </span>            :         struct hash_bucket_node *node = (struct hash_bucket_node *) hash_node;
+<span class="lineNum">     723 </span>            : 
+<span class="lineNum">     724 </span>            :         --self-&gt;buckets[node-&gt;my_bucket].elements;
+<span class="lineNum">     725 </span>            : }
+<span class="lineNum">     726 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span>            : /*!
+<span class="lineNum">     729 </span>            :  * \internal
+<span class="lineNum">     730 </span>            :  *
+<span class="lineNum">     731 </span>            :  * \brief Destroy this container.
+<span class="lineNum">     732 </span>            :  * \since 12.0.0
+<span class="lineNum">     733 </span>            :  *
+<span class="lineNum">     734 </span>            :  * \param self Container to operate upon.
+<span class="lineNum">     735 </span>            :  *
+<a name="736"><span class="lineNum">     736 </span>            :  * \return Nothing</a>
+<span class="lineNum">     737 </span>            :  */
+<span class="lineNum">     738 </span><span class="lineCov">    2883672 : static void hash_ao2_destroy(struct ao2_container_hash *self)</span>
+<span class="lineNum">     739 </span>            : {
+<span class="lineNum">     740 </span>            :         int idx;
+<span class="lineNum">     741 </span>            : 
+<span class="lineNum">     742 </span>            :         /* Check that the container no longer has any nodes */
+<span class="lineNum">     743 </span><span class="lineCov">  128142324 :         for (idx = self-&gt;n_buckets; idx--;) {</span>
+<span class="lineNum">     744 </span><span class="lineCov">  125258652 :                 if (!AST_DLLIST_EMPTY(&amp;self-&gt;buckets[idx].list)) {</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Node ref leak.  Hash container still has nodes!\n&quot;);</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :                         ast_assert(0);</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     748 </span>            :                 }
+<span class="lineNum">     749 </span>            :         }
+<span class="lineNum">     750 </span><span class="lineCov">    2883672 : }</span>
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     753 </span>            : /*!
+<span class="lineNum">     754 </span>            :  * \internal
+<span class="lineNum">     755 </span>            :  * \brief Display contents of the specified container.
+<span class="lineNum">     756 </span>            :  * \since 12.0.0
+<span class="lineNum">     757 </span>            :  *
+<span class="lineNum">     758 </span>            :  * \param self Container to dump.
+<span class="lineNum">     759 </span>            :  * \param where User data needed by prnt to determine where to put output.
+<span class="lineNum">     760 </span>            :  * \param prnt Print output callback function to use.
+<span class="lineNum">     761 </span>            :  * \param prnt_obj Callback function to print the given object's key. (NULL if not available)
+<span class="lineNum">     762 </span>            :  *
+<span class="lineNum">     763 </span>            :  * \return Nothing
+<span class="lineNum">     764 </span>            :  */
+<span class="lineNum">     765 </span>            : static void hash_ao2_dump(struct ao2_container_hash *self, void *where, ao2_prnt_fn *prnt, ao2_prnt_obj_fn *prnt_obj)
+<span class="lineNum">     766 </span>            : {
+<span class="lineNum">     767 </span>            : #define FORMAT  &quot;%6s, %16s, %16s, %16s, %16s, %s\n&quot;
+<span class="lineNum">     768 </span>            : #define FORMAT2 &quot;%6d, %16p, %16p, %16p, %16p, &quot;
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span>            :         int bucket;
+<span class="lineNum">     771 </span>            :         int suppressed_buckets = 0;
+<span class="lineNum">     772 </span>            :         struct hash_bucket_node *node;
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span>            :         prnt(where, &quot;Number of buckets: %d\n\n&quot;, self-&gt;n_buckets);
+<span class="lineNum">     775 </span>            : 
+<span class="lineNum">     776 </span>            :         prnt(where, FORMAT, &quot;Bucket&quot;, &quot;Node&quot;, &quot;Prev&quot;, &quot;Next&quot;, &quot;Obj&quot;, &quot;Key&quot;);
+<span class="lineNum">     777 </span>            :         for (bucket = 0; bucket &lt; self-&gt;n_buckets; ++bucket) {
+<span class="lineNum">     778 </span>            :                 node = AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket].list);
+<span class="lineNum">     779 </span>            :                 if (node) {
+<span class="lineNum">     780 </span>            :                         suppressed_buckets = 0;
+<span class="lineNum">     781 </span>            :                         do {
+<span class="lineNum">     782 </span>            :                                 prnt(where, FORMAT2,
+<span class="lineNum">     783 </span>            :                                         bucket,
+<span class="lineNum">     784 </span>            :                                         node,
+<span class="lineNum">     785 </span>            :                                         AST_DLLIST_PREV(node, links),
+<span class="lineNum">     786 </span>            :                                         AST_DLLIST_NEXT(node, links),
+<span class="lineNum">     787 </span>            :                                         node-&gt;common.obj);
+<span class="lineNum">     788 </span>            :                                 if (node-&gt;common.obj &amp;&amp; prnt_obj) {
+<span class="lineNum">     789 </span>            :                                         prnt_obj(node-&gt;common.obj, where, prnt);
+<span class="lineNum">     790 </span>            :                                 }
+<span class="lineNum">     791 </span>            :                                 prnt(where, &quot;\n&quot;);
+<span class="lineNum">     792 </span>            : 
+<span class="lineNum">     793 </span>            :                                 node = AST_DLLIST_NEXT(node, links);
+<span class="lineNum">     794 </span>            :                         } while (node);
+<span class="lineNum">     795 </span>            :                 } else if (!suppressed_buckets) {
+<span class="lineNum">     796 </span>            :                         suppressed_buckets = 1;
+<span class="lineNum">     797 </span>            :                         prnt(where, &quot;...\n&quot;);
+<span class="lineNum">     798 </span>            :                 }
+<span class="lineNum">     799 </span>            :         }
+<span class="lineNum">     800 </span>            : 
+<span class="lineNum">     801 </span>            : #undef FORMAT
+<span class="lineNum">     802 </span>            : #undef FORMAT2
+<span class="lineNum">     803 </span>            : }
+<span class="lineNum">     804 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">     805 </span>            : 
+<span class="lineNum">     806 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     807 </span>            : /*!
+<span class="lineNum">     808 </span>            :  * \internal
+<span class="lineNum">     809 </span>            :  * \brief Display statistics of the specified container.
+<span class="lineNum">     810 </span>            :  * \since 12.0.0
+<span class="lineNum">     811 </span>            :  *
+<span class="lineNum">     812 </span>            :  * \param self Container to display statistics.
+<span class="lineNum">     813 </span>            :  * \param where User data needed by prnt to determine where to put output.
+<span class="lineNum">     814 </span>            :  * \param prnt Print output callback function to use.
+<span class="lineNum">     815 </span>            :  *
+<span class="lineNum">     816 </span>            :  * \note The container is already locked for reading.
+<span class="lineNum">     817 </span>            :  *
+<span class="lineNum">     818 </span>            :  * \return Nothing
+<span class="lineNum">     819 </span>            :  */
+<span class="lineNum">     820 </span>            : static void hash_ao2_stats(struct ao2_container_hash *self, void *where, ao2_prnt_fn *prnt)
+<span class="lineNum">     821 </span>            : {
+<span class="lineNum">     822 </span>            : #define FORMAT  &quot;%10.10s %10.10s %10.10s\n&quot;
+<span class="lineNum">     823 </span>            : #define FORMAT2 &quot;%10d %10d %10d\n&quot;
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span>            :         int bucket;
+<span class="lineNum">     826 </span>            :         int suppressed_buckets = 0;
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span>            :         prnt(where, &quot;Number of buckets: %d\n\n&quot;, self-&gt;n_buckets);
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span>            :         prnt(where, FORMAT, &quot;Bucket&quot;, &quot;Objects&quot;, &quot;Max&quot;);
+<span class="lineNum">     831 </span>            :         for (bucket = 0; bucket &lt; self-&gt;n_buckets; ++bucket) {
+<span class="lineNum">     832 </span>            :                 if (self-&gt;buckets[bucket].max_elements) {
+<span class="lineNum">     833 </span>            :                         suppressed_buckets = 0;
+<span class="lineNum">     834 </span>            :                         prnt(where, FORMAT2, bucket, self-&gt;buckets[bucket].elements,
+<span class="lineNum">     835 </span>            :                                 self-&gt;buckets[bucket].max_elements);
+<span class="lineNum">     836 </span>            :                 } else if (!suppressed_buckets) {
+<span class="lineNum">     837 </span>            :                         suppressed_buckets = 1;
+<span class="lineNum">     838 </span>            :                         prnt(where, &quot;...\n&quot;);
+<span class="lineNum">     839 </span>            :                 }
+<span class="lineNum">     840 </span>            :         }
+<span class="lineNum">     841 </span>            : 
+<span class="lineNum">     842 </span>            : #undef FORMAT
+<span class="lineNum">     843 </span>            : #undef FORMAT2
+<span class="lineNum">     844 </span>            : }
+<span class="lineNum">     845 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">     848 </span>            : /*!
+<span class="lineNum">     849 </span>            :  * \internal
+<span class="lineNum">     850 </span>            :  * \brief Perform an integrity check on the specified container.
+<span class="lineNum">     851 </span>            :  * \since 12.0.0
+<span class="lineNum">     852 </span>            :  *
+<span class="lineNum">     853 </span>            :  * \param self Container to check integrity.
+<span class="lineNum">     854 </span>            :  *
+<span class="lineNum">     855 </span>            :  * \note The container is already locked for reading.
+<span class="lineNum">     856 </span>            :  *
+<span class="lineNum">     857 </span>            :  * \retval 0 on success.
+<span class="lineNum">     858 </span>            :  * \retval -1 on error.
+<span class="lineNum">     859 </span>            :  */
+<span class="lineNum">     860 </span>            : static int hash_ao2_integrity(struct ao2_container_hash *self)
+<span class="lineNum">     861 </span>            : {
+<span class="lineNum">     862 </span>            :         int bucket_exp;
+<span class="lineNum">     863 </span>            :         int bucket;
+<span class="lineNum">     864 </span>            :         int count_obj;
+<span class="lineNum">     865 </span>            :         int count_total_obj;
+<span class="lineNum">     866 </span>            :         int count_total_node;
+<span class="lineNum">     867 </span>            :         void *obj_last;
+<span class="lineNum">     868 </span>            :         struct hash_bucket_node *node;
+<span class="lineNum">     869 </span>            :         struct hash_bucket_node *prev;
+<span class="lineNum">     870 </span>            :         struct hash_bucket_node *next;
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span>            :         count_total_obj = 0;
+<span class="lineNum">     873 </span>            :         count_total_node = 0;
+<span class="lineNum">     874 </span>            : 
+<span class="lineNum">     875 </span>            :         /* For each bucket in the container. */
+<span class="lineNum">     876 </span>            :         for (bucket = 0; bucket &lt; self-&gt;n_buckets; ++bucket) {
+<span class="lineNum">     877 </span>            :                 if (!AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket].list)
+<span class="lineNum">     878 </span>            :                         &amp;&amp; !AST_DLLIST_LAST(&amp;self-&gt;buckets[bucket].list)) {
+<span class="lineNum">     879 </span>            :                         /* The bucket list is empty. */
+<span class="lineNum">     880 </span>            :                         continue;
+<span class="lineNum">     881 </span>            :                 }
+<span class="lineNum">     882 </span>            : 
+<span class="lineNum">     883 </span>            :                 count_obj = 0;
+<span class="lineNum">     884 </span>            :                 obj_last = NULL;
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span>            :                 /* Check bucket list links and nodes. */
+<span class="lineNum">     887 </span>            :                 node = AST_DLLIST_LAST(&amp;self-&gt;buckets[bucket].list);
+<span class="lineNum">     888 </span>            :                 if (!node) {
+<span class="lineNum">     889 </span>            :                         ast_log(LOG_ERROR, &quot;Bucket %d list tail is NULL when it should not be!\n&quot;,
+<span class="lineNum">     890 </span>            :                                 bucket);
+<span class="lineNum">     891 </span>            :                         return -1;
+<span class="lineNum">     892 </span>            :                 }
+<span class="lineNum">     893 </span>            :                 if (AST_DLLIST_NEXT(node, links)) {
+<span class="lineNum">     894 </span>            :                         ast_log(LOG_ERROR, &quot;Bucket %d list tail node is not the last node!\n&quot;,
+<span class="lineNum">     895 </span>            :                                 bucket);
+<span class="lineNum">     896 </span>            :                         return -1;
+<span class="lineNum">     897 </span>            :                 }
+<span class="lineNum">     898 </span>            :                 node = AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket].list);
+<span class="lineNum">     899 </span>            :                 if (!node) {
+<span class="lineNum">     900 </span>            :                         ast_log(LOG_ERROR, &quot;Bucket %d list head is NULL when it should not be!\n&quot;,
+<span class="lineNum">     901 </span>            :                                 bucket);
+<span class="lineNum">     902 </span>            :                         return -1;
+<span class="lineNum">     903 </span>            :                 }
+<span class="lineNum">     904 </span>            :                 if (AST_DLLIST_PREV(node, links)) {
+<span class="lineNum">     905 </span>            :                         ast_log(LOG_ERROR, &quot;Bucket %d list head node is not the first node!\n&quot;,
+<span class="lineNum">     906 </span>            :                                 bucket);
+<span class="lineNum">     907 </span>            :                         return -1;
+<span class="lineNum">     908 </span>            :                 }
+<span class="lineNum">     909 </span>            :                 for (; node; node = next) {
+<span class="lineNum">     910 </span>            :                         /* Check backward link. */
+<span class="lineNum">     911 </span>            :                         prev = AST_DLLIST_PREV(node, links);
+<span class="lineNum">     912 </span>            :                         if (prev) {
+<span class="lineNum">     913 </span>            :                                 if (prev == node) {
+<span class="lineNum">     914 </span>            :                                         ast_log(LOG_ERROR, &quot;Bucket %d list node's prev pointer points to itself!\n&quot;,
+<span class="lineNum">     915 </span>            :                                                 bucket);
+<span class="lineNum">     916 </span>            :                                         return -1;
+<span class="lineNum">     917 </span>            :                                 }
+<span class="lineNum">     918 </span>            :                                 if (node != AST_DLLIST_NEXT(prev, links)) {
+<span class="lineNum">     919 </span>            :                                         ast_log(LOG_ERROR, &quot;Bucket %d list node's prev node does not link back!\n&quot;,
+<span class="lineNum">     920 </span>            :                                                 bucket);
+<span class="lineNum">     921 </span>            :                                         return -1;
+<span class="lineNum">     922 </span>            :                                 }
+<span class="lineNum">     923 </span>            :                         } else if (node != AST_DLLIST_FIRST(&amp;self-&gt;buckets[bucket].list)) {
+<span class="lineNum">     924 </span>            :                                 ast_log(LOG_ERROR, &quot;Bucket %d backward list chain is broken!\n&quot;,
+<span class="lineNum">     925 </span>            :                                         bucket);
+<span class="lineNum">     926 </span>            :                                 return -1;
+<span class="lineNum">     927 </span>            :                         }
+<span class="lineNum">     928 </span>            : 
+<span class="lineNum">     929 </span>            :                         /* Check forward link. */
+<span class="lineNum">     930 </span>            :                         next = AST_DLLIST_NEXT(node, links);
+<span class="lineNum">     931 </span>            :                         if (next) {
+<span class="lineNum">     932 </span>            :                                 if (next == node) {
+<span class="lineNum">     933 </span>            :                                         ast_log(LOG_ERROR, &quot;Bucket %d list node's next pointer points to itself!\n&quot;,
+<span class="lineNum">     934 </span>            :                                                 bucket);
+<span class="lineNum">     935 </span>            :                                         return -1;
+<span class="lineNum">     936 </span>            :                                 }
+<span class="lineNum">     937 </span>            :                                 if (node != AST_DLLIST_PREV(next, links)) {
+<span class="lineNum">     938 </span>            :                                         ast_log(LOG_ERROR, &quot;Bucket %d list node's next node does not link back!\n&quot;,
+<span class="lineNum">     939 </span>            :                                                 bucket);
+<span class="lineNum">     940 </span>            :                                         return -1;
+<span class="lineNum">     941 </span>            :                                 }
+<span class="lineNum">     942 </span>            :                         } else if (node != AST_DLLIST_LAST(&amp;self-&gt;buckets[bucket].list)) {
+<span class="lineNum">     943 </span>            :                                 ast_log(LOG_ERROR, &quot;Bucket %d forward list chain is broken!\n&quot;,
+<span class="lineNum">     944 </span>            :                                         bucket);
+<span class="lineNum">     945 </span>            :                                 return -1;
+<span class="lineNum">     946 </span>            :                         }
+<span class="lineNum">     947 </span>            : 
+<span class="lineNum">     948 </span>            :                         if (bucket != node-&gt;my_bucket) {
+<span class="lineNum">     949 </span>            :                                 ast_log(LOG_ERROR, &quot;Bucket %d node claims to be in bucket %d!\n&quot;,
+<span class="lineNum">     950 </span>            :                                         bucket, node-&gt;my_bucket);
+<span class="lineNum">     951 </span>            :                                 return -1;
+<span class="lineNum">     952 </span>            :                         }
+<span class="lineNum">     953 </span>            : 
+<span class="lineNum">     954 </span>            :                         ++count_total_node;
+<span class="lineNum">     955 </span>            :                         if (!node-&gt;common.obj) {
+<span class="lineNum">     956 </span>            :                                 /* Node is empty. */
+<span class="lineNum">     957 </span>            :                                 continue;
+<span class="lineNum">     958 </span>            :                         }
+<span class="lineNum">     959 </span>            :                         ++count_obj;
+<span class="lineNum">     960 </span>            : 
+<span class="lineNum">     961 </span>            :                         /* Check container hash key for expected bucket. */
+<span class="lineNum">     962 </span>            :                         bucket_exp = abs(self-&gt;hash_fn(node-&gt;common.obj, OBJ_SEARCH_OBJECT)
+<span class="lineNum">     963 </span>            :                                         % self-&gt;n_buckets);
+<span class="lineNum">     964 </span>            :                         if (bucket != bucket_exp) {
+<span class="lineNum">     965 </span>            :                                 ast_log(LOG_ERROR, &quot;Bucket %d node hashes to bucket %d!\n&quot;,
+<span class="lineNum">     966 </span>            :                                         bucket, bucket_exp);
+<span class="lineNum">     967 </span>            :                                 return -1;
+<span class="lineNum">     968 </span>            :                         }
+<span class="lineNum">     969 </span>            : 
+<span class="lineNum">     970 </span>            :                         /* Check sort if configured. */
+<span class="lineNum">     971 </span>            :                         if (self-&gt;common.sort_fn) {
+<span class="lineNum">     972 </span>            :                                 if (obj_last
+<span class="lineNum">     973 </span>            :                                         &amp;&amp; self-&gt;common.sort_fn(obj_last, node-&gt;common.obj, OBJ_SEARCH_OBJECT) &gt; 0) {
+<span class="lineNum">     974 </span>            :                                         ast_log(LOG_ERROR, &quot;Bucket %d nodes out of sorted order!\n&quot;,
+<span class="lineNum">     975 </span>            :                                                 bucket);
+<span class="lineNum">     976 </span>            :                                         return -1;
+<span class="lineNum">     977 </span>            :                                 }
+<span class="lineNum">     978 </span>            :                                 obj_last = node-&gt;common.obj;
+<span class="lineNum">     979 </span>            :                         }
+<span class="lineNum">     980 </span>            :                 }
+<span class="lineNum">     981 </span>            : 
+<span class="lineNum">     982 </span>            :                 /* Check bucket obj count statistic. */
+<span class="lineNum">     983 </span>            :                 if (count_obj != self-&gt;buckets[bucket].elements) {
+<span class="lineNum">     984 </span>            :                         ast_log(LOG_ERROR, &quot;Bucket %d object count of %d does not match stat of %d!\n&quot;,
+<span class="lineNum">     985 </span>            :                                 bucket, count_obj, self-&gt;buckets[bucket].elements);
+<span class="lineNum">     986 </span>            :                         return -1;
+<span class="lineNum">     987 </span>            :                 }
+<span class="lineNum">     988 </span>            : 
+<span class="lineNum">     989 </span>            :                 /* Accumulate found object counts. */
+<span class="lineNum">     990 </span>            :                 count_total_obj += count_obj;
+<span class="lineNum">     991 </span>            :         }
+<span class="lineNum">     992 </span>            : 
+<span class="lineNum">     993 </span>            :         /* Check total obj count. */
+<span class="lineNum">     994 </span>            :         if (count_total_obj != ao2_container_count(&amp;self-&gt;common)) {
+<span class="lineNum">     995 </span>            :                 ast_log(LOG_ERROR,
+<span class="lineNum">     996 </span>            :                         &quot;Total object count of %d does not match ao2_container_count() of %d!\n&quot;,
+<span class="lineNum">     997 </span>            :                         count_total_obj, ao2_container_count(&amp;self-&gt;common));
+<span class="lineNum">     998 </span>            :                 return -1;
+<span class="lineNum">     999 </span>            :         }
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span>            :         /* Check total node count. */
+<span class="lineNum">    1002 </span>            :         if (count_total_node != self-&gt;common.nodes) {
+<span class="lineNum">    1003 </span>            :                 ast_log(LOG_ERROR, &quot;Total node count of %d does not match stat of %d!\n&quot;,
+<span class="lineNum">    1004 </span>            :                         count_total_node, self-&gt;common.nodes);
+<span class="lineNum">    1005 </span>            :                 return -1;
+<span class="lineNum">    1006 </span>            :         }
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span>            :         return 0;
+<span class="lineNum">    1009 </span>            : }
+<span class="lineNum">    1010 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">    1011 </span>            : 
+<span class="lineNum">    1012 </span>            : /*! Hash container virtual method table. */
+<span class="lineNum">    1013 </span>            : static const struct ao2_container_methods v_table_hash = {
+<span class="lineNum">    1014 </span>            :         .alloc_empty_clone = (ao2_container_alloc_empty_clone_fn) hash_ao2_alloc_empty_clone,
+<span class="lineNum">    1015 </span>            :         .new_node = (ao2_container_new_node_fn) hash_ao2_new_node,
+<span class="lineNum">    1016 </span>            :         .insert = (ao2_container_insert_fn) hash_ao2_insert_node,
+<span class="lineNum">    1017 </span>            :         .traverse_first = (ao2_container_find_first_fn) hash_ao2_find_first,
+<span class="lineNum">    1018 </span>            :         .traverse_next = (ao2_container_find_next_fn) hash_ao2_find_next,
+<span class="lineNum">    1019 </span>            :         .iterator_next = (ao2_iterator_next_fn) hash_ao2_iterator_next,
+<span class="lineNum">    1020 </span>            :         .destroy = (ao2_container_destroy_fn) hash_ao2_destroy,
+<span class="lineNum">    1021 </span>            : #if defined(AO2_DEBUG)
+<span class="lineNum">    1022 </span>            :         .link_stat = hash_ao2_link_node_stat,
+<span class="lineNum">    1023 </span>            :         .unlink_stat = hash_ao2_unlink_node_stat,
+<span class="lineNum">    1024 </span>            :         .dump = (ao2_container_display) hash_ao2_dump,
+<span class="lineNum">    1025 </span>            :         .stats = (ao2_container_statistics) hash_ao2_stats,
+<span class="lineNum">    1026 </span>            :         .integrity = (ao2_container_integrity) hash_ao2_integrity,
+<span class="lineNum">    1027 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">    1028 </span>            : };
+<span class="lineNum">    1029 </span>            : 
+<span class="lineNum">    1030 </span>            : /*!
+<span class="lineNum">    1031 </span>            :  * \brief always zero hash function
+<span class="lineNum">    1032 </span>            :  *
+<span class="lineNum">    1033 </span>            :  * it is convenient to have a hash function that always returns 0.
+<span class="lineNum">    1034 </span>            :  * This is basically used when we want to have a container that is
+<span class="lineNum">    1035 </span>            :  * a simple linked list.
+<span class="lineNum">    1036 </span>            :  *
+<a name="1037"><span class="lineNum">    1037 </span>            :  * \returns 0</a>
+<span class="lineNum">    1038 </span>            :  */
+<span class="lineNum">    1039 </span><span class="lineCov">   14668386 : static int hash_zero(const void *user_obj, const int flags)</span>
+<span class="lineNum">    1040 </span>            : {
+<span class="lineNum">    1041 </span><span class="lineCov">   14668386 :         return 0;</span>
+<span class="lineNum">    1042 </span>            : }
+<span class="lineNum">    1043 </span>            : 
+<span class="lineNum">    1044 </span>            : /*!
+<span class="lineNum">    1045 </span>            :  * \brief Initialize a hash container with the desired number of buckets.
+<span class="lineNum">    1046 </span>            :  *
+<span class="lineNum">    1047 </span>            :  * \param self Container to initialize.
+<span class="lineNum">    1048 </span>            :  * \param options Container behaviour options (See enum ao2_container_opts)
+<span class="lineNum">    1049 </span>            :  * \param n_buckets Number of buckets for hash
+<span class="lineNum">    1050 </span>            :  * \param hash_fn Pointer to a function computing a hash value.
+<span class="lineNum">    1051 </span>            :  * \param sort_fn Pointer to a sort function.
+<span class="lineNum">    1052 </span>            :  * \param cmp_fn Pointer to a compare function used by ao2_find.
+<span class="lineNum">    1053 </span>            :  *
+<a name="1054"><span class="lineNum">    1054 </span>            :  * \return A pointer to a struct container.</a>
+<span class="lineNum">    1055 </span>            :  */
+<span class="lineNum">    1056 </span><span class="lineCov">    2897388 : static struct ao2_container *hash_ao2_container_init(</span>
+<span class="lineNum">    1057 </span>            :         struct ao2_container_hash *self, unsigned int options, unsigned int n_buckets,
+<span class="lineNum">    1058 </span>            :         ao2_hash_fn *hash_fn, ao2_sort_fn *sort_fn, ao2_callback_fn *cmp_fn)
+<span class="lineNum">    1059 </span>            : {
+<span class="lineNum">    1060 </span><span class="lineCov">    2897388 :         if (!self) {</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1062 </span>            :         }
+<span class="lineNum">    1063 </span>            : 
+<span class="lineNum">    1064 </span><span class="lineCov">    2897388 :         self-&gt;common.v_table = &amp;v_table_hash;</span>
+<span class="lineNum">    1065 </span><span class="lineCov">    2897388 :         self-&gt;common.sort_fn = sort_fn;</span>
+<span class="lineNum">    1066 </span><span class="lineCov">    2897388 :         self-&gt;common.cmp_fn = cmp_fn;</span>
+<span class="lineNum">    1067 </span><span class="lineCov">    2897388 :         self-&gt;common.options = options;</span>
+<span class="lineNum">    1068 </span><span class="lineCov">    2897388 :         self-&gt;hash_fn = hash_fn ? hash_fn : hash_zero;</span>
+<span class="lineNum">    1069 </span><span class="lineCov">    2897388 :         self-&gt;n_buckets = n_buckets;</span>
+<span class="lineNum">    1070 </span>            : 
+<span class="lineNum">    1071 </span>            : #ifdef AO2_DEBUG
+<span class="lineNum">    1072 </span>            :         ast_atomic_fetchadd_int(&amp;ao2.total_containers, 1);
+<span class="lineNum">    1073 </span>            : #endif  /* defined(AO2_DEBUG) */
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span><span class="lineCov">    2897388 :         return (struct ao2_container *) self;</span>
+<a name="1076"><span class="lineNum">    1076 </span>            : }</a>
+<span class="lineNum">    1077 </span>            : 
+<span class="lineNum">    1078 </span><span class="lineCov">    2897388 : struct ao2_container *__ao2_container_alloc_hash(unsigned int ao2_options,</span>
+<span class="lineNum">    1079 </span>            :         unsigned int container_options, unsigned int n_buckets, ao2_hash_fn *hash_fn,
+<span class="lineNum">    1080 </span>            :         ao2_sort_fn *sort_fn, ao2_callback_fn *cmp_fn,
+<span class="lineNum">    1081 </span>            :         const char *tag, const char *file, int line, const char *func)
+<span class="lineNum">    1082 </span>            : {
+<span class="lineNum">    1083 </span>            :         unsigned int num_buckets;
+<span class="lineNum">    1084 </span>            :         size_t container_size;
+<span class="lineNum">    1085 </span>            :         struct ao2_container_hash *self;
+<span class="lineNum">    1086 </span>            : 
+<span class="lineNum">    1087 </span><span class="lineCov">    2897388 :         num_buckets = hash_fn ? n_buckets : 1;</span>
+<span class="lineNum">    1088 </span><span class="lineCov">    2897388 :         container_size = sizeof(struct ao2_container_hash) + num_buckets * sizeof(struct hash_bucket);</span>
+<span class="lineNum">    1089 </span>            : 
+<span class="lineNum">    1090 </span><span class="lineCov">    2897388 :         self = __ao2_alloc(container_size, container_destruct, ao2_options,</span>
+<span class="lineNum">    1091 </span><span class="lineCov">    2897388 :                 tag ?: __PRETTY_FUNCTION__, file, line, func);</span>
+<span class="lineNum">    1092 </span><span class="lineCov">    2897388 :         return hash_ao2_container_init(self, container_options, num_buckets, hash_fn,</span>
+<span class="lineNum">    1093 </span>            :                 sort_fn, cmp_fn);
+<a name="1094"><span class="lineNum">    1094 </span>            : }</a>
+<span class="lineNum">    1095 </span>            : 
+<span class="lineNum">    1096 </span><span class="lineCov">     166293 : struct ao2_container *__ao2_container_alloc_list(unsigned int ao2_options,</span>
+<span class="lineNum">    1097 </span>            :         unsigned int container_options, ao2_sort_fn *sort_fn, ao2_callback_fn *cmp_fn,
+<span class="lineNum">    1098 </span>            :         const char *tag, const char *file, int line, const char *func)
+<span class="lineNum">    1099 </span>            : {
+<span class="lineNum">    1100 </span><span class="lineCov">     166293 :         return __ao2_container_alloc_hash(ao2_options, container_options, 1, NULL,</span>
+<span class="lineNum">    1101 </span>            :                 sort_fn, cmp_fn, tag, file, line, func);
+<span class="lineNum">    1102 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

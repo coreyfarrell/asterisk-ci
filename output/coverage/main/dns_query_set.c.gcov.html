@@ -1,0 +1,368 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/dns_query_set.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - dns_query_set.c<span style="font-size: 80%;"> (source / <a href="dns_query_set.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">69</td>
+            <td class="headerCovTableEntry">108</td>
+            <td class="headerCovTableEntryLo">63.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntryMed">75.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2015, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief DNS Query Set API
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/dns_core.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/dns_query_set.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/dns_internal.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/dns_resolver.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : /*! \brief The default number of expected queries to be added to the query set */
+<span class="lineNum">      42 </span>            : #define DNS_QUERY_SET_EXPECTED_QUERY_COUNT 5
+<a name="43"><span class="lineNum">      43 </span>            : </a>
+<span class="lineNum">      44 </span>            : /*! \brief Destructor for DNS query set */
+<span class="lineNum">      45 </span><span class="lineCov">         62 : static void dns_query_set_destroy(void *data)</span>
+<span class="lineNum">      46 </span>            : {
+<span class="lineNum">      47 </span><span class="lineCov">         62 :         struct ast_dns_query_set *query_set = data;</span>
+<span class="lineNum">      48 </span>            :         int idx;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span><span class="lineCov">        236 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;query_set-&gt;queries); ++idx) {</span>
+<span class="lineNum">      51 </span><span class="lineCov">        174 :                 struct dns_query_set_query *query = AST_VECTOR_GET_ADDR(&amp;query_set-&gt;queries, idx);</span>
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineCov">        174 :                 ao2_ref(query-&gt;query, -1);</span>
+<span class="lineNum">      54 </span>            :         }
+<span class="lineNum">      55 </span><span class="lineCov">         62 :         AST_VECTOR_FREE(&amp;query_set-&gt;queries);</span>
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span><span class="lineCov">         62 :         ao2_cleanup(query_set-&gt;user_data);</span>
+<a name="58"><span class="lineNum">      58 </span><span class="lineCov">         62 : }</span></a>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineCov">         62 : struct ast_dns_query_set *ast_dns_query_set_create(void)</span>
+<span class="lineNum">      61 </span>            : {
+<span class="lineNum">      62 </span>            :         struct ast_dns_query_set *query_set;
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineCov">         62 :         query_set = ao2_alloc_options(sizeof(*query_set), dns_query_set_destroy, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">      65 </span><span class="lineCov">         62 :         if (!query_set) {</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      67 </span>            :         }
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span><span class="lineCov">         62 :         if (AST_VECTOR_INIT(&amp;query_set-&gt;queries, DNS_QUERY_SET_EXPECTED_QUERY_COUNT)) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 ao2_ref(query_set, -1);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      72 </span>            :         }
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span><span class="lineCov">         62 :         return query_set;</span>
+<span class="lineNum">      75 </span>            : }
+<a name="76"><span class="lineNum">      76 </span>            : </a>
+<span class="lineNum">      77 </span>            : /*! \brief Callback invoked upon completion of a DNS query */
+<span class="lineNum">      78 </span><span class="lineCov">        174 : static void dns_query_set_callback(const struct ast_dns_query *query)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span><span class="lineCov">        174 :         struct ast_dns_query_set *query_set = ast_dns_query_get_data(query);</span>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            :         /* The reference count of the query set is bumped here in case this query holds the last reference */
+<span class="lineNum">      83 </span><span class="lineCov">        174 :         ao2_ref(query_set, +1);</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            :         /* Drop the query set from the query so the query set can be destroyed if this is the last one */
+<span class="lineNum">      86 </span><span class="lineCov">        174 :         ao2_cleanup(((struct ast_dns_query *)query)-&gt;user_data);</span>
+<span class="lineNum">      87 </span><span class="lineCov">        174 :         ((struct ast_dns_query *)query)-&gt;user_data = NULL;</span>
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span><span class="lineCov">        174 :         if (ast_atomic_fetchadd_int(&amp;query_set-&gt;queries_completed, +1) != (AST_VECTOR_SIZE(&amp;query_set-&gt;queries) - 1)) {</span>
+<span class="lineNum">      90 </span><span class="lineCov">        113 :                 ao2_ref(query_set, -1);</span>
+<span class="lineNum">      91 </span><span class="lineCov">        113 :                 return;</span>
+<span class="lineNum">      92 </span>            :         }
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span>            :         /* All queries have been completed, invoke final callback */
+<span class="lineNum">      95 </span><span class="lineCov">         61 :         if (query_set-&gt;queries_cancelled != AST_VECTOR_SIZE(&amp;query_set-&gt;queries)) {</span>
+<span class="lineNum">      96 </span><span class="lineCov">         60 :                 query_set-&gt;callback(query_set);</span>
+<span class="lineNum">      97 </span>            :         }
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">         61 :         ao2_cleanup(query_set-&gt;user_data);</span>
+<span class="lineNum">     100 </span><span class="lineCov">         61 :         query_set-&gt;user_data = NULL;</span>
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span><span class="lineCov">         61 :         ao2_ref(query_set, -1);</span>
+<a name="103"><span class="lineNum">     103 </span>            : }</a>
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span><span class="lineCov">        174 : int ast_dns_query_set_add(struct ast_dns_query_set *query_set, const char *name, int rr_type, int rr_class)</span>
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineCov">        174 :         struct dns_query_set_query query = {</span>
+<span class="lineNum">     108 </span>            :                 .started = 0,
+<span class="lineNum">     109 </span>            :         };
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">        174 :         ast_assert(!query_set-&gt;in_progress);</span>
+<span class="lineNum">     112 </span><span class="lineCov">        174 :         if (query_set-&gt;in_progress) {</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Attempted to add additional query to query set '%p' after resolution has started\n&quot;,</span>
+<span class="lineNum">     114 </span>            :                         query_set);
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     116 </span>            :         }
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :         /*
+<span class="lineNum">     119 </span>            :          * We are intentionally passing NULL for the user data even
+<span class="lineNum">     120 </span>            :          * though dns_query_set_callback() is not NULL tolerant.  Doing
+<span class="lineNum">     121 </span>            :          * this avoids a circular reference chain until the queries are
+<span class="lineNum">     122 </span>            :          * started.  ast_dns_query_set_resolve_async() will set the
+<span class="lineNum">     123 </span>            :          * query user_data for us later when we actually kick off the
+<span class="lineNum">     124 </span>            :          * queries.
+<span class="lineNum">     125 </span>            :          */
+<span class="lineNum">     126 </span><span class="lineCov">        174 :         query.query = dns_query_alloc(name, rr_type, rr_class, dns_query_set_callback, NULL);</span>
+<span class="lineNum">     127 </span><span class="lineCov">        174 :         if (!query.query) {</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     129 </span>            :         }
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineCov">        174 :         if (AST_VECTOR_APPEND(&amp;query_set-&gt;queries, query)) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 ao2_ref(query.query, -1);</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">        174 :         return 0;</span>
+<a name="137"><span class="lineNum">     137 </span>            : }</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">        235 : size_t ast_dns_query_set_num_queries(const struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span><span class="lineCov">        235 :         return AST_VECTOR_SIZE(&amp;query_set-&gt;queries);</span>
+<a name="142"><span class="lineNum">     142 </span>            : }</a>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">        170 : struct ast_dns_query *ast_dns_query_set_get(const struct ast_dns_query_set *query_set, unsigned int index)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span>            :         /* Only once all queries have been completed can results be retrieved */
+<span class="lineNum">     147 </span><span class="lineCov">        170 :         if (query_set-&gt;queries_completed != AST_VECTOR_SIZE(&amp;query_set-&gt;queries)) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     149 </span>            :         }
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            :         /* If the index exceeds the number of queries... no query for you */
+<span class="lineNum">     152 </span><span class="lineCov">        170 :         if (index &gt;= AST_VECTOR_SIZE(&amp;query_set-&gt;queries)) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     154 </span>            :         }
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">        170 :         return AST_VECTOR_GET_ADDR(&amp;query_set-&gt;queries, index)-&gt;query;</span>
+<a name="157"><span class="lineNum">     157 </span>            : }</a>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">         61 : void *ast_dns_query_set_get_data(const struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     160 </span>            : {
+<span class="lineNum">     161 </span><span class="lineCov">         61 :         return query_set-&gt;user_data;</span>
+<a name="162"><span class="lineNum">     162 </span>            : }</a>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">         62 : void ast_dns_query_set_resolve_async(struct ast_dns_query_set *query_set, ast_dns_query_set_callback callback, void *data)</span>
+<span class="lineNum">     165 </span>            : {
+<span class="lineNum">     166 </span>            :         int idx;
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">         62 :         ast_assert(!query_set-&gt;in_progress);</span>
+<span class="lineNum">     169 </span><span class="lineCov">         62 :         if (query_set-&gt;in_progress) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Attempted to start asynchronous resolution of query set '%p' when it has already started\n&quot;,</span>
+<span class="lineNum">     171 </span>            :                         query_set);
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">         62 :         query_set-&gt;in_progress = 1;</span>
+<span class="lineNum">     176 </span><span class="lineCov">         62 :         query_set-&gt;callback = callback;</span>
+<span class="lineNum">     177 </span><span class="lineCov">         62 :         query_set-&gt;user_data = ao2_bump(data);</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            :         /*
+<span class="lineNum">     180 </span>            :          * Bump the query_set ref in case all queries complete
+<span class="lineNum">     181 </span>            :          * before we are done kicking them off.
+<span class="lineNum">     182 </span>            :          */
+<span class="lineNum">     183 </span><span class="lineCov">         62 :         ao2_ref(query_set, +1);</span>
+<span class="lineNum">     184 </span><span class="lineCov">        236 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;query_set-&gt;queries); ++idx) {</span>
+<span class="lineNum">     185 </span><span class="lineCov">        174 :                 struct dns_query_set_query *query = AST_VECTOR_GET_ADDR(&amp;query_set-&gt;queries, idx);</span>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">        174 :                 query-&gt;query-&gt;user_data = ao2_bump(query_set);</span>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">        174 :                 if (!query-&gt;query-&gt;resolver-&gt;resolve(query-&gt;query)) {</span>
+<span class="lineNum">     190 </span><span class="lineCov">        174 :                         query-&gt;started = 1;</span>
+<span class="lineNum">     191 </span><span class="lineCov">        174 :                         continue;</span>
+<span class="lineNum">     192 </span>            :                 }
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 dns_query_set_callback(query-&gt;query);</span>
+<span class="lineNum">     195 </span>            :         }
+<span class="lineNum">     196 </span><span class="lineCov">         62 :         if (!idx) {</span>
+<span class="lineNum">     197 </span>            :                 /*
+<span class="lineNum">     198 </span>            :                  * There were no queries in the set;
+<span class="lineNum">     199 </span>            :                  * therefore all queries are &quot;completed&quot;.
+<span class="lineNum">     200 </span>            :                  * Invoke the final callback.
+<span class="lineNum">     201 </span>            :                  */
+<span class="lineNum">     202 </span><span class="lineCov">          1 :                 query_set-&gt;callback(query_set);</span>
+<span class="lineNum">     203 </span><span class="lineCov">          1 :                 ao2_cleanup(query_set-&gt;user_data);</span>
+<span class="lineNum">     204 </span><span class="lineCov">          1 :                 query_set-&gt;user_data = NULL;</span>
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span><span class="lineCov">         62 :         ao2_ref(query_set, -1);</span>
+<span class="lineNum">     207 </span>            : }
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            : /*! \brief Structure used for signaling back for synchronous resolution completion */
+<span class="lineNum">     210 </span>            : struct dns_synchronous_resolve {
+<span class="lineNum">     211 </span>            :         /*! \brief Lock used for signaling */
+<span class="lineNum">     212 </span>            :         ast_mutex_t lock;
+<span class="lineNum">     213 </span>            :         /*! \brief Condition used for signaling */
+<span class="lineNum">     214 </span>            :         ast_cond_t cond;
+<span class="lineNum">     215 </span>            :         /*! \brief Whether the query has completed */
+<span class="lineNum">     216 </span>            :         unsigned int completed;
+<span class="lineNum">     217 </span>            : };
+<a name="218"><span class="lineNum">     218 </span>            : </a>
+<span class="lineNum">     219 </span>            : /*! \brief Destructor for synchronous resolution structure */
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 : static void dns_synchronous_resolve_destroy(void *data)</span>
+<span class="lineNum">     221 </span>            : {
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         struct dns_synchronous_resolve *synchronous = data;</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         ast_mutex_destroy(&amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :         ast_cond_destroy(&amp;synchronous-&gt;cond);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 : }</span>
+<a name="227"><span class="lineNum">     227 </span>            : </a>
+<span class="lineNum">     228 </span>            : /*! \brief Callback used to implement synchronous resolution */
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 : static void dns_synchronous_resolve_callback(const struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         struct dns_synchronous_resolve *synchronous = ast_dns_query_set_get_data(query_set);</span>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         synchronous-&gt;completed = 1;</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         ast_cond_signal(&amp;synchronous-&gt;cond);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;synchronous-&gt;lock);</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 : int ast_query_set_resolve(struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     240 </span>            : {
+<span class="lineNum">     241 </span>            :         struct dns_synchronous_resolve *synchronous;
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         synchronous = ao2_alloc_options(sizeof(*synchronous), dns_synchronous_resolve_destroy, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         if (!synchronous) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     246 </span>            :         }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         ast_mutex_init(&amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :         ast_cond_init(&amp;synchronous-&gt;cond, NULL);</span>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         ast_dns_query_set_resolve_async(query_set, dns_synchronous_resolve_callback, synchronous);</span>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            :         /* Wait for resolution to complete */
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         while (!synchronous-&gt;completed) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 ast_cond_wait(&amp;synchronous-&gt;cond, &amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     257 </span>            :         }
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;synchronous-&gt;lock);</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         ao2_ref(synchronous, -1);</span>
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="263"><span class="lineNum">     263 </span>            : }</a>
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">          2 : int ast_dns_query_set_resolve_cancel(struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span>            :         int idx;
+<span class="lineNum">     268 </span><span class="lineCov">          2 :         size_t query_count = AST_VECTOR_SIZE(&amp;query_set-&gt;queries);</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">         10 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;query_set-&gt;queries); ++idx) {</span>
+<span class="lineNum">     271 </span><span class="lineCov">          8 :                 struct dns_query_set_query *query = AST_VECTOR_GET_ADDR(&amp;query_set-&gt;queries, idx);</span>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineCov">          8 :                 if (query-&gt;started) {</span>
+<span class="lineNum">     274 </span><span class="lineCov">          8 :                         if (!query-&gt;query-&gt;resolver-&gt;cancel(query-&gt;query)) {</span>
+<span class="lineNum">     275 </span><span class="lineCov">          6 :                                 query_set-&gt;queries_cancelled++;</span>
+<span class="lineNum">     276 </span><span class="lineCov">          6 :                                 dns_query_set_callback(query-&gt;query);</span>
+<span class="lineNum">     277 </span>            :                         }
+<span class="lineNum">     278 </span>            :                 } else {
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                         query_set-&gt;queries_cancelled++;</span>
+<span class="lineNum">     280 </span>            :                 }
+<span class="lineNum">     281 </span>            :         }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">          2 :         return (query_set-&gt;queries_cancelled == query_count) ? 0 : -1;</span>
+<span class="lineNum">     284 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

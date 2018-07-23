@@ -1,0 +1,864 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - funcs/func_channel.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">funcs</a> - func_channel.c<span style="font-size: 80%;"> (source / <a href="func_channel.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">189</td>
+            <td class="headerCovTableEntry">315</td>
+            <td class="headerCovTableEntryLo">60.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryLo">72.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       7 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       8 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">       9 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      10 </span>            :  * channels for your use.
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      13 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      14 </span>            :  * at the top of the source tree.
+<span class="lineNum">      15 </span>            :  */
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : /*! \file
+<span class="lineNum">      18 </span>            :  *
+<span class="lineNum">      19 </span>            :  * \brief Channel info dialplan functions
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \author Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">      22 </span>            :  * \author Ben Winslow
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \ingroup functions
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &lt;regex.h&gt;
+<span class="lineNum">      34 </span>            : #include &lt;ctype.h&gt;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/indications.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/stringfields.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/global_datastores.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/bridge_basic.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/bridge_after.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/max_forwards.h&quot;
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      50 </span>            :         &lt;function name=&quot;CHANNELS&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      51 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      52 </span>            :                         Gets the list of channels, optionally filtering by a regular expression.
+<span class="lineNum">      53 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      54 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      55 </span>            :                         &lt;parameter name=&quot;regular_expression&quot; /&gt;
+<span class="lineNum">      56 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      57 </span>            :                 &lt;description&gt;
+<span class="lineNum">      58 </span>            :                         &lt;para&gt;Gets the list of channels, optionally filtering by a &lt;replaceable&gt;regular_expression&lt;/replaceable&gt;. If
+<span class="lineNum">      59 </span>            :                         no argument is provided, all known channels are returned. The
+<span class="lineNum">      60 </span>            :                         &lt;replaceable&gt;regular_expression&lt;/replaceable&gt; must correspond to
+<span class="lineNum">      61 </span>            :                         the POSIX.2 specification, as shown in &lt;emphasis&gt;regex(7)&lt;/emphasis&gt;. The list returned
+<span class="lineNum">      62 </span>            :                         will be space-delimited.&lt;/para&gt;
+<span class="lineNum">      63 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      64 </span>            :         &lt;/function&gt;
+<span class="lineNum">      65 </span>            :         &lt;function name=&quot;MASTER_CHANNEL&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      66 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      67 </span>            :                         Gets or sets variables on the master channel
+<span class="lineNum">      68 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      69 </span>            :                 &lt;description&gt;
+<span class="lineNum">      70 </span>            :                         &lt;para&gt;Allows access to the oldest channel associated with the current
+<span class="lineNum">      71 </span>            :                         channel if it still exists.  If the channel is the master channel or
+<span class="lineNum">      72 </span>            :                         the master channel no longer exists then access local channel variables
+<span class="lineNum">      73 </span>            :                         instead.  In other words, the master channel is the channel identified by
+<span class="lineNum">      74 </span>            :                         the channel's linkedid.&lt;/para&gt;
+<span class="lineNum">      75 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      76 </span>            :         &lt;/function&gt;
+<span class="lineNum">      77 </span>            :         &lt;function name=&quot;CHANNEL&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      78 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      79 </span>            :                         Gets/sets various pieces of information about the channel.
+<span class="lineNum">      80 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      81 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      82 </span>            :                         &lt;parameter name=&quot;item&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      83 </span>            :                                 &lt;para&gt;Standard items (provided by all channel technologies) are:&lt;/para&gt;
+<span class="lineNum">      84 </span>            :                                 &lt;enumlist&gt;
+<span class="lineNum">      85 </span>            :                                         &lt;enum name=&quot;amaflags&quot;&gt;
+<span class="lineNum">      86 </span>            :                                                 &lt;para&gt;R/W the Automatic Message Accounting (AMA) flags on the channel.
+<span class="lineNum">      87 </span>            :                                                 When read from a channel, the integer value will always be returned.
+<span class="lineNum">      88 </span>            :                                                 When written to a channel, both the string format or integer value
+<span class="lineNum">      89 </span>            :                                                 is accepted.&lt;/para&gt;
+<span class="lineNum">      90 </span>            :                                                 &lt;enumlist&gt;
+<span class="lineNum">      91 </span>            :                                                         &lt;enum name=&quot;1&quot;&gt;&lt;para&gt;&lt;literal&gt;OMIT&lt;/literal&gt;&lt;/para&gt;&lt;/enum&gt;
+<span class="lineNum">      92 </span>            :                                                         &lt;enum name=&quot;2&quot;&gt;&lt;para&gt;&lt;literal&gt;BILLING&lt;/literal&gt;&lt;/para&gt;&lt;/enum&gt;
+<span class="lineNum">      93 </span>            :                                                         &lt;enum name=&quot;3&quot;&gt;&lt;para&gt;&lt;literal&gt;DOCUMENTATION&lt;/literal&gt;&lt;/para&gt;&lt;/enum&gt;
+<span class="lineNum">      94 </span>            :                                                 &lt;/enumlist&gt;
+<span class="lineNum">      95 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      96 </span>            :                                         &lt;enum name=&quot;accountcode&quot;&gt;
+<span class="lineNum">      97 </span>            :                                                 &lt;para&gt;R/W the channel's account code.&lt;/para&gt;
+<span class="lineNum">      98 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      99 </span>            :                                         &lt;enum name=&quot;audioreadformat&quot;&gt;
+<span class="lineNum">     100 </span>            :                                                 &lt;para&gt;R/O format currently being read.&lt;/para&gt;
+<span class="lineNum">     101 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     102 </span>            :                                         &lt;enum name=&quot;audionativeformat&quot;&gt;
+<span class="lineNum">     103 </span>            :                                                 &lt;para&gt;R/O format used natively for audio.&lt;/para&gt;
+<span class="lineNum">     104 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     105 </span>            :                                         &lt;enum name=&quot;audiowriteformat&quot;&gt;
+<span class="lineNum">     106 </span>            :                                                 &lt;para&gt;R/O format currently being written.&lt;/para&gt;
+<span class="lineNum">     107 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     108 </span>            :                                         &lt;enum name=&quot;dtmf_features&quot;&gt;
+<span class="lineNum">     109 </span>            :                                                 &lt;para&gt;R/W The channel's DTMF bridge features.
+<span class="lineNum">     110 </span>            :                                                 May include one or more of 'T' 'K' 'H' 'W' and 'X' in a similar manner to options
+<span class="lineNum">     111 </span>            :                                                 in the &lt;literal&gt;Dial&lt;/literal&gt; application. When setting it, the features string
+<span class="lineNum">     112 </span>            :                                                 must be all upper case.&lt;/para&gt;
+<span class="lineNum">     113 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     114 </span>            :                                         &lt;enum name=&quot;callgroup&quot;&gt;
+<span class="lineNum">     115 </span>            :                                                 &lt;para&gt;R/W numeric call pickup groups that this channel is a member.&lt;/para&gt;
+<span class="lineNum">     116 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     117 </span>            :                                         &lt;enum name=&quot;pickupgroup&quot;&gt;
+<span class="lineNum">     118 </span>            :                                                 &lt;para&gt;R/W numeric call pickup groups this channel can pickup.&lt;/para&gt;
+<span class="lineNum">     119 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     120 </span>            :                                         &lt;enum name=&quot;namedcallgroup&quot;&gt;
+<span class="lineNum">     121 </span>            :                                                 &lt;para&gt;R/W named call pickup groups that this channel is a member.&lt;/para&gt;
+<span class="lineNum">     122 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     123 </span>            :                                         &lt;enum name=&quot;namedpickupgroup&quot;&gt;
+<span class="lineNum">     124 </span>            :                                                 &lt;para&gt;R/W named call pickup groups this channel can pickup.&lt;/para&gt;
+<span class="lineNum">     125 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     126 </span>            :                                         &lt;enum name=&quot;channeltype&quot;&gt;
+<span class="lineNum">     127 </span>            :                                                 &lt;para&gt;R/O technology used for channel.&lt;/para&gt;
+<span class="lineNum">     128 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     129 </span>            :                                         &lt;enum name=&quot;checkhangup&quot;&gt;
+<span class="lineNum">     130 </span>            :                                                 &lt;para&gt;R/O Whether the channel is hanging up (1/0)&lt;/para&gt;
+<span class="lineNum">     131 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     132 </span>            :                                         &lt;enum name=&quot;after_bridge_goto&quot;&gt;
+<span class="lineNum">     133 </span>            :                                                 &lt;para&gt;R/W the parseable goto string indicating where the channel is
+<span class="lineNum">     134 </span>            :                                                 expected to return to in the PBX after exiting the next bridge it joins
+<span class="lineNum">     135 </span>            :                                                 on the condition that it doesn't hang up. The parseable goto string uses
+<span class="lineNum">     136 </span>            :                                                 the same syntax as the &lt;literal&gt;Goto&lt;/literal&gt; application.&lt;/para&gt;
+<span class="lineNum">     137 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     138 </span>            :                                         &lt;enum name=&quot;hangup_handler_pop&quot;&gt;
+<span class="lineNum">     139 </span>            :                                                 &lt;para&gt;W/O Replace the most recently added hangup handler
+<span class="lineNum">     140 </span>            :                                                 with a new hangup handler on the channel if supplied.  The
+<span class="lineNum">     141 </span>            :                                                 assigned string is passed to the Gosub application when
+<span class="lineNum">     142 </span>            :                                                 the channel is hung up.  Any optionally omitted context
+<span class="lineNum">     143 </span>            :                                                 and exten are supplied by the channel pushing the handler
+<span class="lineNum">     144 </span>            :                                                 before it is pushed.&lt;/para&gt;
+<span class="lineNum">     145 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     146 </span>            :                                         &lt;enum name=&quot;hangup_handler_push&quot;&gt;
+<span class="lineNum">     147 </span>            :                                                 &lt;para&gt;W/O Push a hangup handler onto the channel hangup
+<span class="lineNum">     148 </span>            :                                                 handler stack.  The assigned string is passed to the
+<span class="lineNum">     149 </span>            :                                                 Gosub application when the channel is hung up.  Any
+<span class="lineNum">     150 </span>            :                                                 optionally omitted context and exten are supplied by the
+<span class="lineNum">     151 </span>            :                                                 channel pushing the handler before it is pushed.&lt;/para&gt;
+<span class="lineNum">     152 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     153 </span>            :                                         &lt;enum name=&quot;hangup_handler_wipe&quot;&gt;
+<span class="lineNum">     154 </span>            :                                                 &lt;para&gt;W/O Wipe the entire hangup handler stack and replace
+<span class="lineNum">     155 </span>            :                                                 with a new hangup handler on the channel if supplied.  The
+<span class="lineNum">     156 </span>            :                                                 assigned string is passed to the Gosub application when
+<span class="lineNum">     157 </span>            :                                                 the channel is hung up.  Any optionally omitted context
+<span class="lineNum">     158 </span>            :                                                 and exten are supplied by the channel pushing the handler
+<span class="lineNum">     159 </span>            :                                                 before it is pushed.&lt;/para&gt;
+<span class="lineNum">     160 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     161 </span>            :                                         &lt;enum name=&quot;onhold&quot;&gt;
+<span class="lineNum">     162 </span>            :                                                 &lt;para&gt;R/O Whether or not the channel is onhold. (1/0)&lt;/para&gt;
+<span class="lineNum">     163 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     164 </span>            :                                         &lt;enum name=&quot;language&quot;&gt;
+<span class="lineNum">     165 </span>            :                                                 &lt;para&gt;R/W language for sounds played.&lt;/para&gt;
+<span class="lineNum">     166 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     167 </span>            :                                         &lt;enum name=&quot;musicclass&quot;&gt;
+<span class="lineNum">     168 </span>            :                                                 &lt;para&gt;R/W class (from musiconhold.conf) for hold music.&lt;/para&gt;
+<span class="lineNum">     169 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     170 </span>            :                                         &lt;enum name=&quot;name&quot;&gt;
+<span class="lineNum">     171 </span>            :                                                 &lt;para&gt;The name of the channel&lt;/para&gt;
+<span class="lineNum">     172 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     173 </span>            :                                         &lt;enum name=&quot;parkinglot&quot;&gt;
+<span class="lineNum">     174 </span>            :                                                 &lt;para&gt;R/W parkinglot for parking.&lt;/para&gt;
+<span class="lineNum">     175 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     176 </span>            :                                         &lt;enum name=&quot;rxgain&quot;&gt;
+<span class="lineNum">     177 </span>            :                                                 &lt;para&gt;R/W set rxgain level on channel drivers that support it.&lt;/para&gt;
+<span class="lineNum">     178 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     179 </span>            :                                         &lt;enum name=&quot;secure_bridge_signaling&quot;&gt;
+<span class="lineNum">     180 </span>            :                                                 &lt;para&gt;Whether or not channels bridged to this channel require secure signaling (1/0)&lt;/para&gt;
+<span class="lineNum">     181 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     182 </span>            :                                         &lt;enum name=&quot;secure_bridge_media&quot;&gt;
+<span class="lineNum">     183 </span>            :                                                 &lt;para&gt;Whether or not channels bridged to this channel require secure media (1/0)&lt;/para&gt;
+<span class="lineNum">     184 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     185 </span>            :                                         &lt;enum name=&quot;state&quot;&gt;
+<span class="lineNum">     186 </span>            :                                                 &lt;para&gt;R/O state of the channel&lt;/para&gt;
+<span class="lineNum">     187 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     188 </span>            :                                         &lt;enum name=&quot;tonezone&quot;&gt;
+<span class="lineNum">     189 </span>            :                                                 &lt;para&gt;R/W zone for indications played&lt;/para&gt;
+<span class="lineNum">     190 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     191 </span>            :                                         &lt;enum name=&quot;transfercapability&quot;&gt;
+<span class="lineNum">     192 </span>            :                                                 &lt;para&gt;R/W ISDN Transfer Capability, one of:&lt;/para&gt;
+<span class="lineNum">     193 </span>            :                                                 &lt;enumlist&gt;
+<span class="lineNum">     194 </span>            :                                                         &lt;enum name=&quot;SPEECH&quot; /&gt;
+<span class="lineNum">     195 </span>            :                                                         &lt;enum name=&quot;DIGITAL&quot; /&gt;
+<span class="lineNum">     196 </span>            :                                                         &lt;enum name=&quot;RESTRICTED_DIGITAL&quot; /&gt;
+<span class="lineNum">     197 </span>            :                                                         &lt;enum name=&quot;3K1AUDIO&quot; /&gt;
+<span class="lineNum">     198 </span>            :                                                         &lt;enum name=&quot;DIGITAL_W_TONES&quot; /&gt;
+<span class="lineNum">     199 </span>            :                                                         &lt;enum name=&quot;VIDEO&quot; /&gt;
+<span class="lineNum">     200 </span>            :                                                 &lt;/enumlist&gt;
+<span class="lineNum">     201 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     202 </span>            :                                         &lt;enum name=&quot;txgain&quot;&gt;
+<span class="lineNum">     203 </span>            :                                                 &lt;para&gt;R/W set txgain level on channel drivers that support it.&lt;/para&gt;
+<span class="lineNum">     204 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     205 </span>            :                                         &lt;enum name=&quot;videonativeformat&quot;&gt;
+<span class="lineNum">     206 </span>            :                                                 &lt;para&gt;R/O format used natively for video&lt;/para&gt;
+<span class="lineNum">     207 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     208 </span>            :                                         &lt;enum name=&quot;hangupsource&quot;&gt;
+<span class="lineNum">     209 </span>            :                                                 &lt;para&gt;R/W returns the channel responsible for hangup.&lt;/para&gt;
+<span class="lineNum">     210 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     211 </span>            :                                         &lt;enum name=&quot;appname&quot;&gt;
+<span class="lineNum">     212 </span>            :                                                 &lt;para&gt;R/O returns the internal application name.&lt;/para&gt;
+<span class="lineNum">     213 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     214 </span>            :                                         &lt;enum name=&quot;appdata&quot;&gt;
+<span class="lineNum">     215 </span>            :                                                 &lt;para&gt;R/O returns the application data if available.&lt;/para&gt;
+<span class="lineNum">     216 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     217 </span>            :                                         &lt;enum name=&quot;exten&quot;&gt;
+<span class="lineNum">     218 </span>            :                                                 &lt;para&gt;R/O returns the extension for an outbound channel.&lt;/para&gt;
+<span class="lineNum">     219 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     220 </span>            :                                         &lt;enum name=&quot;context&quot;&gt;
+<span class="lineNum">     221 </span>            :                                                 &lt;para&gt;R/O returns the context for an outbound channel.&lt;/para&gt;
+<span class="lineNum">     222 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     223 </span>            :                                         &lt;enum name=&quot;channame&quot;&gt;
+<span class="lineNum">     224 </span>            :                                                 &lt;para&gt;R/O returns the channel name for an outbound channel.&lt;/para&gt;
+<span class="lineNum">     225 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     226 </span>            :                                         &lt;enum name=&quot;uniqueid&quot;&gt;
+<span class="lineNum">     227 </span>            :                                                 &lt;para&gt;R/O returns the channel uniqueid.&lt;/para&gt;
+<span class="lineNum">     228 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     229 </span>            :                                         &lt;enum name=&quot;linkedid&quot;&gt;
+<span class="lineNum">     230 </span>            :                                                 &lt;para&gt;R/O returns the linkedid if available, otherwise returns the uniqueid.&lt;/para&gt;
+<span class="lineNum">     231 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     232 </span>            :                                         &lt;enum name=&quot;max_forwards&quot;&gt;
+<span class="lineNum">     233 </span>            :                                                 &lt;para&gt;R/W The maximum number of forwards allowed.&lt;/para&gt;
+<span class="lineNum">     234 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     235 </span>            :                                         &lt;enum name=&quot;callid&quot;&gt;
+<span class="lineNum">     236 </span>            :                                                 &lt;para&gt;R/O Call identifier log tag associated with the channel
+<span class="lineNum">     237 </span>            :                                                 e.g., &lt;literal&gt;[C-00000000]&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     238 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     239 </span>            :                                 &lt;/enumlist&gt;
+<span class="lineNum">     240 </span>            :                                 &lt;xi:include xpointer=&quot;xpointer(/docs/info[@name='CHANNEL'])&quot; /&gt;
+<span class="lineNum">     241 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     242 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     243 </span>            :                 &lt;description&gt;
+<span class="lineNum">     244 </span>            :                         &lt;para&gt;Gets/sets various pieces of information about the channel, additional &lt;replaceable&gt;item&lt;/replaceable&gt; may
+<span class="lineNum">     245 </span>            :                         be available from the channel driver; see its documentation for details. Any &lt;replaceable&gt;item&lt;/replaceable&gt;
+<span class="lineNum">     246 </span>            :                         requested that is not available on the current channel will return an empty string.&lt;/para&gt;
+<span class="lineNum">     247 </span>            :                         &lt;example title=&quot;Standard CHANNEL item examples&quot;&gt;
+<span class="lineNum">     248 </span>            :                                 ; Push a hangup handler subroutine existing at dialplan
+<span class="lineNum">     249 </span>            :                                 ; location default,s,1 onto the current channel
+<span class="lineNum">     250 </span>            :                                 same =&gt; n,Set(CHANNEL(hangup_handler_push)=default,s,1)
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span>            :                                 ; Set the current tonezone to Germany (de)
+<span class="lineNum">     253 </span>            :                                 same =&gt; n,Set(CHANNEL(tonezone)=de)
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :                                 ; Set the allowed maximum number of forwarding attempts
+<span class="lineNum">     256 </span>            :                                 same =&gt; n,Set(CHANNEL(max_forwards)=10)
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span>            :                                 ; If this channel is ejected from its next bridge, and if
+<span class="lineNum">     259 </span>            :                                 ; the channel is not hung up, begin executing dialplan at
+<span class="lineNum">     260 </span>            :                                 ; location default,after-bridge,1
+<span class="lineNum">     261 </span>            :                                 same =&gt; n,Set(CHANNEL(after_bridge_goto)=default,after-bridge,1)
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            :                                 ; Log the current state of the channel
+<span class="lineNum">     264 </span>            :                                 same =&gt; n,Log(NOTICE, This channel is: ${CHANNEL(state)})
+<span class="lineNum">     265 </span>            :                         &lt;/example&gt;
+<span class="lineNum">     266 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/info[@name='CHANNEL_EXAMPLES'])&quot; /&gt;
+<span class="lineNum">     267 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     268 </span>            :         &lt;/function&gt;
+<span class="lineNum">     269 </span>            :  ***/
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            : #define locked_copy_string(chan, dest, source, len) \
+<span class="lineNum">     272 </span>            :         do { \
+<span class="lineNum">     273 </span>            :                 ast_channel_lock(chan); \
+<span class="lineNum">     274 </span>            :                 ast_copy_string(dest, source, len); \
+<span class="lineNum">     275 </span>            :                 ast_channel_unlock(chan); \
+<span class="lineNum">     276 </span>            :         } while (0)
+<span class="lineNum">     277 </span>            : #define locked_string_field_set(chan, field, source) \
+<span class="lineNum">     278 </span>            :         do { \
+<span class="lineNum">     279 </span>            :                 ast_channel_lock(chan); \
+<span class="lineNum">     280 </span>            :                 ast_channel_##field##_set(chan, source); \
+<span class="lineNum">     281 </span>            :                 ast_channel_unlock(chan); \
+<span class="lineNum">     282 </span>            :         } while (0)
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span>            : static const char * const transfercapability_table[0x20] = {
+<span class="lineNum">     285 </span>            :         &quot;SPEECH&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;,
+<span class="lineNum">     286 </span>            :         &quot;DIGITAL&quot;, &quot;RESTRICTED_DIGITAL&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;,
+<span class="lineNum">     287 </span>            :         &quot;3K1AUDIO&quot;, &quot;DIGITAL_W_TONES&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;,
+<a name="288"><span class="lineNum">     288 </span>            :         &quot;VIDEO&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, &quot;UNK&quot;, };</a>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">     239437 : static int func_channel_read(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">     291 </span>            :                              char *data, char *buf, size_t len)
+<span class="lineNum">     292 </span>            : {
+<span class="lineNum">     293 </span><span class="lineCov">     239437 :         int ret = 0;</span>
+<span class="lineNum">     294 </span>            :         struct ast_format_cap *tmpcap;
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">     239437 :         if (!chan) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineCov">     239437 :         if (!strcasecmp(data, &quot;audionativeformat&quot;)) {</span>
+<span class="lineNum">     302 </span><span class="lineCov">          6 :                 tmpcap = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     303 </span><span class="lineCov">          6 :                 if (tmpcap) {</span>
+<span class="lineNum">     304 </span><span class="lineCov">          6 :                         struct ast_str *codec_buf = ast_str_alloca(AST_FORMAT_CAP_NAMES_LEN);</span>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">          6 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     307 </span><span class="lineCov">          6 :                         ast_format_cap_append_from_cap(tmpcap, ast_channel_nativeformats(chan), AST_MEDIA_TYPE_AUDIO);</span>
+<span class="lineNum">     308 </span><span class="lineCov">          6 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     309 </span><span class="lineCov">          6 :                         ast_copy_string(buf, ast_format_cap_get_names(tmpcap, &amp;codec_buf), len);</span>
+<span class="lineNum">     310 </span><span class="lineCov">          6 :                         ao2_ref(tmpcap, -1);</span>
+<span class="lineNum">     311 </span>            :                 }
+<span class="lineNum">     312 </span><span class="lineCov">     239431 :         } else if (!strcasecmp(data, &quot;videonativeformat&quot;)) {</span>
+<span class="lineNum">     313 </span><span class="lineCov">          1 :                 tmpcap = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     314 </span><span class="lineCov">          1 :                 if (tmpcap) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">          1 :                         struct ast_str *codec_buf = ast_str_alloca(AST_FORMAT_CAP_NAMES_LEN);</span>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineCov">          1 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     318 </span><span class="lineCov">          1 :                         ast_format_cap_append_from_cap(tmpcap, ast_channel_nativeformats(chan), AST_MEDIA_TYPE_VIDEO);</span>
+<span class="lineNum">     319 </span><span class="lineCov">          1 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     320 </span><span class="lineCov">          1 :                         ast_copy_string(buf, ast_format_cap_get_names(tmpcap, &amp;codec_buf), len);</span>
+<span class="lineNum">     321 </span><span class="lineCov">          1 :                         ao2_ref(tmpcap, -1);</span>
+<span class="lineNum">     322 </span>            :                 }
+<span class="lineNum">     323 </span><span class="lineCov">     239430 :         } else if (!strcasecmp(data, &quot;audioreadformat&quot;)) {</span>
+<span class="lineNum">     324 </span><span class="lineCov">          4 :                 locked_copy_string(chan, buf, ast_format_get_name(ast_channel_readformat(chan)), len);</span>
+<span class="lineNum">     325 </span><span class="lineCov">     239426 :         } else if (!strcasecmp(data, &quot;audiowriteformat&quot;)) {</span>
+<span class="lineNum">     326 </span><span class="lineCov">          4 :                 locked_copy_string(chan, buf, ast_format_get_name(ast_channel_writeformat(chan)), len);</span>
+<span class="lineNum">     327 </span><span class="lineCov">     239422 :         } else if (!strcasecmp(data, &quot;tonezone&quot;) &amp;&amp; ast_channel_zone(chan)) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                 locked_copy_string(chan, buf, ast_channel_zone(chan)-&gt;country, len);</span>
+<span class="lineNum">     329 </span><span class="lineCov">     239422 :         } else if (!strcasecmp(data, &quot;dtmf_features&quot;)) {</span>
+<span class="lineNum">     330 </span><span class="lineCov">          1 :                 if (ast_bridge_features_ds_get_string(chan, buf, len)) {</span>
+<span class="lineNum">     331 </span><span class="lineCov">          1 :                         buf[0] = '\0';</span>
+<span class="lineNum">     332 </span>            :                 }
+<span class="lineNum">     333 </span><span class="lineCov">     239421 :         } else if (!strcasecmp(data, &quot;language&quot;))</span>
+<span class="lineNum">     334 </span><span class="lineCov">         31 :                 locked_copy_string(chan, buf, ast_channel_language(chan), len);</span>
+<span class="lineNum">     335 </span><span class="lineCov">     239390 :         else if (!strcasecmp(data, &quot;musicclass&quot;))</span>
+<span class="lineNum">     336 </span><span class="lineCov">          7 :                 locked_copy_string(chan, buf, ast_channel_musicclass(chan), len);</span>
+<span class="lineNum">     337 </span><span class="lineCov">     239383 :         else if (!strcasecmp(data, &quot;name&quot;)) {</span>
+<span class="lineNum">     338 </span><span class="lineCov">        573 :                 locked_copy_string(chan, buf, ast_channel_name(chan), len);</span>
+<span class="lineNum">     339 </span><span class="lineCov">     238810 :         } else if (!strcasecmp(data, &quot;parkinglot&quot;))</span>
+<span class="lineNum">     340 </span><span class="lineCov">          7 :                 locked_copy_string(chan, buf, ast_channel_parkinglot(chan), len);</span>
+<span class="lineNum">     341 </span><span class="lineCov">     238803 :         else if (!strcasecmp(data, &quot;state&quot;))</span>
+<span class="lineNum">     342 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf, ast_state2str(ast_channel_state(chan)), len);</span>
+<span class="lineNum">     343 </span><span class="lineCov">     238802 :         else if (!strcasecmp(data, &quot;onhold&quot;)) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 locked_copy_string(chan, buf,</span>
+<span class="lineNum">     345 </span>            :                         ast_channel_hold_state(chan) == AST_CONTROL_HOLD ? &quot;1&quot; : &quot;0&quot;, len);
+<span class="lineNum">     346 </span><span class="lineCov">     238802 :         } else if (!strcasecmp(data, &quot;channeltype&quot;))</span>
+<span class="lineNum">     347 </span><span class="lineCov">         13 :                 locked_copy_string(chan, buf, ast_channel_tech(chan)-&gt;type, len);</span>
+<span class="lineNum">     348 </span><span class="lineCov">     238789 :         else if (!strcasecmp(data, &quot;accountcode&quot;))</span>
+<span class="lineNum">     349 </span><span class="lineCov">      23775 :                 locked_copy_string(chan, buf, ast_channel_accountcode(chan), len);</span>
+<span class="lineNum">     350 </span><span class="lineCov">     215014 :         else if (!strcasecmp(data, &quot;checkhangup&quot;)) {</span>
+<span class="lineNum">     351 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf, ast_check_hangup(chan) ? &quot;1&quot; : &quot;0&quot;, len);</span>
+<span class="lineNum">     352 </span><span class="lineCov">     215013 :         } else if (!strcasecmp(data, &quot;peeraccount&quot;))</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :                 locked_copy_string(chan, buf, ast_channel_peeraccount(chan), len);</span>
+<span class="lineNum">     354 </span><span class="lineCov">     215013 :         else if (!strcasecmp(data, &quot;hangupsource&quot;))</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 locked_copy_string(chan, buf, ast_channel_hangupsource(chan), len);</span>
+<span class="lineNum">     356 </span><span class="lineCov">     215013 :         else if (!strcasecmp(data, &quot;appname&quot;) &amp;&amp; ast_channel_appl(chan))</span>
+<span class="lineNum">     357 </span><span class="lineCov">      23779 :                 locked_copy_string(chan, buf, ast_channel_appl(chan), len);</span>
+<span class="lineNum">     358 </span><span class="lineCov">     191234 :         else if (!strcasecmp(data, &quot;appdata&quot;) &amp;&amp; ast_channel_data(chan))</span>
+<span class="lineNum">     359 </span><span class="lineCov">      23778 :                 locked_copy_string(chan, buf, ast_channel_data(chan), len);</span>
+<span class="lineNum">     360 </span><span class="lineCov">     167456 :         else if (!strcasecmp(data, &quot;exten&quot;) &amp;&amp; ast_channel_data(chan))</span>
+<span class="lineNum">     361 </span><span class="lineCov">      23780 :                 locked_copy_string(chan, buf, ast_channel_exten(chan), len);</span>
+<span class="lineNum">     362 </span><span class="lineCov">     143676 :         else if (!strcasecmp(data, &quot;context&quot;) &amp;&amp; ast_channel_data(chan))</span>
+<span class="lineNum">     363 </span><span class="lineCov">      23780 :                 locked_copy_string(chan, buf, ast_channel_context(chan), len);</span>
+<span class="lineNum">     364 </span><span class="lineCov">     119896 :         else if (!strcasecmp(data, &quot;userfield&quot;) &amp;&amp; ast_channel_data(chan))</span>
+<span class="lineNum">     365 </span><span class="lineCov">      23774 :                 locked_copy_string(chan, buf, ast_channel_userfield(chan), len);</span>
+<span class="lineNum">     366 </span><span class="lineCov">      96122 :         else if (!strcasecmp(data, &quot;channame&quot;) &amp;&amp; ast_channel_data(chan))</span>
+<span class="lineNum">     367 </span><span class="lineCov">      23779 :                 locked_copy_string(chan, buf, ast_channel_name(chan), len);</span>
+<span class="lineNum">     368 </span><span class="lineCov">      72343 :         else if (!strcasecmp(data, &quot;linkedid&quot;)) {</span>
+<span class="lineNum">     369 </span><span class="lineCov">      23775 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     370 </span><span class="lineCov">      23775 :                 if (ast_strlen_zero(ast_channel_linkedid(chan))) {</span>
+<span class="lineNum">     371 </span>            :                         /* fall back on the channel's uniqueid if linkedid is unset */
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         ast_copy_string(buf, ast_channel_uniqueid(chan), len);</span>
+<span class="lineNum">     373 </span>            :                 }
+<span class="lineNum">     374 </span>            :                 else {
+<span class="lineNum">     375 </span><span class="lineCov">      23775 :                         ast_copy_string(buf, ast_channel_linkedid(chan), len);</span>
+<span class="lineNum">     376 </span>            :                 }
+<span class="lineNum">     377 </span><span class="lineCov">      23775 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     378 </span><span class="lineCov">      48568 :         } else if (!strcasecmp(data, &quot;peer&quot;)) {</span>
+<span class="lineNum">     379 </span>            :                 struct ast_channel *peer;
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 peer = ast_channel_bridge_peer(chan);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 if (peer) {</span>
+<span class="lineNum">     383 </span>            :                         /* Only real channels could have a bridge peer this way. */
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                         ast_channel_lock(peer);</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                         ast_copy_string(buf, ast_channel_name(peer), len);</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(peer);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         ast_channel_unref(peer);</span>
+<span class="lineNum">     388 </span>            :                 } else {
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                         buf[0] = '\0';</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                         if (!ast_channel_tech(chan)) {</span>
+<span class="lineNum">     392 </span>            :                                 const char *pname;
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span>            :                                 /*
+<span class="lineNum">     395 </span>            :                                  * A dummy channel can still pass along bridged peer info
+<span class="lineNum">     396 </span>            :                                  * via the BRIDGEPEER variable.
+<span class="lineNum">     397 </span>            :                                  *
+<span class="lineNum">     398 </span>            :                                  * A horrible kludge, but... how else?
+<span class="lineNum">     399 </span>            :                                  */
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                                 pname = pbx_builtin_getvar_helper(chan, &quot;BRIDGEPEER&quot;);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                                 if (!ast_strlen_zero(pname)) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                                         ast_copy_string(buf, pname, len);</span>
+<span class="lineNum">     403 </span>            :                                 }
+<span class="lineNum">     404 </span>            :                         }
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     406 </span>            :                 }
+<span class="lineNum">     407 </span><span class="lineCov">      48568 :         } else if (!strcasecmp(data, &quot;uniqueid&quot;)) {</span>
+<span class="lineNum">     408 </span><span class="lineCov">      23796 :                 locked_copy_string(chan, buf, ast_channel_uniqueid(chan), len);</span>
+<span class="lineNum">     409 </span><span class="lineCov">      24772 :         } else if (!strcasecmp(data, &quot;transfercapability&quot;)) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 locked_copy_string(chan, buf, transfercapability_table[ast_channel_transfercapability(chan) &amp; 0x1f], len);</span>
+<span class="lineNum">     411 </span><span class="lineCov">      24772 :         } else if (!strcasecmp(data, &quot;callgroup&quot;)) {</span>
+<span class="lineNum">     412 </span>            :                 char groupbuf[256];
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf,  ast_print_group(groupbuf, sizeof(groupbuf), ast_channel_callgroup(chan)), len);</span>
+<span class="lineNum">     415 </span><span class="lineCov">      24771 :         } else if (!strcasecmp(data, &quot;pickupgroup&quot;)) {</span>
+<span class="lineNum">     416 </span>            :                 char groupbuf[256];
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf,  ast_print_group(groupbuf, sizeof(groupbuf), ast_channel_pickupgroup(chan)), len);</span>
+<span class="lineNum">     419 </span><span class="lineCov">      24770 :         } else if (!strcasecmp(data, &quot;namedcallgroup&quot;)) {</span>
+<span class="lineNum">     420 </span><span class="lineCov">          1 :                 struct ast_str *tmp_str = ast_str_alloca(1024);</span>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf,  ast_print_namedgroups(&amp;tmp_str, ast_channel_named_callgroups(chan)), len);</span>
+<span class="lineNum">     423 </span><span class="lineCov">      24769 :         } else if (!strcasecmp(data, &quot;namedpickupgroup&quot;)) {</span>
+<span class="lineNum">     424 </span><span class="lineCov">          1 :                 struct ast_str *tmp_str = ast_str_alloca(1024);</span>
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">          1 :                 locked_copy_string(chan, buf,  ast_print_namedgroups(&amp;tmp_str, ast_channel_named_pickupgroups(chan)), len);</span>
+<span class="lineNum">     427 </span><span class="lineCov">      24768 :         } else if (!strcasecmp(data, &quot;after_bridge_goto&quot;)) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 ast_bridge_read_after_goto(chan, buf, len);</span>
+<span class="lineNum">     429 </span><span class="lineCov">      24768 :         } else if (!strcasecmp(data, &quot;amaflags&quot;)) {</span>
+<span class="lineNum">     430 </span><span class="lineCov">      23776 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     431 </span><span class="lineCov">      23776 :                 snprintf(buf, len, &quot;%u&quot;, ast_channel_amaflags(chan));</span>
+<span class="lineNum">     432 </span><span class="lineCov">      23776 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     433 </span><span class="lineCov">        992 :         } else if (!strncasecmp(data, &quot;secure_bridge_&quot;, 14)) {</span>
+<span class="lineNum">     434 </span>            :                 struct ast_datastore *ds;
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineCov">          1 :                 buf[0] = '\0';</span>
+<span class="lineNum">     437 </span><span class="lineCov">          1 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     438 </span><span class="lineCov">          1 :                 if ((ds = ast_channel_datastore_find(chan, &amp;secure_call_info, NULL))) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                         struct ast_secure_call_store *encrypt = ds-&gt;data;</span>
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                         if (!strcasecmp(data, &quot;secure_bridge_signaling&quot;)) {</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                                 snprintf(buf, len, &quot;%s&quot;, encrypt-&gt;signaling ? &quot;1&quot; : &quot;&quot;);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                         } else if (!strcasecmp(data, &quot;secure_bridge_media&quot;)) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                                 snprintf(buf, len, &quot;%s&quot;, encrypt-&gt;media ? &quot;1&quot; : &quot;&quot;);</span>
+<span class="lineNum">     445 </span>            :                         }
+<span class="lineNum">     446 </span>            :                 }
+<span class="lineNum">     447 </span><span class="lineCov">          1 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     448 </span><span class="lineCov">        991 :         } else if (!strcasecmp(data, &quot;max_forwards&quot;)) {</span>
+<span class="lineNum">     449 </span><span class="lineCov">         25 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     450 </span><span class="lineCov">         25 :                 snprintf(buf, len, &quot;%d&quot;, ast_max_forwards_get(chan));</span>
+<span class="lineNum">     451 </span><span class="lineCov">         25 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     452 </span><span class="lineCov">        966 :         } else if (!strcasecmp(data, &quot;callid&quot;)) {</span>
+<span class="lineNum">     453 </span>            :                 ast_callid callid;
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">          1 :                 buf[0] = '\0';</span>
+<span class="lineNum">     456 </span><span class="lineCov">          1 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     457 </span><span class="lineCov">          1 :                 callid = ast_channel_callid(chan);</span>
+<span class="lineNum">     458 </span><span class="lineCov">          1 :                 if (callid) {</span>
+<span class="lineNum">     459 </span><span class="lineCov">          1 :                         ast_callid_strnprint(buf, len, callid);</span>
+<span class="lineNum">     460 </span>            :                 }
+<span class="lineNum">     461 </span><span class="lineCov">          1 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     462 </span><span class="lineCov">        965 :         } else if (!ast_channel_tech(chan) || !ast_channel_tech(chan)-&gt;func_channel_read || ast_channel_tech(chan)-&gt;func_channel_read(chan, function, data, buf, len)) {</span>
+<span class="lineNum">     463 </span><span class="lineCov">          7 :                 ast_log(LOG_WARNING, &quot;Unknown or unavailable item requested: '%s'\n&quot;, data);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          7 :                 ret = -1;</span>
+<span class="lineNum">     465 </span>            :         }
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineCov">     239437 :         return ret;</span>
+<a name="468"><span class="lineNum">     468 </span>            : }</a>
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineCov">        218 : static int func_channel_write_real(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">     471 </span>            :                               char *data, const char *value)
+<span class="lineNum">     472 </span>            : {
+<span class="lineNum">     473 </span><span class="lineCov">        218 :         int ret = 0;</span>
+<span class="lineNum">     474 </span>            :         signed char gainset;
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">        218 :         if (!strcasecmp(data, &quot;language&quot;))</span>
+<span class="lineNum">     477 </span><span class="lineCov">          5 :                 locked_string_field_set(chan, language, value);</span>
+<span class="lineNum">     478 </span><span class="lineCov">        213 :         else if (!strcasecmp(data, &quot;parkinglot&quot;))</span>
+<span class="lineNum">     479 </span><span class="lineCov">          9 :                 locked_string_field_set(chan, parkinglot, value);</span>
+<span class="lineNum">     480 </span><span class="lineCov">        204 :         else if (!strcasecmp(data, &quot;musicclass&quot;))</span>
+<span class="lineNum">     481 </span><span class="lineCov">          3 :                 locked_string_field_set(chan, musicclass, value);</span>
+<span class="lineNum">     482 </span><span class="lineCov">        201 :         else if (!strcasecmp(data, &quot;accountcode&quot;))</span>
+<span class="lineNum">     483 </span><span class="lineCov">         23 :                 locked_string_field_set(chan, accountcode, value);</span>
+<span class="lineNum">     484 </span><span class="lineCov">        178 :         else if (!strcasecmp(data, &quot;userfield&quot;))</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                 locked_string_field_set(chan, userfield, value);</span>
+<span class="lineNum">     486 </span><span class="lineCov">        178 :         else if (!strcasecmp(data, &quot;after_bridge_goto&quot;)) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 if (ast_strlen_zero(value)) {</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                         ast_bridge_discard_after_goto(chan);</span>
+<span class="lineNum">     489 </span>            :                 } else {
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                         ast_bridge_set_after_go_on(chan, ast_channel_context(chan), ast_channel_exten(chan), ast_channel_priority(chan), value);</span>
+<span class="lineNum">     491 </span>            :                 }
+<span class="lineNum">     492 </span><span class="lineCov">        178 :         } else if (!strcasecmp(data, &quot;amaflags&quot;)) {</span>
+<span class="lineNum">     493 </span>            :                 int amaflags;
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineCov">          4 :                 if (isdigit(*value)) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                         if (sscanf(value, &quot;%30d&quot;, &amp;amaflags) != 1) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :                                 amaflags = AST_AMA_NONE;</span>
+<span class="lineNum">     498 </span>            :                         }
+<span class="lineNum">     499 </span>            :                 } else {
+<span class="lineNum">     500 </span><span class="lineCov">          4 :                         amaflags = ast_channel_string2amaflag(value);</span>
+<span class="lineNum">     501 </span>            :                 }
+<span class="lineNum">     502 </span><span class="lineCov">          4 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     503 </span><span class="lineCov">          4 :                 ast_channel_amaflags_set(chan, amaflags);</span>
+<span class="lineNum">     504 </span><span class="lineCov">          4 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     505 </span><span class="lineCov">        174 :         } else if (!strcasecmp(data, &quot;peeraccount&quot;))</span>
+<span class="lineNum">     506 </span><span class="lineCov">         22 :                 locked_string_field_set(chan, peeraccount, value);</span>
+<span class="lineNum">     507 </span><span class="lineCov">        152 :         else if (!strcasecmp(data, &quot;hangupsource&quot;))</span>
+<span class="lineNum">     508 </span>            :                 /* XXX - should we be forcing this here? */
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 ast_set_hangupsource(chan, value, 0);</span>
+<span class="lineNum">     510 </span><span class="lineCov">        152 :         else if (!strcasecmp(data, &quot;tonezone&quot;)) {</span>
+<span class="lineNum">     511 </span>            :                 struct ast_tone_zone *new_zone;
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 if (!(new_zone = ast_get_indication_zone(value))) {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unknown country code '%s' for tonezone. Check indications.conf for available country codes.\n&quot;, value);</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                         ret = -1;</span>
+<span class="lineNum">     515 </span>            :                 } else {
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                         if (ast_channel_zone(chan)) {</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                                 ast_channel_zone_set(chan, ast_tone_zone_unref(ast_channel_zone(chan)));</span>
+<span class="lineNum">     519 </span>            :                         }
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                         ast_channel_zone_set(chan, ast_tone_zone_ref(new_zone));</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                         new_zone = ast_tone_zone_unref(new_zone);</span>
+<span class="lineNum">     523 </span>            :                 }
+<span class="lineNum">     524 </span><span class="lineCov">        152 :         } else if (!strcasecmp(data, &quot;dtmf_features&quot;)) {</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                 ret = ast_bridge_features_ds_set_string(chan, value);</span>
+<span class="lineNum">     526 </span><span class="lineCov">        152 :         } else if (!strcasecmp(data, &quot;callgroup&quot;)) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 ast_channel_callgroup_set(chan, ast_get_group(value));</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     530 </span><span class="lineCov">        152 :         } else if (!strcasecmp(data, &quot;pickupgroup&quot;)) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 ast_channel_pickupgroup_set(chan, ast_get_group(value));</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     534 </span><span class="lineCov">        152 :         } else if (!strcasecmp(data, &quot;namedcallgroup&quot;)) {</span>
+<span class="lineNum">     535 </span><span class="lineCov">          1 :                 struct ast_namedgroups *groups = ast_get_namedgroups(value);</span>
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">          1 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     538 </span><span class="lineCov">          1 :                 ast_channel_named_callgroups_set(chan, groups);</span>
+<span class="lineNum">     539 </span><span class="lineCov">          1 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     540 </span><span class="lineCov">          1 :                 ast_unref_namedgroups(groups);</span>
+<span class="lineNum">     541 </span><span class="lineCov">        151 :         } else if (!strcasecmp(data, &quot;namedpickupgroup&quot;)) {</span>
+<span class="lineNum">     542 </span><span class="lineCov">          2 :                 struct ast_namedgroups *groups = ast_get_namedgroups(value);</span>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">          2 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     545 </span><span class="lineCov">          2 :                 ast_channel_named_pickupgroups_set(chan, groups);</span>
+<span class="lineNum">     546 </span><span class="lineCov">          2 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     547 </span><span class="lineCov">          2 :                 ast_unref_namedgroups(groups);</span>
+<span class="lineNum">     548 </span><span class="lineCov">        149 :         } else if (!strcasecmp(data, &quot;txgain&quot;)) {</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :                 sscanf(value, &quot;%4hhd&quot;, &amp;gainset);</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :                 ast_channel_setoption(chan, AST_OPTION_TXGAIN, &amp;gainset, sizeof(gainset), 0);</span>
+<span class="lineNum">     551 </span><span class="lineCov">        149 :         } else if (!strcasecmp(data, &quot;rxgain&quot;)) {</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 sscanf(value, &quot;%4hhd&quot;, &amp;gainset);</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">          0 :                 ast_channel_setoption(chan, AST_OPTION_RXGAIN, &amp;gainset, sizeof(gainset), 0);</span>
+<span class="lineNum">     554 </span><span class="lineCov">        149 :         } else if (!strcasecmp(data, &quot;transfercapability&quot;)) {</span>
+<span class="lineNum">     555 </span>            :                 unsigned short i;
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; 0x20; i++) {</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :                         if (!strcasecmp(transfercapability_table[i], value) &amp;&amp; strcmp(value, &quot;UNK&quot;)) {</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                                 ast_channel_transfercapability_set(chan, i);</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     562 </span>            :                         }
+<span class="lineNum">     563 </span>            :                 }
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     565 </span><span class="lineCov">        149 :         } else if (!strcasecmp(data, &quot;hangup_handler_pop&quot;)) {</span>
+<span class="lineNum">     566 </span>            :                 /* Pop one hangup handler before pushing the new handler. */
+<span class="lineNum">     567 </span><span class="lineCov">          4 :                 ast_pbx_hangup_handler_pop(chan);</span>
+<span class="lineNum">     568 </span><span class="lineCov">          4 :                 ast_pbx_hangup_handler_push(chan, value);</span>
+<span class="lineNum">     569 </span><span class="lineCov">        145 :         } else if (!strcasecmp(data, &quot;hangup_handler_push&quot;)) {</span>
+<span class="lineNum">     570 </span><span class="lineCov">        133 :                 ast_pbx_hangup_handler_push(chan, value);</span>
+<span class="lineNum">     571 </span><span class="lineCov">         12 :         } else if (!strcasecmp(data, &quot;hangup_handler_wipe&quot;)) {</span>
+<span class="lineNum">     572 </span>            :                 /* Pop all hangup handlers before pushing the new handler. */
+<span class="lineNum">     573 </span><span class="lineCov">         12 :                 while (ast_pbx_hangup_handler_pop(chan)) {</span>
+<span class="lineNum">     574 </span>            :                 }
+<span class="lineNum">     575 </span><span class="lineCov">          4 :                 ast_pbx_hangup_handler_push(chan, value);</span>
+<span class="lineNum">     576 </span><span class="lineCov">          8 :         } else if (!strncasecmp(data, &quot;secure_bridge_&quot;, 14)) {</span>
+<span class="lineNum">     577 </span>            :                 struct ast_datastore *ds;
+<span class="lineNum">     578 </span>            :                 struct ast_secure_call_store *store;
+<span class="lineNum">     579 </span>            : 
+<span class="lineNum">     580 </span><span class="lineCov">          2 :                 if (!chan || !value) {</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     582 </span>            :                 }
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineCov">          2 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     585 </span><span class="lineCov">          2 :                 if (!(ds = ast_channel_datastore_find(chan, &amp;secure_call_info, NULL))) {</span>
+<span class="lineNum">     586 </span><span class="lineCov">          2 :                         if (!(ds = ast_datastore_alloc(&amp;secure_call_info, NULL))) {</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :                                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     589 </span>            :                         }
+<span class="lineNum">     590 </span><span class="lineCov">          2 :                         if (!(store = ast_calloc(1, sizeof(*store)))) {</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :                                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                                 ast_free(ds);</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     594 </span>            :                         }
+<span class="lineNum">     595 </span><span class="lineCov">          2 :                         ds-&gt;data = store;</span>
+<span class="lineNum">     596 </span><span class="lineCov">          2 :                         ast_channel_datastore_add(chan, ds);</span>
+<span class="lineNum">     597 </span>            :                 } else {
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                         store = ds-&gt;data;</span>
+<span class="lineNum">     599 </span>            :                 }
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineCov">          2 :                 if (!strcasecmp(data, &quot;secure_bridge_signaling&quot;)) {</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                         store-&gt;signaling = ast_true(value) ? 1 : 0;</span>
+<span class="lineNum">     603 </span><span class="lineCov">          2 :                 } else if (!strcasecmp(data, &quot;secure_bridge_media&quot;)) {</span>
+<span class="lineNum">     604 </span><span class="lineCov">          2 :                         store-&gt;media = ast_true(value) ? 1 : 0;</span>
+<span class="lineNum">     605 </span>            :                 }
+<span class="lineNum">     606 </span><span class="lineCov">          2 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     607 </span><span class="lineCov">          6 :         } else if (!strcasecmp(data, &quot;max_forwards&quot;)) {</span>
+<span class="lineNum">     608 </span>            :                 int max_forwards;
+<span class="lineNum">     609 </span><span class="lineCov">          6 :                 if (sscanf(value, &quot;%d&quot;, &amp;max_forwards) != 1) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to set max forwards to '%s'\n&quot;, value);</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                         ret = -1;</span>
+<span class="lineNum">     612 </span>            :                 } else {
+<span class="lineNum">     613 </span><span class="lineCov">          6 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     614 </span><span class="lineCov">          6 :                         ret = ast_max_forwards_set(chan, max_forwards);</span>
+<span class="lineNum">     615 </span><span class="lineCov">          6 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     616 </span>            :                 }
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :         } else if (!ast_channel_tech(chan)-&gt;func_channel_write</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                  || ast_channel_tech(chan)-&gt;func_channel_write(chan, function, data, value)) {</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unknown or unavailable item requested: '%s'\n&quot;,</span>
+<span class="lineNum">     620 </span>            :                                 data);
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 ret = -1;</span>
+<span class="lineNum">     622 </span>            :         }
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineCov">        218 :         return ret;</span>
+<a name="625"><span class="lineNum">     625 </span>            : }</a>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span><span class="lineCov">        188 : static int func_channel_write(struct ast_channel *chan, const char *function, char *data, const char *value)</span>
+<span class="lineNum">     628 </span>            : {
+<span class="lineNum">     629 </span>            :         int res;
+<span class="lineNum">     630 </span><span class="lineCov">        188 :         ast_chan_write_info_t write_info = {</span>
+<span class="lineNum">     631 </span>            :                 .version = AST_CHAN_WRITE_INFO_T_VERSION,
+<span class="lineNum">     632 </span>            :                 .write_fn = func_channel_write_real,
+<span class="lineNum">     633 </span>            :                 .chan = chan,
+<span class="lineNum">     634 </span>            :                 .function = function,
+<span class="lineNum">     635 </span>            :                 .data = data,
+<span class="lineNum">     636 </span>            :                 .value = value,
+<span class="lineNum">     637 </span>            :         };
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">        188 :         if (!chan) {</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     642 </span>            :         }
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span><span class="lineCov">        188 :         res = func_channel_write_real(chan, function, data, value);</span>
+<span class="lineNum">     645 </span><span class="lineCov">        188 :         ast_channel_setoption(chan, AST_OPTION_CHANNEL_WRITE, &amp;write_info, sizeof(write_info), 0);</span>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineCov">        188 :         return res;</span>
+<span class="lineNum">     648 </span>            : }
+<span class="lineNum">     649 </span>            : 
+<span class="lineNum">     650 </span>            : static struct ast_custom_function channel_function = {
+<span class="lineNum">     651 </span>            :         .name = &quot;CHANNEL&quot;,
+<span class="lineNum">     652 </span>            :         .read = func_channel_read,
+<span class="lineNum">     653 </span>            :         .write = func_channel_write,
+<a name="654"><span class="lineNum">     654 </span>            : };</a>
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 : static int func_channels_read(struct ast_channel *chan, const char *function, char *data, char *buf, size_t maxlen)</span>
+<span class="lineNum">     657 </span>            : {
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :         struct ast_channel *c = NULL;</span>
+<span class="lineNum">     659 </span>            :         regex_t re;
+<span class="lineNum">     660 </span>            :         int res;
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         size_t buflen = 0;</span>
+<span class="lineNum">     662 </span>            :         struct ast_channel_iterator *iter;
+<span class="lineNum">     663 </span>            : 
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :         buf[0] = '\0';</span>
+<span class="lineNum">     665 </span>            : 
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(data)) {</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                 if ((res = regcomp(&amp;re, data, REG_EXTENDED | REG_ICASE | REG_NOSUB))) {</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                         regerror(res, &amp;re, buf, maxlen);</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Error compiling regular expression for %s(%s): %s\n&quot;, function, data, buf);</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     671 </span>            :                 }
+<span class="lineNum">     672 </span>            :         }
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :         if (!(iter = ast_channel_iterator_all_new())) {</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                 if (!ast_strlen_zero(data)) {</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                         regfree(&amp;re);</span>
+<span class="lineNum">     677 </span>            :                 }
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     679 </span>            :         }
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :         while ((c = ast_channel_iterator_next(iter))) {</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 ast_channel_lock(c);</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                 if (ast_strlen_zero(data) || regexec(&amp;re, ast_channel_name(c), 0, NULL, 0) == 0) {</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                         size_t namelen = strlen(ast_channel_name(c));</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                         if (buflen + namelen + (ast_strlen_zero(buf) ? 0 : 1) + 1 &lt; maxlen) {</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                                 if (!ast_strlen_zero(buf)) {</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                                         strcat(buf, &quot; &quot;);</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :                                         buflen++;</span>
+<span class="lineNum">     689 </span>            :                                 }
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :                                 strcat(buf, ast_channel_name(c));</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                                 buflen += namelen;</span>
+<span class="lineNum">     692 </span>            :                         } else {
+<span class="lineNum">     693 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Number of channels exceeds the available buffer space.  Output will be truncated!\n&quot;);</span>
+<span class="lineNum">     694 </span>            :                         }
+<span class="lineNum">     695 </span>            :                 }
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(c);</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                 c = ast_channel_unref(c);</span>
+<span class="lineNum">     698 </span>            :         }
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :         ast_channel_iterator_destroy(iter);</span>
+<span class="lineNum">     701 </span>            : 
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(data)) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 regfree(&amp;re);</span>
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span>            : 
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     707 </span>            : }
+<span class="lineNum">     708 </span>            : 
+<span class="lineNum">     709 </span>            : static struct ast_custom_function channels_function = {
+<span class="lineNum">     710 </span>            :         .name = &quot;CHANNELS&quot;,
+<span class="lineNum">     711 </span>            :         .read = func_channels_read,
+<a name="712"><span class="lineNum">     712 </span>            : };</a>
+<span class="lineNum">     713 </span>            : 
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 : static int func_mchan_read(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">     715 </span>            :                              char *data, struct ast_str **buf, ssize_t len)
+<span class="lineNum">     716 </span>            : {
+<span class="lineNum">     717 </span>            :         struct ast_channel *mchan;
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :         char *template = ast_alloca(4 + strlen(data));</span>
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     723 </span>            :         }
+<span class="lineNum">     724 </span>            : 
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :         mchan = ast_channel_get_by_name(ast_channel_linkedid(chan));</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :         sprintf(template, &quot;${%s}&quot;, data); /* SAFE */</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :         ast_str_substitute_variables(buf, len, mchan ? mchan : chan, template);</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :         if (mchan) {</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 :                 ast_channel_unref(mchan);</span>
+<span class="lineNum">     730 </span>            :         }
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="732"><span class="lineNum">     732 </span>            : }</a>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 : static int func_mchan_write(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">     735 </span>            :                               char *data, const char *value)
+<span class="lineNum">     736 </span>            : {
+<span class="lineNum">     737 </span>            :         struct ast_channel *mchan;
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     742 </span>            :         }
+<span class="lineNum">     743 </span>            : 
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :         mchan = ast_channel_get_by_name(ast_channel_linkedid(chan));</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :         pbx_builtin_setvar_helper(mchan ? mchan : chan, data, value);</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :         if (mchan) {</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :                 ast_channel_unref(mchan);</span>
+<span class="lineNum">     748 </span>            :         }
+<span class="lineNum">     749 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     750 </span>            : }
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span>            : static struct ast_custom_function mchan_function = {
+<span class="lineNum">     753 </span>            :         .name = &quot;MASTER_CHANNEL&quot;,
+<span class="lineNum">     754 </span>            :         .read2 = func_mchan_read,
+<span class="lineNum">     755 </span>            :         .write = func_mchan_write,
+<a name="756"><span class="lineNum">     756 </span>            : };</a>
+<span class="lineNum">     757 </span>            : 
+<span class="lineNum">     758 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     759 </span>            : {
+<span class="lineNum">     760 </span><span class="lineCov">       1115 :         int res = 0;</span>
+<span class="lineNum">     761 </span>            : 
+<span class="lineNum">     762 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;channel_function);</span>
+<span class="lineNum">     763 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;channels_function);</span>
+<span class="lineNum">     764 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;mchan_function);</span>
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="767"><span class="lineNum">     767 </span>            : }</a>
+<span class="lineNum">     768 </span>            : 
+<span class="lineNum">     769 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     770 </span>            : {
+<span class="lineNum">     771 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;channel_function);</span>
+<span class="lineNum">     774 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;channels_function);</span>
+<span class="lineNum">     775 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;mchan_function);</span>
+<span class="lineNum">     776 </span>            : 
+<span class="lineNum">     777 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="778"><span class="lineNum">     778 </span>            : }</a>
+<span class="lineNum">     779 </span>            : 
+<span class="lineNum">     780 </span><span class="lineCov">       5587 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Channel information dialplan functions&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

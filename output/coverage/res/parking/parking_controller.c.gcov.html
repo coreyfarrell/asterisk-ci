@@ -1,0 +1,382 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/parking/parking_controller.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/parking</a> - parking_controller.c<span style="font-size: 80%;"> (source / <a href="parking_controller.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">94</td>
+            <td class="headerCovTableEntry">126</td>
+            <td class="headerCovTableEntryLo">74.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryHi">90.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Parking Entry, Exit, and other assorted controls.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;res_parking.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/test.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/features.h&quot;
+<a name="34"><span class="lineNum">      34 </span>            : #include &quot;asterisk/bridge_basic.h&quot;</a>
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span><span class="lineCov">         23 : struct ast_bridge *parking_lot_get_bridge(struct parking_lot *lot)</span>
+<span class="lineNum">      37 </span>            : {
+<span class="lineNum">      38 </span>            :         struct ast_bridge *lot_bridge;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span><span class="lineCov">         23 :         if (lot-&gt;parking_bridge) {</span>
+<span class="lineNum">      41 </span><span class="lineCov">         10 :                 ao2_ref(lot-&gt;parking_bridge, +1);</span>
+<span class="lineNum">      42 </span><span class="lineCov">         10 :                 return lot-&gt;parking_bridge;</span>
+<span class="lineNum">      43 </span>            :         }
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span><span class="lineCov">         13 :         lot_bridge = bridge_parking_new(lot);</span>
+<span class="lineNum">      46 </span><span class="lineCov">         13 :         if (!lot_bridge) {</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      48 </span>            :         }
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            :         /* The parking lot needs a reference to the bridge as well. */
+<span class="lineNum">      51 </span><span class="lineCov">         13 :         lot-&gt;parking_bridge = lot_bridge;</span>
+<span class="lineNum">      52 </span><span class="lineCov">         13 :         ao2_ref(lot-&gt;parking_bridge, +1);</span>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineCov">         13 :         return lot_bridge;</span>
+<a name="55"><span class="lineNum">      55 </span>            : }</a>
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span><span class="lineCov">         24 : int parking_channel_set_roles(struct ast_channel *chan, struct parking_lot *lot, int force_ringing)</span>
+<span class="lineNum">      58 </span>            : {
+<span class="lineNum">      59 </span><span class="lineCov">         24 :         if (ast_channel_add_bridge_role(chan, &quot;holding_participant&quot;)) {</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      61 </span>            :         }
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineCov">         24 :         if (force_ringing) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 if (ast_channel_set_bridge_role_option(chan, &quot;holding_participant&quot;, &quot;idle_mode&quot;, &quot;ringing&quot;)) {</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">      66 </span>            :                 }
+<span class="lineNum">      67 </span>            :         } else {
+<span class="lineNum">      68 </span><span class="lineCov">         24 :                 if (ast_channel_set_bridge_role_option(chan, &quot;holding_participant&quot;, &quot;idle_mode&quot;, &quot;musiconhold&quot;)) {</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">      70 </span>            :                 }
+<span class="lineNum">      71 </span><span class="lineCov">         24 :                 if (!ast_strlen_zero(lot-&gt;cfg-&gt;mohclass)) {</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                         if (ast_channel_set_bridge_role_option(chan, &quot;holding_participant&quot;, &quot;moh_class&quot;, lot-&gt;cfg-&gt;mohclass)) {</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">      74 </span>            :                         }
+<span class="lineNum">      75 </span>            :                 }
+<span class="lineNum">      76 </span>            :         }
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">         24 :         return 0;</span>
+<span class="lineNum">      79 </span>            : }
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : struct parking_limits_pvt {
+<span class="lineNum">      82 </span>            :         struct parked_user *user;
+<a name="83"><span class="lineNum">      83 </span>            : };</a>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineCov">         16 : int unpark_parked_user(struct parked_user *pu)</span>
+<span class="lineNum">      86 </span>            : {
+<span class="lineNum">      87 </span><span class="lineCov">         16 :         if (pu-&gt;lot) {</span>
+<span class="lineNum">      88 </span><span class="lineCov">         16 :                 ao2_unlink(pu-&gt;lot-&gt;parked_users, pu);</span>
+<span class="lineNum">      89 </span><span class="lineCov">         16 :                 parking_lot_remove_if_unused(pu-&gt;lot);</span>
+<span class="lineNum">      90 </span><span class="lineCov">         16 :                 return 0;</span>
+<span class="lineNum">      91 </span>            :         }
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="94"><span class="lineNum">      94 </span>            : }</a>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineCov">         23 : int parking_lot_get_space(struct parking_lot *lot, int target_override)</span>
+<span class="lineNum">      97 </span>            : {
+<span class="lineNum">      98 </span>            :         int original_target;
+<span class="lineNum">      99 </span>            :         int current_target;
+<span class="lineNum">     100 </span>            :         struct ao2_iterator i;
+<span class="lineNum">     101 </span>            :         struct parked_user *user;
+<span class="lineNum">     102 </span>            :         int wrap;
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">         23 :         if (lot-&gt;cfg-&gt;parkfindnext) {</span>
+<span class="lineNum">     105 </span>            :                 /* Use next_space if the lot already has next_space set; otherwise use lot start. */
+<span class="lineNum">     106 </span><span class="lineCov">          9 :                 original_target = lot-&gt;next_space ? lot-&gt;next_space : lot-&gt;cfg-&gt;parking_start;</span>
+<span class="lineNum">     107 </span>            :         } else {
+<span class="lineNum">     108 </span><span class="lineCov">         14 :                 original_target = lot-&gt;cfg-&gt;parking_start;</span>
+<span class="lineNum">     109 </span>            :         }
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">         23 :         if (target_override &gt;= lot-&gt;cfg-&gt;parking_start &amp;&amp; target_override &lt;= lot-&gt;cfg-&gt;parking_stop) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 original_target = target_override;</span>
+<span class="lineNum">     113 </span>            :         }
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineCov">         23 :         current_target = original_target;</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">         23 :         wrap = lot-&gt;cfg-&gt;parking_start;</span>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">         23 :         i = ao2_iterator_init(lot-&gt;parked_users, 0);</span>
+<span class="lineNum">     120 </span><span class="lineCov">         25 :         while ((user = ao2_iterator_next(&amp;i))) {</span>
+<span class="lineNum">     121 </span>            :                 /* Increment the wrap on each pass until we find an empty space */
+<span class="lineNum">     122 </span><span class="lineCov">          2 :                 if (wrap == user-&gt;parking_space) {</span>
+<span class="lineNum">     123 </span><span class="lineCov">          2 :                         wrap += 1;</span>
+<span class="lineNum">     124 </span>            :                 }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">          2 :                 if (user-&gt;parking_space &lt; current_target) {</span>
+<span class="lineNum">     127 </span>            :                         /* It's lower than the anticipated target, so we haven't reached the target yet. */
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                         ao2_ref(user, -1);</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     130 </span>            :                 }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">          2 :                 if (user-&gt;parking_space &gt; current_target) {</span>
+<span class="lineNum">     133 </span>            :                         /* The current target is usable because all items below have been read and the next target is higher than the one we want. */
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                         ao2_ref(user, -1);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     136 </span>            :                 }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            :                 /* We found one already parked here. */
+<span class="lineNum">     139 </span><span class="lineCov">          2 :                 current_target += 1;</span>
+<span class="lineNum">     140 </span><span class="lineCov">          2 :                 ao2_ref(user, -1);</span>
+<span class="lineNum">     141 </span>            :         }
+<span class="lineNum">     142 </span><span class="lineCov">         23 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">         23 :         if (current_target &lt;= lot-&gt;cfg-&gt;parking_stop) {</span>
+<span class="lineNum">     145 </span><span class="lineCov">         21 :                 return current_target;</span>
+<span class="lineNum">     146 </span>            :         }
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">          2 :         if (wrap &lt;= lot-&gt;cfg-&gt;parking_stop) {</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 return wrap;</span>
+<span class="lineNum">     150 </span>            :         }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">          2 :         return -1;</span>
+<a name="153"><span class="lineNum">     153 </span>            : }</a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">          5 : static int retrieve_parked_user_targeted(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span><span class="lineCov">          5 :         int *target = arg;</span>
+<span class="lineNum">     158 </span><span class="lineCov">          5 :         struct parked_user *user = obj;</span>
+<span class="lineNum">     159 </span><span class="lineCov">          5 :         if (user-&gt;parking_space == *target) {</span>
+<span class="lineNum">     160 </span><span class="lineCov">          5 :                 return CMP_MATCH;</span>
+<span class="lineNum">     161 </span>            :         }
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="164"><span class="lineNum">     164 </span>            : }</a>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 : struct parked_user *parking_lot_inspect_parked_user(struct parking_lot *lot, int target)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span>            :         struct parked_user *user;
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         if (target &lt; 0) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                 user = ao2_callback(lot-&gt;parked_users, 0, NULL, NULL);</span>
+<span class="lineNum">     172 </span>            :         } else {
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 user = ao2_callback(lot-&gt;parked_users, 0, retrieve_parked_user_targeted, &amp;target);</span>
+<span class="lineNum">     174 </span>            :         }
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         if (!user) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     178 </span>            :         }
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         return user;</span>
+<a name="181"><span class="lineNum">     181 </span>            : }</a>
+<span class="lineNum">     182 </span>            : 
+<a name="183"><span class="lineNum">     183 </span><span class="lineCov">          5 : struct parked_user *parking_lot_retrieve_parked_user(struct parking_lot *lot, int target)</span></a>
+<span class="lineNum">     184 </span>            : {
+<span class="lineNum">     185 </span><span class="lineCov">         10 :         RAII_VAR(struct parked_user *, user, NULL, ao2_cleanup);</span>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">          5 :         if (target &lt; 0) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 user = ao2_callback(lot-&gt;parked_users, 0, NULL, NULL);</span>
+<span class="lineNum">     189 </span>            :         } else {
+<span class="lineNum">     190 </span><span class="lineCov">          5 :                 user = ao2_callback(lot-&gt;parked_users, 0, retrieve_parked_user_targeted, &amp;target);</span>
+<span class="lineNum">     191 </span>            :         }
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineCov">          5 :         if (!user) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     195 </span>            :         }
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span><span class="lineCov">          5 :         ao2_lock(user);</span>
+<span class="lineNum">     198 </span><span class="lineCov">          5 :         if (user-&gt;resolution != PARK_UNSET) {</span>
+<span class="lineNum">     199 </span>            :                 /* Abandon. Something else has resolved the parked user before we got to it. */
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 ao2_unlock(user);</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     202 </span>            :         }
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">          5 :         ao2_unlink(lot-&gt;parked_users, user);</span>
+<span class="lineNum">     205 </span><span class="lineCov">          5 :         user-&gt;resolution = PARK_ANSWERED;</span>
+<span class="lineNum">     206 </span><span class="lineCov">          5 :         ao2_unlock(user);</span>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">          5 :         parking_lot_remove_if_unused(user-&gt;lot);</span>
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            :         /* Bump the ref count by 1 since the RAII_VAR will eat the reference otherwise */
+<span class="lineNum">     211 </span><span class="lineCov">          5 :         ao2_ref(user, +1);</span>
+<span class="lineNum">     212 </span><span class="lineCov">          5 :         return user;</span>
+<a name="213"><span class="lineNum">     213 </span>            : }</a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">         15 : void parked_call_retrieve_enable_features(struct ast_channel *chan, struct parking_lot *lot, int recipient_mode)</span>
+<span class="lineNum">     216 </span>            : {
+<span class="lineNum">     217 </span>            :         /* Enabling features here should be additive to features that are already on the channel. */
+<span class="lineNum">     218 </span><span class="lineCov">         15 :         struct ast_flags feature_flags = { 0 };</span>
+<span class="lineNum">     219 </span>            :         struct ast_flags *existing_features;
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">         15 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     222 </span><span class="lineCov">         15 :         existing_features = ast_bridge_features_ds_get(chan);</span>
+<span class="lineNum">     223 </span><span class="lineCov">         15 :         if (existing_features) {</span>
+<span class="lineNum">     224 </span><span class="lineCov">          9 :                 feature_flags = *existing_features;</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">         15 :         if (lot-&gt;cfg-&gt;parkedcalltransfers &amp; recipient_mode) {</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;feature_flags, AST_FEATURE_REDIRECT);</span>
+<span class="lineNum">     229 </span>            :         }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">         15 :         if (lot-&gt;cfg-&gt;parkedcallreparking &amp; recipient_mode) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;feature_flags, AST_FEATURE_PARKCALL);</span>
+<span class="lineNum">     233 </span>            :         }
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">         15 :         if (lot-&gt;cfg-&gt;parkedcallhangup &amp; recipient_mode) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;feature_flags, AST_FEATURE_DISCONNECT);</span>
+<span class="lineNum">     237 </span>            :         }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">         15 :         if (lot-&gt;cfg-&gt;parkedcallrecording &amp; recipient_mode) {</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 ast_set_flag(&amp;feature_flags, AST_FEATURE_AUTOMIXMON);</span>
+<span class="lineNum">     241 </span>            :         }
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">         15 :         ast_bridge_features_ds_set(chan, &amp;feature_flags);</span>
+<span class="lineNum">     244 </span><span class="lineCov">         15 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">         15 :         return;</span>
+<a name="247"><span class="lineNum">     247 </span>            : }</a>
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span><span class="lineCov">         12 : void flatten_dial_string(char *dialstring)</span>
+<span class="lineNum">     250 </span>            : {
+<span class="lineNum">     251 </span>            :         int i;
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span><span class="lineCov">        120 :         for (i = 0; dialstring[i]; i++) {</span>
+<span class="lineNum">     254 </span><span class="lineCov">        108 :                 if (dialstring[i] == '/') {</span>
+<span class="lineNum">     255 </span>            :                         /* The underscore is the flattest character of all. */
+<span class="lineNum">     256 </span><span class="lineCov">         12 :                         dialstring[i] = '_';</span>
+<span class="lineNum">     257 </span>            :                 }
+<span class="lineNum">     258 </span>            :         }
+<a name="259"><span class="lineNum">     259 </span><span class="lineCov">         12 : }</span></a>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">          6 : int comeback_goto(struct parked_user *pu, struct parking_lot *lot)</span>
+<span class="lineNum">     262 </span>            : {
+<span class="lineNum">     263 </span><span class="lineCov">          6 :         struct ast_channel *chan = pu-&gt;chan;</span>
+<span class="lineNum">     264 </span><span class="lineCov">          6 :         char *peername_flat = ast_strdupa(pu-&gt;parker_dial_string);</span>
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span>            :         /* Flatten the peername so that it can be used for performing the timeout PBX operations */
+<span class="lineNum">     267 </span><span class="lineCov">          6 :         flatten_dial_string(peername_flat);</span>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">          6 :         if (lot-&gt;cfg-&gt;comebacktoorigin) {</span>
+<span class="lineNum">     270 </span><span class="lineCov">          3 :                 if (ast_exists_extension(chan, PARK_DIAL_CONTEXT, peername_flat, 1, NULL)) {</span>
+<span class="lineNum">     271 </span><span class="lineCov">          3 :                         ast_async_goto(chan, PARK_DIAL_CONTEXT, peername_flat, 1);</span>
+<span class="lineNum">     272 </span><span class="lineCov">          3 :                         return 0;</span>
+<span class="lineNum">     273 </span>            :                 } else {
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Can not start %s at %s,%s,1 because extension does not exist. Terminating call.\n&quot;,</span>
+<span class="lineNum">     275 </span>            :                                 ast_channel_name(chan), PARK_DIAL_CONTEXT, peername_flat);
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     277 </span>            :                 }
+<span class="lineNum">     278 </span>            :         }
+<span class="lineNum">     279 </span>            : 
+<span class="lineNum">     280 </span><span class="lineCov">          3 :         if (ast_exists_extension(chan, lot-&gt;cfg-&gt;comebackcontext, peername_flat, 1, NULL)) {</span>
+<span class="lineNum">     281 </span><span class="lineCov">          1 :                 ast_async_goto(chan, lot-&gt;cfg-&gt;comebackcontext, peername_flat, 1);</span>
+<span class="lineNum">     282 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">     283 </span>            :         }
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineCov">          2 :         if (ast_exists_extension(chan, lot-&gt;cfg-&gt;comebackcontext, &quot;s&quot;, 1, NULL)) {</span>
+<span class="lineNum">     286 </span><span class="lineCov">          1 :                 ast_verb(2, &quot;Could not start %s at %s,%s,1. Using 's@%s' instead.\n&quot;, ast_channel_name(chan),</span>
+<span class="lineNum">     287 </span>            :                         lot-&gt;cfg-&gt;comebackcontext, peername_flat, lot-&gt;cfg-&gt;comebackcontext);
+<span class="lineNum">     288 </span><span class="lineCov">          1 :                 ast_async_goto(chan, lot-&gt;cfg-&gt;comebackcontext, &quot;s&quot;, 1);</span>
+<span class="lineNum">     289 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          1 :         ast_verb(2, &quot;Can not start %s at %s,%s,1 and exten 's@%s' does not exist. Using 's@default'\n&quot;,</span>
+<span class="lineNum">     293 </span>            :                 ast_channel_name(chan),
+<span class="lineNum">     294 </span>            :                 lot-&gt;cfg-&gt;comebackcontext, peername_flat, lot-&gt;cfg-&gt;comebackcontext);
+<span class="lineNum">     295 </span><span class="lineCov">          1 :         ast_async_goto(chan, &quot;default&quot;, &quot;s&quot;, 1);</span>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">          1 :         return 0;</span>
+<span class="lineNum">     298 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

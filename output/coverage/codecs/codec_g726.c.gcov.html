@@ -1,0 +1,987 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - codecs/codec_g726.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">codecs</a> - codec_g726.c<span style="font-size: 80%;"> (source / <a href="codec_g726.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">243</td>
+            <td class="headerCovTableEntry">263</td>
+            <td class="headerCovTableEntryHi">92.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  * Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">       8 </span>            :  *
+<span class="lineNum">       9 </span>            :  * Based on frompcm.c and topcm.c from the Emiliano MIPL browser/
+<span class="lineNum">      10 </span>            :  * interpreter.  See http://www.bsdtelephony.com.mx
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      13 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      14 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      15 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      16 </span>            :  * channels for your use.
+<span class="lineNum">      17 </span>            :  *
+<span class="lineNum">      18 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      19 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      20 </span>            :  * at the top of the source tree.
+<span class="lineNum">      21 </span>            :  */
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : /*! \file
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \brief codec_g726.c - translate between signed linear and ITU G.726-32kbps (both RFC3551 and AAL2 codeword packing)
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  * \ingroup codecs
+<span class="lineNum">      28 </span>            :  */
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : /*** MODULEINFO
+<span class="lineNum">      31 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      32 </span>            :  ***/
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : #define WANT_ASM
+<span class="lineNum">      44 </span>            : #include &quot;log2comp.h&quot;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /* define NOT_BLI to use a faster but not bit-level identical version */
+<span class="lineNum">      47 </span>            : /* #define NOT_BLI */
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : #if defined(NOT_BLI)
+<span class="lineNum">      50 </span>            : #       if defined(_MSC_VER)
+<span class="lineNum">      51 </span>            : typedef __int64 sint64;
+<span class="lineNum">      52 </span>            : #       elif defined(__GNUC__)
+<span class="lineNum">      53 </span>            : typedef long long sint64;
+<span class="lineNum">      54 </span>            : #       else
+<span class="lineNum">      55 </span>            : #               error 64-bit integer type is not defined for your compiler/platform
+<span class="lineNum">      56 </span>            : #       endif
+<span class="lineNum">      57 </span>            : #endif
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : #define BUFFER_SAMPLES   8096   /* size for the translation buffers */
+<span class="lineNum">      60 </span>            : #define BUF_SHIFT       5
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : /* Sample frame data */
+<span class="lineNum">      63 </span>            : #include &quot;asterisk/slin.h&quot;
+<span class="lineNum">      64 </span>            : #include &quot;ex_g726.h&quot;
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : /*
+<span class="lineNum">      67 </span>            :  * The following is the definition of the state structure
+<span class="lineNum">      68 </span>            :  * used by the G.726 encoder and decoder to preserve their internal
+<span class="lineNum">      69 </span>            :  * state between successive calls.  The meanings of the majority
+<span class="lineNum">      70 </span>            :  * of the state structure fields are explained in detail in the
+<span class="lineNum">      71 </span>            :  * CCITT Recommendation G.721.  The field names are essentially identical
+<span class="lineNum">      72 </span>            :  * to variable names in the bit level description of the coding algorithm
+<span class="lineNum">      73 </span>            :  * included in this Recommendation.
+<span class="lineNum">      74 </span>            :  */
+<span class="lineNum">      75 </span>            : struct g726_state {
+<span class="lineNum">      76 </span>            :         long yl;        /* Locked or steady state step size multiplier. */
+<span class="lineNum">      77 </span>            :         int yu;         /* Unlocked or non-steady state step size multiplier. */
+<span class="lineNum">      78 </span>            :         int dms;        /* Short term energy estimate. */
+<span class="lineNum">      79 </span>            :         int dml;        /* Long term energy estimate. */
+<span class="lineNum">      80 </span>            :         int ap;         /* Linear weighting coefficient of 'yl' and 'yu'. */
+<span class="lineNum">      81 </span>            :         int a[2];       /* Coefficients of pole portion of prediction filter.
+<span class="lineNum">      82 </span>            :                          * stored as fixed-point 1==2^14 */
+<span class="lineNum">      83 </span>            :         int b[6];       /* Coefficients of zero portion of prediction filter.
+<span class="lineNum">      84 </span>            :                          * stored as fixed-point 1==2^14 */
+<span class="lineNum">      85 </span>            :         int pk[2];      /* Signs of previous two samples of a partially
+<span class="lineNum">      86 </span>            :                          * reconstructed signal. */
+<span class="lineNum">      87 </span>            :         int dq[6];      /* Previous 6 samples of the quantized difference signal
+<span class="lineNum">      88 </span>            :                          * stored as fixed point 1==2^12,
+<span class="lineNum">      89 </span>            :                          * or in internal floating point format */
+<span class="lineNum">      90 </span>            :         int sr[2];      /* Previous 2 samples of the quantized difference signal
+<span class="lineNum">      91 </span>            :                          * stored as fixed point 1==2^12,
+<span class="lineNum">      92 </span>            :                          * or in internal floating point format */
+<span class="lineNum">      93 </span>            :         int td;         /* delayed tone detect, new in 1988 version */
+<span class="lineNum">      94 </span>            : };
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            : static int qtab_721[7] = {-124, 80, 178, 246, 300, 349, 400};
+<span class="lineNum">      97 </span>            : /*
+<span class="lineNum">      98 </span>            :  * Maps G.721 code word to reconstructed scale factor normalized log
+<span class="lineNum">      99 </span>            :  * magnitude values.
+<span class="lineNum">     100 </span>            :  */
+<span class="lineNum">     101 </span>            : static int _dqlntab[16] = {-2048, 4, 135, 213, 273, 323, 373, 425,
+<span class="lineNum">     102 </span>            :                                 425, 373, 323, 273, 213, 135, 4, -2048};
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : /* Maps G.721 code word to log of scale factor multiplier. */
+<span class="lineNum">     105 </span>            : static int _witab[16] = {-12, 18, 41, 64, 112, 198, 355, 1122,
+<span class="lineNum">     106 </span>            :                                 1122, 355, 198, 112, 64, 41, 18, -12};
+<span class="lineNum">     107 </span>            : /*
+<span class="lineNum">     108 </span>            :  * Maps G.721 code words to a set of values whose long and short
+<span class="lineNum">     109 </span>            :  * term averages are computed and then compared to give an indication
+<span class="lineNum">     110 </span>            :  * how stationary (steady state) the signal is.
+<span class="lineNum">     111 </span>            :  */
+<span class="lineNum">     112 </span>            : static int _fitab[16] = {0, 0, 0, 0x200, 0x200, 0x200, 0x600, 0xE00,
+<span class="lineNum">     113 </span>            :                                 0xE00, 0x600, 0x200, 0x200, 0x200, 0, 0, 0};
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            : /*
+<span class="lineNum">     117 </span>            :  * g72x_init_state()
+<span class="lineNum">     118 </span>            :  *
+<span class="lineNum">     119 </span>            :  * This routine initializes and/or resets the g726_state structure
+<span class="lineNum">     120 </span>            :  * pointed to by 'state_ptr'.
+<a name="121"><span class="lineNum">     121 </span>            :  * All the initial state values are specified in the CCITT G.721 document.</a>
+<span class="lineNum">     122 </span>            :  */
+<span class="lineNum">     123 </span><span class="lineCov">       4468 : static void g726_init_state(struct g726_state *state_ptr)</span>
+<span class="lineNum">     124 </span>            : {
+<span class="lineNum">     125 </span>            :         int             cnta;
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">       4468 :         state_ptr-&gt;yl = 34816;</span>
+<span class="lineNum">     128 </span><span class="lineCov">       4468 :         state_ptr-&gt;yu = 544;</span>
+<span class="lineNum">     129 </span><span class="lineCov">       4468 :         state_ptr-&gt;dms = 0;</span>
+<span class="lineNum">     130 </span><span class="lineCov">       4468 :         state_ptr-&gt;dml = 0;</span>
+<span class="lineNum">     131 </span><span class="lineCov">       4468 :         state_ptr-&gt;ap = 0;</span>
+<span class="lineNum">     132 </span><span class="lineCov">      13404 :         for (cnta = 0; cnta &lt; 2; cnta++) {</span>
+<span class="lineNum">     133 </span><span class="lineCov">       8936 :                 state_ptr-&gt;a[cnta] = 0;</span>
+<span class="lineNum">     134 </span><span class="lineCov">       8936 :                 state_ptr-&gt;pk[cnta] = 0;</span>
+<span class="lineNum">     135 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     136 </span>            :                 state_ptr-&gt;sr[cnta] = 1;
+<span class="lineNum">     137 </span>            : #else
+<span class="lineNum">     138 </span><span class="lineCov">       8936 :                 state_ptr-&gt;sr[cnta] = 32;</span>
+<span class="lineNum">     139 </span>            : #endif
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span><span class="lineCov">      31276 :         for (cnta = 0; cnta &lt; 6; cnta++) {</span>
+<span class="lineNum">     142 </span><span class="lineCov">      26808 :                 state_ptr-&gt;b[cnta] = 0;</span>
+<span class="lineNum">     143 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     144 </span>            :                 state_ptr-&gt;dq[cnta] = 1;
+<span class="lineNum">     145 </span>            : #else
+<span class="lineNum">     146 </span><span class="lineCov">      26808 :                 state_ptr-&gt;dq[cnta] = 32;</span>
+<span class="lineNum">     147 </span>            : #endif
+<span class="lineNum">     148 </span>            :         }
+<span class="lineNum">     149 </span><span class="lineCov">       4468 :         state_ptr-&gt;td = 0;</span>
+<span class="lineNum">     150 </span><span class="lineCov">       4468 : }</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : /*
+<span class="lineNum">     153 </span>            :  * quan()
+<span class="lineNum">     154 </span>            :  *
+<span class="lineNum">     155 </span>            :  * quantizes the input val against the table of integers.
+<span class="lineNum">     156 </span>            :  * It returns i if table[i - 1] &lt;= val &lt; table[i].
+<span class="lineNum">     157 </span>            :  *
+<a name="158"><span class="lineNum">     158 </span>            :  * Using linear search for simple coding.</a>
+<span class="lineNum">     159 </span>            :  */
+<span class="lineNum">     160 </span><span class="lineCov">   17872000 : static int quan(int val, int *table, int size)</span>
+<span class="lineNum">     161 </span>            : {
+<span class="lineNum">     162 </span>            :         int             i;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">   58975366 :         for (i = 0; i &lt; size &amp;&amp; val &gt;= *table; ++i, ++table)</span>
+<span class="lineNum">     165 </span>            :                 ;
+<span class="lineNum">     166 </span><span class="lineCov">   17872000 :         return i;</span>
+<span class="lineNum">     167 </span>            : }
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : #ifdef NOT_BLI /* faster non-identical version */
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            : /*
+<span class="lineNum">     172 </span>            :  * predictor_zero()
+<span class="lineNum">     173 </span>            :  *
+<span class="lineNum">     174 </span>            :  * computes the estimated signal from 6-zero predictor.
+<span class="lineNum">     175 </span>            :  *
+<span class="lineNum">     176 </span>            :  */
+<span class="lineNum">     177 </span>            : static int predictor_zero(struct g726_state *state_ptr)
+<span class="lineNum">     178 </span>            : {       /* divide by 2 is necessary here to handle negative numbers correctly */
+<span class="lineNum">     179 </span>            :         int i;
+<span class="lineNum">     180 </span>            :         sint64 sezi;
+<span class="lineNum">     181 </span>            :         for (sezi = 0, i = 0; i &lt; 6; i++)                    /* ACCUM */
+<span class="lineNum">     182 </span>            :                 sezi += (sint64)state_ptr-&gt;b[i] * state_ptr-&gt;dq[i];
+<span class="lineNum">     183 </span>            :         return (int)(sezi &gt;&gt; 13) / 2 /* 2^14 */;
+<span class="lineNum">     184 </span>            : }
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span>            : /*
+<span class="lineNum">     187 </span>            :  * predictor_pole()
+<span class="lineNum">     188 </span>            :  *
+<span class="lineNum">     189 </span>            :  * computes the estimated signal from 2-pole predictor.
+<span class="lineNum">     190 </span>            :  *
+<span class="lineNum">     191 </span>            :  */
+<span class="lineNum">     192 </span>            : static int predictor_pole(struct g726_state *state_ptr)
+<span class="lineNum">     193 </span>            : {       /* divide by 2 is necessary here to handle negative numbers correctly */
+<span class="lineNum">     194 </span>            :         return (int)(((sint64)state_ptr-&gt;a[1] * state_ptr-&gt;sr[1] +
+<span class="lineNum">     195 </span>            :                       (sint64)state_ptr-&gt;a[0] * state_ptr-&gt;sr[0]) &gt;&gt; 13) / 2 /* 2^14 */;
+<span class="lineNum">     196 </span>            : }
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            : #else /* NOT_BLI - identical version */
+<span class="lineNum">     199 </span>            : /*
+<span class="lineNum">     200 </span>            :  * fmult()
+<span class="lineNum">     201 </span>            :  *
+<span class="lineNum">     202 </span>            :  * returns the integer product of the fixed-point number &quot;an&quot; (1==2^12) and
+<a name="203"><span class="lineNum">     203 </span>            :  * &quot;floating point&quot; representation (4-bit exponent, 6-bit mantessa) &quot;srn&quot;.</a>
+<span class="lineNum">     204 </span>            :  */
+<span class="lineNum">     205 </span><span class="lineCov">  285952000 : static int fmult(int an, int srn)</span>
+<span class="lineNum">     206 </span>            : {
+<span class="lineNum">     207 </span>            :         int             anmag, anexp, anmant;
+<span class="lineNum">     208 </span>            :         int             wanexp, wanmant;
+<span class="lineNum">     209 </span>            :         int             retval;
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">  285952000 :         anmag = (an &gt; 0) ? an : ((-an) &amp; 0x1FFF);</span>
+<span class="lineNum">     212 </span><span class="lineCov">  285952000 :         anexp = ilog2(anmag) - 5;</span>
+<span class="lineNum">     213 </span><span class="lineCov">  428802896 :         anmant = (anmag == 0) ? 32 :</span>
+<span class="lineNum">     214 </span><span class="lineCov">  142850896 :             (anexp &gt;= 0) ? anmag &gt;&gt; anexp : anmag &lt;&lt; -anexp;</span>
+<span class="lineNum">     215 </span><span class="lineCov">  285952000 :         wanexp = anexp + ((srn &gt;&gt; 6) &amp; 0xF) - 13;</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">  285952000 :         wanmant = (anmant * (srn &amp; 077) + 0x30) &gt;&gt; 4;</span>
+<span class="lineNum">     218 </span><span class="lineCov">  285952000 :         retval = (wanexp &gt;= 0) ? ((wanmant &lt;&lt; wanexp) &amp; 0x7FFF) :</span>
+<span class="lineNum">     219 </span><span class="lineCov">  253766762 :             (wanmant &gt;&gt; -wanexp);</span>
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">  285952000 :         return (((an ^ srn) &lt; 0) ? -retval : retval);</span>
+<a name="222"><span class="lineNum">     222 </span>            : }</a>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineCov">   35744000 : static int predictor_zero(struct g726_state *state_ptr)</span>
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span>            :         int             i;
+<span class="lineNum">     227 </span>            :         int             sezi;
+<span class="lineNum">     228 </span><span class="lineCov">  250208000 :         for (sezi = 0, i = 0; i &lt; 6; i++)                    /* ACCUM */</span>
+<span class="lineNum">     229 </span><span class="lineCov">  214464000 :                 sezi += fmult(state_ptr-&gt;b[i] &gt;&gt; 2, state_ptr-&gt;dq[i]);</span>
+<span class="lineNum">     230 </span><span class="lineCov">   35744000 :         return sezi;</span>
+<a name="231"><span class="lineNum">     231 </span>            : }</a>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">   35744000 : static int predictor_pole(struct g726_state *state_ptr)</span>
+<span class="lineNum">     234 </span>            : {
+<span class="lineNum">     235 </span><span class="lineCov">   71488000 :         return (fmult(state_ptr-&gt;a[1] &gt;&gt; 2, state_ptr-&gt;sr[1]) +</span>
+<span class="lineNum">     236 </span><span class="lineCov">   35744000 :                         fmult(state_ptr-&gt;a[0] &gt;&gt; 2, state_ptr-&gt;sr[0]));</span>
+<span class="lineNum">     237 </span>            : }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            : #endif /* NOT_BLI */
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            : /*
+<span class="lineNum">     242 </span>            :  * step_size()
+<span class="lineNum">     243 </span>            :  *
+<span class="lineNum">     244 </span>            :  * computes the quantization step size of the adaptive quantizer.
+<a name="245"><span class="lineNum">     245 </span>            :  *</a>
+<span class="lineNum">     246 </span>            :  */
+<span class="lineNum">     247 </span><span class="lineCov">   35744000 : static int step_size(struct g726_state *state_ptr)</span>
+<span class="lineNum">     248 </span>            : {
+<span class="lineNum">     249 </span>            :         int y, dif, al;
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">   35744000 :         if (state_ptr-&gt;ap &gt;= 256) {</span>
+<span class="lineNum">     252 </span><span class="lineCov">   26077482 :                 return state_ptr-&gt;yu;</span>
+<span class="lineNum">     253 </span>            :         }
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">    9666518 :         y = state_ptr-&gt;yl &gt;&gt; 6;</span>
+<span class="lineNum">     256 </span><span class="lineCov">    9666518 :         dif = state_ptr-&gt;yu - y;</span>
+<span class="lineNum">     257 </span><span class="lineCov">    9666518 :         al = state_ptr-&gt;ap &gt;&gt; 2;</span>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">    9666518 :         if (dif &gt; 0) {</span>
+<span class="lineNum">     260 </span><span class="lineCov">    3002496 :                 y += (dif * al) &gt;&gt; 6;</span>
+<span class="lineNum">     261 </span><span class="lineCov">    6664022 :         } else if (dif &lt; 0) {</span>
+<span class="lineNum">     262 </span><span class="lineCov">    6590300 :                 y += (dif * al + 0x3F) &gt;&gt; 6;</span>
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span><span class="lineCov">    9666518 :         return y;</span>
+<span class="lineNum">     265 </span>            : }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : /*
+<span class="lineNum">     268 </span>            :  * quantize()
+<span class="lineNum">     269 </span>            :  *
+<span class="lineNum">     270 </span>            :  * Given a raw sample, 'd', of the difference signal and a
+<span class="lineNum">     271 </span>            :  * quantization step size scale factor, 'y', this routine returns the
+<span class="lineNum">     272 </span>            :  * ADPCM codeword to which that sample gets quantized.  The step
+<span class="lineNum">     273 </span>            :  * size scale factor division operation is done in the log base 2 domain
+<a name="274"><span class="lineNum">     274 </span>            :  * as a subtraction.</a>
+<span class="lineNum">     275 </span>            :  */
+<span class="lineNum">     276 </span><span class="lineCov">   17872000 : static int quantize(</span>
+<span class="lineNum">     277 </span>            :         int             d,      /* Raw difference signal sample */
+<span class="lineNum">     278 </span>            :         int             y,      /* Step size multiplier */
+<span class="lineNum">     279 </span>            :         int             *table, /* quantization table */
+<span class="lineNum">     280 </span>            :         int             size)   /* table size of integers */
+<span class="lineNum">     281 </span>            : {
+<span class="lineNum">     282 </span>            :         int             dqm;    /* Magnitude of 'd' */
+<span class="lineNum">     283 </span>            :         int             exp;    /* Integer part of base 2 log of 'd' */
+<span class="lineNum">     284 </span>            :         int             mant;   /* Fractional part of base 2 log */
+<span class="lineNum">     285 </span>            :         int             dl;             /* Log of magnitude of 'd' */
+<span class="lineNum">     286 </span>            :         int             dln;    /* Step size scale factor normalized log */
+<span class="lineNum">     287 </span>            :         int             i;
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span>            :         /*
+<span class="lineNum">     290 </span>            :          * LOG
+<span class="lineNum">     291 </span>            :          *
+<span class="lineNum">     292 </span>            :          * Compute base 2 log of 'd', and store in 'dl'.
+<span class="lineNum">     293 </span>            :          */
+<span class="lineNum">     294 </span><span class="lineCov">   17872000 :         dqm = abs(d);</span>
+<span class="lineNum">     295 </span><span class="lineCov">   17872000 :         exp = ilog2(dqm);</span>
+<span class="lineNum">     296 </span><span class="lineCov">   17872000 :         if (exp &lt; 0) {</span>
+<span class="lineNum">     297 </span><span class="lineCov">     100530 :                 exp = 0;</span>
+<span class="lineNum">     298 </span>            :         }
+<span class="lineNum">     299 </span><span class="lineCov">   17872000 :         mant = ((dqm &lt;&lt; 7) &gt;&gt; exp) &amp; 0x7F;      /* Fractional portion. */</span>
+<span class="lineNum">     300 </span><span class="lineCov">   17872000 :         dl = (exp &lt;&lt; 7) | mant;</span>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span>            :         /*
+<span class="lineNum">     303 </span>            :          * SUBTB
+<span class="lineNum">     304 </span>            :          *
+<span class="lineNum">     305 </span>            :          * &quot;Divide&quot; by step size multiplier.
+<span class="lineNum">     306 </span>            :          */
+<span class="lineNum">     307 </span><span class="lineCov">   17872000 :         dln = dl - (y &gt;&gt; 2);</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            :         /*
+<span class="lineNum">     310 </span>            :          * QUAN
+<span class="lineNum">     311 </span>            :          *
+<span class="lineNum">     312 </span>            :          * Obtain codword i for 'd'.
+<span class="lineNum">     313 </span>            :          */
+<span class="lineNum">     314 </span><span class="lineCov">   17872000 :         i = quan(dln, table, size);</span>
+<span class="lineNum">     315 </span><span class="lineCov">   17872000 :         if (d &lt; 0) {                 /* take 1's complement of i */</span>
+<span class="lineNum">     316 </span><span class="lineCov">   10095446 :                 return ((size &lt;&lt; 1) + 1 - i);</span>
+<span class="lineNum">     317 </span><span class="lineCov">    7776554 :         } else if (i == 0) {            /* take 1's complement of 0 */</span>
+<span class="lineNum">     318 </span><span class="lineCov">    1208594 :                 return ((size &lt;&lt; 1) + 1); /* new in 1988 */</span>
+<span class="lineNum">     319 </span>            :         } else {
+<span class="lineNum">     320 </span><span class="lineCov">    6567960 :                 return i;</span>
+<span class="lineNum">     321 </span>            :         }
+<span class="lineNum">     322 </span>            : }
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            : /*
+<span class="lineNum">     325 </span>            :  * reconstruct()
+<span class="lineNum">     326 </span>            :  *
+<span class="lineNum">     327 </span>            :  * Returns reconstructed difference signal 'dq' obtained from
+<span class="lineNum">     328 </span>            :  * codeword 'i' and quantization step size scale factor 'y'.
+<a name="329"><span class="lineNum">     329 </span>            :  * Multiplication is performed in log base 2 domain as addition.</a>
+<span class="lineNum">     330 </span>            :  */
+<span class="lineNum">     331 </span><span class="lineCov">   35744000 : static int reconstruct(</span>
+<span class="lineNum">     332 </span>            :         int             sign,   /* 0 for non-negative value */
+<span class="lineNum">     333 </span>            :         int             dqln,   /* G.72x codeword */
+<span class="lineNum">     334 </span>            :         int             y)      /* Step size multiplier */
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span>            :         int             dql;    /* Log of 'dq' magnitude */
+<span class="lineNum">     337 </span>            :         int             dex;    /* Integer part of log */
+<span class="lineNum">     338 </span>            :         int             dqt;
+<span class="lineNum">     339 </span>            :         int             dq;     /* Reconstructed difference signal sample */
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">   35744000 :         dql = dqln + (y &gt;&gt; 2);    /* ADDA */</span>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">   35744000 :         if (dql &lt; 0) {</span>
+<span class="lineNum">     344 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     345 </span>            :                 return (sign) ? -1 : 1;
+<span class="lineNum">     346 </span>            : #else
+<span class="lineNum">     347 </span><span class="lineCov">   20210998 :                 return (sign) ? -0x8000 : 0;</span>
+<span class="lineNum">     348 </span>            : #endif
+<span class="lineNum">     349 </span>            :         } else {                /* ANTILOG */
+<span class="lineNum">     350 </span><span class="lineCov">   15533002 :                 dex = (dql &gt;&gt; 7) &amp; 15;</span>
+<span class="lineNum">     351 </span><span class="lineCov">   15533002 :                 dqt = 128 + (dql &amp; 127);</span>
+<span class="lineNum">     352 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     353 </span>            :                 dq = ((dqt &lt;&lt; 19) &gt;&gt; (14 - dex));
+<span class="lineNum">     354 </span>            :                 return (sign) ? -dq : dq;
+<span class="lineNum">     355 </span>            : #else
+<span class="lineNum">     356 </span><span class="lineCov">   15533002 :                 dq = (dqt &lt;&lt; 7) &gt;&gt; (14 - dex);</span>
+<span class="lineNum">     357 </span><span class="lineCov">   15533002 :                 return (sign) ? (dq - 0x8000) : dq;</span>
+<span class="lineNum">     358 </span>            : #endif
+<span class="lineNum">     359 </span>            :         }
+<span class="lineNum">     360 </span>            : }
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span>            : /*
+<span class="lineNum">     363 </span>            :  * update()
+<span class="lineNum">     364 </span>            :  *
+<a name="365"><span class="lineNum">     365 </span>            :  * updates the state variables for each output code</a>
+<span class="lineNum">     366 </span>            :  */
+<span class="lineNum">     367 </span><span class="lineCov">   35744000 : static void update(</span>
+<span class="lineNum">     368 </span>            :         int             code_size,      /* distinguish 723_40 with others */
+<span class="lineNum">     369 </span>            :         int             y,              /* quantizer step size */
+<span class="lineNum">     370 </span>            :         int             wi,             /* scale factor multiplier */
+<span class="lineNum">     371 </span>            :         int             fi,             /* for long/short term energies */
+<span class="lineNum">     372 </span>            :         int             dq,             /* quantized prediction difference */
+<span class="lineNum">     373 </span>            :         int             sr,             /* reconstructed signal */
+<span class="lineNum">     374 </span>            :         int             dqsez,          /* difference from 2-pole predictor */
+<span class="lineNum">     375 </span>            :         struct g726_state *state_ptr)   /* coder state pointer */
+<span class="lineNum">     376 </span>            : {
+<span class="lineNum">     377 </span>            :         int             cnt;
+<span class="lineNum">     378 </span>            :         int             mag;            /* Adaptive predictor, FLOAT A */
+<span class="lineNum">     379 </span>            : #ifndef NOT_BLI
+<span class="lineNum">     380 </span>            :         int             exp;
+<span class="lineNum">     381 </span>            : #endif
+<span class="lineNum">     382 </span><span class="lineCov">   35744000 :         int             a2p=0;          /* LIMC */</span>
+<span class="lineNum">     383 </span>            :         int             a1ul;           /* UPA1 */
+<span class="lineNum">     384 </span>            :         int             pks1;           /* UPA2 */
+<span class="lineNum">     385 </span>            :         int             fa1;
+<span class="lineNum">     386 </span>            :         int             tr;                     /* tone/transition detector */
+<span class="lineNum">     387 </span>            :         int             ylint, thr2, dqthr;
+<span class="lineNum">     388 </span>            :         int             ylfrac, thr1;
+<span class="lineNum">     389 </span>            :         int             pk0;
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">   35744000 :         pk0 = (dqsez &lt; 0) ? 1 : 0;   /* needed in updating predictor poles */</span>
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     394 </span>            :         mag = abs(dq / 0x1000); /* prediction difference magnitude */
+<span class="lineNum">     395 </span>            : #else
+<span class="lineNum">     396 </span><span class="lineCov">   35744000 :         mag = dq &amp; 0x7FFF;          /* prediction difference magnitude */</span>
+<span class="lineNum">     397 </span>            : #endif
+<span class="lineNum">     398 </span>            :         /* TRANS */
+<span class="lineNum">     399 </span><span class="lineCov">   35744000 :         ylint = state_ptr-&gt;yl &gt;&gt; 15;   /* exponent part of yl */</span>
+<span class="lineNum">     400 </span><span class="lineCov">   35744000 :         ylfrac = (state_ptr-&gt;yl &gt;&gt; 10) &amp; 0x1F;     /* fractional part of yl */</span>
+<span class="lineNum">     401 </span><span class="lineCov">   35744000 :         thr1 = (32 + ylfrac) &lt;&lt; ylint;            /* threshold */</span>
+<span class="lineNum">     402 </span><span class="lineCov">   35744000 :         thr2 = (ylint &gt; 9) ? 31 &lt;&lt; 10 : thr1;  /* limit thr2 to 31 &lt;&lt; 10 */</span>
+<span class="lineNum">     403 </span><span class="lineCov">   35744000 :         dqthr = (thr2 + (thr2 &gt;&gt; 1)) &gt;&gt; 1;  /* dqthr = 0.75 * thr2 */</span>
+<span class="lineNum">     404 </span><span class="lineCov">   35744000 :         if (state_ptr-&gt;td == 0) {            /* signal supposed voice */</span>
+<span class="lineNum">     405 </span><span class="lineCov">   34743168 :                 tr = 0;</span>
+<span class="lineNum">     406 </span><span class="lineCov">    1000832 :         } else if (mag &lt;= dqthr) {           /* supposed data, but small mag */</span>
+<span class="lineNum">     407 </span><span class="lineCov">    1000832 :                 tr = 0;                 /* treated as voice */</span>
+<span class="lineNum">     408 </span>            :         } else {                                /* signal is data (modem) */
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 tr = 1;</span>
+<span class="lineNum">     410 </span>            :         }
+<span class="lineNum">     411 </span>            :         /*
+<span class="lineNum">     412 </span>            :          * Quantizer scale factor adaptation.
+<span class="lineNum">     413 </span>            :          */
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span>            :         /* FUNCTW &amp; FILTD &amp; DELAY */
+<span class="lineNum">     416 </span>            :         /* update non-steady state step size multiplier */
+<span class="lineNum">     417 </span><span class="lineCov">   35744000 :         state_ptr-&gt;yu = y + ((wi - y) &gt;&gt; 5);</span>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span>            :         /* LIMB */
+<span class="lineNum">     420 </span><span class="lineCov">   35744000 :         if (state_ptr-&gt;yu &lt; 544) {        /* 544 &lt;= yu &lt;= 5120 */</span>
+<span class="lineNum">     421 </span><span class="lineCov">   17883170 :                 state_ptr-&gt;yu = 544;</span>
+<span class="lineNum">     422 </span><span class="lineCov">   17860830 :         } else if (state_ptr-&gt;yu &gt; 5120) {</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;yu = 5120;</span>
+<span class="lineNum">     424 </span>            :         }
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span>            :         /* FILTE &amp; DELAY */
+<span class="lineNum">     427 </span>            :         /* update steady state step size multiplier */
+<span class="lineNum">     428 </span><span class="lineCov">   35744000 :         state_ptr-&gt;yl += state_ptr-&gt;yu + ((-state_ptr-&gt;yl) &gt;&gt; 6);</span>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            :         /*
+<span class="lineNum">     431 </span>            :          * Adaptive predictor coefficients.
+<span class="lineNum">     432 </span>            :          */
+<span class="lineNum">     433 </span><span class="lineCov">   35744000 :         if (tr == 1) {                  /* reset a's and b's for modem signal */</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;a[0] = 0;</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;a[1] = 0;</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[0] = 0;</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[1] = 0;</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[2] = 0;</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[3] = 0;</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[4] = 0;</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;b[5] = 0;</span>
+<span class="lineNum">     442 </span>            :         } else {                        /* update a's and b's */
+<span class="lineNum">     443 </span><span class="lineCov">   35744000 :                 pks1 = pk0 ^ state_ptr-&gt;pk[0];               /* UPA2 */</span>
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span>            :                 /* update predictor pole a[1] */
+<span class="lineNum">     446 </span><span class="lineCov">   35744000 :                 a2p = state_ptr-&gt;a[1] - (state_ptr-&gt;a[1] &gt;&gt; 7);</span>
+<span class="lineNum">     447 </span><span class="lineCov">   35744000 :                 if (dqsez != 0) {</span>
+<span class="lineNum">     448 </span><span class="lineCov">   17762534 :                         fa1 = (pks1) ? state_ptr-&gt;a[0] : -state_ptr-&gt;a[0];</span>
+<span class="lineNum">     449 </span><span class="lineCov">   17762534 :                         if (fa1 &lt; -8191) {   /* a2p = function of fa1 */</span>
+<span class="lineNum">     450 </span><span class="lineCov">   12190938 :                                 a2p -= 0x100;</span>
+<span class="lineNum">     451 </span><span class="lineCov">    5571596 :                         } else if (fa1 &gt; 8191) {</span>
+<span class="lineNum">     452 </span><span class="lineCov">    5352664 :                                 a2p += 0xFF;</span>
+<span class="lineNum">     453 </span>            :                         } else {
+<span class="lineNum">     454 </span><span class="lineCov">     218932 :                                 a2p += fa1 &gt;&gt; 5;</span>
+<span class="lineNum">     455 </span>            :                         }
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span><span class="lineCov">   17762534 :                         if (pk0 ^ state_ptr-&gt;pk[1]) {</span>
+<span class="lineNum">     458 </span>            :                                 /* LIMC */
+<span class="lineNum">     459 </span><span class="lineCov">    7338690 :                                 if (a2p &lt;= -12160) {</span>
+<span class="lineNum">     460 </span><span class="lineCov">      49148 :                                         a2p = -12288;</span>
+<span class="lineNum">     461 </span><span class="lineCov">    7289542 :                                 } else if (a2p &gt;= 12416) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                                         a2p = 12288;</span>
+<span class="lineNum">     463 </span>            :                                 } else {
+<span class="lineNum">     464 </span><span class="lineCov">    7289542 :                                         a2p -= 0x80;</span>
+<span class="lineNum">     465 </span>            :                                 }
+<span class="lineNum">     466 </span><span class="lineCov">   10423844 :                         } else if (a2p &lt;= -12416) {</span>
+<span class="lineNum">     467 </span><span class="lineCov">     218932 :                                 a2p = -12288;</span>
+<span class="lineNum">     468 </span><span class="lineCov">   10204912 :                         } else if (a2p &gt;= 12160) {</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                 a2p = 12288;</span>
+<span class="lineNum">     470 </span>            :                         } else {
+<span class="lineNum">     471 </span><span class="lineCov">   10204912 :                                 a2p += 0x80;</span>
+<span class="lineNum">     472 </span>            :                         }
+<span class="lineNum">     473 </span>            :                 }
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span>            :                 /* TRIGB &amp; DELAY */
+<span class="lineNum">     476 </span><span class="lineCov">   35744000 :                 state_ptr-&gt;a[1] = a2p;</span>
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span>            :                 /* UPA1 */
+<span class="lineNum">     479 </span>            :                 /* update predictor pole a[0] */
+<span class="lineNum">     480 </span><span class="lineCov">   35744000 :                 state_ptr-&gt;a[0] -= state_ptr-&gt;a[0] &gt;&gt; 8;</span>
+<span class="lineNum">     481 </span><span class="lineCov">   35744000 :                 if (dqsez != 0) {</span>
+<span class="lineNum">     482 </span><span class="lineCov">   17762534 :                         if (pks1 == 0)</span>
+<span class="lineNum">     483 </span><span class="lineCov">   12358488 :                                 state_ptr-&gt;a[0] += 192;</span>
+<span class="lineNum">     484 </span>            :                         else
+<span class="lineNum">     485 </span><span class="lineCov">    5404046 :                                 state_ptr-&gt;a[0] -= 192;</span>
+<span class="lineNum">     486 </span>            :                 }
+<span class="lineNum">     487 </span>            :                 /* LIMD */
+<span class="lineNum">     488 </span><span class="lineCov">   35744000 :                 a1ul = 15360 - a2p;</span>
+<span class="lineNum">     489 </span><span class="lineCov">   35744000 :                 if (state_ptr-&gt;a[0] &lt; -a1ul) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                         state_ptr-&gt;a[0] = -a1ul;</span>
+<span class="lineNum">     491 </span><span class="lineCov">   35744000 :                 } else if (state_ptr-&gt;a[0] &gt; a1ul) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                         state_ptr-&gt;a[0] = a1ul;</span>
+<span class="lineNum">     493 </span>            :                 }
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span>            :                 /* UPB : update predictor zeros b[6] */
+<span class="lineNum">     496 </span><span class="lineCov">  250208000 :                 for (cnt = 0; cnt &lt; 6; cnt++) {</span>
+<span class="lineNum">     497 </span><span class="lineCov">  214464000 :                         if (code_size == 5) {           /* for 40Kbps G.723 */</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :                                 state_ptr-&gt;b[cnt] -= state_ptr-&gt;b[cnt] &gt;&gt; 9;</span>
+<span class="lineNum">     499 </span>            :                         } else {                        /* for G.721 and 24Kbps G.723 */
+<span class="lineNum">     500 </span><span class="lineCov">  214464000 :                                 state_ptr-&gt;b[cnt] -= state_ptr-&gt;b[cnt] &gt;&gt; 8;</span>
+<span class="lineNum">     501 </span>            :                         }
+<span class="lineNum">     502 </span><span class="lineCov">  214464000 :                         if (mag) {      /* XOR */</span>
+<span class="lineNum">     503 </span><span class="lineCov">   93198012 :                                 if ((dq ^ state_ptr-&gt;dq[cnt]) &gt;= 0) {</span>
+<span class="lineNum">     504 </span><span class="lineCov">   45155842 :                                         state_ptr-&gt;b[cnt] += 128;</span>
+<span class="lineNum">     505 </span>            :                                 } else {
+<span class="lineNum">     506 </span><span class="lineCov">   48042170 :                                         state_ptr-&gt;b[cnt] -= 128;</span>
+<span class="lineNum">     507 </span>            :                                 }
+<span class="lineNum">     508 </span>            :                         }
+<span class="lineNum">     509 </span>            :                 }
+<span class="lineNum">     510 </span>            :         }
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">  214464000 :         for (cnt = 5; cnt &gt; 0; cnt--)</span>
+<span class="lineNum">     513 </span><span class="lineCov">  178720000 :                 state_ptr-&gt;dq[cnt] = state_ptr-&gt;dq[cnt-1];</span>
+<span class="lineNum">     514 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     515 </span>            :         state_ptr-&gt;dq[0] = dq;
+<span class="lineNum">     516 </span>            : #else
+<span class="lineNum">     517 </span>            :         /* FLOAT A : convert dq[0] to 4-bit exp, 6-bit mantissa f.p. */
+<span class="lineNum">     518 </span><span class="lineCov">   35744000 :         if (mag == 0) {</span>
+<span class="lineNum">     519 </span><span class="lineCov">   20210998 :                 state_ptr-&gt;dq[0] = (dq &gt;= 0) ? 0x20 : 0x20 - 0x400;</span>
+<span class="lineNum">     520 </span>            :         } else {
+<span class="lineNum">     521 </span><span class="lineCov">   15533002 :                 exp = ilog2(mag) + 1;</span>
+<span class="lineNum">     522 </span><span class="lineCov">   15533002 :                 state_ptr-&gt;dq[0] = (dq &gt;= 0) ?</span>
+<span class="lineNum">     523 </span><span class="lineCov">   15533002 :                     (exp &lt;&lt; 6) + ((mag &lt;&lt; 6) &gt;&gt; exp) :</span>
+<span class="lineNum">     524 </span><span class="lineCov">    8965042 :                     (exp &lt;&lt; 6) + ((mag &lt;&lt; 6) &gt;&gt; exp) - 0x400;</span>
+<span class="lineNum">     525 </span>            :         }
+<span class="lineNum">     526 </span>            : #endif
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineCov">   35744000 :         state_ptr-&gt;sr[1] = state_ptr-&gt;sr[0];</span>
+<span class="lineNum">     529 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     530 </span>            :         state_ptr-&gt;sr[0] = sr;
+<span class="lineNum">     531 </span>            : #else
+<span class="lineNum">     532 </span>            :         /* FLOAT B : convert sr to 4-bit exp., 6-bit mantissa f.p. */
+<span class="lineNum">     533 </span><span class="lineCov">   35744000 :         if (sr == 0) {</span>
+<span class="lineNum">     534 </span><span class="lineCov">   17943488 :                 state_ptr-&gt;sr[0] = 0x20;</span>
+<span class="lineNum">     535 </span><span class="lineCov">   17800512 :         } else if (sr &gt; 0) {</span>
+<span class="lineNum">     536 </span><span class="lineCov">    9018658 :                 exp = ilog2(sr) + 1;</span>
+<span class="lineNum">     537 </span><span class="lineCov">    9018658 :                 state_ptr-&gt;sr[0] = (exp &lt;&lt; 6) + ((sr &lt;&lt; 6) &gt;&gt; exp);</span>
+<span class="lineNum">     538 </span><span class="lineCov">    8781854 :         } else if (sr &gt; -0x8000) {</span>
+<span class="lineNum">     539 </span><span class="lineCov">    8781854 :                 mag = -sr;</span>
+<span class="lineNum">     540 </span><span class="lineCov">    8781854 :                 exp = ilog2(mag) + 1;</span>
+<span class="lineNum">     541 </span><span class="lineCov">    8781854 :                 state_ptr-&gt;sr[0] =  (exp &lt;&lt; 6) + ((mag &lt;&lt; 6) &gt;&gt; exp) - 0x400;</span>
+<span class="lineNum">     542 </span>            :         } else
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;sr[0] = 0x20 - 0x400;</span>
+<span class="lineNum">     544 </span>            : #endif
+<span class="lineNum">     545 </span>            : 
+<span class="lineNum">     546 </span>            :         /* DELAY A */
+<span class="lineNum">     547 </span><span class="lineCov">   35744000 :         state_ptr-&gt;pk[1] = state_ptr-&gt;pk[0];</span>
+<span class="lineNum">     548 </span><span class="lineCov">   35744000 :         state_ptr-&gt;pk[0] = pk0;</span>
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            :         /* TONE */
+<span class="lineNum">     551 </span><span class="lineCov">   35744000 :         if (tr == 1) {          /* this sample has been treated as data */</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;td = 0;   /* next one will be treated as voice */</span>
+<span class="lineNum">     553 </span><span class="lineCov">   35744000 :         } else if (a2p &lt; -11776) {   /* small sample-to-sample correlation */</span>
+<span class="lineNum">     554 </span><span class="lineCov">    1000832 :                 state_ptr-&gt;td = 1;   /* signal may be data */</span>
+<span class="lineNum">     555 </span>            :         } else {                                /* signal is voice */
+<span class="lineNum">     556 </span><span class="lineCov">   34743168 :                 state_ptr-&gt;td = 0;</span>
+<span class="lineNum">     557 </span>            :         }
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span>            :         /*
+<span class="lineNum">     560 </span>            :          * Adaptation speed control.
+<span class="lineNum">     561 </span>            :          */
+<span class="lineNum">     562 </span><span class="lineCov">   35744000 :         state_ptr-&gt;dms += (fi - state_ptr-&gt;dms) &gt;&gt; 5;               /* FILTA */</span>
+<span class="lineNum">     563 </span><span class="lineCov">   35744000 :         state_ptr-&gt;dml += (((fi &lt;&lt; 2) - state_ptr-&gt;dml) &gt;&gt; 7);        /* FILTB */</span>
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span><span class="lineCov">   35744000 :         if (tr == 1) {</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                 state_ptr-&gt;ap = 256;</span>
+<span class="lineNum">     567 </span><span class="lineCov">   35744000 :         } else if (y &lt; 1536) {                                       /* SUBTC */</span>
+<span class="lineNum">     568 </span><span class="lineCov">   17903276 :                 state_ptr-&gt;ap += (0x200 - state_ptr-&gt;ap) &gt;&gt; 4;</span>
+<span class="lineNum">     569 </span><span class="lineCov">   17840724 :         } else if (state_ptr-&gt;td == 1) {</span>
+<span class="lineNum">     570 </span><span class="lineCov">    1000832 :                 state_ptr-&gt;ap += (0x200 - state_ptr-&gt;ap) &gt;&gt; 4;</span>
+<span class="lineNum">     571 </span><span class="lineCov">   33679784 :         } else if (abs((state_ptr-&gt;dms &lt;&lt; 2) - state_ptr-&gt;dml) &gt;=</span>
+<span class="lineNum">     572 </span><span class="lineCov">   16839892 :             (state_ptr-&gt;dml &gt;&gt; 3)) {</span>
+<span class="lineNum">     573 </span><span class="lineCov">    7814532 :                 state_ptr-&gt;ap += (0x200 - state_ptr-&gt;ap) &gt;&gt; 4;</span>
+<span class="lineNum">     574 </span>            :         } else {
+<span class="lineNum">     575 </span><span class="lineCov">    9025360 :                 state_ptr-&gt;ap += (-state_ptr-&gt;ap) &gt;&gt; 4;</span>
+<span class="lineNum">     576 </span>            :         }
+<span class="lineNum">     577 </span><span class="lineCov">   35744000 : }</span>
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span>            : /*
+<span class="lineNum">     580 </span>            :  * g726_decode()
+<span class="lineNum">     581 </span>            :  *
+<span class="lineNum">     582 </span>            :  * Description:
+<span class="lineNum">     583 </span>            :  *
+<span class="lineNum">     584 </span>            :  * Decodes a 4-bit code of G.726-32 encoded data of i and
+<span class="lineNum">     585 </span>            :  * returns the resulting linear PCM, A-law or u-law value.
+<a name="586"><span class="lineNum">     586 </span>            :  * return -1 for unknown out_coding value.</a>
+<span class="lineNum">     587 </span>            :  */
+<span class="lineNum">     588 </span><span class="lineCov">   17872000 : static int g726_decode(int      i, struct g726_state *state_ptr)</span>
+<span class="lineNum">     589 </span>            : {
+<span class="lineNum">     590 </span>            :         int             sezi, sez, se;  /* ACCUM */
+<span class="lineNum">     591 </span>            :         int             y;                      /* MIX */
+<span class="lineNum">     592 </span>            :         int             sr;                     /* ADDB */
+<span class="lineNum">     593 </span>            :         int             dq;
+<span class="lineNum">     594 </span>            :         int             dqsez;
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">   17872000 :         i &amp;= 0x0f;                  /* mask to get proper bits */</span>
+<span class="lineNum">     597 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     598 </span>            :         sezi = predictor_zero(state_ptr);
+<span class="lineNum">     599 </span>            :         sez = sezi;
+<span class="lineNum">     600 </span>            :         se = sezi + predictor_pole(state_ptr);  /* estimated signal */
+<span class="lineNum">     601 </span>            : #else
+<span class="lineNum">     602 </span><span class="lineCov">   17872000 :         sezi = predictor_zero(state_ptr);</span>
+<span class="lineNum">     603 </span><span class="lineCov">   17872000 :         sez = sezi &gt;&gt; 1;</span>
+<span class="lineNum">     604 </span><span class="lineCov">   17872000 :         se = (sezi + predictor_pole(state_ptr)) &gt;&gt; 1;     /* estimated signal */</span>
+<span class="lineNum">     605 </span>            : #endif
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineCov">   17872000 :         y = step_size(state_ptr);       /* dynamic quantizer step size */</span>
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span><span class="lineCov">   17872000 :         dq = reconstruct(i &amp; 8, _dqlntab[i], y); /* quantized diff. */</span>
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     612 </span>            :         sr = se + dq;                           /* reconst. signal */
+<span class="lineNum">     613 </span>            :         dqsez = dq + sez;                       /* pole prediction diff. */
+<span class="lineNum">     614 </span>            : #else
+<span class="lineNum">     615 </span><span class="lineCov">   17872000 :         sr = (dq &lt; 0) ? se - (dq &amp; 0x3FFF) : se + dq;    /* reconst. signal */</span>
+<span class="lineNum">     616 </span><span class="lineCov">   17872000 :         dqsez = sr - se + sez;          /* pole prediction diff. */</span>
+<span class="lineNum">     617 </span>            : #endif
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">   17872000 :         update(4, y, _witab[i] &lt;&lt; 5, _fitab[i], dq, sr, dqsez, state_ptr);</span>
+<span class="lineNum">     620 </span>            : 
+<span class="lineNum">     621 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     622 </span>            :         return (sr &gt;&gt; 10);        /* sr was 26-bit dynamic range */
+<span class="lineNum">     623 </span>            : #else
+<span class="lineNum">     624 </span><span class="lineCov">   17872000 :         return (sr &lt;&lt; 2); /* sr was 14-bit dynamic range */</span>
+<span class="lineNum">     625 </span>            : #endif
+<span class="lineNum">     626 </span>            : }
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span>            : /*
+<span class="lineNum">     629 </span>            :  * g726_encode()
+<span class="lineNum">     630 </span>            :  *
+<span class="lineNum">     631 </span>            :  * Encodes the input vale of linear PCM, A-law or u-law data sl and returns
+<a name="632"><span class="lineNum">     632 </span>            :  * the resulting code. -1 is returned for unknown input coding value.</a>
+<span class="lineNum">     633 </span>            :  */
+<span class="lineNum">     634 </span><span class="lineCov">   17872000 : static int g726_encode(int sl, struct g726_state *state_ptr)</span>
+<span class="lineNum">     635 </span>            : {
+<span class="lineNum">     636 </span>            :         int             sezi, se, sez;          /* ACCUM */
+<span class="lineNum">     637 </span>            :         int             d;                      /* SUBTA */
+<span class="lineNum">     638 </span>            :         int             sr;                     /* ADDB */
+<span class="lineNum">     639 </span>            :         int             y;                      /* MIX */
+<span class="lineNum">     640 </span>            :         int             dqsez;                  /* ADDC */
+<span class="lineNum">     641 </span>            :         int             dq, i;
+<span class="lineNum">     642 </span>            : 
+<span class="lineNum">     643 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     644 </span>            :         sl &lt;&lt;= 10;                        /* 26-bit dynamic range */
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span>            :         sezi = predictor_zero(state_ptr);
+<span class="lineNum">     647 </span>            :         sez = sezi;
+<span class="lineNum">     648 </span>            :         se = sezi + predictor_pole(state_ptr);  /* estimated signal */
+<span class="lineNum">     649 </span>            : #else
+<span class="lineNum">     650 </span><span class="lineCov">   17872000 :         sl &gt;&gt;= 2;                 /* 14-bit dynamic range */</span>
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineCov">   17872000 :         sezi = predictor_zero(state_ptr);</span>
+<span class="lineNum">     653 </span><span class="lineCov">   17872000 :         sez = sezi &gt;&gt; 1;</span>
+<span class="lineNum">     654 </span><span class="lineCov">   17872000 :         se = (sezi + predictor_pole(state_ptr)) &gt;&gt; 1;     /* estimated signal */</span>
+<span class="lineNum">     655 </span>            : #endif
+<span class="lineNum">     656 </span>            : 
+<span class="lineNum">     657 </span><span class="lineCov">   17872000 :         d = sl - se;                            /* estimation difference */</span>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span>            :         /* quantize the prediction difference */
+<span class="lineNum">     660 </span><span class="lineCov">   17872000 :         y = step_size(state_ptr);               /* quantizer step size */</span>
+<span class="lineNum">     661 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     662 </span>            :         d /= 0x1000;
+<span class="lineNum">     663 </span>            : #endif
+<span class="lineNum">     664 </span><span class="lineCov">   17872000 :         i = quantize(d, y, qtab_721, 7);        /* i = G726 code */</span>
+<span class="lineNum">     665 </span>            : 
+<span class="lineNum">     666 </span><span class="lineCov">   17872000 :         dq = reconstruct(i &amp; 8, _dqlntab[i], y);    /* quantized est diff */</span>
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     669 </span>            :         sr = se + dq;                           /* reconst. signal */
+<span class="lineNum">     670 </span>            :         dqsez = dq + sez;                       /* pole prediction diff. */
+<span class="lineNum">     671 </span>            : #else
+<span class="lineNum">     672 </span><span class="lineCov">   17872000 :         sr = (dq &lt; 0) ? se - (dq &amp; 0x3FFF) : se + dq;    /* reconst. signal */</span>
+<span class="lineNum">     673 </span><span class="lineCov">   17872000 :         dqsez = sr - se + sez;                  /* pole prediction diff. */</span>
+<span class="lineNum">     674 </span>            : #endif
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span><span class="lineCov">   17872000 :         update(4, y, _witab[i] &lt;&lt; 5, _fitab[i], dq, sr, dqsez, state_ptr);</span>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span><span class="lineCov">   17872000 :         return i;</span>
+<span class="lineNum">     679 </span>            : }
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span>            : /*
+<span class="lineNum">     682 </span>            :  * Private workspace for translating signed linear signals to G726.
+<span class="lineNum">     683 </span>            :  * Don't bother to define two distinct structs.
+<span class="lineNum">     684 </span>            :  */
+<span class="lineNum">     685 </span>            : 
+<span class="lineNum">     686 </span>            : struct g726_coder_pvt {
+<span class="lineNum">     687 </span>            :         /* buffer any odd byte in input - 0x80 + (value &amp; 0xf) if present */
+<span class="lineNum">     688 </span>            :         unsigned char next_flag;
+<span class="lineNum">     689 </span>            :         struct g726_state g726;
+<span class="lineNum">     690 </span>            : };
+<a name="691"><span class="lineNum">     691 </span>            : </a>
+<span class="lineNum">     692 </span>            : /*! \brief init a new instance of g726_coder_pvt. */
+<span class="lineNum">     693 </span><span class="lineCov">       4468 : static int lintog726_new(struct ast_trans_pvt *pvt)</span>
+<span class="lineNum">     694 </span>            : {
+<span class="lineNum">     695 </span><span class="lineCov">       4468 :         struct g726_coder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span><span class="lineCov">       4468 :         g726_init_state(&amp;tmp-&gt;g726);</span>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineCov">       4468 :         return 0;</span>
+<span class="lineNum">     700 </span>            : }
+<a name="701"><span class="lineNum">     701 </span>            : </a>
+<span class="lineNum">     702 </span>            : /*! \brief decode packed 4-bit G726 values (AAL2 packing) and store in buffer. */
+<span class="lineNum">     703 </span><span class="lineCov">     111700 : static int g726aal2tolin_framein (struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     704 </span>            : {
+<span class="lineNum">     705 </span><span class="lineCov">     111700 :         struct g726_coder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     706 </span><span class="lineCov">     111700 :         unsigned char *src = f-&gt;data.ptr;</span>
+<span class="lineNum">     707 </span><span class="lineCov">     111700 :         int16_t *dst = pvt-&gt;outbuf.i16 + pvt-&gt;samples;</span>
+<span class="lineNum">     708 </span>            :         unsigned int i;
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span><span class="lineCov">    4579700 :         for (i = 0; i &lt; f-&gt;datalen; i++) {</span>
+<span class="lineNum">     711 </span><span class="lineCov">    4468000 :                 *dst++ = g726_decode((src[i] &gt;&gt; 4) &amp; 0xf, &amp;tmp-&gt;g726);</span>
+<span class="lineNum">     712 </span><span class="lineCov">    4468000 :                 *dst++ = g726_decode(src[i] &amp; 0x0f, &amp;tmp-&gt;g726);</span>
+<span class="lineNum">     713 </span>            :         }
+<span class="lineNum">     714 </span>            : 
+<span class="lineNum">     715 </span><span class="lineCov">     111700 :         pvt-&gt;samples += f-&gt;samples;</span>
+<span class="lineNum">     716 </span><span class="lineCov">     111700 :         pvt-&gt;datalen += 2 * f-&gt;samples; /* 2 bytes/sample */</span>
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     719 </span>            : }
+<a name="720"><span class="lineNum">     720 </span>            : </a>
+<span class="lineNum">     721 </span>            : /*! \brief compress and store data (4-bit G726 samples, AAL2 packing) in outbuf */
+<span class="lineNum">     722 </span><span class="lineCov">     111700 : static int lintog726aal2_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     723 </span>            : {
+<span class="lineNum">     724 </span><span class="lineCov">     111700 :         struct g726_coder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     725 </span><span class="lineCov">     111700 :         int16_t *src = f-&gt;data.ptr;</span>
+<span class="lineNum">     726 </span>            :         unsigned int i;
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span><span class="lineCov">    9047700 :         for (i = 0; i &lt; f-&gt;samples; i++) {</span>
+<span class="lineNum">     729 </span><span class="lineCov">    8936000 :                 unsigned char d = g726_encode(src[i], &amp;tmp-&gt;g726); /* this sample */</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineCov">    8936000 :                 if (tmp-&gt;next_flag &amp; 0x80) {     /* merge with leftover sample */</span>
+<span class="lineNum">     732 </span><span class="lineCov">    4468000 :                         pvt-&gt;outbuf.c[pvt-&gt;datalen++] = ((tmp-&gt;next_flag &amp; 0xf)&lt;&lt; 4) | d;</span>
+<span class="lineNum">     733 </span><span class="lineCov">    4468000 :                         pvt-&gt;samples += 2;   /* 2 samples per byte */</span>
+<span class="lineNum">     734 </span><span class="lineCov">    4468000 :                         tmp-&gt;next_flag = 0;</span>
+<span class="lineNum">     735 </span>            :                 } else {
+<span class="lineNum">     736 </span><span class="lineCov">    4468000 :                         tmp-&gt;next_flag = 0x80 | d;</span>
+<span class="lineNum">     737 </span>            :                 }
+<span class="lineNum">     738 </span>            :         }
+<span class="lineNum">     739 </span>            : 
+<span class="lineNum">     740 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     741 </span>            : }
+<a name="742"><span class="lineNum">     742 </span>            : </a>
+<span class="lineNum">     743 </span>            : /*! \brief decode packed 4-bit G726 values (RFC3551 packing) and store in buffer. */
+<span class="lineNum">     744 </span><span class="lineCov">     111700 : static int g726tolin_framein (struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     745 </span>            : {
+<span class="lineNum">     746 </span><span class="lineCov">     111700 :         struct g726_coder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     747 </span><span class="lineCov">     111700 :         unsigned char *src = f-&gt;data.ptr;</span>
+<span class="lineNum">     748 </span><span class="lineCov">     111700 :         int16_t *dst = pvt-&gt;outbuf.i16 + pvt-&gt;samples;</span>
+<span class="lineNum">     749 </span>            :         unsigned int i;
+<span class="lineNum">     750 </span>            : 
+<span class="lineNum">     751 </span><span class="lineCov">    4579700 :         for (i = 0; i &lt; f-&gt;datalen; i++) {</span>
+<span class="lineNum">     752 </span><span class="lineCov">    4468000 :                 *dst++ = g726_decode(src[i] &amp; 0x0f, &amp;tmp-&gt;g726);</span>
+<span class="lineNum">     753 </span><span class="lineCov">    4468000 :                 *dst++ = g726_decode((src[i] &gt;&gt; 4) &amp; 0xf, &amp;tmp-&gt;g726);</span>
+<span class="lineNum">     754 </span>            :         }
+<span class="lineNum">     755 </span>            : 
+<span class="lineNum">     756 </span><span class="lineCov">     111700 :         pvt-&gt;samples += f-&gt;samples;</span>
+<span class="lineNum">     757 </span><span class="lineCov">     111700 :         pvt-&gt;datalen += 2 * f-&gt;samples; /* 2 bytes/sample */</span>
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     760 </span>            : }
+<a name="761"><span class="lineNum">     761 </span>            : </a>
+<span class="lineNum">     762 </span>            : /*! \brief compress and store data (4-bit G726 samples, RFC3551 packing) in outbuf */
+<span class="lineNum">     763 </span><span class="lineCov">     111700 : static int lintog726_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     764 </span>            : {
+<span class="lineNum">     765 </span><span class="lineCov">     111700 :         struct g726_coder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     766 </span><span class="lineCov">     111700 :         int16_t *src = f-&gt;data.ptr;</span>
+<span class="lineNum">     767 </span>            :         unsigned int i;
+<span class="lineNum">     768 </span>            : 
+<span class="lineNum">     769 </span><span class="lineCov">    9047700 :         for (i = 0; i &lt; f-&gt;samples; i++) {</span>
+<span class="lineNum">     770 </span><span class="lineCov">    8936000 :                 unsigned char d = g726_encode(src[i], &amp;tmp-&gt;g726); /* this sample */</span>
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineCov">    8936000 :                 if (tmp-&gt;next_flag &amp; 0x80) {     /* merge with leftover sample */</span>
+<span class="lineNum">     773 </span><span class="lineCov">    4468000 :                         pvt-&gt;outbuf.c[pvt-&gt;datalen++] = (d &lt;&lt; 4) | (tmp-&gt;next_flag &amp; 0xf);</span>
+<span class="lineNum">     774 </span><span class="lineCov">    4468000 :                         pvt-&gt;samples += 2;   /* 2 samples per byte */</span>
+<span class="lineNum">     775 </span><span class="lineCov">    4468000 :                         tmp-&gt;next_flag = 0;</span>
+<span class="lineNum">     776 </span>            :                 } else {
+<span class="lineNum">     777 </span><span class="lineCov">    4468000 :                         tmp-&gt;next_flag = 0x80 | d;</span>
+<span class="lineNum">     778 </span>            :                 }
+<span class="lineNum">     779 </span>            :         }
+<span class="lineNum">     780 </span>            : 
+<span class="lineNum">     781 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     782 </span>            : }
+<span class="lineNum">     783 </span>            : 
+<span class="lineNum">     784 </span>            : static struct ast_translator g726tolin = {
+<span class="lineNum">     785 </span>            :         .name = &quot;g726tolin&quot;,
+<span class="lineNum">     786 </span>            :         .src_codec = {
+<span class="lineNum">     787 </span>            :                 .name = &quot;g726&quot;,
+<span class="lineNum">     788 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     789 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     790 </span>            :         },
+<span class="lineNum">     791 </span>            :         .dst_codec = {
+<span class="lineNum">     792 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     793 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     794 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     795 </span>            :         },
+<span class="lineNum">     796 </span>            :         .format = &quot;slin&quot;,
+<span class="lineNum">     797 </span>            :         .newpvt = lintog726_new,        /* same for both directions */
+<span class="lineNum">     798 </span>            :         .framein = g726tolin_framein,
+<span class="lineNum">     799 </span>            :         .sample = g726_sample,
+<span class="lineNum">     800 </span>            :         .desc_size = sizeof(struct g726_coder_pvt),
+<span class="lineNum">     801 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     802 </span>            :         .buf_size = BUFFER_SAMPLES * 2,
+<span class="lineNum">     803 </span>            : };
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span>            : static struct ast_translator lintog726 = {
+<span class="lineNum">     806 </span>            :         .name = &quot;lintog726&quot;,
+<span class="lineNum">     807 </span>            :         .src_codec = {
+<span class="lineNum">     808 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     809 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     810 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     811 </span>            :         },
+<span class="lineNum">     812 </span>            :         .dst_codec = {
+<span class="lineNum">     813 </span>            :                 .name = &quot;g726&quot;,
+<span class="lineNum">     814 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     815 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     816 </span>            :         },
+<span class="lineNum">     817 </span>            :         .format = &quot;g726&quot;,
+<span class="lineNum">     818 </span>            :         .newpvt = lintog726_new,        /* same for both directions */
+<span class="lineNum">     819 </span>            :         .framein = lintog726_framein,
+<span class="lineNum">     820 </span>            :         .sample = slin8_sample,
+<span class="lineNum">     821 </span>            :         .desc_size = sizeof(struct g726_coder_pvt),
+<span class="lineNum">     822 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     823 </span>            :         .buf_size = BUFFER_SAMPLES/2,
+<span class="lineNum">     824 </span>            : };
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span>            : static struct ast_translator g726aal2tolin = {
+<span class="lineNum">     827 </span>            :         .name = &quot;g726aal2tolin&quot;,
+<span class="lineNum">     828 </span>            :         .src_codec = {
+<span class="lineNum">     829 </span>            :                 .name = &quot;g726aal2&quot;,
+<span class="lineNum">     830 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     831 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     832 </span>            :         },
+<span class="lineNum">     833 </span>            :         .dst_codec = {
+<span class="lineNum">     834 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     835 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     836 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     837 </span>            :         },
+<span class="lineNum">     838 </span>            :         .format = &quot;slin&quot;,
+<span class="lineNum">     839 </span>            :         .newpvt = lintog726_new,        /* same for both directions */
+<span class="lineNum">     840 </span>            :         .framein = g726aal2tolin_framein,
+<span class="lineNum">     841 </span>            :         .sample = g726_sample,
+<span class="lineNum">     842 </span>            :         .desc_size = sizeof(struct g726_coder_pvt),
+<span class="lineNum">     843 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     844 </span>            :         .buf_size = BUFFER_SAMPLES * 2,
+<span class="lineNum">     845 </span>            : };
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span>            : static struct ast_translator lintog726aal2 = {
+<span class="lineNum">     848 </span>            :         .name = &quot;lintog726aal2&quot;,
+<span class="lineNum">     849 </span>            :         .src_codec = {
+<span class="lineNum">     850 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     851 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     852 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     853 </span>            :         },
+<span class="lineNum">     854 </span>            :         .dst_codec = {
+<span class="lineNum">     855 </span>            :                 .name = &quot;g726aal2&quot;,
+<span class="lineNum">     856 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     857 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     858 </span>            :         },
+<span class="lineNum">     859 </span>            :         .format = &quot;g726aal2&quot;,
+<span class="lineNum">     860 </span>            :         .newpvt = lintog726_new,        /* same for both directions */
+<span class="lineNum">     861 </span>            :         .framein = lintog726aal2_framein,
+<span class="lineNum">     862 </span>            :         .sample = slin8_sample,
+<span class="lineNum">     863 </span>            :         .desc_size = sizeof(struct g726_coder_pvt),
+<span class="lineNum">     864 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     865 </span>            :         .buf_size = BUFFER_SAMPLES / 2,
+<a name="866"><span class="lineNum">     866 </span>            : };</a>
+<span class="lineNum">     867 </span>            : 
+<span class="lineNum">     868 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     869 </span>            : {
+<span class="lineNum">     870 </span><span class="lineCov">       1115 :         int res = 0;</span>
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;g726tolin);</span>
+<span class="lineNum">     873 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;lintog726);</span>
+<span class="lineNum">     874 </span>            : 
+<span class="lineNum">     875 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;g726aal2tolin);</span>
+<span class="lineNum">     876 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;lintog726aal2);</span>
+<span class="lineNum">     877 </span>            : 
+<span class="lineNum">     878 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="879"><span class="lineNum">     879 </span>            : }</a>
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     882 </span>            : {
+<span class="lineNum">     883 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">     884 </span>            : 
+<span class="lineNum">     885 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;g726tolin);</span>
+<span class="lineNum">     886 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;lintog726);</span>
+<span class="lineNum">     887 </span>            : 
+<span class="lineNum">     888 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;g726aal2tolin);</span>
+<span class="lineNum">     889 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;lintog726aal2);</span>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">       1117 :         if (res) {</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     894 </span>            :         }
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="897"><span class="lineNum">     897 </span>            : }</a>
+<span class="lineNum">     898 </span>            : 
+<span class="lineNum">     899 </span><span class="lineCov">       6702 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_DEFAULT, &quot;ITU G.726-32kbps G726 Transcoder&quot;,</span>
+<span class="lineNum">     900 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     901 </span>            :         .load = load_module,
+<span class="lineNum">     902 </span>            :         .unload = unload_module,
+<span class="lineNum">     903 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

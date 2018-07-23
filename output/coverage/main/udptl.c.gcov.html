@@ -1,0 +1,1507 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/udptl.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - udptl.c<span style="font-size: 80%;"> (source / <a href="udptl.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">414</td>
+            <td class="headerCovTableEntry">596</td>
+            <td class="headerCovTableEntryLo">69.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">40</td>
+            <td class="headerCovTableEntry">47</td>
+            <td class="headerCovTableEntryMed">85.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * UDPTL support for T.38
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Copyright (C) 2005, Steve Underwood, partly based on RTP code which is
+<span class="lineNum">       7 </span>            :  * Copyright (C) 1999-2009, Digium, Inc.
+<span class="lineNum">       8 </span>            :  *
+<span class="lineNum">       9 </span>            :  * Steve Underwood &lt;steveu@coppice.org&gt;
+<span class="lineNum">      10 </span>            :  * Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      13 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      14 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      15 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      16 </span>            :  * channels for your use.
+<span class="lineNum">      17 </span>            :  *
+<span class="lineNum">      18 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      19 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      20 </span>            :  * at the top of the source tree.
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * A license has been granted to Digium (via disclaimer) for the use of
+<span class="lineNum">      23 </span>            :  * this code.
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*!
+<span class="lineNum">      27 </span>            :  * \file
+<span class="lineNum">      28 </span>            :  *
+<span class="lineNum">      29 </span>            :  * \brief UDPTL support for T.38 faxing
+<span class="lineNum">      30 </span>            :  *
+<span class="lineNum">      31 </span>            :  *
+<span class="lineNum">      32 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      33 </span>            :  * \author Steve Underwood &lt;steveu@coppice.org&gt;
+<span class="lineNum">      34 </span>            :  * \author Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">      35 </span>            :  *
+<span class="lineNum">      36 </span>            :  * \page T38fax_udptl T.38 support :: UDPTL
+<span class="lineNum">      37 </span>            :  *
+<span class="lineNum">      38 </span>            :  * Asterisk supports T.38 fax passthrough, origination and termination. It does
+<span class="lineNum">      39 </span>            :  * not support gateway operation. The only channel driver that supports T.38 at
+<span class="lineNum">      40 </span>            :  * this time is chan_sip.
+<span class="lineNum">      41 </span>            :  *
+<span class="lineNum">      42 </span>            :  * UDPTL is handled very much like RTP. It can be reinvited to go directly between
+<span class="lineNum">      43 </span>            :  * the endpoints, without involving Asterisk in the media stream.
+<span class="lineNum">      44 </span>            :  *
+<span class="lineNum">      45 </span>            :  * \b References:
+<span class="lineNum">      46 </span>            :  * - chan_sip.c
+<span class="lineNum">      47 </span>            :  * - udptl.c
+<span class="lineNum">      48 </span>            :  * - app_fax.c
+<span class="lineNum">      49 </span>            :  */
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : /*! \li \ref udptl.c uses the configuration file \ref udptl.conf
+<span class="lineNum">      52 </span>            :  * \addtogroup configuration_file Configuration Files
+<span class="lineNum">      53 </span>            :  */
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : /*!
+<span class="lineNum">      56 </span>            :  * \page udptl.conf udptl.conf
+<span class="lineNum">      57 </span>            :  * \verbinclude udptl.conf.sample
+<span class="lineNum">      58 </span>            :  */
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : /*** MODULEINFO
+<span class="lineNum">      61 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      62 </span>            :  ***/
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      67 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      68 </span>            : #include &lt;fcntl.h&gt;
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      71 </span>            : #include &quot;asterisk/udptl.h&quot;
+<span class="lineNum">      72 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      73 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      74 </span>            : #include &quot;asterisk/acl.h&quot;
+<span class="lineNum">      75 </span>            : #include &quot;asterisk/config_options.h&quot;
+<span class="lineNum">      76 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      77 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      78 </span>            : #include &quot;asterisk/netsock2.h&quot;
+<span class="lineNum">      79 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      80 </span>            : #include &quot;asterisk/unaligned.h&quot;
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      83 </span>            :         &lt;configInfo name=&quot;udptl&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      84 </span>            :                 &lt;configFile name=&quot;udptl.conf&quot;&gt;
+<span class="lineNum">      85 </span>            :                         &lt;configObject name=&quot;global&quot;&gt;
+<span class="lineNum">      86 </span>            :                                 &lt;synopsis&gt;Global options for configuring UDPTL&lt;/synopsis&gt;
+<span class="lineNum">      87 </span>            :                                 &lt;configOption name=&quot;udptlstart&quot;&gt;
+<span class="lineNum">      88 </span>            :                                         &lt;synopsis&gt;The start of the UDPTL port range&lt;/synopsis&gt;
+<span class="lineNum">      89 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;configOption name=&quot;udptlend&quot;&gt;
+<span class="lineNum">      91 </span>            :                                         &lt;synopsis&gt;The end of the UDPTL port range&lt;/synopsis&gt;
+<span class="lineNum">      92 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      93 </span>            :                                 &lt;configOption name=&quot;udptlchecksums&quot;&gt;
+<span class="lineNum">      94 </span>            :                                         &lt;synopsis&gt;Whether to enable or disable UDP checksums on UDPTL traffic&lt;/synopsis&gt;
+<span class="lineNum">      95 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      96 </span>            :                                 &lt;configOption name=&quot;udptlfecentries&quot;&gt;
+<span class="lineNum">      97 </span>            :                                         &lt;synopsis&gt;The number of error correction entries in a UDPTL packet&lt;/synopsis&gt;
+<span class="lineNum">      98 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      99 </span>            :                                 &lt;configOption name=&quot;udptlfecspan&quot;&gt;
+<span class="lineNum">     100 </span>            :                                         &lt;synopsis&gt;The span over which parity is calculated for FEC in a UDPTL packet&lt;/synopsis&gt;
+<span class="lineNum">     101 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     102 </span>            :                                 &lt;configOption name=&quot;use_even_ports&quot;&gt;
+<span class="lineNum">     103 </span>            :                                         &lt;synopsis&gt;Whether to only use even-numbered UDPTL ports&lt;/synopsis&gt;
+<span class="lineNum">     104 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     105 </span>            :                                 &lt;configOption name=&quot;t38faxudpec&quot;&gt;
+<span class="lineNum">     106 </span>            :                                         &lt;synopsis&gt;Removed&lt;/synopsis&gt;
+<span class="lineNum">     107 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     108 </span>            :                                 &lt;configOption name=&quot;t38faxmaxdatagram&quot;&gt;
+<span class="lineNum">     109 </span>            :                                         &lt;synopsis&gt;Removed&lt;/synopsis&gt;
+<span class="lineNum">     110 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     111 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">     112 </span>            :                 &lt;/configFile&gt;
+<span class="lineNum">     113 </span>            :         &lt;/configInfo&gt;
+<span class="lineNum">     114 </span>            : ***/
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            : #define UDPTL_MTU               1200
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            : #if !defined(FALSE)
+<span class="lineNum">     119 </span>            : #define FALSE 0
+<span class="lineNum">     120 </span>            : #endif
+<span class="lineNum">     121 </span>            : #if !defined(TRUE)
+<span class="lineNum">     122 </span>            : #define TRUE (!FALSE)
+<span class="lineNum">     123 </span>            : #endif
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            : #define LOG_TAG(u) S_OR(u-&gt;tag, &quot;no tag&quot;)
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : #define DEFAULT_UDPTLSTART 4000
+<span class="lineNum">     128 </span>            : #define DEFAULT_UDPTLEND 4999
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            : static int udptldebug;                      /*!&lt; Are we debugging? */
+<span class="lineNum">     131 </span>            : static struct ast_sockaddr udptldebugaddr;   /*!&lt; Debug packets to/from this host */
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            : #define LOCAL_FAX_MAX_DATAGRAM      1400
+<span class="lineNum">     134 </span>            : #define DEFAULT_FAX_MAX_DATAGRAM    400
+<span class="lineNum">     135 </span>            : #define FAX_MAX_DATAGRAM_LIMIT      1400
+<span class="lineNum">     136 </span>            : #define MAX_FEC_ENTRIES             5
+<span class="lineNum">     137 </span>            : #define MAX_FEC_SPAN                5
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : #define UDPTL_BUF_MASK              15
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            : typedef struct {
+<span class="lineNum">     142 </span>            :         int buf_len;
+<span class="lineNum">     143 </span>            :         uint8_t buf[LOCAL_FAX_MAX_DATAGRAM];
+<span class="lineNum">     144 </span>            : } udptl_fec_tx_buffer_t;
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            : typedef struct {
+<span class="lineNum">     147 </span>            :         int buf_len;
+<span class="lineNum">     148 </span>            :         uint8_t buf[LOCAL_FAX_MAX_DATAGRAM];
+<span class="lineNum">     149 </span>            :         unsigned int fec_len[MAX_FEC_ENTRIES];
+<span class="lineNum">     150 </span>            :         uint8_t fec[MAX_FEC_ENTRIES][LOCAL_FAX_MAX_DATAGRAM];
+<span class="lineNum">     151 </span>            :         unsigned int fec_span;
+<span class="lineNum">     152 </span>            :         unsigned int fec_entries;
+<span class="lineNum">     153 </span>            : } udptl_fec_rx_buffer_t;
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            : /*! \brief Structure for an UDPTL session */
+<span class="lineNum">     156 </span>            : struct ast_udptl {
+<span class="lineNum">     157 </span>            :         int fd;
+<span class="lineNum">     158 </span>            :         char resp;
+<span class="lineNum">     159 </span>            :         struct ast_frame f[16];
+<span class="lineNum">     160 </span>            :         unsigned char rawdata[8192 + AST_FRIENDLY_OFFSET];
+<span class="lineNum">     161 </span>            :         unsigned int lasteventseqn;
+<span class="lineNum">     162 </span>            :         int nat;
+<span class="lineNum">     163 </span>            :         int flags;
+<span class="lineNum">     164 </span>            :         struct ast_sockaddr us;
+<span class="lineNum">     165 </span>            :         struct ast_sockaddr them;
+<span class="lineNum">     166 </span>            :         int *ioid;
+<span class="lineNum">     167 </span>            :         struct ast_sched_context *sched;
+<span class="lineNum">     168 </span>            :         struct io_context *io;
+<span class="lineNum">     169 </span>            :         void *data;
+<span class="lineNum">     170 </span>            :         char *tag;
+<span class="lineNum">     171 </span>            :         ast_udptl_callback callback;
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            :         /*! This option indicates the error correction scheme used in transmitted UDPTL
+<span class="lineNum">     174 </span>            :          * packets and expected in received UDPTL packets.
+<span class="lineNum">     175 </span>            :          */
+<span class="lineNum">     176 </span>            :         enum ast_t38_ec_modes error_correction_scheme;
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span>            :         /*! This option indicates the number of error correction entries transmitted in
+<span class="lineNum">     179 </span>            :          * UDPTL packets and expected in received UDPTL packets.
+<span class="lineNum">     180 </span>            :          */
+<span class="lineNum">     181 </span>            :         unsigned int error_correction_entries;
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :         /*! This option indicates the span of the error correction entries in transmitted
+<span class="lineNum">     184 </span>            :          * UDPTL packets (FEC only).
+<span class="lineNum">     185 </span>            :          */
+<span class="lineNum">     186 </span>            :         unsigned int error_correction_span;
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :         /*! The maximum size UDPTL packet that can be accepted by
+<span class="lineNum">     189 </span>            :          * the remote device.
+<span class="lineNum">     190 </span>            :          */
+<span class="lineNum">     191 </span>            :         int far_max_datagram;
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            :         /*! The maximum size UDPTL packet that we are prepared to
+<span class="lineNum">     194 </span>            :          * accept, or -1 if it hasn't been calculated since the last
+<span class="lineNum">     195 </span>            :          * changes were applied to the UDPTL structure.
+<span class="lineNum">     196 </span>            :          */
+<span class="lineNum">     197 </span>            :         int local_max_datagram;
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :         /*! The maximum IFP that can be submitted for sending
+<span class="lineNum">     200 </span>            :          * to the remote device. Calculated from far_max_datagram,
+<span class="lineNum">     201 </span>            :          * error_correction_scheme and error_correction_entries,
+<span class="lineNum">     202 </span>            :          * or -1 if it hasn't been calculated since the last
+<span class="lineNum">     203 </span>            :          * changes were applied to the UDPTL structure.
+<span class="lineNum">     204 </span>            :          */
+<span class="lineNum">     205 </span>            :         int far_max_ifp;
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            :         /*! The maximum IFP that the local endpoint is prepared
+<span class="lineNum">     208 </span>            :          * to accept. Along with error_correction_scheme and
+<span class="lineNum">     209 </span>            :          * error_correction_entries, used to calculate local_max_datagram.
+<span class="lineNum">     210 </span>            :          */
+<span class="lineNum">     211 </span>            :         int local_max_ifp;
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            :         unsigned int tx_seq_no;
+<span class="lineNum">     214 </span>            :         unsigned int rx_seq_no;
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            :         udptl_fec_tx_buffer_t tx[UDPTL_BUF_MASK + 1];
+<span class="lineNum">     217 </span>            :         udptl_fec_rx_buffer_t rx[UDPTL_BUF_MASK + 1];
+<span class="lineNum">     218 </span>            : };
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            : struct udptl_global_options {
+<span class="lineNum">     221 </span>            :         unsigned int start; /*&lt; The UDPTL start port */
+<span class="lineNum">     222 </span>            :         unsigned int end;   /*&lt; The UDPTL end port */
+<span class="lineNum">     223 </span>            :         unsigned int fecentries;
+<span class="lineNum">     224 </span>            :         unsigned int fecspan;
+<span class="lineNum">     225 </span>            :         unsigned int nochecksums;
+<span class="lineNum">     226 </span>            :         unsigned int use_even_ports;
+<span class="lineNum">     227 </span>            : };
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span>            : static AO2_GLOBAL_OBJ_STATIC(globals);
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span>            : struct udptl_config {
+<span class="lineNum">     232 </span>            :         struct udptl_global_options *general;
+<span class="lineNum">     233 </span>            : };
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : static void *udptl_snapshot_alloc(void);
+<span class="lineNum">     236 </span>            : static int udptl_pre_apply_config(void);
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            : static struct aco_type general_option = {
+<span class="lineNum">     239 </span>            :         .type = ACO_GLOBAL,
+<span class="lineNum">     240 </span>            :         .name = &quot;global&quot;,
+<span class="lineNum">     241 </span>            :         .category_match = ACO_WHITELIST_EXACT,
+<span class="lineNum">     242 </span>            :         .item_offset = offsetof(struct udptl_config, general),
+<span class="lineNum">     243 </span>            :         .category = &quot;general&quot;,
+<span class="lineNum">     244 </span>            : };
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span>            : static struct aco_type *general_options[] = ACO_TYPES(&amp;general_option);
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span>            : static struct aco_file udptl_conf = {
+<span class="lineNum">     249 </span>            :         .filename = &quot;udptl.conf&quot;,
+<span class="lineNum">     250 </span>            :         .types = ACO_TYPES(&amp;general_option),
+<span class="lineNum">     251 </span>            : };
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            : CONFIG_INFO_CORE(&quot;udptl&quot;, cfg_info, globals, udptl_snapshot_alloc,
+<span class="lineNum">     254 </span>            :         .files = ACO_FILES(&amp;udptl_conf),
+<span class="lineNum">     255 </span>            :         .pre_apply_config = udptl_pre_apply_config,
+<a name="256"><span class="lineNum">     256 </span>            : );</a>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">      77540 : static inline int udptl_debug_test_addr(const struct ast_sockaddr *addr)</span>
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineCov">      77540 :         if (udptldebug == 0)</span>
+<span class="lineNum">     261 </span><span class="lineCov">      73694 :                 return 0;</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">       3846 :         if (ast_sockaddr_isnull(&amp;udptldebugaddr)) {</span>
+<span class="lineNum">     264 </span><span class="lineCov">       3846 :                 return 1;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         if (ast_sockaddr_port(&amp;udptldebugaddr)) {</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 return !ast_sockaddr_cmp(&amp;udptldebugaddr, addr);</span>
+<span class="lineNum">     269 </span>            :         } else {
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 return !ast_sockaddr_cmp_addr(&amp;udptldebugaddr, addr);</span>
+<span class="lineNum">     271 </span>            :         }
+<a name="272"><span class="lineNum">     272 </span>            : }</a>
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">     108984 : static int decode_length(uint8_t *buf, unsigned int limit, unsigned int *len, unsigned int *pvalue)</span>
+<span class="lineNum">     275 </span>            : {
+<span class="lineNum">     276 </span><span class="lineCov">     108984 :         if (*len &gt;= limit)</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     278 </span><span class="lineCov">     108984 :         if ((buf[*len] &amp; 0x80) == 0) {</span>
+<span class="lineNum">     279 </span><span class="lineCov">     108984 :                 *pvalue = buf[*len];</span>
+<span class="lineNum">     280 </span><span class="lineCov">     108984 :                 (*len)++;</span>
+<span class="lineNum">     281 </span><span class="lineCov">     108984 :                 return 0;</span>
+<span class="lineNum">     282 </span>            :         }
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         if ((buf[*len] &amp; 0x40) == 0) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                 if (*len == limit - 1)</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 *pvalue = (buf[*len] &amp; 0x3F) &lt;&lt; 8;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 (*len)++;</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 *pvalue |= buf[*len];</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 (*len)++;</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     291 </span>            :         }
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         *pvalue = (buf[*len] &amp; 0x3F) &lt;&lt; 14;</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :         (*len)++;</span>
+<span class="lineNum">     294 </span>            :         /* We have a fragment.  Currently we don't process fragments. */
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         ast_debug(1, &quot;UDPTL packet with length greater than 16K received, decoding will fail\n&quot;);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     297 </span>            : }
+<a name="298"><span class="lineNum">     298 </span>            : /*- End of function --------------------------------------------------------*/</a>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">     108920 : static int decode_open_type(uint8_t *buf, unsigned int limit, unsigned int *len, const uint8_t **p_object, unsigned int *p_num_octets)</span>
+<span class="lineNum">     301 </span>            : {
+<span class="lineNum">     302 </span><span class="lineCov">     108920 :         unsigned int octet_cnt = 0;</span>
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">     108920 :         if (decode_length(buf, limit, len, &amp;octet_cnt) != 0)</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            :         /* Make sure the buffer contains at least the number of bits requested */
+<span class="lineNum">     308 </span><span class="lineCov">     108920 :         if ((*len + octet_cnt) &gt; limit) {</span>
+<span class="lineNum">     309 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">     108919 :         *p_num_octets = octet_cnt;</span>
+<span class="lineNum">     313 </span><span class="lineCov">     108919 :         *p_object = &amp;buf[*len];</span>
+<span class="lineNum">     314 </span><span class="lineCov">     108919 :         *len += octet_cnt;</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineCov">     108919 :         return 0;</span>
+<span class="lineNum">     317 </span>            : }
+<a name="318"><span class="lineNum">     318 </span>            : /*- End of function --------------------------------------------------------*/</a>
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">     124160 : static unsigned int encode_length(uint8_t *buf, unsigned int *len, unsigned int value)</span>
+<span class="lineNum">     321 </span>            : {
+<span class="lineNum">     322 </span>            :         unsigned int multiplier;
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineCov">     124160 :         if (value &lt; 0x80) {</span>
+<span class="lineNum">     325 </span>            :                 /* 1 octet */
+<span class="lineNum">     326 </span><span class="lineCov">     124160 :                 buf[*len] = value;</span>
+<span class="lineNum">     327 </span><span class="lineCov">     124160 :                 (*len)++;</span>
+<span class="lineNum">     328 </span><span class="lineCov">     124160 :                 return value;</span>
+<span class="lineNum">     329 </span>            :         }
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :         if (value &lt; 0x4000) {</span>
+<span class="lineNum">     331 </span>            :                 /* 2 octets */
+<span class="lineNum">     332 </span>            :                 /* Set the first bit of the first octet */
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 buf[*len] = ((0x8000 | value) &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 (*len)++;</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 buf[*len] = value &amp; 0xFF;</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 (*len)++;</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 return value;</span>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            :         /* Fragmentation */
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         multiplier = (value &lt; 0x10000) ? (value &gt;&gt; 14) : 4;</span>
+<span class="lineNum">     341 </span>            :         /* Set the first 2 bits of the octet */
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         buf[*len] = 0xC0 | multiplier;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         (*len)++;</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :         return multiplier &lt;&lt; 14;</span>
+<span class="lineNum">     345 </span>            : }
+<a name="346"><span class="lineNum">     346 </span>            : /*- End of function --------------------------------------------------------*/</a>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineCov">     108588 : static int encode_open_type(const struct ast_udptl *udptl, uint8_t *buf, unsigned int buflen,</span>
+<span class="lineNum">     349 </span>            :                             unsigned int *len, const uint8_t *data, unsigned int num_octets)
+<span class="lineNum">     350 </span>            : {
+<span class="lineNum">     351 </span>            :         unsigned int enclen;
+<span class="lineNum">     352 </span>            :         unsigned int octet_idx;
+<span class="lineNum">     353 </span>            :         uint8_t zero_byte;
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span>            :         /* If open type is of zero length, add a single zero byte (10.1) */
+<span class="lineNum">     356 </span><span class="lineCov">     108588 :         if (num_octets == 0) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                 zero_byte = 0;</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :                 data = &amp;zero_byte;</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                 num_octets = 1;</span>
+<span class="lineNum">     360 </span>            :         }
+<span class="lineNum">     361 </span>            :         /* Encode the open type */
+<span class="lineNum">     362 </span><span class="lineCov">     108588 :         for (octet_idx = 0; ; num_octets -= enclen, octet_idx += enclen) {</span>
+<span class="lineNum">     363 </span><span class="lineCov">     108588 :                 enclen = encode_length(buf, len, num_octets);</span>
+<span class="lineNum">     364 </span><span class="lineCov">     108588 :                 if (enclen + *len &gt; buflen) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;UDPTL (%s): Buffer overflow detected (%u + %u &gt; %u)\n&quot;,</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                                 LOG_TAG(udptl), enclen, *len, buflen);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     368 </span>            :                 }
+<span class="lineNum">     369 </span><span class="lineCov">     108588 :                 if (enclen &gt; 0) {</span>
+<span class="lineNum">     370 </span><span class="lineCov">     108588 :                         memcpy(&amp;buf[*len], &amp;data[octet_idx], enclen);</span>
+<span class="lineNum">     371 </span><span class="lineCov">     108588 :                         *len += enclen;</span>
+<span class="lineNum">     372 </span>            :                 }
+<span class="lineNum">     373 </span><span class="lineCov">     108588 :                 if (enclen &gt;= num_octets)</span>
+<span class="lineNum">     374 </span><span class="lineCov">     108588 :                         break;</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span><span class="lineCov">     108588 :         return 0;</span>
+<span class="lineNum">     378 </span>            : }
+<a name="379"><span class="lineNum">     379 </span>            : /*- End of function --------------------------------------------------------*/</a>
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineCov">      38738 : static int udptl_rx_packet(struct ast_udptl *s, uint8_t *buf, unsigned int len)</span>
+<span class="lineNum">     382 </span>            : {
+<span class="lineNum">     383 </span>            :         int stat1;
+<span class="lineNum">     384 </span>            :         int stat2;
+<span class="lineNum">     385 </span>            :         int i;
+<span class="lineNum">     386 </span>            :         unsigned int ptr;       /* an index that keeps track of how much of the UDPTL packet has been processed */
+<span class="lineNum">     387 </span>            :         int seq_no;
+<span class="lineNum">     388 </span><span class="lineCov">      38738 :         const uint8_t *ifp = NULL;</span>
+<span class="lineNum">     389 </span><span class="lineCov">      38738 :         const uint8_t *data = NULL;</span>
+<span class="lineNum">     390 </span><span class="lineCov">      38738 :         unsigned int ifp_len = 0;</span>
+<span class="lineNum">     391 </span>            :         int repaired[16];
+<span class="lineNum">     392 </span>            :         const uint8_t *bufs[ARRAY_LEN(s-&gt;f) - 1];
+<span class="lineNum">     393 </span>            :         unsigned int lengths[ARRAY_LEN(s-&gt;f) - 1];
+<span class="lineNum">     394 </span>            :         int span;
+<span class="lineNum">     395 </span>            :         int entries;
+<span class="lineNum">     396 </span>            :         int ifp_no;
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span><span class="lineCov">      38738 :         ptr = 0;</span>
+<span class="lineNum">     399 </span><span class="lineCov">      38738 :         ifp_no = 0;</span>
+<span class="lineNum">     400 </span><span class="lineCov">      38738 :         memset(&amp;s-&gt;f[0], 0, sizeof(s-&gt;f[0]));</span>
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span>            :         /* Decode seq_number */
+<span class="lineNum">     403 </span><span class="lineCov">      38738 :         if (ptr + 2 &gt; len)</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     405 </span><span class="lineCov">      38738 :         seq_no = (buf[0] &lt;&lt; 8) | buf[1];</span>
+<span class="lineNum">     406 </span><span class="lineCov">      38738 :         ptr += 2;</span>
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span>            :         /* Break out the primary packet */
+<span class="lineNum">     409 </span><span class="lineCov">      38738 :         if ((stat1 = decode_open_type(buf, len, &amp;ptr, &amp;ifp, &amp;ifp_len)) != 0)</span>
+<span class="lineNum">     410 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     411 </span>            :         /* Decode error_recovery */
+<span class="lineNum">     412 </span><span class="lineCov">      38737 :         if (ptr + 1 &gt; len)</span>
+<span class="lineNum">     413 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     414 </span><span class="lineCov">      38736 :         if ((buf[ptr++] &amp; 0x80) == 0) {</span>
+<span class="lineNum">     415 </span>            :                 /* Secondary packet mode for error recovery */
+<span class="lineNum">     416 </span><span class="lineCov">      15508 :                 if (seq_no &gt; s-&gt;rx_seq_no) {</span>
+<span class="lineNum">     417 </span>            :                         /* We received a later packet than we expected, so we need to check if we can fill in the gap from the
+<span class="lineNum">     418 </span>            :                            secondary packets. */
+<span class="lineNum">     419 </span><span class="lineCov">         64 :                         int total_count = 0;</span>
+<span class="lineNum">     420 </span>            :                         do {
+<span class="lineNum">     421 </span>            :                                 unsigned int count;
+<span class="lineNum">     422 </span><span class="lineCov">         64 :                                 if ((stat2 = decode_length(buf, len, &amp;ptr, &amp;count)) &lt; 0)</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     424 </span><span class="lineCov">       1024 :                                 for (i = 0; i &lt; count &amp;&amp; total_count + i &lt; ARRAY_LEN(bufs); i++) {</span>
+<span class="lineNum">     425 </span><span class="lineCov">        960 :                                         if ((stat1 = decode_open_type(buf, len, &amp;ptr, &amp;bufs[total_count + i], &amp;lengths[total_count + i])) != 0) {</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">     427 </span>            :                                         }
+<span class="lineNum">     428 </span>            :                                         /* valid secondaries can contain zero-length packets that should be ignored */
+<span class="lineNum">     429 </span><span class="lineCov">        960 :                                         if (!bufs[total_count + i] || !lengths[total_count + i]) {</span>
+<span class="lineNum">     430 </span>            :                                                 /* drop the count of items to process and reuse the buffers that were just set */
+<span class="lineNum">     431 </span><span class="lineCov">        896 :                                                 i--;</span>
+<span class="lineNum">     432 </span><span class="lineCov">        896 :                                                 count--;</span>
+<span class="lineNum">     433 </span>            :                                         }
+<span class="lineNum">     434 </span>            :                                 }
+<span class="lineNum">     435 </span><span class="lineCov">         64 :                                 total_count += i;</span>
+<span class="lineNum">     436 </span>            :                         }
+<span class="lineNum">     437 </span><span class="lineCov">         64 :                         while (stat2 &gt; 0 &amp;&amp; total_count &lt; ARRAY_LEN(bufs));</span>
+<span class="lineNum">     438 </span>            :                         /* Step through in reverse order, so we go oldest to newest */
+<span class="lineNum">     439 </span><span class="lineCov">        128 :                         for (i = total_count; i &gt; 0; i--) {</span>
+<span class="lineNum">     440 </span><span class="lineCov">         64 :                                 if (seq_no - i &gt;= s-&gt;rx_seq_no) {</span>
+<span class="lineNum">     441 </span>            :                                         /* This one wasn't seen before */
+<span class="lineNum">     442 </span>            :                                         /* Decode the secondary IFP packet */
+<span class="lineNum">     443 </span><span class="lineCov">         64 :                                         ast_debug(3, &quot;Recovering lost packet via secondary %d, len %u\n&quot;, seq_no - i, lengths[i - 1]);</span>
+<span class="lineNum">     444 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].frametype = AST_FRAME_MODEM;</span>
+<span class="lineNum">     445 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].subclass.integer = AST_MODEM_T38;</span>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].mallocd = 0;</span>
+<span class="lineNum">     448 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].seqno = seq_no - i;</span>
+<span class="lineNum">     449 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].datalen = lengths[i - 1];</span>
+<span class="lineNum">     450 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].data.ptr = (uint8_t *) bufs[i - 1];</span>
+<span class="lineNum">     451 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].offset = 0;</span>
+<span class="lineNum">     452 </span><span class="lineCov">         64 :                                         s-&gt;f[ifp_no].src = &quot;UDPTL&quot;;</span>
+<span class="lineNum">     453 </span><span class="lineCov">         64 :                                         if (ifp_no &gt; 0)</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                                                 AST_LIST_NEXT(&amp;s-&gt;f[ifp_no - 1], frame_list) = &amp;s-&gt;f[ifp_no];</span>
+<span class="lineNum">     455 </span><span class="lineCov">         64 :                                         AST_LIST_NEXT(&amp;s-&gt;f[ifp_no], frame_list) = NULL;</span>
+<span class="lineNum">     456 </span><span class="lineCov">         64 :                                         ifp_no++;</span>
+<span class="lineNum">     457 </span>            :                                 }
+<span class="lineNum">     458 </span>            :                         }
+<span class="lineNum">     459 </span>            :                 }
+<span class="lineNum">     460 </span>            :         }
+<span class="lineNum">     461 </span>            :         else
+<span class="lineNum">     462 </span>            :         {
+<span class="lineNum">     463 </span>            :                 int j;
+<span class="lineNum">     464 </span>            :                 int l;
+<span class="lineNum">     465 </span>            :                 int x;
+<span class="lineNum">     466 </span>            :                 /* FEC mode for error recovery */
+<span class="lineNum">     467 </span>            :                 /* Our buffers cannot tolerate overlength IFP packets in FEC mode */
+<span class="lineNum">     468 </span><span class="lineCov">      23228 :                 if (ifp_len &gt; LOCAL_FAX_MAX_DATAGRAM)</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     470 </span>            :                 /* Update any missed slots in the buffer */
+<span class="lineNum">     471 </span><span class="lineCov">      23230 :                 for ( ; seq_no &gt; s-&gt;rx_seq_no; s-&gt;rx_seq_no++) {</span>
+<span class="lineNum">     472 </span><span class="lineCov">          2 :                         x = s-&gt;rx_seq_no &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     473 </span><span class="lineCov">          2 :                         s-&gt;rx[x].buf_len = -1;</span>
+<span class="lineNum">     474 </span><span class="lineCov">          2 :                         s-&gt;rx[x].fec_len[0] = 0;</span>
+<span class="lineNum">     475 </span><span class="lineCov">          2 :                         s-&gt;rx[x].fec_span = 0;</span>
+<span class="lineNum">     476 </span><span class="lineCov">          2 :                         s-&gt;rx[x].fec_entries = 0;</span>
+<span class="lineNum">     477 </span>            :                 }
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineCov">      23228 :                 x = seq_no &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">      23228 :                 memset(repaired, 0, sizeof(repaired));</span>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span>            :                 /* Save the new IFP packet */
+<span class="lineNum">     484 </span><span class="lineCov">      23228 :                 memcpy(s-&gt;rx[x].buf, ifp, ifp_len);</span>
+<span class="lineNum">     485 </span><span class="lineCov">      23228 :                 s-&gt;rx[x].buf_len = ifp_len;</span>
+<span class="lineNum">     486 </span><span class="lineCov">      23228 :                 repaired[x] = TRUE;</span>
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span>            :                 /* Decode the FEC packets */
+<span class="lineNum">     489 </span>            :                 /* The span is defined as an unconstrained integer, but will never be more
+<span class="lineNum">     490 </span>            :                    than a small value. */
+<span class="lineNum">     491 </span><span class="lineCov">      23228 :                 if (ptr + 2 &gt; len)</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     493 </span><span class="lineCov">      23228 :                 if (buf[ptr++] != 1)</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     495 </span><span class="lineCov">      23228 :                 span = buf[ptr++];</span>
+<span class="lineNum">     496 </span><span class="lineCov">      23228 :                 s-&gt;rx[x].fec_span = span;</span>
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span>            :                 /* The number of entries is defined as a length, but will only ever be a small
+<span class="lineNum">     499 </span>            :                    value. Treat it as such. */
+<span class="lineNum">     500 </span><span class="lineCov">      23228 :                 if (ptr + 1 &gt; len)</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     502 </span><span class="lineCov">      23228 :                 entries = buf[ptr++];</span>
+<span class="lineNum">     503 </span><span class="lineCov">      23228 :                 if (entries &gt; MAX_FEC_ENTRIES) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     505 </span>            :                 }
+<span class="lineNum">     506 </span><span class="lineCov">      23228 :                 s-&gt;rx[x].fec_entries = entries;</span>
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span>            :                 /* Decode the elements */
+<span class="lineNum">     509 </span><span class="lineCov">      92450 :                 for (i = 0; i &lt; entries; i++) {</span>
+<span class="lineNum">     510 </span><span class="lineCov">      69222 :                         if ((stat1 = decode_open_type(buf, len, &amp;ptr, &amp;data, &amp;s-&gt;rx[x].fec_len[i])) != 0)</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     512 </span><span class="lineCov">      69222 :                         if (s-&gt;rx[x].fec_len[i] &gt; LOCAL_FAX_MAX_DATAGRAM)</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span>            :                         /* Save the new FEC data */
+<span class="lineNum">     516 </span><span class="lineCov">      69222 :                         memcpy(s-&gt;rx[x].fec[i], data, s-&gt;rx[x].fec_len[i]);</span>
+<span class="lineNum">     517 </span>            : #if 0
+<span class="lineNum">     518 </span>            :                         fprintf(stderr, &quot;FEC: &quot;);
+<span class="lineNum">     519 </span>            :                         for (j = 0; j &lt; s-&gt;rx[x].fec_len[i]; j++)
+<span class="lineNum">     520 </span>            :                                 fprintf(stderr, &quot;%02hhX &quot;, data[j]);
+<span class="lineNum">     521 </span>            :                         fprintf(stderr, &quot;\n&quot;);
+<span class="lineNum">     522 </span>            : #endif
+<span class="lineNum">     523 </span>            :                 }
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span>            :                 /* See if we can reconstruct anything which is missing */
+<span class="lineNum">     526 </span>            :                 /* TODO: this does not comprehensively hunt back and repair everything that is possible */
+<span class="lineNum">     527 </span><span class="lineCov">     185994 :                 for (l = x; l != ((x - (16 - span*entries)) &amp; UDPTL_BUF_MASK); l = (l - 1) &amp; UDPTL_BUF_MASK) {</span>
+<span class="lineNum">     528 </span>            :                         int m;
+<span class="lineNum">     529 </span><span class="lineCov">     162766 :                         if (s-&gt;rx[l].fec_len[0] &lt;= 0)</span>
+<span class="lineNum">     530 </span><span class="lineCov">       1248 :                                 continue;</span>
+<span class="lineNum">     531 </span><span class="lineCov">     644434 :                         for (m = 0; m &lt; s-&gt;rx[l].fec_entries; m++) {</span>
+<span class="lineNum">     532 </span>            :                                 int k;
+<span class="lineNum">     533 </span>            :                                 int which;
+<span class="lineNum">     534 </span><span class="lineCov">     482916 :                                 int limit = (l + m) &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span>            :                                 /* only repair buffers that actually exist! */
+<span class="lineNum">     537 </span><span class="lineCov">     482916 :                                 if (seq_no &lt;= (s-&gt;rx[l].fec_span * s-&gt;rx[l].fec_entries) - m) {</span>
+<span class="lineNum">     538 </span><span class="lineCov">         78 :                                         continue;</span>
+<span class="lineNum">     539 </span>            :                                 }
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineCov">    1931352 :                                 for (which = -1, k = (limit - s-&gt;rx[l].fec_span * s-&gt;rx[l].fec_entries) &amp; UDPTL_BUF_MASK; k != limit; k = (k + s-&gt;rx[l].fec_entries) &amp; UDPTL_BUF_MASK) {</span>
+<span class="lineNum">     542 </span><span class="lineCov">    1448514 :                                         if (s-&gt;rx[k].buf_len &lt;= 0)</span>
+<span class="lineNum">     543 </span><span class="lineCov">          2 :                                                 which = (which == -1) ? k : -2;</span>
+<span class="lineNum">     544 </span>            :                                 }
+<span class="lineNum">     545 </span><span class="lineCov">     482838 :                                 if (which &gt;= 0) {</span>
+<span class="lineNum">     546 </span>            :                                         /* Repairable */
+<span class="lineNum">     547 </span><span class="lineCov">          4 :                                         for (j = 0; j &lt; s-&gt;rx[l].fec_len[m]; j++) {</span>
+<span class="lineNum">     548 </span><span class="lineCov">          2 :                                                 s-&gt;rx[which].buf[j] = s-&gt;rx[l].fec[m][j];</span>
+<span class="lineNum">     549 </span><span class="lineCov">          8 :                                                 for (k = (limit - s-&gt;rx[l].fec_span * s-&gt;rx[l].fec_entries) &amp; UDPTL_BUF_MASK; k != limit; k = (k + s-&gt;rx[l].fec_entries) &amp; UDPTL_BUF_MASK)</span>
+<span class="lineNum">     550 </span><span class="lineCov">          6 :                                                         s-&gt;rx[which].buf[j] ^= (s-&gt;rx[k].buf_len &gt; j) ? s-&gt;rx[k].buf[j] : 0;</span>
+<span class="lineNum">     551 </span>            :                                         }
+<span class="lineNum">     552 </span><span class="lineCov">          2 :                                         s-&gt;rx[which].buf_len = s-&gt;rx[l].fec_len[m];</span>
+<span class="lineNum">     553 </span><span class="lineCov">          2 :                                         repaired[which] = TRUE;</span>
+<span class="lineNum">     554 </span>            :                                 }
+<span class="lineNum">     555 </span>            :                         }
+<span class="lineNum">     556 </span>            :                 }
+<span class="lineNum">     557 </span>            :                 /* Now play any new packets forwards in time */
+<span class="lineNum">     558 </span><span class="lineCov">     371648 :                 for (l = (x + 1) &amp; UDPTL_BUF_MASK, j = seq_no - UDPTL_BUF_MASK; l != x; l = (l + 1) &amp; UDPTL_BUF_MASK, j++) {</span>
+<span class="lineNum">     559 </span><span class="lineCov">     348420 :                         if (repaired[l]) {</span>
+<span class="lineNum">     560 </span>            :                                 //fprintf(stderr, &quot;Fixed packet %d, len %d\n&quot;, j, l);
+<span class="lineNum">     561 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].frametype = AST_FRAME_MODEM;</span>
+<span class="lineNum">     562 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].subclass.integer = AST_MODEM_T38;</span>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].mallocd = 0;</span>
+<span class="lineNum">     565 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].seqno = j;</span>
+<span class="lineNum">     566 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].datalen = s-&gt;rx[l].buf_len;</span>
+<span class="lineNum">     567 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].data.ptr = s-&gt;rx[l].buf;</span>
+<span class="lineNum">     568 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].offset = 0;</span>
+<span class="lineNum">     569 </span><span class="lineCov">          2 :                                 s-&gt;f[ifp_no].src = &quot;UDPTL&quot;;</span>
+<span class="lineNum">     570 </span><span class="lineCov">          2 :                                 if (ifp_no &gt; 0)</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                                         AST_LIST_NEXT(&amp;s-&gt;f[ifp_no - 1], frame_list) = &amp;s-&gt;f[ifp_no];</span>
+<span class="lineNum">     572 </span><span class="lineCov">          2 :                                 AST_LIST_NEXT(&amp;s-&gt;f[ifp_no], frame_list) = NULL;</span>
+<span class="lineNum">     573 </span><span class="lineCov">          2 :                                 ifp_no++;</span>
+<span class="lineNum">     574 </span>            :                         }
+<span class="lineNum">     575 </span>            :                 }
+<span class="lineNum">     576 </span>            :         }
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span>            :         /* If packets are received out of sequence, we may have already processed this packet from the error
+<span class="lineNum">     579 </span>            :            recovery information in a packet already received. */
+<span class="lineNum">     580 </span><span class="lineCov">      38736 :         if (seq_no &gt;= s-&gt;rx_seq_no) {</span>
+<span class="lineNum">     581 </span>            :                 /* Decode the primary IFP packet */
+<span class="lineNum">     582 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].frametype = AST_FRAME_MODEM;</span>
+<span class="lineNum">     583 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].subclass.integer = AST_MODEM_T38;</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].mallocd = 0;</span>
+<span class="lineNum">     586 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].seqno = seq_no;</span>
+<span class="lineNum">     587 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].datalen = ifp_len;</span>
+<span class="lineNum">     588 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].data.ptr = (uint8_t *) ifp;</span>
+<span class="lineNum">     589 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].offset = 0;</span>
+<span class="lineNum">     590 </span><span class="lineCov">      38736 :                 s-&gt;f[ifp_no].src = &quot;UDPTL&quot;;</span>
+<span class="lineNum">     591 </span><span class="lineCov">      38736 :                 if (ifp_no &gt; 0)</span>
+<span class="lineNum">     592 </span><span class="lineCov">         66 :                         AST_LIST_NEXT(&amp;s-&gt;f[ifp_no - 1], frame_list) = &amp;s-&gt;f[ifp_no];</span>
+<span class="lineNum">     593 </span><span class="lineCov">      38736 :                 AST_LIST_NEXT(&amp;s-&gt;f[ifp_no], frame_list) = NULL;</span>
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span><span class="lineCov">      38736 :                 ifp_no++;</span>
+<span class="lineNum">     596 </span>            :         }
+<span class="lineNum">     597 </span>            : 
+<span class="lineNum">     598 </span><span class="lineCov">      38736 :         s-&gt;rx_seq_no = seq_no + 1;</span>
+<span class="lineNum">     599 </span><span class="lineCov">      38736 :         return ifp_no;</span>
+<span class="lineNum">     600 </span>            : }
+<a name="601"><span class="lineNum">     601 </span>            : /*- End of function --------------------------------------------------------*/</a>
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span><span class="lineCov">      38802 : static int udptl_build_packet(struct ast_udptl *s, uint8_t *buf, unsigned int buflen, uint8_t *ifp, unsigned int ifp_len)</span>
+<span class="lineNum">     604 </span>            : {
+<span class="lineNum">     605 </span><span class="lineCov">      38802 :         uint8_t fec[LOCAL_FAX_MAX_DATAGRAM * 2] = { 0, };</span>
+<span class="lineNum">     606 </span>            :         int i;
+<span class="lineNum">     607 </span>            :         int j;
+<span class="lineNum">     608 </span>            :         int seq;
+<span class="lineNum">     609 </span>            :         int entry;
+<span class="lineNum">     610 </span>            :         int entries;
+<span class="lineNum">     611 </span>            :         int span;
+<span class="lineNum">     612 </span>            :         int m;
+<span class="lineNum">     613 </span>            :         unsigned int len;
+<span class="lineNum">     614 </span>            :         int limit;
+<span class="lineNum">     615 </span>            :         int high_tide;
+<span class="lineNum">     616 </span>            : 
+<span class="lineNum">     617 </span><span class="lineCov">      38802 :         seq = s-&gt;tx_seq_no &amp; 0xFFFF;</span>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span>            :         /* Map the sequence number to an entry in the circular buffer */
+<span class="lineNum">     620 </span><span class="lineCov">      38802 :         entry = seq &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            :         /* We save the message in a circular buffer, for generating FEC or
+<span class="lineNum">     623 </span>            :            redundancy sets later on. */
+<span class="lineNum">     624 </span><span class="lineCov">      38802 :         s-&gt;tx[entry].buf_len = ifp_len;</span>
+<span class="lineNum">     625 </span><span class="lineCov">      38802 :         memcpy(s-&gt;tx[entry].buf, ifp, ifp_len);</span>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span>            :         /* Build the UDPTLPacket */
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span><span class="lineCov">      38802 :         len = 0;</span>
+<span class="lineNum">     630 </span>            :         /* Encode the sequence number */
+<span class="lineNum">     631 </span><span class="lineCov">      38802 :         buf[len++] = (seq &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="lineNum">     632 </span><span class="lineCov">      38802 :         buf[len++] = seq &amp; 0xFF;</span>
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span>            :         /* Encode the primary IFP packet */
+<span class="lineNum">     635 </span><span class="lineCov">      38802 :         if (encode_open_type(s, buf, buflen, &amp;len, ifp, ifp_len) &lt; 0)</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     637 </span>            : 
+<span class="lineNum">     638 </span>            :         /* Encode the appropriate type of error recovery information */
+<span class="lineNum">     639 </span><span class="lineCov">      38802 :         switch (s-&gt;error_correction_scheme)</span>
+<span class="lineNum">     640 </span>            :         {
+<span class="lineNum">     641 </span><span class="lineCov">      15382 :         case UDPTL_ERROR_CORRECTION_NONE:</span>
+<span class="lineNum">     642 </span>            :                 /* Encode the error recovery type */
+<span class="lineNum">     643 </span><span class="lineCov">      15382 :                 buf[len++] = 0x00;</span>
+<span class="lineNum">     644 </span>            :                 /* The number of entries will always be zero, so it is pointless allowing
+<span class="lineNum">     645 </span>            :                    for the fragmented case here. */
+<span class="lineNum">     646 </span><span class="lineCov">      15382 :                 encode_length(buf, &amp;len, 0);</span>
+<span class="lineNum">     647 </span><span class="lineCov">      15382 :                 break;</span>
+<span class="lineNum">     648 </span><span class="lineCov">        190 :         case UDPTL_ERROR_CORRECTION_REDUNDANCY:</span>
+<span class="lineNum">     649 </span>            :                 /* Encode the error recovery type */
+<span class="lineNum">     650 </span><span class="lineCov">        190 :                 buf[len++] = 0x00;</span>
+<span class="lineNum">     651 </span><span class="lineCov">        190 :                 if (s-&gt;tx_seq_no &gt; s-&gt;error_correction_entries)</span>
+<span class="lineNum">     652 </span><span class="lineCov">        186 :                         entries = s-&gt;error_correction_entries;</span>
+<span class="lineNum">     653 </span>            :                 else
+<span class="lineNum">     654 </span><span class="lineCov">          4 :                         entries = s-&gt;tx_seq_no;</span>
+<span class="lineNum">     655 </span>            :                 /* The number of entries will always be small, so it is pointless allowing
+<span class="lineNum">     656 </span>            :                    for the fragmented case here. */
+<span class="lineNum">     657 </span><span class="lineCov">        190 :                 encode_length(buf, &amp;len, entries);</span>
+<span class="lineNum">     658 </span>            :                 /* Encode the elements */
+<span class="lineNum">     659 </span><span class="lineCov">        754 :                 for (i = 0; i &lt; entries; i++) {</span>
+<span class="lineNum">     660 </span><span class="lineCov">        564 :                         j = (entry - i - 1) &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     661 </span><span class="lineCov">        564 :                         if (encode_open_type(s, buf, buflen, &amp;len, s-&gt;tx[j].buf, s-&gt;tx[j].buf_len) &lt; 0) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;UDPTL (%s): Encoding failed at i=%d, j=%d\n&quot;,</span>
+<span class="lineNum">     663 </span>            :                                           LOG_TAG(s), i, j);
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     665 </span>            :                         }
+<span class="lineNum">     666 </span>            :                 }
+<span class="lineNum">     667 </span><span class="lineCov">        190 :                 break;</span>
+<span class="lineNum">     668 </span><span class="lineCov">      23230 :         case UDPTL_ERROR_CORRECTION_FEC:</span>
+<span class="lineNum">     669 </span><span class="lineCov">      23230 :                 span = s-&gt;error_correction_span;</span>
+<span class="lineNum">     670 </span><span class="lineCov">      23230 :                 entries = s-&gt;error_correction_entries;</span>
+<span class="lineNum">     671 </span><span class="lineCov">      23230 :                 if (seq &lt; s-&gt;error_correction_span*s-&gt;error_correction_entries) {</span>
+<span class="lineNum">     672 </span>            :                         /* In the initial stages, wind up the FEC smoothly */
+<span class="lineNum">     673 </span><span class="lineCov">        234 :                         entries = seq/s-&gt;error_correction_span;</span>
+<span class="lineNum">     674 </span><span class="lineCov">        234 :                         if (seq &lt; s-&gt;error_correction_span)</span>
+<span class="lineNum">     675 </span><span class="lineCov">         78 :                                 span = 0;</span>
+<span class="lineNum">     676 </span>            :                 }
+<span class="lineNum">     677 </span>            :                 /* Encode the error recovery type */
+<span class="lineNum">     678 </span><span class="lineCov">      23230 :                 buf[len++] = 0x80;</span>
+<span class="lineNum">     679 </span>            :                 /* Span is defined as an inconstrained integer, which it dumb. It will only
+<span class="lineNum">     680 </span>            :                    ever be a small value. Treat it as such. */
+<span class="lineNum">     681 </span><span class="lineCov">      23230 :                 buf[len++] = 1;</span>
+<span class="lineNum">     682 </span><span class="lineCov">      23230 :                 buf[len++] = span;</span>
+<span class="lineNum">     683 </span>            :                 /* The number of entries is defined as a length, but will only ever be a small
+<span class="lineNum">     684 </span>            :                    value. Treat it as such. */
+<span class="lineNum">     685 </span><span class="lineCov">      23230 :                 buf[len++] = entries;</span>
+<span class="lineNum">     686 </span><span class="lineCov">      92452 :                 for (m = 0; m &lt; entries; m++) {</span>
+<span class="lineNum">     687 </span>            :                         /* Make an XOR'ed entry the maximum length */
+<span class="lineNum">     688 </span><span class="lineCov">      69222 :                         limit = (entry + m) &amp; UDPTL_BUF_MASK;</span>
+<span class="lineNum">     689 </span><span class="lineCov">      69222 :                         high_tide = 0;</span>
+<span class="lineNum">     690 </span><span class="lineCov">     276888 :                         for (i = (limit - span*entries) &amp; UDPTL_BUF_MASK; i != limit; i = (i + entries) &amp; UDPTL_BUF_MASK) {</span>
+<span class="lineNum">     691 </span><span class="lineCov">     207666 :                                 if (high_tide &lt; s-&gt;tx[i].buf_len) {</span>
+<span class="lineNum">     692 </span><span class="lineCov">     631215 :                                         for (j = 0; j &lt; high_tide; j++)</span>
+<span class="lineNum">     693 </span><span class="lineCov">     539734 :                                                 fec[j] ^= s-&gt;tx[i].buf[j];</span>
+<span class="lineNum">     694 </span><span class="lineCov">    3938012 :                                         for ( ; j &lt; s-&gt;tx[i].buf_len; j++)</span>
+<span class="lineNum">     695 </span><span class="lineCov">    3846531 :                                                 fec[j] = s-&gt;tx[i].buf[j];</span>
+<span class="lineNum">     696 </span><span class="lineCov">      91481 :                                         high_tide = s-&gt;tx[i].buf_len;</span>
+<span class="lineNum">     697 </span>            :                                 } else {
+<span class="lineNum">     698 </span><span class="lineCov">    5130851 :                                         for (j = 0; j &lt; s-&gt;tx[i].buf_len; j++)</span>
+<span class="lineNum">     699 </span><span class="lineCov">    5014666 :                                                 fec[j] ^= s-&gt;tx[i].buf[j];</span>
+<span class="lineNum">     700 </span>            :                                 }
+<span class="lineNum">     701 </span>            :                         }
+<span class="lineNum">     702 </span><span class="lineCov">      69222 :                         if (encode_open_type(s, buf, buflen, &amp;len, fec, high_tide) &lt; 0)</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     704 </span>            :                 }
+<span class="lineNum">     705 </span><span class="lineCov">      23230 :                 break;</span>
+<span class="lineNum">     706 </span>            :         }
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineCov">      38802 :         s-&gt;tx_seq_no++;</span>
+<span class="lineNum">     709 </span><span class="lineCov">      38802 :         return len;</span>
+<a name="710"><span class="lineNum">     710 </span>            : }</a>
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span><span class="lineCov">         56 : int ast_udptl_fd(const struct ast_udptl *udptl)</span>
+<span class="lineNum">     713 </span>            : {
+<span class="lineNum">     714 </span><span class="lineCov">         56 :         return udptl-&gt;fd;</span>
+<a name="715"><span class="lineNum">     715 </span>            : }</a>
+<span class="lineNum">     716 </span>            : 
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 : void ast_udptl_set_data(struct ast_udptl *udptl, void *data)</span>
+<span class="lineNum">     718 </span>            : {
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :         udptl-&gt;data = data;</span>
+<a name="720"><span class="lineNum">     720 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 : void ast_udptl_set_callback(struct ast_udptl *udptl, ast_udptl_callback callback)</span>
+<span class="lineNum">     723 </span>            : {
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         udptl-&gt;callback = callback;</span>
+<a name="725"><span class="lineNum">     725 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">         57 : void ast_udptl_setnat(struct ast_udptl *udptl, int nat)</span>
+<span class="lineNum">     728 </span>            : {
+<span class="lineNum">     729 </span><span class="lineCov">         57 :         udptl-&gt;nat = nat;</span>
+<a name="730"><span class="lineNum">     730 </span><span class="lineCov">         57 : }</span></a>
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 : static int udptlread(int *id, int fd, short events, void *cbdata)</span>
+<span class="lineNum">     733 </span>            : {
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :         struct ast_udptl *udptl = cbdata;</span>
+<span class="lineNum">     735 </span>            :         struct ast_frame *f;
+<span class="lineNum">     736 </span>            : 
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :         if ((f = ast_udptl_read(udptl))) {</span>
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :                 if (udptl-&gt;callback)</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :                         udptl-&gt;callback(udptl, f, udptl-&gt;data);</span>
+<span class="lineNum">     740 </span>            :         }
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="742"><span class="lineNum">     742 </span>            : }</a>
+<span class="lineNum">     743 </span>            : 
+<span class="lineNum">     744 </span><span class="lineCov">      38740 : struct ast_frame *ast_udptl_read(struct ast_udptl *udptl)</span>
+<span class="lineNum">     745 </span>            : {
+<span class="lineNum">     746 </span>            :         int res;
+<span class="lineNum">     747 </span>            :         struct ast_sockaddr addr;
+<span class="lineNum">     748 </span>            :         uint8_t *buf;
+<span class="lineNum">     749 </span>            : 
+<span class="lineNum">     750 </span><span class="lineCov">      38740 :         buf = udptl-&gt;rawdata + AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span>            :         /* Cache where the header will go */
+<span class="lineNum">     753 </span><span class="lineCov">      38740 :         res = ast_recvfrom(udptl-&gt;fd,</span>
+<span class="lineNum">     754 </span>            :                         buf,
+<span class="lineNum">     755 </span>            :                         sizeof(udptl-&gt;rawdata) - AST_FRIENDLY_OFFSET,
+<span class="lineNum">     756 </span>            :                         0,
+<span class="lineNum">     757 </span>            :                         &amp;addr);
+<span class="lineNum">     758 </span><span class="lineCov">      38740 :         if (res &lt; 0) {</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :                 if (errno != EAGAIN)</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;UDPTL (%s): read error: %s\n&quot;,</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :                                 LOG_TAG(udptl), strerror(errno));</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :                 ast_assert(errno != EBADF);</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     764 </span>            :         }
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span>            :         /* Ignore if the other side hasn't been given an address yet. */
+<span class="lineNum">     767 </span><span class="lineCov">      38740 :         if (ast_sockaddr_isnull(&amp;udptl-&gt;them)) {</span>
+<span class="lineNum">     768 </span><span class="lineCov">          2 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     769 </span>            :         }
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span>            :         /*
+<span class="lineNum">     772 </span>            :          * If early media isn't turned on for the channel driver, it's going to
+<span class="lineNum">     773 </span>            :          * drop this frame.  By that time though, udptl has already incremented
+<span class="lineNum">     774 </span>            :          * the expected sequence number so if the CPE re-sends, the second frame
+<span class="lineNum">     775 </span>            :          * will be dropped as a dup even though the first frame never went through.
+<span class="lineNum">     776 </span>            :          * So we drop the frame here if the channel isn't up. 'tag' is set by the
+<span class="lineNum">     777 </span>            :          * channel drivers on T38_ENABLED or T38_PEER_REINVITE.
+<span class="lineNum">     778 </span>            :          */
+<span class="lineNum">     779 </span><span class="lineCov">      38738 :         if (udptl-&gt;tag == NULL) {</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     781 </span>            :         }
+<span class="lineNum">     782 </span>            : 
+<span class="lineNum">     783 </span><span class="lineCov">      38738 :         if (udptl-&gt;nat) {</span>
+<span class="lineNum">     784 </span>            :                 /* Send to whoever sent to us */
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :                 if (ast_sockaddr_cmp(&amp;udptl-&gt;them, &amp;addr)) {</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                         ast_sockaddr_copy(&amp;udptl-&gt;them, &amp;addr);</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;UDPTL (%s): NAT, Using address %s\n&quot;,</span>
+<span class="lineNum">     788 </span>            :                                   LOG_TAG(udptl), ast_sockaddr_stringify(&amp;udptl-&gt;them));
+<span class="lineNum">     789 </span>            :                 }
+<span class="lineNum">     790 </span>            :         }
+<span class="lineNum">     791 </span>            : 
+<span class="lineNum">     792 </span><span class="lineCov">      38738 :         if (udptl_debug_test_addr(&amp;addr)) {</span>
+<span class="lineNum">     793 </span>            :                 int seq_no;
+<span class="lineNum">     794 </span>            : 
+<span class="lineNum">     795 </span>            :                 /* Decode sequence number just for verbose message. */
+<span class="lineNum">     796 </span><span class="lineCov">       1923 :                 if (res &lt; 2) {</span>
+<span class="lineNum">     797 </span>            :                         /* Short packet. */
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                         seq_no = -1;</span>
+<span class="lineNum">     799 </span>            :                 } else {
+<span class="lineNum">     800 </span><span class="lineCov">       1923 :                         seq_no = (buf[0] &lt;&lt; 8) | buf[1];</span>
+<span class="lineNum">     801 </span>            :                 }
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span><span class="lineCov">       1923 :                 ast_verb(1, &quot;UDPTL (%s): packet from %s (seq %d, len %d)\n&quot;,</span>
+<span class="lineNum">     804 </span>            :                         LOG_TAG(udptl), ast_sockaddr_stringify(&amp;addr), seq_no, res);
+<span class="lineNum">     805 </span>            :         }
+<span class="lineNum">     806 </span><span class="lineCov">      38738 :         if (udptl_rx_packet(udptl, buf, res) &lt; 1) {</span>
+<span class="lineNum">     807 </span><span class="lineCov">          2 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     808 </span>            :         }
+<span class="lineNum">     809 </span>            : 
+<span class="lineNum">     810 </span><span class="lineCov">      38736 :         return &amp;udptl-&gt;f[0];</span>
+<a name="811"><span class="lineNum">     811 </span>            : }</a>
+<span class="lineNum">     812 </span>            : 
+<span class="lineNum">     813 </span><span class="lineCov">         53 : static void calculate_local_max_datagram(struct ast_udptl *udptl)</span>
+<span class="lineNum">     814 </span>            : {
+<span class="lineNum">     815 </span><span class="lineCov">         53 :         unsigned int new_max = 0;</span>
+<span class="lineNum">     816 </span>            : 
+<span class="lineNum">     817 </span><span class="lineCov">         53 :         if (udptl-&gt;local_max_ifp == -1) {</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;UDPTL (%s): Cannot calculate local_max_datagram before local_max_ifp has been set.\n&quot;,</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                         LOG_TAG(udptl));</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                 udptl-&gt;local_max_datagram = -1;</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     822 </span>            :         }
+<span class="lineNum">     823 </span>            : 
+<span class="lineNum">     824 </span>            :         /* calculate the amount of space required to receive an IFP
+<span class="lineNum">     825 </span>            :          * of the maximum size supported by the application/endpoint
+<span class="lineNum">     826 </span>            :          * that we are delivering them to (local endpoint), and add
+<span class="lineNum">     827 </span>            :          * the amount of space required to support the selected
+<span class="lineNum">     828 </span>            :          * error correction mode
+<span class="lineNum">     829 </span>            :          */
+<span class="lineNum">     830 </span><span class="lineCov">         53 :         switch (udptl-&gt;error_correction_scheme) {</span>
+<span class="lineNum">     831 </span><span class="lineCov">         19 :         case UDPTL_ERROR_CORRECTION_NONE:</span>
+<span class="lineNum">     832 </span>            :                 /* need room for sequence number, length indicator, redundancy
+<span class="lineNum">     833 </span>            :                  * indicator and following length indicator
+<span class="lineNum">     834 </span>            :                  */
+<span class="lineNum">     835 </span><span class="lineCov">         19 :                 new_max = 5 + udptl-&gt;local_max_ifp;</span>
+<span class="lineNum">     836 </span><span class="lineCov">         19 :                 break;</span>
+<span class="lineNum">     837 </span><span class="lineCov">          3 :         case UDPTL_ERROR_CORRECTION_REDUNDANCY:</span>
+<span class="lineNum">     838 </span>            :                 /* need room for sequence number, length indicators, plus
+<span class="lineNum">     839 </span>            :                  * room for up to 3 redundancy packets
+<span class="lineNum">     840 </span>            :                  */
+<span class="lineNum">     841 </span><span class="lineCov">          3 :                 new_max = 5 + udptl-&gt;local_max_ifp + 2 + (3 * udptl-&gt;local_max_ifp);</span>
+<span class="lineNum">     842 </span><span class="lineCov">          3 :                 break;</span>
+<span class="lineNum">     843 </span><span class="lineCov">         31 :         case UDPTL_ERROR_CORRECTION_FEC:</span>
+<span class="lineNum">     844 </span>            :                 /* need room for sequence number, length indicators and a
+<span class="lineNum">     845 </span>            :                  * a single IFP of the maximum size expected
+<span class="lineNum">     846 </span>            :                  */
+<span class="lineNum">     847 </span><span class="lineCov">         31 :                 new_max = 5 + udptl-&gt;local_max_ifp + 4 + udptl-&gt;local_max_ifp;</span>
+<span class="lineNum">     848 </span><span class="lineCov">         31 :                 break;</span>
+<span class="lineNum">     849 </span>            :         }
+<span class="lineNum">     850 </span>            :         /* add 5% extra space for insurance, but no larger than LOCAL_FAX_MAX_DATAGRAM */
+<span class="lineNum">     851 </span><span class="lineCov">         53 :         udptl-&gt;local_max_datagram = MIN(new_max * 1.05, LOCAL_FAX_MAX_DATAGRAM);</span>
+<a name="852"><span class="lineNum">     852 </span>            : }</a>
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span><span class="lineCov">         51 : static void calculate_far_max_ifp(struct ast_udptl *udptl)</span>
+<span class="lineNum">     855 </span>            : {
+<span class="lineNum">     856 </span><span class="lineCov">         51 :         unsigned new_max = 0;</span>
+<span class="lineNum">     857 </span>            : 
+<span class="lineNum">     858 </span><span class="lineCov">         51 :         if (udptl-&gt;far_max_datagram == -1) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;UDPTL (%s): Cannot calculate far_max_ifp before far_max_datagram has been set.\n&quot;,</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :                         LOG_TAG(udptl));</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">          0 :                 udptl-&gt;far_max_ifp = -1;</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     863 </span>            :         }
+<span class="lineNum">     864 </span>            : 
+<span class="lineNum">     865 </span>            :         /* the goal here is to supply the local endpoint (application
+<span class="lineNum">     866 </span>            :          * or bridged channel) a maximum IFP value that will allow it
+<span class="lineNum">     867 </span>            :          * to effectively and efficiently transfer image data at its
+<span class="lineNum">     868 </span>            :          * selected bit rate, taking into account the selected error
+<span class="lineNum">     869 </span>            :          * correction mode, but without overrunning the far endpoint's
+<span class="lineNum">     870 </span>            :          * datagram buffer. this is complicated by the fact that some
+<span class="lineNum">     871 </span>            :          * far endpoints send us bogus (small) max datagram values,
+<span class="lineNum">     872 </span>            :          * which would result in either buffer overrun or no error
+<span class="lineNum">     873 </span>            :          * correction. we try to accomodate those, but if the supplied
+<span class="lineNum">     874 </span>            :          * value is too small to do so, we'll emit warning messages and
+<span class="lineNum">     875 </span>            :          * the user will have to use configuration options to override
+<span class="lineNum">     876 </span>            :          * the max datagram value supplied by the far endpoint.
+<span class="lineNum">     877 </span>            :          */
+<span class="lineNum">     878 </span><span class="lineCov">         51 :         switch (udptl-&gt;error_correction_scheme) {</span>
+<span class="lineNum">     879 </span><span class="lineCov">         16 :         case UDPTL_ERROR_CORRECTION_NONE:</span>
+<span class="lineNum">     880 </span>            :                 /* need room for sequence number, length indicator, redundancy
+<span class="lineNum">     881 </span>            :                  * indicator and following length indicator
+<span class="lineNum">     882 </span>            :                  */
+<span class="lineNum">     883 </span><span class="lineCov">         16 :                 new_max = udptl-&gt;far_max_datagram - 5;</span>
+<span class="lineNum">     884 </span><span class="lineCov">         16 :                 break;</span>
+<span class="lineNum">     885 </span><span class="lineCov">          9 :         case UDPTL_ERROR_CORRECTION_REDUNDANCY:</span>
+<span class="lineNum">     886 </span>            :                 /* for this case, we'd like to send as many error correction entries
+<span class="lineNum">     887 </span>            :                  * as possible (up to the number we're configured for), but we'll settle
+<span class="lineNum">     888 </span>            :                  * for sending fewer if the configured number would cause the
+<span class="lineNum">     889 </span>            :                  * calculated max IFP to be too small for effective operation
+<span class="lineNum">     890 </span>            :                  *
+<span class="lineNum">     891 </span>            :                  * need room for sequence number, length indicators and the
+<span class="lineNum">     892 </span>            :                  * configured number of redundant packets
+<span class="lineNum">     893 </span>            :                  *
+<span class="lineNum">     894 </span>            :                  * note: we purposely don't allow error_correction_entries to drop to
+<span class="lineNum">     895 </span>            :                  * zero in this loop; we'd rather send smaller IFPs (and thus reduce
+<span class="lineNum">     896 </span>            :                  * the image data transfer rate) than sacrifice redundancy completely
+<span class="lineNum">     897 </span>            :                  */
+<span class="lineNum">     898 </span>            :                 for (;;) {
+<span class="lineNum">     899 </span><span class="lineCov">          9 :                         new_max = (udptl-&gt;far_max_datagram - 8) / (udptl-&gt;error_correction_entries + 1);</span>
+<span class="lineNum">     900 </span>            : 
+<span class="lineNum">     901 </span><span class="lineCov">          9 :                         if ((new_max &lt; 80) &amp;&amp; (udptl-&gt;error_correction_entries &gt; 1)) {</span>
+<span class="lineNum">     902 </span>            :                                 /* the max ifp is not large enough, subtract an
+<span class="lineNum">     903 </span>            :                                  * error correction entry and calculate again
+<span class="lineNum">     904 </span>            :                                  * */
+<span class="lineNum">     905 </span><span class="lineNoCov">          0 :                                 --udptl-&gt;error_correction_entries;</span>
+<span class="lineNum">     906 </span>            :                         } else {
+<span class="lineNum">     907 </span>            :                                 break;
+<span class="lineNum">     908 </span>            :                         }
+<span class="lineNum">     909 </span>            :                 }
+<span class="lineNum">     910 </span><span class="lineCov">          9 :                 break;</span>
+<span class="lineNum">     911 </span><span class="lineCov">         26 :         case UDPTL_ERROR_CORRECTION_FEC:</span>
+<span class="lineNum">     912 </span>            :                 /* need room for sequence number, length indicators and a
+<span class="lineNum">     913 </span>            :                  * a single IFP of the maximum size expected
+<span class="lineNum">     914 </span>            :                  */
+<span class="lineNum">     915 </span><span class="lineCov">         26 :                 new_max = (udptl-&gt;far_max_datagram - 10) / 2;</span>
+<span class="lineNum">     916 </span><span class="lineCov">         26 :                 break;</span>
+<span class="lineNum">     917 </span>            :         }
+<span class="lineNum">     918 </span>            :         /* subtract 5% of space for insurance */
+<span class="lineNum">     919 </span><span class="lineCov">         51 :         udptl-&gt;far_max_ifp = new_max * 0.95;</span>
+<a name="920"><span class="lineNum">     920 </span>            : }</a>
+<span class="lineNum">     921 </span>            : 
+<span class="lineNum">     922 </span><span class="lineCov">         53 : enum ast_t38_ec_modes ast_udptl_get_error_correction_scheme(const struct ast_udptl *udptl)</span>
+<span class="lineNum">     923 </span>            : {
+<span class="lineNum">     924 </span><span class="lineCov">         53 :         return udptl-&gt;error_correction_scheme;</span>
+<a name="925"><span class="lineNum">     925 </span>            : }</a>
+<span class="lineNum">     926 </span>            : 
+<span class="lineNum">     927 </span><span class="lineCov">        134 : void ast_udptl_set_error_correction_scheme(struct ast_udptl *udptl, enum ast_t38_ec_modes ec)</span>
+<span class="lineNum">     928 </span>            : {
+<span class="lineNum">     929 </span><span class="lineCov">        134 :         udptl-&gt;error_correction_scheme = ec;</span>
+<span class="lineNum">     930 </span><span class="lineCov">        134 :         switch (ec) {</span>
+<span class="lineNum">     931 </span><span class="lineCov">         61 :         case UDPTL_ERROR_CORRECTION_FEC:</span>
+<span class="lineNum">     932 </span><span class="lineCov">         61 :                 udptl-&gt;error_correction_scheme = UDPTL_ERROR_CORRECTION_FEC;</span>
+<span class="lineNum">     933 </span><span class="lineCov">         61 :                 if (udptl-&gt;error_correction_entries == 0) {</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                         udptl-&gt;error_correction_entries = 3;</span>
+<span class="lineNum">     935 </span>            :                 }
+<span class="lineNum">     936 </span><span class="lineCov">         61 :                 if (udptl-&gt;error_correction_span == 0) {</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">          0 :                         udptl-&gt;error_correction_span = 3;</span>
+<span class="lineNum">     938 </span>            :                 }
+<span class="lineNum">     939 </span><span class="lineCov">         61 :                 break;</span>
+<span class="lineNum">     940 </span><span class="lineCov">         17 :         case UDPTL_ERROR_CORRECTION_REDUNDANCY:</span>
+<span class="lineNum">     941 </span><span class="lineCov">         17 :                 udptl-&gt;error_correction_scheme = UDPTL_ERROR_CORRECTION_REDUNDANCY;</span>
+<span class="lineNum">     942 </span><span class="lineCov">         17 :                 if (udptl-&gt;error_correction_entries == 0) {</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                         udptl-&gt;error_correction_entries = 3;</span>
+<span class="lineNum">     944 </span>            :                 }
+<span class="lineNum">     945 </span><span class="lineCov">         17 :                 break;</span>
+<span class="lineNum">     946 </span><span class="lineCov">         56 :         default:</span>
+<span class="lineNum">     947 </span>            :                 /* nothing to do */
+<span class="lineNum">     948 </span><span class="lineCov">         56 :                 break;</span>
+<span class="lineNum">     949 </span>            :         };
+<span class="lineNum">     950 </span>            :         /* reset calculated values so they'll be computed again */
+<span class="lineNum">     951 </span><span class="lineCov">        134 :         udptl-&gt;local_max_datagram = -1;</span>
+<span class="lineNum">     952 </span><span class="lineCov">        134 :         udptl-&gt;far_max_ifp = -1;</span>
+<a name="953"><span class="lineNum">     953 </span><span class="lineCov">        134 : }</span></a>
+<span class="lineNum">     954 </span>            : 
+<span class="lineNum">     955 </span><span class="lineCov">         55 : void ast_udptl_set_local_max_ifp(struct ast_udptl *udptl, unsigned int max_ifp)</span>
+<span class="lineNum">     956 </span>            : {
+<span class="lineNum">     957 </span>            :         /* make sure max_ifp is a positive value since a cast will take place when
+<span class="lineNum">     958 </span>            :          * when setting local_max_ifp */
+<span class="lineNum">     959 </span><span class="lineCov">         55 :         if ((signed int) max_ifp &gt; 0) {</span>
+<span class="lineNum">     960 </span><span class="lineCov">         55 :                 udptl-&gt;local_max_ifp = max_ifp;</span>
+<span class="lineNum">     961 </span>            :                 /* reset calculated values so they'll be computed again */
+<span class="lineNum">     962 </span><span class="lineCov">         55 :                 udptl-&gt;local_max_datagram = -1;</span>
+<span class="lineNum">     963 </span>            :         }
+<a name="964"><span class="lineNum">     964 </span><span class="lineCov">         55 : }</span></a>
+<span class="lineNum">     965 </span>            : 
+<span class="lineNum">     966 </span><span class="lineCov">         53 : unsigned int ast_udptl_get_local_max_datagram(struct ast_udptl *udptl)</span>
+<span class="lineNum">     967 </span>            : {
+<span class="lineNum">     968 </span><span class="lineCov">         53 :         if (udptl-&gt;local_max_datagram == -1) {</span>
+<span class="lineNum">     969 </span><span class="lineCov">         53 :                 calculate_local_max_datagram(udptl);</span>
+<span class="lineNum">     970 </span>            :         }
+<span class="lineNum">     971 </span>            : 
+<span class="lineNum">     972 </span>            :         /* this function expects a unsigned value in return. */
+<span class="lineNum">     973 </span><span class="lineCov">         53 :         if (udptl-&gt;local_max_datagram &lt; 0) {</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     975 </span>            :         }
+<span class="lineNum">     976 </span><span class="lineCov">         53 :         return udptl-&gt;local_max_datagram;</span>
+<a name="977"><span class="lineNum">     977 </span>            : }</a>
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span><span class="lineCov">         93 : void ast_udptl_set_far_max_datagram(struct ast_udptl *udptl, unsigned int max_datagram)</span>
+<span class="lineNum">     980 </span>            : {
+<span class="lineNum">     981 </span><span class="lineCov">         93 :         if (!max_datagram || (max_datagram &gt; FAX_MAX_DATAGRAM_LIMIT)) {</span>
+<span class="lineNum">     982 </span><span class="lineCov">         23 :                 udptl-&gt;far_max_datagram = DEFAULT_FAX_MAX_DATAGRAM;</span>
+<span class="lineNum">     983 </span>            :         } else {
+<span class="lineNum">     984 </span><span class="lineCov">         70 :                 udptl-&gt;far_max_datagram = max_datagram;</span>
+<span class="lineNum">     985 </span>            :         }
+<span class="lineNum">     986 </span>            :         /* reset calculated values so they'll be computed again */
+<span class="lineNum">     987 </span><span class="lineCov">         93 :         udptl-&gt;far_max_ifp = -1;</span>
+<a name="988"><span class="lineNum">     988 </span><span class="lineCov">         93 : }</span></a>
+<span class="lineNum">     989 </span>            : 
+<span class="lineNum">     990 </span><span class="lineCov">         34 : unsigned int ast_udptl_get_far_max_datagram(const struct ast_udptl *udptl)</span>
+<span class="lineNum">     991 </span>            : {
+<span class="lineNum">     992 </span><span class="lineCov">         34 :         if (udptl-&gt;far_max_datagram &lt; 0) {</span>
+<span class="lineNum">     993 </span><span class="lineCov">          3 :                 return 0;</span>
+<span class="lineNum">     994 </span>            :         }
+<span class="lineNum">     995 </span><span class="lineCov">         31 :         return udptl-&gt;far_max_datagram;</span>
+<a name="996"><span class="lineNum">     996 </span>            : }</a>
+<span class="lineNum">     997 </span>            : 
+<span class="lineNum">     998 </span><span class="lineCov">         75 : unsigned int ast_udptl_get_far_max_ifp(struct ast_udptl *udptl)</span>
+<span class="lineNum">     999 </span>            : {
+<span class="lineNum">    1000 </span><span class="lineCov">         75 :         if (udptl-&gt;far_max_ifp == -1) {</span>
+<span class="lineNum">    1001 </span><span class="lineCov">         51 :                 calculate_far_max_ifp(udptl);</span>
+<span class="lineNum">    1002 </span>            :         }
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineCov">         75 :         if (udptl-&gt;far_max_ifp &lt; 0) {</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1006 </span>            :         }
+<span class="lineNum">    1007 </span><span class="lineCov">         75 :         return udptl-&gt;far_max_ifp;</span>
+<a name="1008"><span class="lineNum">    1008 </span>            : }</a>
+<span class="lineNum">    1009 </span>            : 
+<span class="lineNum">    1010 </span><span class="lineCov">         57 : struct ast_udptl *ast_udptl_new_with_bindaddr(struct ast_sched_context *sched, struct io_context *io, int callbackmode, struct ast_sockaddr *addr)</span>
+<span class="lineNum">    1011 </span>            : {
+<span class="lineNum">    1012 </span>            :         struct ast_udptl *udptl;
+<span class="lineNum">    1013 </span>            :         int x;
+<a name="1014"><span class="lineNum">    1014 </span>            :         int startplace;</a>
+<span class="lineNum">    1015 </span>            :         int i;
+<span class="lineNum">    1016 </span><span class="lineCov">        171 :         RAII_VAR(struct udptl_config *, cfg, ao2_global_obj_ref(globals), ao2_cleanup);</span>
+<span class="lineNum">    1017 </span>            : 
+<span class="lineNum">    1018 </span><span class="lineCov">         57 :         if (!cfg || !cfg-&gt;general) {</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not access global udptl options!\n&quot;);</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1021 </span>            :         }
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineCov">         57 :         if (!(udptl = ast_calloc(1, sizeof(*udptl)))) {</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1025 </span>            :         }
+<span class="lineNum">    1026 </span>            : 
+<span class="lineNum">    1027 </span><span class="lineCov">         57 :         udptl-&gt;error_correction_span = cfg-&gt;general-&gt;fecspan;</span>
+<span class="lineNum">    1028 </span><span class="lineCov">         57 :         udptl-&gt;error_correction_entries = cfg-&gt;general-&gt;fecentries;</span>
+<span class="lineNum">    1029 </span>            : 
+<span class="lineNum">    1030 </span><span class="lineCov">         57 :         udptl-&gt;far_max_datagram = -1;</span>
+<span class="lineNum">    1031 </span><span class="lineCov">         57 :         udptl-&gt;far_max_ifp = -1;</span>
+<span class="lineNum">    1032 </span><span class="lineCov">         57 :         udptl-&gt;local_max_ifp = -1;</span>
+<span class="lineNum">    1033 </span><span class="lineCov">         57 :         udptl-&gt;local_max_datagram = -1;</span>
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span><span class="lineCov">        969 :         for (i = 0; i &lt;= UDPTL_BUF_MASK; i++) {</span>
+<span class="lineNum">    1036 </span><span class="lineCov">        912 :                 udptl-&gt;rx[i].buf_len = -1;</span>
+<span class="lineNum">    1037 </span><span class="lineCov">        912 :                 udptl-&gt;tx[i].buf_len = -1;</span>
+<span class="lineNum">    1038 </span>            :         }
+<span class="lineNum">    1039 </span>            : 
+<span class="lineNum">    1040 </span><span class="lineCov">         57 :         if ((udptl-&gt;fd = socket(ast_sockaddr_is_ipv6(addr) ?</span>
+<span class="lineNum">    1041 </span>            :                                         AF_INET6 : AF_INET, SOCK_DGRAM, 0)) &lt; 0) {
+<span class="lineNum">    1042 </span><span class="lineNoCov">          0 :                 ast_free(udptl);</span>
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to allocate socket: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1045 </span>            :         }
+<span class="lineNum">    1046 </span><span class="lineCov">         57 :         ast_fd_set_flags(udptl-&gt;fd, O_NONBLOCK);</span>
+<span class="lineNum">    1047 </span>            : 
+<span class="lineNum">    1048 </span>            : #ifdef SO_NO_CHECK
+<span class="lineNum">    1049 </span><span class="lineCov">         57 :         if (cfg-&gt;general-&gt;nochecksums)</span>
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                 setsockopt(udptl-&gt;fd, SOL_SOCKET, SO_NO_CHECK, &amp;cfg-&gt;general-&gt;nochecksums, sizeof(cfg-&gt;general-&gt;nochecksums));</span>
+<span class="lineNum">    1051 </span>            : #endif
+<span class="lineNum">    1052 </span>            : 
+<span class="lineNum">    1053 </span>            :         /* Find us a place */
+<span class="lineNum">    1054 </span><span class="lineCov">         57 :         x = (cfg-&gt;general-&gt;start == cfg-&gt;general-&gt;end) ? cfg-&gt;general-&gt;start : (ast_random() % (cfg-&gt;general-&gt;end - cfg-&gt;general-&gt;start)) + cfg-&gt;general-&gt;start;</span>
+<span class="lineNum">    1055 </span><span class="lineCov">         57 :         if (cfg-&gt;general-&gt;use_even_ports &amp;&amp; (x &amp; 1)) {</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :                 ++x;</span>
+<span class="lineNum">    1057 </span>            :         }
+<span class="lineNum">    1058 </span><span class="lineCov">         57 :         startplace = x;</span>
+<span class="lineNum">    1059 </span>            :         for (;;) {
+<span class="lineNum">    1060 </span><span class="lineCov">         57 :                 ast_sockaddr_copy(&amp;udptl-&gt;us, addr);</span>
+<span class="lineNum">    1061 </span><span class="lineCov">         57 :                 ast_sockaddr_set_port(&amp;udptl-&gt;us, x);</span>
+<span class="lineNum">    1062 </span><span class="lineCov">         57 :                 if (ast_bind(udptl-&gt;fd, &amp;udptl-&gt;us) == 0) {</span>
+<span class="lineNum">    1063 </span><span class="lineCov">         57 :                         break;</span>
+<span class="lineNum">    1064 </span>            :                 }
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :                 if (errno != EADDRINUSE &amp;&amp; errno != EACCES) {</span>
+<span class="lineNum">    1066 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unexpected bind error: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :                         close(udptl-&gt;fd);</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 :                         ast_free(udptl);</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1070 </span>            :                 }
+<span class="lineNum">    1071 </span><span class="lineNoCov">          0 :                 if (cfg-&gt;general-&gt;use_even_ports) {</span>
+<span class="lineNum">    1072 </span><span class="lineNoCov">          0 :                         x += 2;</span>
+<span class="lineNum">    1073 </span>            :                 } else {
+<span class="lineNum">    1074 </span><span class="lineNoCov">          0 :                         ++x;</span>
+<span class="lineNum">    1075 </span>            :                 }
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                 if (x &gt; cfg-&gt;general-&gt;end)</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                         x = cfg-&gt;general-&gt;start;</span>
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                 if (x == startplace) {</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;No UDPTL ports remaining\n&quot;);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">          0 :                         close(udptl-&gt;fd);</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                         ast_free(udptl);</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1083 </span>            :                 }
+<span class="lineNum">    1084 </span>            :         }
+<span class="lineNum">    1085 </span><span class="lineCov">         57 :         if (io &amp;&amp; sched &amp;&amp; callbackmode) {</span>
+<span class="lineNum">    1086 </span>            :                 /* Operate this one in a callback mode */
+<span class="lineNum">    1087 </span><span class="lineNoCov">          0 :                 udptl-&gt;sched = sched;</span>
+<span class="lineNum">    1088 </span><span class="lineNoCov">          0 :                 udptl-&gt;io = io;</span>
+<span class="lineNum">    1089 </span><span class="lineNoCov">          0 :                 udptl-&gt;ioid = ast_io_add(udptl-&gt;io, udptl-&gt;fd, udptlread, AST_IO_IN, udptl);</span>
+<span class="lineNum">    1090 </span>            :         }
+<span class="lineNum">    1091 </span>            : 
+<span class="lineNum">    1092 </span><span class="lineCov">         57 :         return udptl;</span>
+<a name="1093"><span class="lineNum">    1093 </span>            : }</a>
+<span class="lineNum">    1094 </span>            : 
+<span class="lineNum">    1095 </span><span class="lineCov">         75 : void ast_udptl_set_tag(struct ast_udptl *udptl, const char *format, ...)</span>
+<span class="lineNum">    1096 </span>            : {
+<span class="lineNum">    1097 </span>            :         va_list ap;
+<span class="lineNum">    1098 </span>            : 
+<span class="lineNum">    1099 </span><span class="lineCov">         75 :         ast_free(udptl-&gt;tag);</span>
+<span class="lineNum">    1100 </span><span class="lineCov">         75 :         udptl-&gt;tag = NULL;</span>
+<span class="lineNum">    1101 </span><span class="lineCov">         75 :         va_start(ap, format);</span>
+<span class="lineNum">    1102 </span><span class="lineCov">         75 :         if (ast_vasprintf(&amp;udptl-&gt;tag, format, ap) == -1) {</span>
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :                 udptl-&gt;tag = NULL;</span>
+<span class="lineNum">    1104 </span>            :         }
+<span class="lineNum">    1105 </span><span class="lineCov">         75 :         va_end(ap);</span>
+<a name="1106"><span class="lineNum">    1106 </span><span class="lineCov">         75 : }</span></a>
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span><span class="lineCov">         37 : int ast_udptl_setqos(struct ast_udptl *udptl, unsigned int tos, unsigned int cos)</span>
+<span class="lineNum">    1109 </span>            : {
+<span class="lineNum">    1110 </span><span class="lineCov">         37 :         return ast_set_qos(udptl-&gt;fd, tos, cos, &quot;UDPTL&quot;);</span>
+<a name="1111"><span class="lineNum">    1111 </span>            : }</a>
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span><span class="lineCov">         53 : void ast_udptl_set_peer(struct ast_udptl *udptl, const struct ast_sockaddr *them)</span>
+<span class="lineNum">    1114 </span>            : {
+<span class="lineNum">    1115 </span><span class="lineCov">         53 :         ast_sockaddr_copy(&amp;udptl-&gt;them, them);</span>
+<a name="1116"><span class="lineNum">    1116 </span><span class="lineCov">         53 : }</span></a>
+<span class="lineNum">    1117 </span>            : 
+<span class="lineNum">    1118 </span><span class="lineNoCov">          0 : void ast_udptl_get_peer(const struct ast_udptl *udptl, struct ast_sockaddr *them)</span>
+<span class="lineNum">    1119 </span>            : {
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :         ast_sockaddr_copy(them, &amp;udptl-&gt;them);</span>
+<a name="1121"><span class="lineNum">    1121 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1122 </span>            : 
+<span class="lineNum">    1123 </span><span class="lineCov">         53 : void ast_udptl_get_us(const struct ast_udptl *udptl, struct ast_sockaddr *us)</span>
+<span class="lineNum">    1124 </span>            : {
+<span class="lineNum">    1125 </span><span class="lineCov">         53 :         ast_sockaddr_copy(us, &amp;udptl-&gt;us);</span>
+<a name="1126"><span class="lineNum">    1126 </span><span class="lineCov">         53 : }</span></a>
+<span class="lineNum">    1127 </span>            : 
+<span class="lineNum">    1128 </span><span class="lineCov">         93 : void ast_udptl_stop(struct ast_udptl *udptl)</span>
+<span class="lineNum">    1129 </span>            : {
+<span class="lineNum">    1130 </span><span class="lineCov">         93 :         ast_sockaddr_setnull(&amp;udptl-&gt;them);</span>
+<a name="1131"><span class="lineNum">    1131 </span><span class="lineCov">         93 : }</span></a>
+<span class="lineNum">    1132 </span>            : 
+<span class="lineNum">    1133 </span><span class="lineCov">         57 : void ast_udptl_destroy(struct ast_udptl *udptl)</span>
+<span class="lineNum">    1134 </span>            : {
+<span class="lineNum">    1135 </span><span class="lineCov">         57 :         if (udptl-&gt;ioid)</span>
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :                 ast_io_remove(udptl-&gt;io, udptl-&gt;ioid);</span>
+<span class="lineNum">    1137 </span><span class="lineCov">         57 :         if (udptl-&gt;fd &gt; -1)</span>
+<span class="lineNum">    1138 </span><span class="lineCov">         57 :                 close(udptl-&gt;fd);</span>
+<span class="lineNum">    1139 </span><span class="lineCov">         57 :         if (udptl-&gt;tag)</span>
+<span class="lineNum">    1140 </span><span class="lineCov">         51 :                 ast_free(udptl-&gt;tag);</span>
+<span class="lineNum">    1141 </span><span class="lineCov">         57 :         ast_free(udptl);</span>
+<a name="1142"><span class="lineNum">    1142 </span><span class="lineCov">         57 : }</span></a>
+<span class="lineNum">    1143 </span>            : 
+<span class="lineNum">    1144 </span><span class="lineCov">      38802 : int ast_udptl_write(struct ast_udptl *s, struct ast_frame *f)</span>
+<span class="lineNum">    1145 </span><span class="lineCov">      38802 : {</span>
+<span class="lineNum">    1146 </span>            :         unsigned int seq;
+<span class="lineNum">    1147 </span><span class="lineCov">      38802 :         unsigned int len = f-&gt;datalen;</span>
+<span class="lineNum">    1148 </span>            :         /* if no max datagram size is provided, use default value */
+<span class="lineNum">    1149 </span><span class="lineCov">      38802 :         const int bufsize = (s-&gt;far_max_datagram &gt; 0) ? s-&gt;far_max_datagram : DEFAULT_FAX_MAX_DATAGRAM;</span>
+<span class="lineNum">    1150 </span><span class="lineCov">      38802 :         uint8_t buf[bufsize];</span>
+<span class="lineNum">    1151 </span>            : 
+<span class="lineNum">    1152 </span><span class="lineCov">      38802 :         memset(buf, 0, sizeof(buf));</span>
+<span class="lineNum">    1153 </span>            : 
+<span class="lineNum">    1154 </span>            :         /* If we have no peer, return immediately */
+<span class="lineNum">    1155 </span><span class="lineCov">      38802 :         if (ast_sockaddr_isnull(&amp;s-&gt;them)) {</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1157 </span>            :         }
+<span class="lineNum">    1158 </span>            : 
+<span class="lineNum">    1159 </span>            :         /* If there is no data length, return immediately */
+<span class="lineNum">    1160 </span><span class="lineCov">      38802 :         if (f-&gt;datalen == 0)</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1162 </span>            : 
+<span class="lineNum">    1163 </span><span class="lineCov">      38802 :         if ((f-&gt;frametype != AST_FRAME_MODEM) ||</span>
+<span class="lineNum">    1164 </span><span class="lineCov">      38802 :             (f-&gt;subclass.integer != AST_MODEM_T38)) {</span>
+<span class="lineNum">    1165 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;UDPTL (%s): UDPTL can only send T.38 data.\n&quot;,</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :                         LOG_TAG(s));</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1168 </span>            :         }
+<span class="lineNum">    1169 </span>            : 
+<span class="lineNum">    1170 </span><span class="lineCov">      38802 :         if (len &gt; s-&gt;far_max_ifp) {</span>
+<span class="lineNum">    1171 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">    1172 </span>            :                         &quot;UDPTL (%s): UDPTL asked to send %u bytes of IFP when far end only prepared to accept %d bytes; data loss will occur.&quot;
+<span class="lineNum">    1173 </span>            :                         &quot;You may need to override the T38FaxMaxDatagram value for this endpoint in the channel driver configuration.\n&quot;,
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :                         LOG_TAG(s), len, s-&gt;far_max_ifp);</span>
+<span class="lineNum">    1175 </span><span class="lineNoCov">          0 :                 len = s-&gt;far_max_ifp;</span>
+<span class="lineNum">    1176 </span>            :         }
+<span class="lineNum">    1177 </span>            : 
+<span class="lineNum">    1178 </span>            :         /* Save seq_no for debug output because udptl_build_packet increments it */
+<span class="lineNum">    1179 </span><span class="lineCov">      38802 :         seq = s-&gt;tx_seq_no &amp; 0xFFFF;</span>
+<span class="lineNum">    1180 </span>            : 
+<span class="lineNum">    1181 </span>            :         /* Cook up the UDPTL packet, with the relevant EC info. */
+<span class="lineNum">    1182 </span><span class="lineCov">      38802 :         len = udptl_build_packet(s, buf, sizeof(buf), f-&gt;data.ptr, len);</span>
+<span class="lineNum">    1183 </span>            : 
+<span class="lineNum">    1184 </span><span class="lineCov">      38802 :         if ((signed int) len &gt; 0 &amp;&amp; !ast_sockaddr_isnull(&amp;s-&gt;them)) {</span>
+<span class="lineNum">    1185 </span><span class="lineCov">      38802 :                 if (ast_sendto(s-&gt;fd, buf, len, 0, &amp;s-&gt;them) &lt; 0) {</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;UDPTL (%s): Transmission error to %s: %s\n&quot;,</span>
+<span class="lineNum">    1187 </span><span class="lineNoCov">          0 :                                 LOG_TAG(s), ast_sockaddr_stringify(&amp;s-&gt;them), strerror(errno));</span>
+<span class="lineNum">    1188 </span>            :                 }
+<span class="lineNum">    1189 </span><span class="lineCov">      38802 :                 if (udptl_debug_test_addr(&amp;s-&gt;them)) {</span>
+<span class="lineNum">    1190 </span><span class="lineCov">       1923 :                         ast_verb(1, &quot;UDPTL (%s): packet to %s (seq %u, len %u)\n&quot;,</span>
+<span class="lineNum">    1191 </span>            :                                 LOG_TAG(s), ast_sockaddr_stringify(&amp;s-&gt;them), seq, len);
+<span class="lineNum">    1192 </span>            :                 }
+<span class="lineNum">    1193 </span>            :         }
+<span class="lineNum">    1194 </span>            : 
+<span class="lineNum">    1195 </span><span class="lineCov">      38802 :         return 0;</span>
+<a name="1196"><span class="lineNum">    1196 </span>            : }</a>
+<span class="lineNum">    1197 </span>            : 
+<span class="lineNum">    1198 </span><span class="lineCov">       1126 : static char *handle_cli_udptl_set_debug(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">    1199 </span>            : {
+<span class="lineNum">    1200 </span><span class="lineCov">       1126 :         switch (cmd) {</span>
+<span class="lineNum">    1201 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">    1202 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;udptl set debug {on|off|ip}&quot;;</span>
+<span class="lineNum">    1203 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">    1204 </span>            :                         &quot;Usage: udptl set debug {on|off|ip host[:port]}\n&quot;
+<span class="lineNum">    1205 </span>            :                         &quot;       Enable or disable dumping of UDPTL packets.\n&quot;
+<span class="lineNum">    1206 </span>            :                         &quot;       If ip is specified, limit the dumped packets to those to and from\n&quot;
+<span class="lineNum">    1207 </span>            :                         &quot;       the specified 'host' with optional port.\n&quot;;
+<span class="lineNum">    1208 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">    1209 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1211 </span>            :         }
+<span class="lineNum">    1212 </span>            : 
+<span class="lineNum">    1213 </span><span class="lineCov">          2 :         if (a-&gt;argc &lt; 4 || a-&gt;argc &gt; 5)</span>
+<span class="lineNum">    1214 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1215 </span>            : 
+<span class="lineNum">    1216 </span><span class="lineCov">          2 :         if (a-&gt;argc == 4) {</span>
+<span class="lineNum">    1217 </span><span class="lineCov">          2 :                 if (!strncasecmp(a-&gt;argv[3], &quot;on&quot;, 2)) {</span>
+<span class="lineNum">    1218 </span><span class="lineCov">          2 :                         udptldebug = 1;</span>
+<span class="lineNum">    1219 </span><span class="lineCov">          2 :                         memset(&amp;udptldebugaddr, 0, sizeof(udptldebugaddr));</span>
+<span class="lineNum">    1220 </span><span class="lineCov">          2 :                         ast_cli(a-&gt;fd, &quot;UDPTL Debugging Enabled\n&quot;);</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">          0 :                 } else if (!strncasecmp(a-&gt;argv[3], &quot;off&quot;, 3)) {</span>
+<span class="lineNum">    1222 </span><span class="lineNoCov">          0 :                         udptldebug = 0;</span>
+<span class="lineNum">    1223 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;UDPTL Debugging Disabled\n&quot;);</span>
+<span class="lineNum">    1224 </span>            :                 } else {
+<span class="lineNum">    1225 </span><span class="lineNoCov">          0 :                         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1226 </span>            :                 }
+<span class="lineNum">    1227 </span>            :         } else {
+<span class="lineNum">    1228 </span>            :                 struct ast_sockaddr *addrs;
+<span class="lineNum">    1229 </span><span class="lineNoCov">          0 :                 if (strncasecmp(a-&gt;argv[3], &quot;ip&quot;, 2))</span>
+<span class="lineNum">    1230 </span><span class="lineNoCov">          0 :                         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1231 </span><span class="lineNoCov">          0 :                 if (!ast_sockaddr_resolve(&amp;addrs, a-&gt;argv[4], 0, 0)) {</span>
+<span class="lineNum">    1232 </span><span class="lineNoCov">          0 :                         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1233 </span>            :                 }
+<span class="lineNum">    1234 </span><span class="lineNoCov">          0 :                 ast_sockaddr_copy(&amp;udptldebugaddr, &amp;addrs[0]);</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;UDPTL Debugging Enabled for IP: %s\n&quot;, ast_sockaddr_stringify(&amp;udptldebugaddr));</span>
+<span class="lineNum">    1236 </span><span class="lineNoCov">          0 :                 udptldebug = 1;</span>
+<span class="lineNum">    1237 </span><span class="lineNoCov">          0 :                 ast_free(addrs);</span>
+<span class="lineNum">    1238 </span>            :         }
+<span class="lineNum">    1239 </span>            : 
+<span class="lineNum">    1240 </span><span class="lineCov">          2 :         return CLI_SUCCESS;</span>
+<a name="1241"><span class="lineNum">    1241 </span>            : }</a>
+<span class="lineNum">    1242 </span>            : 
+<a name="1243"><span class="lineNum">    1243 </span><span class="lineCov">       1124 : static char *handle_cli_show_config(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span></a>
+<span class="lineNum">    1244 </span>            : {
+<span class="lineNum">    1245 </span><span class="lineCov">       2248 :         RAII_VAR(struct udptl_config *, cfg, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1246 </span>            : 
+<span class="lineNum">    1247 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">    1248 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">    1249 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;udptl show config&quot;;</span>
+<span class="lineNum">    1250 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">    1251 </span>            :                         &quot;Usage: udptl show config\n&quot;
+<span class="lineNum">    1252 </span>            :                         &quot;       Display UDPTL configuration options\n&quot;;
+<span class="lineNum">    1253 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">    1254 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">    1255 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1256 </span>            :         }
+<span class="lineNum">    1257 </span>            : 
+<span class="lineNum">    1258 </span><span class="lineNoCov">          0 :         if (!(cfg = ao2_global_obj_ref(globals))) {</span>
+<span class="lineNum">    1259 </span><span class="lineNoCov">          0 :                 return CLI_FAILURE;</span>
+<span class="lineNum">    1260 </span>            :         }
+<span class="lineNum">    1261 </span>            : 
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;UDPTL Global options\n&quot;);</span>
+<span class="lineNum">    1263 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;--------------------\n&quot;);</span>
+<span class="lineNum">    1264 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;udptlstart:      %u\n&quot;, cfg-&gt;general-&gt;start);</span>
+<span class="lineNum">    1265 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;udptlend:        %u\n&quot;, cfg-&gt;general-&gt;end);</span>
+<span class="lineNum">    1266 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;udptlfecentries: %u\n&quot;, cfg-&gt;general-&gt;fecentries);</span>
+<span class="lineNum">    1267 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;udptlfecspan:    %u\n&quot;, cfg-&gt;general-&gt;fecspan);</span>
+<span class="lineNum">    1268 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;use_even_ports:  %s\n&quot;, AST_CLI_YESNO(cfg-&gt;general-&gt;use_even_ports));</span>
+<span class="lineNum">    1269 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;udptlchecksums: %s\n&quot;, AST_CLI_YESNO(!cfg-&gt;general-&gt;nochecksums));</span>
+<span class="lineNum">    1270 </span>            : 
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">    1272 </span>            : }
+<span class="lineNum">    1273 </span>            : 
+<span class="lineNum">    1274 </span>            : static struct ast_cli_entry cli_udptl[] = {
+<span class="lineNum">    1275 </span>            :         AST_CLI_DEFINE(handle_cli_udptl_set_debug, &quot;Enable/Disable UDPTL debugging&quot;),
+<span class="lineNum">    1276 </span>            :         AST_CLI_DEFINE(handle_cli_show_config, &quot;Show UDPTL config options&quot;),
+<a name="1277"><span class="lineNum">    1277 </span>            : };</a>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineCov">       1121 : static void udptl_config_destructor(void *obj)</span>
+<span class="lineNum">    1280 </span>            : {
+<span class="lineNum">    1281 </span><span class="lineCov">       1121 :         struct udptl_config *cfg = obj;</span>
+<span class="lineNum">    1282 </span><span class="lineCov">       1121 :         ao2_cleanup(cfg-&gt;general);</span>
+<a name="1283"><span class="lineNum">    1283 </span><span class="lineCov">       1121 : }</span></a>
+<span class="lineNum">    1284 </span>            : 
+<span class="lineNum">    1285 </span><span class="lineCov">       1124 : static void *udptl_snapshot_alloc(void)</span>
+<span class="lineNum">    1286 </span>            : {
+<span class="lineNum">    1287 </span>            :         struct udptl_config *cfg;
+<span class="lineNum">    1288 </span>            : 
+<span class="lineNum">    1289 </span><span class="lineCov">       1124 :         if (!(cfg = ao2_alloc(sizeof(*cfg), udptl_config_destructor))) {</span>
+<span class="lineNum">    1290 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1291 </span>            :         }
+<span class="lineNum">    1292 </span><span class="lineCov">       1124 :         if (!(cfg-&gt;general = ao2_alloc(sizeof(*cfg-&gt;general), NULL))) {</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">          0 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">    1294 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1295 </span>            :         }
+<span class="lineNum">    1296 </span>            : 
+<span class="lineNum">    1297 </span><span class="lineCov">       1124 :         return cfg;</span>
+<a name="1298"><span class="lineNum">    1298 </span>            : }</a>
+<span class="lineNum">    1299 </span>            : 
+<span class="lineNum">    1300 </span><span class="lineNoCov">          0 : static int removed_options_handler(const struct aco_option *opt, struct ast_variable *var, void *obj)</span>
+<span class="lineNum">    1301 </span>            : {
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :         if (!strcasecmp(var-&gt;name, &quot;t38faxudpec&quot;)) {</span>
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;t38faxudpec in udptl.conf is no longer supported; use the t38pt_udptl configuration option in sip.conf instead.\n&quot;);</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">          0 :         } else if (!strcasecmp(var-&gt;name, &quot;t38faxmaxdatagram&quot;)) {</span>
+<span class="lineNum">    1305 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;t38faxmaxdatagram in udptl.conf is no longer supported; value is now supplied by T.38 applications.\n&quot;);</span>
+<span class="lineNum">    1306 </span>            :         }
+<span class="lineNum">    1307 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="1308"><span class="lineNum">    1308 </span>            : }</a>
+<span class="lineNum">    1309 </span>            : 
+<span class="lineNum">    1310 </span><span class="lineCov">       1124 : static void __ast_udptl_reload(int reload)</span>
+<span class="lineNum">    1311 </span>            : {
+<a name="1312"><span class="lineNum">    1312 </span><span class="lineCov">       1124 :         if (aco_process_config(&amp;cfg_info, reload) == ACO_PROCESS_ERROR) {</span></a>
+<span class="lineNum">    1313 </span><span class="lineNoCov">          0 :                 if (!reload) {</span>
+<span class="lineNum">    1314 </span><span class="lineNoCov">          0 :                         RAII_VAR(struct udptl_config *, udptl_cfg, udptl_snapshot_alloc(), ao2_cleanup);</span>
+<span class="lineNum">    1315 </span>            : 
+<span class="lineNum">    1316 </span><span class="lineNoCov">          0 :                         if (aco_set_defaults(&amp;general_option, &quot;general&quot;, udptl_cfg-&gt;general)) {</span>
+<span class="lineNum">    1317 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Failed to load udptl.conf and failed to initialize defaults.\n&quot;);</span>
+<span class="lineNum">    1318 </span><span class="lineNoCov">          0 :                                 return;</span>
+<span class="lineNum">    1319 </span>            :                         }
+<span class="lineNum">    1320 </span>            : 
+<span class="lineNum">    1321 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;Could not load udptl config; using defaults\n&quot;);</span>
+<span class="lineNum">    1322 </span><span class="lineNoCov">          0 :                         ao2_global_obj_replace_unref(globals, udptl_cfg);</span>
+<span class="lineNum">    1323 </span>            :                 }
+<span class="lineNum">    1324 </span>            :         }
+<a name="1325"><span class="lineNum">    1325 </span>            : }</a>
+<span class="lineNum">    1326 </span>            : 
+<span class="lineNum">    1327 </span><span class="lineCov">       1124 : static int udptl_pre_apply_config(void) {</span>
+<span class="lineNum">    1328 </span><span class="lineCov">       1124 :         struct udptl_config *cfg = aco_pending_config(&amp;cfg_info);</span>
+<span class="lineNum">    1329 </span>            : 
+<span class="lineNum">    1330 </span><span class="lineCov">       1124 :         if (!cfg-&gt;general) {</span>
+<span class="lineNum">    1331 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1332 </span>            :         }
+<span class="lineNum">    1333 </span>            : 
+<span class="lineNum">    1334 </span>            : #ifndef SO_NO_CHECK
+<span class="lineNum">    1335 </span>            :         if (cfg-&gt;general-&gt;nochecksums) {
+<span class="lineNum">    1336 </span>            :                 ast_log(LOG_WARNING, &quot;Disabling UDPTL checksums is not supported on this operating system!\n&quot;);
+<span class="lineNum">    1337 </span>            :                 cfg-&gt;general-&gt;nochecksums = 0;
+<span class="lineNum">    1338 </span>            :         }
+<span class="lineNum">    1339 </span>            : #endif
+<span class="lineNum">    1340 </span>            : 
+<span class="lineNum">    1341 </span>            :         /* Fix up any global config values that we can handle before replacing the config */
+<span class="lineNum">    1342 </span><span class="lineCov">       1124 :         if (cfg-&gt;general-&gt;use_even_ports &amp;&amp; (cfg-&gt;general-&gt;start &amp; 1)) {</span>
+<span class="lineNum">    1343 </span><span class="lineNoCov">          0 :                 ++cfg-&gt;general-&gt;start;</span>
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;Odd numbered udptlstart specified but use_even_ports enabled. udptlstart is now %u\n&quot;, cfg-&gt;general-&gt;start);</span>
+<span class="lineNum">    1345 </span>            :         }
+<span class="lineNum">    1346 </span><span class="lineCov">       1124 :         if (cfg-&gt;general-&gt;start &gt; cfg-&gt;general-&gt;end) {</span>
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unreasonable values for UDPTL start/end ports; defaulting to %s-%s.\n&quot;, __stringify(DEFAULT_UDPTLSTART), __stringify(DEFAULT_UDPTLEND));</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">          0 :                 cfg-&gt;general-&gt;start = DEFAULT_UDPTLSTART;</span>
+<span class="lineNum">    1349 </span><span class="lineNoCov">          0 :                 cfg-&gt;general-&gt;end = DEFAULT_UDPTLEND;</span>
+<span class="lineNum">    1350 </span>            :         }
+<span class="lineNum">    1351 </span><span class="lineCov">       1124 :         if (cfg-&gt;general-&gt;use_even_ports &amp;&amp; (cfg-&gt;general-&gt;end &amp; 1)) {</span>
+<span class="lineNum">    1352 </span><span class="lineNoCov">          0 :                 --cfg-&gt;general-&gt;end;</span>
+<span class="lineNum">    1353 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;Odd numbered udptlend specified but use_even_ports enabled. udptlend is now %u\n&quot;, cfg-&gt;general-&gt;end);</span>
+<span class="lineNum">    1354 </span>            :         }
+<span class="lineNum">    1355 </span>            : 
+<span class="lineNum">    1356 </span><span class="lineCov">       1124 :         return 0;</span>
+<a name="1357"><span class="lineNum">    1357 </span>            : }</a>
+<span class="lineNum">    1358 </span>            : 
+<span class="lineNum">    1359 </span><span class="lineNoCov">          0 : static int reload_module(void)</span>
+<span class="lineNum">    1360 </span>            : {
+<span class="lineNum">    1361 </span><span class="lineNoCov">          0 :         __ast_udptl_reload(1);</span>
+<span class="lineNum">    1362 </span>            : 
+<span class="lineNum">    1363 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1364 </span>            : }
+<span class="lineNum">    1365 </span>            : 
+<span class="lineNum">    1366 </span>            : /*!
+<span class="lineNum">    1367 </span>            :  * \internal
+<a name="1368"><span class="lineNum">    1368 </span>            :  * \brief Clean up resources on Asterisk shutdown</a>
+<span class="lineNum">    1369 </span>            :  */
+<span class="lineNum">    1370 </span><span class="lineCov">       1121 : static int unload_module(void)</span>
+<span class="lineNum">    1371 </span>            : {
+<span class="lineNum">    1372 </span><span class="lineCov">       1121 :         ast_cli_unregister_multiple(cli_udptl, ARRAY_LEN(cli_udptl));</span>
+<span class="lineNum">    1373 </span><span class="lineCov">       1121 :         ao2_t_global_obj_release(globals, &quot;Unref udptl global container in shutdown&quot;);</span>
+<span class="lineNum">    1374 </span><span class="lineCov">       1121 :         aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">    1375 </span>            : 
+<span class="lineNum">    1376 </span><span class="lineCov">       1121 :         return 0;</span>
+<a name="1377"><span class="lineNum">    1377 </span>            : }</a>
+<span class="lineNum">    1378 </span>            : 
+<span class="lineNum">    1379 </span><span class="lineCov">       1124 : static int load_module(void)</span>
+<span class="lineNum">    1380 </span>            : {
+<span class="lineNum">    1381 </span><span class="lineCov">       1124 :         if (aco_info_init(&amp;cfg_info)) {</span>
+<span class="lineNum">    1382 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">    1383 </span>            :         }
+<span class="lineNum">    1384 </span>            : 
+<span class="lineNum">    1385 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;udptlstart&quot;, ACO_EXACT, general_options, __stringify(DEFAULT_UDPTLSTART),</span>
+<span class="lineNum">    1386 </span>            :                 OPT_UINT_T, PARSE_IN_RANGE | PARSE_DEFAULT,
+<span class="lineNum">    1387 </span>            :                 FLDSET(struct udptl_global_options, start), DEFAULT_UDPTLSTART, 1024, 65535);
+<span class="lineNum">    1388 </span>            : 
+<span class="lineNum">    1389 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;udptlend&quot;, ACO_EXACT, general_options, __stringify(DEFAULT_UDPTLEND),</span>
+<span class="lineNum">    1390 </span>            :                 OPT_UINT_T, PARSE_IN_RANGE | PARSE_DEFAULT,
+<span class="lineNum">    1391 </span>            :                 FLDSET(struct udptl_global_options, end), DEFAULT_UDPTLEND, 1024, 65535);
+<span class="lineNum">    1392 </span>            : 
+<span class="lineNum">    1393 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;udptlfecentries&quot;, ACO_EXACT, general_options, NULL,</span>
+<span class="lineNum">    1394 </span>            :                 OPT_UINT_T, PARSE_IN_RANGE | PARSE_RANGE_DEFAULTS,
+<span class="lineNum">    1395 </span>            :                 FLDSET(struct udptl_global_options, fecentries), 1, MAX_FEC_ENTRIES);
+<span class="lineNum">    1396 </span>            : 
+<span class="lineNum">    1397 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;udptlfecspan&quot;, ACO_EXACT, general_options, NULL,</span>
+<span class="lineNum">    1398 </span>            :                 OPT_UINT_T, PARSE_IN_RANGE | PARSE_RANGE_DEFAULTS,
+<span class="lineNum">    1399 </span>            :                 FLDSET(struct udptl_global_options, fecspan), 1, MAX_FEC_SPAN);
+<span class="lineNum">    1400 </span>            : 
+<span class="lineNum">    1401 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;udptlchecksums&quot;, ACO_EXACT, general_options, &quot;yes&quot;,</span>
+<span class="lineNum">    1402 </span>            :                 OPT_BOOL_T, 0, FLDSET(struct udptl_global_options, nochecksums));
+<span class="lineNum">    1403 </span>            : 
+<span class="lineNum">    1404 </span><span class="lineCov">       1124 :         aco_option_register(&amp;cfg_info, &quot;use_even_ports&quot;, ACO_EXACT, general_options, &quot;no&quot;,</span>
+<span class="lineNum">    1405 </span>            :                 OPT_BOOL_T, 1, FLDSET(struct udptl_global_options, use_even_ports));
+<span class="lineNum">    1406 </span>            : 
+<span class="lineNum">    1407 </span><span class="lineCov">       1124 :         aco_option_register_custom(&amp;cfg_info, &quot;t38faxudpec&quot;, ACO_EXACT, general_options, NULL, removed_options_handler, 0);</span>
+<span class="lineNum">    1408 </span><span class="lineCov">       1124 :         aco_option_register_custom(&amp;cfg_info, &quot;t38faxmaxdatagram&quot;, ACO_EXACT, general_options, NULL, removed_options_handler, 0);</span>
+<span class="lineNum">    1409 </span>            : 
+<span class="lineNum">    1410 </span><span class="lineCov">       1124 :         __ast_udptl_reload(0);</span>
+<span class="lineNum">    1411 </span>            : 
+<span class="lineNum">    1412 </span><span class="lineCov">       1124 :         ast_cli_register_multiple(cli_udptl, ARRAY_LEN(cli_udptl));</span>
+<span class="lineNum">    1413 </span>            : 
+<span class="lineNum">    1414 </span><span class="lineCov">       1124 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="1415"><span class="lineNum">    1415 </span>            : }</a>
+<span class="lineNum">    1416 </span>            : 
+<span class="lineNum">    1417 </span><span class="lineCov">      10264 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS | AST_MODFLAG_LOAD_ORDER, &quot;UDPTL&quot;,</span>
+<span class="lineNum">    1418 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">    1419 </span>            :         .load = load_module,
+<span class="lineNum">    1420 </span>            :         .unload = unload_module,
+<span class="lineNum">    1421 </span>            :         .reload = reload_module,
+<span class="lineNum">    1422 </span>            :         .load_pri = AST_MODPRI_CORE,
+<span class="lineNum">    1423 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

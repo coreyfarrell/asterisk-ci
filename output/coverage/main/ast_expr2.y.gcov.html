@@ -1,0 +1,1765 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/ast_expr2.y</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - ast_expr2.y<span style="font-size: 80%;"> (source / <a href="ast_expr2.y.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">382</td>
+            <td class="headerCovTableEntry">729</td>
+            <td class="headerCovTableEntryLo">52.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntryMed">86.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : %{</a>
+<span class="lineNum">       2 </span>            : /* Written by Pace Willisson (pace@blitz.com)
+<span class="lineNum">       3 </span>            :  * and placed in the public domain.
+<span class="lineNum">       4 </span>            :  *
+<span class="lineNum">       5 </span>            :  * Largely rewritten by J.T. Conklin (jtc@wimsey.com)
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * And then overhauled twice by Steve Murphy (murf@digium.com)
+<span class="lineNum">       8 </span>            :  * to add double-quoted strings, allow mult. spaces, improve
+<span class="lineNum">       9 </span>            :  * error messages, and then to fold in a flex scanner for the
+<span class="lineNum">      10 </span>            :  * yylex operation.
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * $FreeBSD: src/bin/expr/expr.y,v 1.16 2000/07/22 10:59:36 se Exp $
+<span class="lineNum">      13 </span>            :  */
+<span class="lineNum">      14 </span>            : 
+<span class="lineNum">      15 </span>            : #define ASTMM_LIBC ASTMM_REDIRECT
+<span class="lineNum">      16 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &lt;sys/cdefs.h&gt;
+<span class="lineNum">      19 </span>            : #include &lt;sys/types.h&gt;
+<span class="lineNum">      20 </span>            : #include &lt;stdio.h&gt;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : #if defined(STANDALONE) || defined(STANDALONE2)
+<span class="lineNum">      23 </span>            : #ifndef __USE_ISOC99
+<span class="lineNum">      24 </span>            : #define __USE_ISOC99 1
+<span class="lineNum">      25 </span>            : #endif
+<span class="lineNum">      26 </span>            : #endif
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #ifdef __USE_ISOC99
+<span class="lineNum">      29 </span>            : #define FP___PRINTF &quot;%.18Lg&quot;
+<span class="lineNum">      30 </span>            : #define FP___TYPE    long double
+<span class="lineNum">      31 </span>            : #else
+<span class="lineNum">      32 </span>            : #define FP___PRINTF &quot;%.16g&quot;
+<span class="lineNum">      33 </span>            : #define FP___TYPE    double
+<span class="lineNum">      34 </span>            : #endif
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #ifdef HAVE_COSL
+<span class="lineNum">      37 </span>            : #define FUNC_COS   cosl
+<span class="lineNum">      38 </span>            : #elif defined(HAVE_COS)
+<span class="lineNum">      39 </span>            : #define FUNC_COS        (long double)cos
+<span class="lineNum">      40 </span>            : #endif
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : #ifdef HAVE_SINL
+<span class="lineNum">      43 </span>            : #define FUNC_SIN   sinl
+<span class="lineNum">      44 </span>            : #elif defined(HAVE_SIN)
+<span class="lineNum">      45 </span>            : #define FUNC_SIN        (long double)sin
+<span class="lineNum">      46 </span>            : #endif
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : #ifdef HAVE_TANL
+<span class="lineNum">      49 </span>            : #define FUNC_TAN   tanl
+<span class="lineNum">      50 </span>            : #elif defined(HAVE_TAN)
+<span class="lineNum">      51 </span>            : #define FUNC_TAN        (long double)tan
+<span class="lineNum">      52 </span>            : #endif
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            : #ifdef HAVE_ACOSL
+<span class="lineNum">      55 </span>            : #define FUNC_ACOS   acosl
+<span class="lineNum">      56 </span>            : #elif defined(HAVE_ACOS)
+<span class="lineNum">      57 </span>            : #define FUNC_ACOS       (long double)acos
+<span class="lineNum">      58 </span>            : #endif
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : #ifdef HAVE_ASINL
+<span class="lineNum">      61 </span>            : #define FUNC_ASIN   asinl
+<span class="lineNum">      62 </span>            : #elif defined(HAVE_ASIN)
+<span class="lineNum">      63 </span>            : #define FUNC_ASIN       (long double)asin
+<span class="lineNum">      64 </span>            : #endif
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : #ifdef HAVE_ATANL
+<span class="lineNum">      67 </span>            : #define FUNC_ATAN   atanl
+<span class="lineNum">      68 </span>            : #elif defined(HAVE_ATAN)
+<span class="lineNum">      69 </span>            : #define FUNC_ATAN       (long double)atan
+<span class="lineNum">      70 </span>            : #endif
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            : #ifdef HAVE_ATAN2L
+<span class="lineNum">      73 </span>            : #define FUNC_ATAN2   atan2l
+<span class="lineNum">      74 </span>            : #elif defined(HAVE_ATAN2)
+<span class="lineNum">      75 </span>            : #define FUNC_ATAN2      (long double)atan2
+<span class="lineNum">      76 </span>            : #endif
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : #ifdef HAVE_POWL
+<span class="lineNum">      79 </span>            : #define FUNC_POW   powl
+<span class="lineNum">      80 </span>            : #elif defined(HAVE_POW)
+<span class="lineNum">      81 </span>            : #define FUNC_POW        (long double)pow
+<span class="lineNum">      82 </span>            : #endif
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            : #ifdef HAVE_SQRTL
+<span class="lineNum">      85 </span>            : #define FUNC_SQRT   sqrtl
+<span class="lineNum">      86 </span>            : #elif defined(HAVE_SQRT)
+<span class="lineNum">      87 </span>            : #define FUNC_SQRT       (long double)sqrt
+<span class="lineNum">      88 </span>            : #endif
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            : #ifdef HAVE_RINTL
+<span class="lineNum">      91 </span>            : #define FUNC_RINT   rintl
+<span class="lineNum">      92 </span>            : #elif defined(HAVE_RINT)
+<span class="lineNum">      93 </span>            : #define FUNC_RINT       (long double)rint
+<span class="lineNum">      94 </span>            : #endif
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            : #ifdef HAVE_EXPL
+<span class="lineNum">      97 </span>            : #define FUNC_EXP   expl
+<span class="lineNum">      98 </span>            : #elif defined(HAVE_EXP)
+<span class="lineNum">      99 </span>            : #define FUNC_EXP        (long double)exp
+<span class="lineNum">     100 </span>            : #endif
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : #ifdef HAVE_LOGL
+<span class="lineNum">     103 </span>            : #define FUNC_LOG   logl
+<span class="lineNum">     104 </span>            : #elif defined(HAVE_LOG)
+<span class="lineNum">     105 </span>            : #define FUNC_LOG        (long double)log
+<span class="lineNum">     106 </span>            : #endif
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : #ifdef HAVE_REMAINDERL
+<span class="lineNum">     109 </span>            : #define FUNC_REMAINDER   remainderl
+<span class="lineNum">     110 </span>            : #elif defined(HAVE_REMAINDER)
+<span class="lineNum">     111 </span>            : #define FUNC_REMAINDER  (long double)remainder
+<span class="lineNum">     112 </span>            : #endif
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            : #ifdef HAVE_FMODL
+<span class="lineNum">     115 </span>            : #define FUNC_FMOD   fmodl
+<span class="lineNum">     116 </span>            : #elif defined(HAVE_FMOD)
+<span class="lineNum">     117 </span>            : #define FUNC_FMOD       (long double)fmod
+<span class="lineNum">     118 </span>            : #endif
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : #ifdef HAVE_STRTOLD
+<span class="lineNum">     121 </span>            : #define FUNC_STRTOD  strtold
+<span class="lineNum">     122 </span>            : #elif defined(HAVE_STRTOD)
+<span class="lineNum">     123 </span>            : #define FUNC_STRTOD  (long double)strtod
+<span class="lineNum">     124 </span>            : #endif
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span>            : #ifdef HAVE_FLOORL
+<span class="lineNum">     127 </span>            : #define FUNC_FLOOR      floorl
+<span class="lineNum">     128 </span>            : #elif defined(HAVE_FLOOR)
+<span class="lineNum">     129 </span>            : #define FUNC_FLOOR      (long double)floor
+<span class="lineNum">     130 </span>            : #endif
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            : #ifdef HAVE_CEILL
+<span class="lineNum">     133 </span>            : #define FUNC_CEIL      ceill
+<span class="lineNum">     134 </span>            : #elif defined(HAVE_CEIL)
+<span class="lineNum">     135 </span>            : #define FUNC_CEIL       (long double)ceil
+<span class="lineNum">     136 </span>            : #endif
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : #ifdef HAVE_ROUNDL
+<span class="lineNum">     139 </span>            : #define FUNC_ROUND     roundl
+<span class="lineNum">     140 </span>            : #elif defined(HAVE_ROUND)
+<span class="lineNum">     141 </span>            : #define FUNC_ROUND     (long double)round
+<span class="lineNum">     142 </span>            : #endif
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            : #ifdef HAVE_TRUNCL
+<span class="lineNum">     145 </span>            : #define FUNC_TRUNC     truncl
+<span class="lineNum">     146 </span>            : #elif defined(HAVE_TRUNC)
+<span class="lineNum">     147 </span>            : #define FUNC_TRUNC     (long double)trunc
+<span class="lineNum">     148 </span>            : #endif
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span>            : /*! \note
+<span class="lineNum">     151 </span>            :  * Oddly enough, some platforms have some ISO C99 functions, but not others, so
+<span class="lineNum">     152 </span>            :  * we define the missing functions in terms of their mathematical identities.
+<span class="lineNum">     153 </span>            :  */
+<span class="lineNum">     154 </span>            : #ifdef HAVE_EXP2L
+<span class="lineNum">     155 </span>            : #define FUNC_EXP2       exp2l
+<span class="lineNum">     156 </span>            : #elif (defined(HAVE_EXPL) &amp;&amp; defined(HAVE_LOGL))
+<span class="lineNum">     157 </span>            : #define FUNC_EXP2(x)    expl((x) * logl(2.0))
+<span class="lineNum">     158 </span>            : #elif (defined(HAVE_EXP) &amp;&amp; defined(HAVE_LOG))
+<span class="lineNum">     159 </span>            : #define FUNC_EXP2(x)    (long double)exp((x) * log(2.0))
+<span class="lineNum">     160 </span>            : #endif
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span>            : #ifdef HAVE_EXP10L
+<span class="lineNum">     163 </span>            : #define FUNC_EXP10       exp10l
+<span class="lineNum">     164 </span>            : #elif (defined(HAVE_EXPL) &amp;&amp; defined(HAVE_LOGL))
+<span class="lineNum">     165 </span>            : #define FUNC_EXP10(x)   expl((x) * logl(10.0))
+<span class="lineNum">     166 </span>            : #elif (defined(HAVE_EXP) &amp;&amp; defined(HAVE_LOG))
+<span class="lineNum">     167 </span>            : #define FUNC_EXP10(x)   (long double)exp((x) * log(10.0))
+<span class="lineNum">     168 </span>            : #endif
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            : #ifdef HAVE_LOG2L
+<span class="lineNum">     171 </span>            : #define FUNC_LOG2       log2l
+<span class="lineNum">     172 </span>            : #elif defined(HAVE_LOGL)
+<span class="lineNum">     173 </span>            : #define FUNC_LOG2(x)    (logl(x) / logl(2.0))
+<span class="lineNum">     174 </span>            : #elif defined(HAVE_LOG10L)
+<span class="lineNum">     175 </span>            : #define FUNC_LOG2(x)    (log10l(x) / log10l(2.0))
+<span class="lineNum">     176 </span>            : #elif defined(HAVE_LOG2)
+<span class="lineNum">     177 </span>            : #define FUNC_LOG2       (long double)log2
+<span class="lineNum">     178 </span>            : #elif defined(HAVE_LOG)
+<span class="lineNum">     179 </span>            : #define FUNC_LOG2(x)    ((long double)log(x) / log(2.0))
+<span class="lineNum">     180 </span>            : #endif
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            : #ifdef HAVE_LOG10L
+<span class="lineNum">     183 </span>            : #define FUNC_LOG10       log10l
+<span class="lineNum">     184 </span>            : #elif defined(HAVE_LOGL)
+<span class="lineNum">     185 </span>            : #define FUNC_LOG10(x)   (logl(x) / logl(10.0))
+<span class="lineNum">     186 </span>            : #elif defined(HAVE_LOG2L)
+<span class="lineNum">     187 </span>            : #define FUNC_LOG10(x)   (log2l(x) / log2l(10.0))
+<span class="lineNum">     188 </span>            : #elif defined(HAVE_LOG10)
+<span class="lineNum">     189 </span>            : #define FUNC_LOG10(x)   (long double)log10(x)
+<span class="lineNum">     190 </span>            : #elif defined(HAVE_LOG)
+<span class="lineNum">     191 </span>            : #define FUNC_LOG10(x)   ((long double)log(x) / log(10.0))
+<span class="lineNum">     192 </span>            : #endif
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span>            : #include &lt;stdlib.h&gt;
+<span class="lineNum">     196 </span>            : #ifndef _GNU_SOURCE
+<span class="lineNum">     197 </span>            : #define _GNU_SOURCE
+<span class="lineNum">     198 </span>            : #endif
+<span class="lineNum">     199 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">     200 </span>            : #include &lt;math.h&gt;
+<span class="lineNum">     201 </span>            : #include &lt;locale.h&gt;
+<span class="lineNum">     202 </span>            : #include &lt;unistd.h&gt;
+<span class="lineNum">     203 </span>            : #include &lt;ctype.h&gt;
+<span class="lineNum">     204 </span>            : #if !defined(SOLARIS) &amp;&amp; !defined(__CYGWIN__)
+<span class="lineNum">     205 </span>            :         /* #include &lt;err.h&gt; */
+<span class="lineNum">     206 </span>            : #else
+<span class="lineNum">     207 </span>            : #define quad_t int64_t
+<span class="lineNum">     208 </span>            : #endif
+<span class="lineNum">     209 </span>            : #include &lt;errno.h&gt;
+<span class="lineNum">     210 </span>            : #include &lt;regex.h&gt;
+<span class="lineNum">     211 </span>            : #include &lt;limits.h&gt;
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            : #include &quot;asterisk/ast_expr.h&quot;
+<span class="lineNum">     214 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">     215 </span>            : #if !defined(STANDALONE) &amp;&amp; !defined(STANDALONE2)
+<span class="lineNum">     216 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">     217 </span>            : #endif
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            : #if defined(LONG_LONG_MIN) &amp;&amp; !defined(QUAD_MIN)
+<span class="lineNum">     220 </span>            : #define QUAD_MIN LONG_LONG_MIN
+<span class="lineNum">     221 </span>            : #endif
+<span class="lineNum">     222 </span>            : #if defined(LONG_LONG_MAX) &amp;&amp; !defined(QUAD_MAX)
+<span class="lineNum">     223 </span>            : #define QUAD_MAX LONG_LONG_MAX
+<span class="lineNum">     224 </span>            : #endif
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            : #  if ! defined(QUAD_MIN)
+<span class="lineNum">     227 </span>            : #   define QUAD_MIN     (-0x7fffffffffffffffLL-1)
+<span class="lineNum">     228 </span>            : #  endif
+<span class="lineNum">     229 </span>            : #  if ! defined(QUAD_MAX)
+<span class="lineNum">     230 </span>            : #   define QUAD_MAX     (0x7fffffffffffffffLL)
+<span class="lineNum">     231 </span>            : #  endif
+<span class="lineNum">     232 </span>            : #define YYENABLE_NLS 0
+<span class="lineNum">     233 </span>            : #define YYPARSE_PARAM parseio
+<span class="lineNum">     234 </span>            : #define YYLEX_PARAM ((struct parse_io *)parseio)-&gt;scanner
+<span class="lineNum">     235 </span>            : #define YYERROR_VERBOSE 1
+<span class="lineNum">     236 </span>            : extern char extra_error_message[4095];
+<span class="lineNum">     237 </span>            : extern int extra_error_message_supplied;
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            : enum valtype {
+<span class="lineNum">     240 </span>            :         AST_EXPR_number, AST_EXPR_numeric_string, AST_EXPR_string
+<span class="lineNum">     241 </span>            : } ;
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span>            : #if defined(STANDALONE) || defined(STANDALONE2)
+<span class="lineNum">     244 </span>            : void ast_log(int level, const char *file, int line, const char *function, const char *fmt, ...) __attribute__ ((format (printf,5,6)));
+<span class="lineNum">     245 </span>            : #endif
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            : struct val {
+<span class="lineNum">     248 </span>            :         enum valtype type;
+<span class="lineNum">     249 </span>            :         union {
+<span class="lineNum">     250 </span>            :                 char *s;
+<span class="lineNum">     251 </span>            :                 FP___TYPE i; /* either long double, or just double, on a bad day */
+<span class="lineNum">     252 </span>            :         } u;
+<span class="lineNum">     253 </span>            : } ;
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            : enum node_type {
+<span class="lineNum">     256 </span>            :         AST_EXPR_NODE_COMMA, AST_EXPR_NODE_STRING, AST_EXPR_NODE_VAL
+<span class="lineNum">     257 </span>            : } ;
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span>            : struct expr_node
+<span class="lineNum">     260 </span>            : {
+<span class="lineNum">     261 </span>            :         enum node_type type;
+<span class="lineNum">     262 </span>            :         struct val *val;
+<span class="lineNum">     263 </span>            :         struct expr_node *left;
+<span class="lineNum">     264 </span>            :         struct expr_node *right;
+<span class="lineNum">     265 </span>            : };
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span>            : typedef void *yyscan_t;
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span>            : struct parse_io
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span>            :         char *string;
+<span class="lineNum">     273 </span>            :         struct val *val;
+<span class="lineNum">     274 </span>            :         yyscan_t scanner;
+<span class="lineNum">     275 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     276 </span>            : };
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            : static int              chk_div __P((FP___TYPE, FP___TYPE));
+<span class="lineNum">     279 </span>            : static int              chk_minus __P((FP___TYPE, FP___TYPE, FP___TYPE));
+<span class="lineNum">     280 </span>            : static int              chk_plus __P((FP___TYPE, FP___TYPE, FP___TYPE));
+<span class="lineNum">     281 </span>            : static int              chk_times __P((FP___TYPE, FP___TYPE, FP___TYPE));
+<span class="lineNum">     282 </span>            : static void             free_value __P((struct val *));
+<span class="lineNum">     283 </span>            : static int              is_zero_or_null __P((struct val *));
+<span class="lineNum">     284 </span>            : static int              isstring __P((struct val *));
+<span class="lineNum">     285 </span>            : static struct val       *make_number __P((FP___TYPE));
+<span class="lineNum">     286 </span>            : static struct val       *make_str __P((const char *));
+<span class="lineNum">     287 </span>            : static struct val       *op_and __P((struct val *, struct val *));
+<span class="lineNum">     288 </span>            : static struct val       *op_colon __P((struct val *, struct val *));
+<span class="lineNum">     289 </span>            : static struct val       *op_eqtilde __P((struct val *, struct val *));
+<span class="lineNum">     290 </span>            : static struct val       *op_tildetilde __P((struct val *, struct val *));
+<span class="lineNum">     291 </span>            : static struct val       *op_div __P((struct val *, struct val *));
+<span class="lineNum">     292 </span>            : static struct val       *op_eq __P((struct val *, struct val *));
+<span class="lineNum">     293 </span>            : static struct val       *op_ge __P((struct val *, struct val *));
+<span class="lineNum">     294 </span>            : static struct val       *op_gt __P((struct val *, struct val *));
+<span class="lineNum">     295 </span>            : static struct val       *op_le __P((struct val *, struct val *));
+<span class="lineNum">     296 </span>            : static struct val       *op_lt __P((struct val *, struct val *));
+<span class="lineNum">     297 </span>            : static struct val       *op_cond __P((struct val *, struct val *, struct val *));
+<span class="lineNum">     298 </span>            : static struct val       *op_minus __P((struct val *, struct val *));
+<span class="lineNum">     299 </span>            : static struct val       *op_negate __P((struct val *));
+<span class="lineNum">     300 </span>            : static struct val       *op_compl __P((struct val *));
+<span class="lineNum">     301 </span>            : static struct val       *op_ne __P((struct val *, struct val *));
+<span class="lineNum">     302 </span>            : static struct val       *op_or __P((struct val *, struct val *));
+<span class="lineNum">     303 </span>            : static struct val       *op_plus __P((struct val *, struct val *));
+<span class="lineNum">     304 </span>            : static struct val       *op_rem __P((struct val *, struct val *));
+<span class="lineNum">     305 </span>            : static struct val       *op_times __P((struct val *, struct val *));
+<span class="lineNum">     306 </span>            : static struct val   *op_func(struct val *funcname, struct expr_node *arglist, struct ast_channel *chan);
+<span class="lineNum">     307 </span>            : static int              to_number __P((struct val *));
+<span class="lineNum">     308 </span>            : static void             to_string __P((struct val *));
+<span class="lineNum">     309 </span>            : static struct expr_node *alloc_expr_node(enum node_type);
+<span class="lineNum">     310 </span>            : static void destroy_arglist(struct expr_node *arglist);
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            : /* uh, if I want to predeclare yylex with a YYLTYPE, I have to predeclare the yyltype... sigh */
+<span class="lineNum">     313 </span>            : typedef struct yyltype
+<span class="lineNum">     314 </span>            : {
+<span class="lineNum">     315 </span>            :   int first_line;
+<span class="lineNum">     316 </span>            :   int first_column;
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span>            :   int last_line;
+<span class="lineNum">     319 </span>            :   int last_column;
+<span class="lineNum">     320 </span>            : } yyltype;
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span>            : # define YYLTYPE yyltype
+<span class="lineNum">     323 </span>            : # define YYLTYPE_IS_TRIVIAL 1
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span>            : /* we will get warning about no prototype for yylex! But we can't
+<span class="lineNum">     326 </span>            :    define it here, we have no definition yet for YYSTYPE. */
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span>            : int             ast_yyerror(const char *,YYLTYPE *, struct parse_io *);
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span>            : /* I wanted to add args to the yyerror routine, so I could print out
+<span class="lineNum">     331 </span>            :    some useful info about the error. Not as easy as it looks, but it
+<span class="lineNum">     332 </span>            :    is possible. */
+<span class="lineNum">     333 </span>            : #define ast_yyerror(x) ast_yyerror(x,&amp;yyloc,parseio)
+<span class="lineNum">     334 </span>            : #define DESTROY(x) {if((x)-&gt;type == AST_EXPR_numeric_string || (x)-&gt;type == AST_EXPR_string) free((x)-&gt;u.s); (x)-&gt;u.s = 0; free(x);}
+<span class="lineNum">     335 </span>            : %}
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span>            : %pure-parser
+<span class="lineNum">     338 </span>            : %locations
+<span class="lineNum">     339 </span>            : /* %debug  for when you are having big problems */
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span>            : /* %name-prefix=&quot;ast_yy&quot; */
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            : %union
+<span class="lineNum">     344 </span>            : {
+<span class="lineNum">     345 </span>            :         struct val *val;
+<span class="lineNum">     346 </span>            :         struct expr_node *arglist;
+<span class="lineNum">     347 </span>            : }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : %{
+<span class="lineNum">     350 </span>            : extern int              ast_yylex __P((YYSTYPE *, YYLTYPE *, yyscan_t));
+<span class="lineNum">     351 </span>            : %}
+<span class="lineNum">     352 </span>            : %left &lt;val&gt; TOK_COMMA
+<span class="lineNum">     353 </span>            : %left &lt;val&gt; TOK_COND TOK_COLONCOLON
+<span class="lineNum">     354 </span>            : %left &lt;val&gt; TOK_OR
+<span class="lineNum">     355 </span>            : %left &lt;val&gt; TOK_AND
+<span class="lineNum">     356 </span>            : %left &lt;val&gt; TOK_EQ TOK_GT TOK_LT TOK_GE TOK_LE TOK_NE
+<span class="lineNum">     357 </span>            : %left &lt;val&gt; TOK_PLUS TOK_MINUS
+<span class="lineNum">     358 </span>            : %left &lt;val&gt; TOK_MULT TOK_DIV TOK_MOD
+<span class="lineNum">     359 </span>            : %right &lt;val&gt; TOK_COMPL
+<span class="lineNum">     360 </span>            : %left &lt;val&gt; TOK_COLON TOK_EQTILDE TOK_TILDETILDE
+<span class="lineNum">     361 </span>            : %left &lt;val&gt; TOK_RP TOK_LP
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            : %token &lt;val&gt; TOKEN
+<span class="lineNum">     364 </span>            : %type &lt;arglist&gt; arglist
+<span class="lineNum">     365 </span>            : %type &lt;val&gt; start expr
+<a name="366"><span class="lineNum">     366 </span>            : </a>
+<span class="lineNum">     367 </span>            : %destructor {  free_value($$); }  expr TOKEN TOK_COND TOK_COLONCOLON TOK_OR TOK_AND TOK_EQ
+<span class="lineNum">     368 </span><span class="lineCov">          8 :                                  TOK_GT TOK_LT TOK_GE TOK_LE TOK_NE TOK_PLUS TOK_MINUS TOK_MULT TOK_DIV TOK_MOD TOK_COMPL TOK_COLON TOK_EQTILDE</span>
+<span class="lineNum">     369 </span>            :                                  TOK_RP TOK_LP TOK_TILDETILDE
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            : %%
+<a name="372"><span class="lineNum">     372 </span>            : </a>
+<span class="lineNum">     373 </span>            : start: expr { ((struct parse_io *)parseio)-&gt;val = (struct val *)calloc(sizeof(struct val),1);
+<span class="lineNum">     374 </span><span class="lineCov">       2021 :               ((struct parse_io *)parseio)-&gt;val-&gt;type = $1-&gt;type;</span>
+<span class="lineNum">     375 </span><span class="lineCov">       2021 :               if( $1-&gt;type == AST_EXPR_number )</span>
+<span class="lineNum">     376 </span><span class="lineCov">       2021 :                                   ((struct parse_io *)parseio)-&gt;val-&gt;u.i = $1-&gt;u.i;</span>
+<span class="lineNum">     377 </span><span class="lineCov">       1950 :               else</span>
+<span class="lineNum">     378 </span>            :                                   ((struct parse_io *)parseio)-&gt;val-&gt;u.s = $1-&gt;u.s;
+<span class="lineNum">     379 </span><span class="lineCov">         71 :                           free($1);</span>
+<span class="lineNum">     380 </span><span class="lineCov">       2021 :                         }</span>
+<span class="lineNum">     381 </span>            :         | {/* nothing */ ((struct parse_io *)parseio)-&gt;val = (struct val *)calloc(sizeof(struct val),1);
+<span class="lineNum">     382 </span><span class="lineCov">       2021 :               ((struct parse_io *)parseio)-&gt;val-&gt;type = AST_EXPR_string;</span>
+<span class="lineNum">     383 </span><span class="lineCov">          3 :                           ((struct parse_io *)parseio)-&gt;val-&gt;u.s = strdup(&quot;&quot;);</span>
+<span class="lineNum">     384 </span><span class="lineCov">          3 :                         }</span>
+<span class="lineNum">     385 </span>            : 
+<span class="lineNum">     386 </span><span class="lineCov">          3 :         ;</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">          1 : arglist: expr { $$ = alloc_expr_node(AST_EXPR_NODE_VAL); $$-&gt;val = $1;}</span>
+<span class="lineNum">     389 </span><span class="lineCov">          1 :        | arglist TOK_COMMA expr %prec TOK_RP {struct expr_node *x = alloc_expr_node(AST_EXPR_NODE_VAL);</span>
+<span class="lineNum">     390 </span><span class="lineCov">          1 :                                  struct expr_node *t;</span>
+<span class="lineNum">     391 </span>            :                                                                  DESTROY($2);
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                                  for (t=$1;t-&gt;right;t=t-&gt;right)</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                                                                   ;</span>
+<span class="lineNum">     394 </span>            :                                  $$ = $1; t-&gt;right = x; x-&gt;val = $3;}
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :        | arglist TOK_COMMA %prec TOK_RP {struct expr_node *x = alloc_expr_node(AST_EXPR_NODE_VAL);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                                  struct expr_node *t;  /* NULL args should OK */</span>
+<span class="lineNum">     397 </span>            :                                                                  DESTROY($2);
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                                  for (t=$1;t-&gt;right;t=t-&gt;right)</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                                                                   ;</span>
+<span class="lineNum">     400 </span>            :                                  $$ = $1; t-&gt;right = x; x-&gt;val = make_str(&quot;&quot;);}
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :        ;</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     403 </span>            : expr:
+<span class="lineNum">     404 </span><span class="lineCov">          1 :       TOKEN TOK_LP arglist TOK_RP { $$ = op_func($1,$3, ((struct parse_io *)parseio)-&gt;chan);</span>
+<span class="lineNum">     405 </span><span class="lineCov">          1 :                                             DESTROY($2);</span>
+<span class="lineNum">     406 </span><span class="lineCov">          1 :                                                                         DESTROY($4);</span>
+<span class="lineNum">     407 </span><span class="lineCov">          1 :                                                                         DESTROY($1);</span>
+<span class="lineNum">     408 </span><span class="lineCov">          1 :                                                                         destroy_arglist($3);</span>
+<span class="lineNum">     409 </span><span class="lineCov">          1 :                                   }</span>
+<span class="lineNum">     410 </span>            :     | TOKEN {$$ = $1;}
+<span class="lineNum">     411 </span><span class="lineCov">          1 :         | TOK_LP expr TOK_RP { $$ = $2;</span>
+<span class="lineNum">     412 </span><span class="lineCov">       4136 :                                @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     413 </span><span class="lineCov">       4112 :                                                    @$.first_line=0; @$.last_line=0;</span>
+<span class="lineNum">     414 </span><span class="lineCov">         48 :                                                         DESTROY($1); DESTROY($3); }</span>
+<span class="lineNum">     415 </span><span class="lineCov">         24 :         | expr TOK_OR expr { $$ = op_or ($1, $3);</span>
+<span class="lineNum">     416 </span><span class="lineCov">         24 :                                                 DESTROY($2);</span>
+<span class="lineNum">     417 </span><span class="lineCov">         19 :                          @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     418 </span><span class="lineCov">         19 :                                                  @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     419 </span><span class="lineCov">         19 :         | expr TOK_AND expr { $$ = op_and ($1, $3);</span>
+<span class="lineNum">     420 </span><span class="lineCov">         19 :                                                 DESTROY($2);</span>
+<span class="lineNum">     421 </span><span class="lineCov">         10 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     422 </span><span class="lineCov">         10 :                           @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     423 </span><span class="lineCov">         10 :         | expr TOK_EQ expr { $$ = op_eq ($1, $3);</span>
+<span class="lineNum">     424 </span><span class="lineCov">         10 :                                                 DESTROY($2);</span>
+<span class="lineNum">     425 </span><span class="lineCov">       1534 :                              @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     426 </span><span class="lineCov">       1534 :                                                  @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     427 </span><span class="lineCov">       1534 :         | expr TOK_GT expr { $$ = op_gt ($1, $3);</span>
+<span class="lineNum">     428 </span><span class="lineCov">       1534 :                                                 DESTROY($2);</span>
+<span class="lineNum">     429 </span><span class="lineCov">         17 :                          @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     430 </span><span class="lineCov">         17 :                                                  @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     431 </span><span class="lineCov">         17 :         | expr TOK_LT expr { $$ = op_lt ($1, $3);</span>
+<span class="lineNum">     432 </span><span class="lineCov">         17 :                                                 DESTROY($2);</span>
+<span class="lineNum">     433 </span><span class="lineCov">         38 :                              @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     434 </span><span class="lineCov">         38 :                                                  @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     435 </span><span class="lineCov">         38 :         | expr TOK_GE expr  { $$ = op_ge ($1, $3);</span>
+<span class="lineNum">     436 </span><span class="lineCov">         38 :                                                 DESTROY($2);</span>
+<span class="lineNum">     437 </span><span class="lineCov">          3 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     438 </span><span class="lineCov">          3 :                                                   @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     439 </span><span class="lineCov">          3 :         | expr TOK_LE expr  { $$ = op_le ($1, $3);</span>
+<span class="lineNum">     440 </span><span class="lineCov">          3 :                                                 DESTROY($2);</span>
+<span class="lineNum">     441 </span><span class="lineCov">         13 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     442 </span><span class="lineCov">         13 :                                                   @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     443 </span><span class="lineCov">         13 :         | expr TOK_NE expr  { $$ = op_ne ($1, $3);</span>
+<span class="lineNum">     444 </span><span class="lineCov">         13 :                                                 DESTROY($2);</span>
+<span class="lineNum">     445 </span><span class="lineCov">         63 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     446 </span><span class="lineCov">         63 :                                                   @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     447 </span><span class="lineCov">         63 :         | expr TOK_PLUS expr { $$ = op_plus ($1, $3);</span>
+<span class="lineNum">     448 </span><span class="lineCov">         63 :                                                 DESTROY($2);</span>
+<span class="lineNum">     449 </span><span class="lineCov">         57 :                                @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     450 </span><span class="lineCov">         57 :                                                    @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     451 </span><span class="lineCov">         57 :         | expr TOK_MINUS expr { $$ = op_minus ($1, $3);</span>
+<span class="lineNum">     452 </span><span class="lineCov">         57 :                                                 DESTROY($2);</span>
+<span class="lineNum">     453 </span><span class="lineCov">        229 :                                 @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     454 </span><span class="lineCov">        229 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     455 </span><span class="lineCov">        229 :         | TOK_MINUS expr %prec TOK_COMPL { $$ = op_negate ($2);</span>
+<span class="lineNum">     456 </span><span class="lineCov">        229 :                                                 DESTROY($1);</span>
+<span class="lineNum">     457 </span><span class="lineCov">         28 :                                 @$.first_column = @1.first_column; @$.last_column = @2.last_column;</span>
+<span class="lineNum">     458 </span><span class="lineCov">         28 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     459 </span><span class="lineCov">         28 :         | TOK_COMPL expr   { $$ = op_compl ($2);</span>
+<span class="lineNum">     460 </span><span class="lineCov">         28 :                                                 DESTROY($1);</span>
+<span class="lineNum">     461 </span><span class="lineCov">          9 :                                 @$.first_column = @1.first_column; @$.last_column = @2.last_column;</span>
+<span class="lineNum">     462 </span><span class="lineCov">          9 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     463 </span><span class="lineCov">          9 :         | expr TOK_MULT expr { $$ = op_times ($1, $3);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          9 :                                                 DESTROY($2);</span>
+<span class="lineNum">     465 </span><span class="lineCov">          4 :                                @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     466 </span><span class="lineCov">          4 :                                                    @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     467 </span><span class="lineCov">          4 :         | expr TOK_DIV expr { $$ = op_div ($1, $3);</span>
+<span class="lineNum">     468 </span><span class="lineCov">          4 :                                                 DESTROY($2);</span>
+<span class="lineNum">     469 </span><span class="lineCov">          3 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     470 </span><span class="lineCov">          3 :                                                   @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     471 </span><span class="lineCov">          3 :         | expr TOK_MOD expr { $$ = op_rem ($1, $3);</span>
+<span class="lineNum">     472 </span><span class="lineCov">          3 :                                                 DESTROY($2);</span>
+<span class="lineNum">     473 </span><span class="lineCov">         14 :                               @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     474 </span><span class="lineCov">         14 :                                                   @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     475 </span><span class="lineCov">         14 :         | expr TOK_COLON expr { $$ = op_colon ($1, $3);</span>
+<span class="lineNum">     476 </span><span class="lineCov">         14 :                                                 DESTROY($2);</span>
+<span class="lineNum">     477 </span><span class="lineCov">         67 :                                 @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     478 </span><span class="lineCov">         67 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     479 </span><span class="lineCov">         67 :         | expr TOK_EQTILDE expr { $$ = op_eqtilde ($1, $3);</span>
+<span class="lineNum">     480 </span><span class="lineCov">         67 :                                                 DESTROY($2);</span>
+<span class="lineNum">     481 </span><span class="lineCov">         16 :                                 @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     482 </span><span class="lineCov">         16 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     483 </span><span class="lineCov">         16 :         | expr TOK_COND expr TOK_COLONCOLON expr  { $$ = op_cond ($1, $3, $5);</span>
+<span class="lineNum">     484 </span><span class="lineCov">         16 :                                                 DESTROY($2);</span>
+<span class="lineNum">     485 </span><span class="lineCov">          1 :                                                 DESTROY($4);</span>
+<span class="lineNum">     486 </span><span class="lineCov">          2 :                                 @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     487 </span><span class="lineCov">          1 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     488 </span><span class="lineCov">          1 :         | expr TOK_TILDETILDE expr { $$ = op_tildetilde ($1, $3);</span>
+<span class="lineNum">     489 </span><span class="lineCov">          1 :                                                 DESTROY($2);</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                                 @$.first_column = @1.first_column; @$.last_column = @3.last_column;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                                                         @$.first_line=0; @$.last_line=0;}</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         ;</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     494 </span>            : %%
+<a name="495"><span class="lineNum">     495 </span>            : </a>
+<span class="lineNum">     496 </span>            : static struct expr_node *alloc_expr_node(enum node_type nt)
+<span class="lineNum">     497 </span><span class="lineCov">          1 : {</span>
+<span class="lineNum">     498 </span>            :         struct expr_node *x = calloc(1,sizeof(struct expr_node));
+<span class="lineNum">     499 </span><span class="lineCov">          1 :         if (!x) {</span>
+<span class="lineNum">     500 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;Allocation for expr_node FAILED!!\n&quot;);</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     503 </span>            :         x-&gt;type = nt;
+<span class="lineNum">     504 </span><span class="lineCov">          1 :         return x;</span>
+<span class="lineNum">     505 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span>            : 
+<a name="509"><span class="lineNum">     509 </span>            : static struct val *</a>
+<span class="lineNum">     510 </span>            : make_number (FP___TYPE i)
+<span class="lineNum">     511 </span><span class="lineCov">       2079 : {</span>
+<span class="lineNum">     512 </span>            :         struct val *vp;
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span>            :         vp = (struct val *) malloc (sizeof (*vp));
+<span class="lineNum">     515 </span><span class="lineCov">       2079 :         if (vp == NULL) {</span>
+<span class="lineNum">     516 </span><span class="lineCov">       2079 :                 ast_log(LOG_WARNING, &quot;malloc() failed\n&quot;);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 return(NULL);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span>            :         vp-&gt;type = AST_EXPR_number;
+<span class="lineNum">     521 </span><span class="lineCov">       2079 :         vp-&gt;u.i  = i;</span>
+<span class="lineNum">     522 </span><span class="lineCov">       2079 :         return vp;</span>
+<span class="lineNum">     523 </span><span class="lineCov">       2079 : }</span>
+<span class="lineNum">     524 </span>            : 
+<a name="525"><span class="lineNum">     525 </span>            : static struct val *</a>
+<span class="lineNum">     526 </span>            : make_str (const char *s)
+<span class="lineNum">     527 </span><span class="lineCov">          8 : {</span>
+<span class="lineNum">     528 </span>            :         struct val *vp;
+<span class="lineNum">     529 </span>            :         size_t i;
+<span class="lineNum">     530 </span>            :         int isint; /* this started out being a test for an integer, but then ended up being a test for a float */
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span>            :         vp = (struct val *) malloc (sizeof (*vp));
+<span class="lineNum">     533 </span><span class="lineCov">          8 :         if (vp == NULL || ((vp-&gt;u.s = strdup (s)) == NULL)) {</span>
+<span class="lineNum">     534 </span><span class="lineCov">          8 :                 if (vp) {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                         free(vp);</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     537 </span>            :                 ast_log(LOG_WARNING,&quot;malloc() failed\n&quot;);
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                 return(NULL);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span>            :         for (i = 0, isint = (isdigit(s[0]) || s[0] == '-' || s[0]=='.'); isint &amp;&amp; i &lt; strlen(s); i++)
+<span class="lineNum">     542 </span><span class="lineCov">         14 :         {</span>
+<span class="lineNum">     543 </span>            :                 if (!isdigit(s[i]) &amp;&amp; s[i] != '.') {
+<span class="lineNum">     544 </span><span class="lineCov">          6 :                         isint = 0;</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     547 </span>            :         }
+<span class="lineNum">     548 </span>            :         if (isint)
+<span class="lineNum">     549 </span><span class="lineCov">          8 :                 vp-&gt;type = AST_EXPR_numeric_string;</span>
+<span class="lineNum">     550 </span><span class="lineCov">          3 :         else</span>
+<span class="lineNum">     551 </span>            :                 vp-&gt;type = AST_EXPR_string;
+<span class="lineNum">     552 </span><span class="lineCov">          5 : </span>
+<span class="lineNum">     553 </span>            :         return vp;
+<span class="lineNum">     554 </span><span class="lineCov">          8 : }</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span>            : 
+<a name="557"><span class="lineNum">     557 </span>            : static void</a>
+<span class="lineNum">     558 </span>            : free_value (struct val *vp)
+<span class="lineNum">     559 </span><span class="lineCov">       4184 : {</span>
+<span class="lineNum">     560 </span>            :         if (vp==NULL) {
+<span class="lineNum">     561 </span><span class="lineCov">       4184 :                 return;</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     563 </span>            :         if (vp-&gt;type == AST_EXPR_string || vp-&gt;type == AST_EXPR_numeric_string)
+<span class="lineNum">     564 </span><span class="lineCov">       4184 :                 free (vp-&gt;u.s);</span>
+<span class="lineNum">     565 </span><span class="lineCov">       1093 :         free(vp);</span>
+<span class="lineNum">     566 </span><span class="lineCov">       4184 : }</span>
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span>            : 
+<a name="569"><span class="lineNum">     569 </span>            : static int</a>
+<span class="lineNum">     570 </span>            : to_number (struct val *vp)
+<span class="lineNum">     571 </span><span class="lineCov">       3114 : {</span>
+<span class="lineNum">     572 </span>            :         FP___TYPE i;
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span>            :         if (vp == NULL) {
+<span class="lineNum">     575 </span><span class="lineCov">       3114 :                 ast_log(LOG_WARNING,&quot;vp==NULL in to_number()\n&quot;);</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                 return(0);</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span>            :         if (vp-&gt;type == AST_EXPR_number)
+<span class="lineNum">     580 </span><span class="lineCov">       3114 :                 return 1;</span>
+<span class="lineNum">     581 </span><span class="lineCov">        124 : </span>
+<span class="lineNum">     582 </span>            :         if (vp-&gt;type == AST_EXPR_string)
+<span class="lineNum">     583 </span><span class="lineCov">       2990 :                 return 0;</span>
+<span class="lineNum">     584 </span><span class="lineCov">         28 : </span>
+<span class="lineNum">     585 </span>            :         /* vp-&gt;type == AST_EXPR_numeric_string, make it numeric */
+<span class="lineNum">     586 </span>            :         errno = 0;
+<span class="lineNum">     587 </span><span class="lineCov">       2962 :         i  = FUNC_STRTOD(vp-&gt;u.s, (char**)0); /* either strtod, or strtold on a good day */</span>
+<span class="lineNum">     588 </span><span class="lineCov">       2962 :         if (errno != 0) {</span>
+<span class="lineNum">     589 </span><span class="lineCov">       2962 :                 ast_log(LOG_WARNING,&quot;Conversion of %s to number under/overflowed!\n&quot;, vp-&gt;u.s);</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                 free(vp-&gt;u.s);</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :                 vp-&gt;u.s = 0;</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                 return(0);</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     594 </span>            :         free (vp-&gt;u.s);
+<span class="lineNum">     595 </span><span class="lineCov">       2962 :         vp-&gt;u.i = i;</span>
+<span class="lineNum">     596 </span><span class="lineCov">       2962 :         vp-&gt;type = AST_EXPR_number;</span>
+<span class="lineNum">     597 </span><span class="lineCov">       2962 :         return 1;</span>
+<span class="lineNum">     598 </span><span class="lineCov">       2962 : }</span>
+<span class="lineNum">     599 </span>            : 
+<a name="600"><span class="lineNum">     600 </span>            : static void</a>
+<span class="lineNum">     601 </span>            : strip_quotes(struct val *vp)
+<span class="lineNum">     602 </span><span class="lineCov">        166 : {</span>
+<span class="lineNum">     603 </span>            :         if (vp-&gt;type != AST_EXPR_string &amp;&amp; vp-&gt;type != AST_EXPR_numeric_string)
+<span class="lineNum">     604 </span><span class="lineCov">        166 :                 return;</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     606 </span>            :         if( vp-&gt;u.s[0] == '&quot;' &amp;&amp; vp-&gt;u.s[strlen(vp-&gt;u.s)-1] == '&quot;' )
+<span class="lineNum">     607 </span><span class="lineCov">        166 :         {</span>
+<span class="lineNum">     608 </span>            :                 char *f, *t;
+<span class="lineNum">     609 </span>            :                 f = vp-&gt;u.s;
+<span class="lineNum">     610 </span><span class="lineCov">         54 :                 t = vp-&gt;u.s;</span>
+<span class="lineNum">     611 </span><span class="lineCov">         54 : </span>
+<span class="lineNum">     612 </span>            :                 while( *f )
+<span class="lineNum">     613 </span><span class="lineCov">       1034 :                 {</span>
+<span class="lineNum">     614 </span>            :                         if( *f  &amp;&amp; *f != '&quot;' )
+<span class="lineNum">     615 </span><span class="lineCov">        980 :                                 *t++ = *f++;</span>
+<span class="lineNum">     616 </span><span class="lineCov">        872 :                         else</span>
+<span class="lineNum">     617 </span>            :                                 f++;
+<span class="lineNum">     618 </span><span class="lineCov">        108 :                 }</span>
+<span class="lineNum">     619 </span>            :                 *t = *f;
+<span class="lineNum">     620 </span><span class="lineCov">         54 :         }</span>
+<span class="lineNum">     621 </span>            : }
+<span class="lineNum">     622 </span>            : 
+<a name="623"><span class="lineNum">     623 </span>            : static void</a>
+<span class="lineNum">     624 </span>            : to_string (struct val *vp)
+<span class="lineNum">     625 </span><span class="lineCov">       1042 : {</span>
+<span class="lineNum">     626 </span>            :         char *tmp;
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span>            :         if (vp-&gt;type == AST_EXPR_string || vp-&gt;type == AST_EXPR_numeric_string)
+<span class="lineNum">     629 </span><span class="lineCov">       1042 :                 return;</span>
+<span class="lineNum">     630 </span><span class="lineCov">       1042 : </span>
+<span class="lineNum">     631 </span>            :         if (asprintf(&amp;tmp, FP___PRINTF, vp-&gt;u.i) == -1) {
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;asprintf() failed\n&quot;);</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span>            :         vp-&gt;type = AST_EXPR_string;
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :         vp-&gt;u.s  = tmp;</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span>            : 
+<a name="641"><span class="lineNum">     641 </span>            : static int</a>
+<span class="lineNum">     642 </span>            : isstring (struct val *vp)
+<span class="lineNum">     643 </span><span class="lineCov">       2899 : {</span>
+<span class="lineNum">     644 </span>            :         /* only TRUE if this string is not a valid number */
+<span class="lineNum">     645 </span>            :         return (vp-&gt;type == AST_EXPR_string);
+<span class="lineNum">     646 </span><span class="lineCov">       2899 : }</span>
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span>            : 
+<a name="649"><span class="lineNum">     649 </span>            : static int</a>
+<span class="lineNum">     650 </span>            : is_zero_or_null (struct val *vp)
+<span class="lineNum">     651 </span><span class="lineCov">         36 : {</span>
+<span class="lineNum">     652 </span>            :         if (vp-&gt;type == AST_EXPR_number) {
+<span class="lineNum">     653 </span><span class="lineCov">         36 :                 return (vp-&gt;u.i == 0);</span>
+<span class="lineNum">     654 </span><span class="lineCov">         26 :         } else {</span>
+<span class="lineNum">     655 </span>            :                 return (*vp-&gt;u.s == 0 || (to_number(vp) &amp;&amp; vp-&gt;u.i == 0));
+<span class="lineNum">     656 </span><span class="lineCov">         10 :         }</span>
+<span class="lineNum">     657 </span>            :         /* NOTREACHED */
+<span class="lineNum">     658 </span>            : }
+<span class="lineNum">     659 </span>            : 
+<span class="lineNum">     660 </span>            : #ifdef STANDALONE2
+<span class="lineNum">     661 </span>            : 
+<span class="lineNum">     662 </span>            : void ast_log(int level, const char *file, int line, const char *function, const char *fmt, ...)
+<span class="lineNum">     663 </span>            : {
+<span class="lineNum">     664 </span>            :         va_list vars;
+<span class="lineNum">     665 </span>            :         va_start(vars,fmt);
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span>            :         printf(&quot;LOG: lev:%d file:%s  line:%d func: %s  &quot;,
+<span class="lineNum">     668 </span>            :                    level, file, line, function);
+<span class="lineNum">     669 </span>            :         vprintf(fmt, vars);
+<span class="lineNum">     670 </span>            :         fflush(stdout);
+<span class="lineNum">     671 </span>            :         va_end(vars);
+<span class="lineNum">     672 </span>            : }
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span>            : int main(int argc,char **argv) {
+<span class="lineNum">     676 </span>            :         char s[4096];
+<span class="lineNum">     677 </span>            :         char out[4096];
+<span class="lineNum">     678 </span>            :         FILE *infile;
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span>            :         if( !argv[1] )
+<span class="lineNum">     681 </span>            :                 exit(20);
+<span class="lineNum">     682 </span>            : 
+<span class="lineNum">     683 </span>            :         if( access(argv[1],F_OK)== 0 )
+<span class="lineNum">     684 </span>            :         {
+<span class="lineNum">     685 </span>            :                 int ret;
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span>            :                 infile = fopen(argv[1],&quot;r&quot;);
+<span class="lineNum">     688 </span>            :                 if( !infile )
+<span class="lineNum">     689 </span>            :                 {
+<span class="lineNum">     690 </span>            :                         printf(&quot;Sorry, couldn't open %s for reading!\n&quot;, argv[1]);
+<span class="lineNum">     691 </span>            :                         exit(10);
+<span class="lineNum">     692 </span>            :                 }
+<span class="lineNum">     693 </span>            :                 while( fgets(s,sizeof(s),infile) )
+<span class="lineNum">     694 </span>            :                 {
+<span class="lineNum">     695 </span>            :                         if( s[strlen(s)-1] == '\n' )
+<span class="lineNum">     696 </span>            :                                 s[strlen(s)-1] = 0;
+<span class="lineNum">     697 </span>            : 
+<span class="lineNum">     698 </span>            :                         ret = ast_expr(s, out, sizeof(out), NULL);
+<span class="lineNum">     699 </span>            :                         printf(&quot;Expression: %s    Result: [%d] '%s'\n&quot;,
+<span class="lineNum">     700 </span>            :                                    s, ret, out);
+<span class="lineNum">     701 </span>            :                 }
+<span class="lineNum">     702 </span>            :                 fclose(infile);
+<span class="lineNum">     703 </span>            :         }
+<span class="lineNum">     704 </span>            :         else
+<span class="lineNum">     705 </span>            :         {
+<span class="lineNum">     706 </span>            :                 if (ast_expr(argv[1], s, sizeof(s), NULL))
+<span class="lineNum">     707 </span>            :                         printf(&quot;=====%s======\n&quot;,s);
+<span class="lineNum">     708 </span>            :                 else
+<span class="lineNum">     709 </span>            :                         printf(&quot;No result\n&quot;);
+<span class="lineNum">     710 </span>            :         }
+<span class="lineNum">     711 </span>            :         return 0;
+<span class="lineNum">     712 </span>            : }
+<span class="lineNum">     713 </span>            : 
+<span class="lineNum">     714 </span>            : #endif
+<span class="lineNum">     715 </span>            : 
+<span class="lineNum">     716 </span>            : #undef ast_yyerror
+<span class="lineNum">     717 </span>            : #define ast_yyerror(x) ast_yyerror(x, YYLTYPE *yylloc, struct parse_io *parseio)
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span>            : /* I put the ast_yyerror func in the flex input file,
+<span class="lineNum">     720 </span>            :    because it refers to the buffer state. Best to
+<span class="lineNum">     721 </span>            :    let it access the BUFFER stuff there and not trying
+<span class="lineNum">     722 </span>            :    define all the structs, macros etc. in this file! */
+<a name="723"><span class="lineNum">     723 </span>            : </a>
+<span class="lineNum">     724 </span>            : static void destroy_arglist(struct expr_node *arglist)
+<span class="lineNum">     725 </span><span class="lineCov">          1 : {</span>
+<span class="lineNum">     726 </span>            :         struct expr_node *arglist_next;
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span>            :         while (arglist)
+<span class="lineNum">     729 </span><span class="lineCov">          2 :         {</span>
+<span class="lineNum">     730 </span>            :                 arglist_next = arglist-&gt;right;
+<span class="lineNum">     731 </span><span class="lineCov">          1 :                 if (arglist-&gt;val)</span>
+<span class="lineNum">     732 </span><span class="lineCov">          1 :                         free_value(arglist-&gt;val);</span>
+<span class="lineNum">     733 </span><span class="lineCov">          1 :                 arglist-&gt;val = 0;</span>
+<span class="lineNum">     734 </span><span class="lineCov">          1 :                 arglist-&gt;right = 0;</span>
+<span class="lineNum">     735 </span><span class="lineCov">          1 :                 free(arglist);</span>
+<span class="lineNum">     736 </span><span class="lineCov">          1 :                 arglist = arglist_next;</span>
+<span class="lineNum">     737 </span><span class="lineCov">          1 :         }</span>
+<span class="lineNum">     738 </span>            : }
+<span class="lineNum">     739 </span><span class="lineCov">          1 : </span>
+<a name="740"><span class="lineNum">     740 </span>            : #if !defined(STANDALONE) &amp;&amp; !defined(STANDALONE2)</a>
+<span class="lineNum">     741 </span>            : static char *compose_func_args(struct expr_node *arglist)
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     743 </span>            :         struct expr_node *t = arglist;
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :         char *argbuf;</span>
+<span class="lineNum">     745 </span>            :         int total_len = 0;
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     747 </span>            :         while (t) {
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :                 if (t != arglist)</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">          0 :                         total_len += 1; /* for the sep */</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :                 if (t-&gt;val) {</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :                         if (t-&gt;val-&gt;type == AST_EXPR_number)</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :                                 total_len += 25; /* worst case */</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :                         else</span>
+<span class="lineNum">     754 </span>            :                                 total_len += strlen(t-&gt;val-&gt;u.s);
+<span class="lineNum">     755 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     756 </span>            : 
+<span class="lineNum">     757 </span>            :                 t = t-&gt;right;
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     759 </span>            :         total_len++; /* for the null */
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :         ast_log(LOG_NOTICE,&quot;argbuf allocated %d bytes;\n&quot;, total_len);</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :         argbuf = malloc(total_len);</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :         argbuf[0] = 0;</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :         t = arglist;</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 :         while (t) {</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :                 char numbuf[30];</span>
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :                 if (t != arglist)
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :                         strcat(argbuf,&quot;,&quot;);</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     770 </span>            :                 if (t-&gt;val) {
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                         if (t-&gt;val-&gt;type == AST_EXPR_number) {</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :                                 sprintf(numbuf,FP___PRINTF,t-&gt;val-&gt;u.i);</span>
+<span class="lineNum">     773 </span><span class="lineNoCov">          0 :                                 strcat(argbuf,numbuf);</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :                         } else</span>
+<span class="lineNum">     775 </span>            :                                 strcat(argbuf,t-&gt;val-&gt;u.s);
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     777 </span>            :                 t = t-&gt;right;
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     779 </span>            :         ast_log(LOG_NOTICE,&quot;argbuf uses %d bytes;\n&quot;, (int) strlen(argbuf));
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 :         return argbuf;</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 : }</span>
+<a name="782"><span class="lineNum">     782 </span>            : </a>
+<span class="lineNum">     783 </span>            : static int is_really_num(char *str)
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     785 </span>            :         if ( strspn(str,&quot;-0123456789.      &quot;) == strlen(str))
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :         else</span>
+<span class="lineNum">     788 </span>            :                 return 0;
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     790 </span>            : #endif
+<a name="791"><span class="lineNum">     791 </span>            : </a>
+<span class="lineNum">     792 </span>            : static struct val *op_func(struct val *funcname, struct expr_node *arglist, struct ast_channel *chan)
+<span class="lineNum">     793 </span><span class="lineCov">          1 : {</span>
+<span class="lineNum">     794 </span>            :         if (strspn(funcname-&gt;u.s,&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789&quot;) == strlen(funcname-&gt;u.s))
+<span class="lineNum">     795 </span><span class="lineCov">          1 :         {</span>
+<span class="lineNum">     796 </span>            :                 struct val *result;
+<span class="lineNum">     797 </span>            :                 if (0) {
+<span class="lineNum">     798 </span>            : #ifdef FUNC_COS
+<span class="lineNum">     799 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;COS&quot;) == 0) {
+<span class="lineNum">     800 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_COS(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     805 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     808 </span>            : #endif
+<span class="lineNum">     809 </span>            : #ifdef FUNC_SIN
+<span class="lineNum">     810 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;SIN&quot;) == 0) {
+<span class="lineNum">     811 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_SIN(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     816 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     819 </span>            : #endif
+<span class="lineNum">     820 </span>            : #ifdef FUNC_TAN
+<span class="lineNum">     821 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;TAN&quot;) == 0) {
+<span class="lineNum">     822 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_TAN(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     826 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     827 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     830 </span>            : #endif
+<span class="lineNum">     831 </span>            : #ifdef FUNC_ACOS
+<span class="lineNum">     832 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;ACOS&quot;) == 0) {
+<span class="lineNum">     833 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_ACOS(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     838 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     839 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     841 </span>            : #endif
+<span class="lineNum">     842 </span>            : #ifdef FUNC_ASIN
+<span class="lineNum">     843 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;ASIN&quot;) == 0) {
+<span class="lineNum">     844 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     845 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     846 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_ASIN(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     847 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     849 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     851 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     852 </span>            : #endif
+<span class="lineNum">     853 </span>            : #ifdef FUNC_ATAN
+<span class="lineNum">     854 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;ATAN&quot;) == 0) {
+<span class="lineNum">     855 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     856 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     857 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_ATAN(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     858 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     860 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     861 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     863 </span>            : #endif
+<span class="lineNum">     864 </span>            : #ifdef FUNC_ATAN2
+<span class="lineNum">     865 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;ATAN2&quot;) == 0) {
+<span class="lineNum">     866 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; arglist-&gt;right &amp;&amp; !arglist-&gt;right-&gt;right &amp;&amp; arglist-&gt;val &amp;&amp; arglist-&gt;right-&gt;val){</span>
+<span class="lineNum">     867 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;right-&gt;val);</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_ATAN2(arglist-&gt;val-&gt;u.i, arglist-&gt;right-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     872 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     873 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     875 </span>            : #endif
+<span class="lineNum">     876 </span>            : #ifdef FUNC_POW
+<span class="lineNum">     877 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;POW&quot;) == 0) {
+<span class="lineNum">     878 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; arglist-&gt;right &amp;&amp; !arglist-&gt;right-&gt;right &amp;&amp; arglist-&gt;val &amp;&amp; arglist-&gt;right-&gt;val){</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     880 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;right-&gt;val);</span>
+<span class="lineNum">     881 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_POW(arglist-&gt;val-&gt;u.i, arglist-&gt;right-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     884 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     885 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     886 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     887 </span>            : #endif
+<span class="lineNum">     888 </span>            : #ifdef FUNC_SQRT
+<span class="lineNum">     889 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;SQRT&quot;) == 0) {
+<span class="lineNum">     890 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_SQRT(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     895 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     897 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     898 </span>            : #endif
+<span class="lineNum">     899 </span>            : #ifdef FUNC_FLOOR
+<span class="lineNum">     900 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;FLOOR&quot;) == 0) {
+<span class="lineNum">     901 </span><span class="lineCov">          1 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     902 </span><span class="lineCov">          1 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     903 </span><span class="lineCov">          1 :                                 result = make_number(FUNC_FLOOR(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     904 </span><span class="lineCov">          1 :                                 return result;</span>
+<span class="lineNum">     905 </span><span class="lineCov">          1 :                         } else {</span>
+<span class="lineNum">     906 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     909 </span>            : #endif
+<span class="lineNum">     910 </span>            : #ifdef FUNC_CEIL
+<span class="lineNum">     911 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;CEIL&quot;) == 0) {
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_CEIL(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     917 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     920 </span>            : #endif
+<span class="lineNum">     921 </span>            : #ifdef FUNC_ROUND
+<span class="lineNum">     922 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;ROUND&quot;) == 0) {
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_ROUND(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     928 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     929 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     931 </span>            : #endif /* defined(FUNC_ROUND) */
+<span class="lineNum">     932 </span>            : #ifdef FUNC_RINT
+<span class="lineNum">     933 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;RINT&quot;) == 0) {
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     935 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_RINT(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     937 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     939 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     940 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     942 </span>            : #endif
+<span class="lineNum">     943 </span>            : #ifdef FUNC_TRUNC
+<span class="lineNum">     944 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;TRUNC&quot;) == 0) {
+<span class="lineNum">     945 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     946 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     947 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_TRUNC(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     948 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     949 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     950 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     953 </span>            : #endif /* defined(FUNC_TRUNC) */
+<span class="lineNum">     954 </span>            : #ifdef FUNC_EXP
+<span class="lineNum">     955 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;EXP&quot;) == 0) {
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_EXP(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     961 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     964 </span>            : #endif
+<span class="lineNum">     965 </span>            : #ifdef FUNC_EXP2
+<span class="lineNum">     966 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;EXP2&quot;) == 0) {
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_EXP2(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     972 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     973 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     975 </span>            : #endif
+<span class="lineNum">     976 </span>            : #ifdef FUNC_EXP10
+<span class="lineNum">     977 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;EXP10&quot;) == 0) {
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     980 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_EXP10(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     983 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     985 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     986 </span>            : #endif
+<span class="lineNum">     987 </span>            : #ifdef FUNC_LOG
+<span class="lineNum">     988 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;LOG&quot;) == 0) {
+<span class="lineNum">     989 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">     991 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_LOG(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">     994 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">     996 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">     997 </span>            : #endif
+<span class="lineNum">     998 </span>            : #ifdef FUNC_LOG2
+<span class="lineNum">     999 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;LOG2&quot;) == 0) {
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">    1002 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_LOG2(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">    1003 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">    1005 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">    1007 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1008 </span>            : #endif
+<span class="lineNum">    1009 </span>            : #ifdef FUNC_LOG10
+<span class="lineNum">    1010 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;LOG10&quot;) == 0) {
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val){</span>
+<span class="lineNum">    1012 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">    1013 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_LOG10(arglist-&gt;val-&gt;u.i));</span>
+<span class="lineNum">    1014 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">    1016 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">    1017 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1019 </span>            : #endif
+<span class="lineNum">    1020 </span>            : #ifdef FUNC_REMAINDER
+<span class="lineNum">    1021 </span>            :                 } else if (strcmp(funcname-&gt;u.s,&quot;REMAINDER&quot;) == 0) {
+<span class="lineNum">    1022 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; arglist-&gt;right &amp;&amp; !arglist-&gt;right-&gt;right &amp;&amp; arglist-&gt;val &amp;&amp; arglist-&gt;right-&gt;val){</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;right-&gt;val);</span>
+<span class="lineNum">    1025 </span><span class="lineNoCov">          0 :                                 result = make_number(FUNC_REMAINDER(arglist-&gt;val-&gt;u.i, arglist-&gt;right-&gt;val-&gt;u.i));</span>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">    1027 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">    1028 </span>            :                                 ast_log(LOG_WARNING,&quot;Wrong args to %s() function\n&quot;,funcname-&gt;u.s);
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1031 </span>            : #endif
+<span class="lineNum">    1032 </span>            :                 } else if (strcmp(funcname-&gt;u.s, &quot;ABS&quot;) == 0) {
+<span class="lineNum">    1033 </span><span class="lineNoCov">          0 :                         if (arglist &amp;&amp; !arglist-&gt;right &amp;&amp; arglist-&gt;val) {</span>
+<span class="lineNum">    1034 </span><span class="lineNoCov">          0 :                                 to_number(arglist-&gt;val);</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                                 result = make_number(arglist-&gt;val-&gt;u.i &lt; 0 ? arglist-&gt;val-&gt;u.i * -1 : arglist-&gt;val-&gt;u.i);</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                                 return result;</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">          0 :                         } else {</span>
+<span class="lineNum">    1038 </span>            :                                 ast_log(LOG_WARNING, &quot;Wrong args to %s() function\n&quot;, funcname-&gt;u.s);
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                                 return make_number(0.0);</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1041 </span>            :                 } else {
+<span class="lineNum">    1042 </span>            :                         /* is this a custom function we should execute and collect the results of? */
+<span class="lineNum">    1043 </span>            : #if !defined(STANDALONE) &amp;&amp; !defined(STANDALONE2)
+<span class="lineNum">    1044 </span>            :                         struct ast_custom_function *f = ast_custom_function_find(funcname-&gt;u.s);
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                         if (!chan)</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING,&quot;Hey! chan is NULL.\n&quot;);</span>
+<span class="lineNum">    1047 </span><span class="lineNoCov">          0 :                         if (!f)</span>
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING,&quot;Hey! could not find func %s.\n&quot;, funcname-&gt;u.s);</span>
+<span class="lineNum">    1049 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1050 </span>            :                         if (f &amp;&amp; chan) {
+<span class="lineNum">    1051 </span><span class="lineNoCov">          0 :                                 if (f-&gt;read) {</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 :                                         char workspace[512];</span>
+<span class="lineNum">    1053 </span>            :                                         char *argbuf = compose_func_args(arglist);
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :                                         f-&gt;read(chan, funcname-&gt;u.s, argbuf, workspace, sizeof(workspace));</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :                                         free(argbuf);</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :                                         if (is_really_num(workspace))</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                                                 return make_number(FUNC_STRTOD(workspace,(char **)NULL));</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">          0 :                                         else</span>
+<span class="lineNum">    1059 </span>            :                                                 return make_str(workspace);
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :                                 } else {</span>
+<span class="lineNum">    1061 </span>            :                                         ast_log(LOG_ERROR,&quot;Error! Function '%s' cannot be read!\n&quot;, funcname-&gt;u.s);
+<span class="lineNum">    1062 </span><span class="lineNoCov">          0 :                                         return (make_number ((FP___TYPE)0.0));</span>
+<span class="lineNum">    1063 </span><span class="lineNoCov">          0 :                                 }</span>
+<span class="lineNum">    1064 </span>            : 
+<span class="lineNum">    1065 </span>            :                         } else {
+<span class="lineNum">    1066 </span>            :                                 ast_log(LOG_ERROR, &quot;Error! '%s' doesn't appear to be an available function!\n&quot;, funcname-&gt;u.s);
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :                                 return (make_number ((FP___TYPE)0.0));</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1069 </span>            : #else
+<span class="lineNum">    1070 </span>            :                         ast_log(LOG_ERROR, &quot;Error! '%s' is not available in the standalone version!\n&quot;, funcname-&gt;u.s);
+<span class="lineNum">    1071 </span>            :                         return (make_number ((FP___TYPE)0.0));
+<span class="lineNum">    1072 </span>            : #endif
+<span class="lineNum">    1073 </span>            :                 }
+<span class="lineNum">    1074 </span>            :         }
+<span class="lineNum">    1075 </span>            :         else
+<span class="lineNum">    1076 </span>            :         {
+<span class="lineNum">    1077 </span>            :                 ast_log(LOG_ERROR, &quot;Error! '%s' is not possibly a function name!\n&quot;, funcname-&gt;u.s);
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                 return (make_number ((FP___TYPE)0.0));</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1080 </span>            :         return (make_number ((FP___TYPE)0.0));
+<span class="lineNum">    1081 </span>            : }
+<span class="lineNum">    1082 </span>            : 
+<span class="lineNum">    1083 </span>            : 
+<a name="1084"><span class="lineNum">    1084 </span>            : static struct val *</a>
+<span class="lineNum">    1085 </span>            : op_or (struct val *a, struct val *b)
+<span class="lineNum">    1086 </span><span class="lineCov">         19 : {</span>
+<span class="lineNum">    1087 </span>            :         if (is_zero_or_null (a)) {
+<span class="lineNum">    1088 </span><span class="lineCov">         19 :                 free_value (a);</span>
+<span class="lineNum">    1089 </span><span class="lineCov">         14 :                 return (b);</span>
+<span class="lineNum">    1090 </span><span class="lineCov">         14 :         } else {</span>
+<span class="lineNum">    1091 </span>            :                 free_value (b);
+<span class="lineNum">    1092 </span><span class="lineCov">          5 :                 return (a);</span>
+<span class="lineNum">    1093 </span><span class="lineCov">          5 :         }</span>
+<span class="lineNum">    1094 </span>            : }
+<span class="lineNum">    1095 </span>            : 
+<a name="1096"><span class="lineNum">    1096 </span>            : static struct val *</a>
+<span class="lineNum">    1097 </span>            : op_and (struct val *a, struct val *b)
+<span class="lineNum">    1098 </span><span class="lineCov">         10 : {</span>
+<span class="lineNum">    1099 </span>            :         if (is_zero_or_null (a) || is_zero_or_null (b)) {
+<span class="lineNum">    1100 </span><span class="lineCov">         10 :                 free_value (a);</span>
+<span class="lineNum">    1101 </span><span class="lineCov">          3 :                 free_value (b);</span>
+<span class="lineNum">    1102 </span><span class="lineCov">          3 :                 return (make_number ((FP___TYPE)0.0));</span>
+<span class="lineNum">    1103 </span><span class="lineCov">          3 :         } else {</span>
+<span class="lineNum">    1104 </span>            :                 free_value (b);
+<span class="lineNum">    1105 </span><span class="lineCov">          7 :                 return (a);</span>
+<span class="lineNum">    1106 </span><span class="lineCov">          7 :         }</span>
+<span class="lineNum">    1107 </span>            : }
+<span class="lineNum">    1108 </span>            : 
+<a name="1109"><span class="lineNum">    1109 </span>            : static struct val *</a>
+<span class="lineNum">    1110 </span>            : op_eq (struct val *a, struct val *b)
+<span class="lineNum">    1111 </span><span class="lineCov">       1534 : {</span>
+<span class="lineNum">    1112 </span>            :         struct val *r;
+<span class="lineNum">    1113 </span>            : 
+<span class="lineNum">    1114 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1115 </span><span class="lineCov">       1534 :                 to_string (a);</span>
+<span class="lineNum">    1116 </span><span class="lineCov">        370 :                 to_string (b);</span>
+<span class="lineNum">    1117 </span><span class="lineCov">        370 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) == 0));</span>
+<span class="lineNum">    1118 </span><span class="lineCov">        370 :         } else {</span>
+<span class="lineNum">    1119 </span>            : #ifdef DEBUG_FOR_CONVERSIONS
+<span class="lineNum">    1120 </span>            :                 char buffer[2000];
+<span class="lineNum">    1121 </span>            :                 sprintf(buffer,&quot;Converting '%s' and '%s' &quot;, a-&gt;u.s, b-&gt;u.s);
+<span class="lineNum">    1122 </span>            : #endif
+<span class="lineNum">    1123 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1124 </span><span class="lineCov">       1164 :                 (void)to_number(b);</span>
+<span class="lineNum">    1125 </span><span class="lineCov">       1164 : #ifdef DEBUG_FOR_CONVERSIONS</span>
+<span class="lineNum">    1126 </span>            :                 ast_log(LOG_WARNING,&quot;%s to '%lld' and '%lld'\n&quot;, buffer, a-&gt;u.i, b-&gt;u.i);
+<span class="lineNum">    1127 </span>            : #endif
+<span class="lineNum">    1128 </span>            :                 r = make_number ((FP___TYPE)(a-&gt;u.i == b-&gt;u.i));
+<span class="lineNum">    1129 </span><span class="lineCov">       1164 :         }</span>
+<span class="lineNum">    1130 </span>            : 
+<span class="lineNum">    1131 </span>            :         free_value (a);
+<span class="lineNum">    1132 </span><span class="lineCov">       1534 :         free_value (b);</span>
+<span class="lineNum">    1133 </span><span class="lineCov">       1534 :         return r;</span>
+<span class="lineNum">    1134 </span><span class="lineCov">       1534 : }</span>
+<span class="lineNum">    1135 </span>            : 
+<a name="1136"><span class="lineNum">    1136 </span>            : static struct val *</a>
+<span class="lineNum">    1137 </span>            : op_gt (struct val *a, struct val *b)
+<span class="lineNum">    1138 </span><span class="lineCov">         17 : {</span>
+<span class="lineNum">    1139 </span>            :         struct val *r;
+<span class="lineNum">    1140 </span>            : 
+<span class="lineNum">    1141 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1142 </span><span class="lineCov">         17 :                 to_string (a);</span>
+<span class="lineNum">    1143 </span><span class="lineCov">         13 :                 to_string (b);</span>
+<span class="lineNum">    1144 </span><span class="lineCov">         13 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) &gt; 0));</span>
+<span class="lineNum">    1145 </span><span class="lineCov">         13 :         } else {</span>
+<span class="lineNum">    1146 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1147 </span><span class="lineCov">          4 :                 (void)to_number(b);</span>
+<span class="lineNum">    1148 </span><span class="lineCov">          4 :                 r = make_number ((FP___TYPE)(a-&gt;u.i &gt; b-&gt;u.i));</span>
+<span class="lineNum">    1149 </span><span class="lineCov">          4 :         }</span>
+<span class="lineNum">    1150 </span>            : 
+<span class="lineNum">    1151 </span>            :         free_value (a);
+<span class="lineNum">    1152 </span><span class="lineCov">         17 :         free_value (b);</span>
+<span class="lineNum">    1153 </span><span class="lineCov">         17 :         return r;</span>
+<span class="lineNum">    1154 </span><span class="lineCov">         17 : }</span>
+<span class="lineNum">    1155 </span>            : 
+<a name="1156"><span class="lineNum">    1156 </span>            : static struct val *</a>
+<span class="lineNum">    1157 </span>            : op_lt (struct val *a, struct val *b)
+<span class="lineNum">    1158 </span><span class="lineCov">         38 : {</span>
+<span class="lineNum">    1159 </span>            :         struct val *r;
+<span class="lineNum">    1160 </span>            : 
+<span class="lineNum">    1161 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1162 </span><span class="lineCov">         38 :                 to_string (a);</span>
+<span class="lineNum">    1163 </span><span class="lineCov">          1 :                 to_string (b);</span>
+<span class="lineNum">    1164 </span><span class="lineCov">          1 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) &lt; 0));</span>
+<span class="lineNum">    1165 </span><span class="lineCov">          1 :         } else {</span>
+<span class="lineNum">    1166 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1167 </span><span class="lineCov">         37 :                 (void)to_number(b);</span>
+<span class="lineNum">    1168 </span><span class="lineCov">         37 :                 r = make_number ((FP___TYPE)(a-&gt;u.i &lt; b-&gt;u.i));</span>
+<span class="lineNum">    1169 </span><span class="lineCov">         37 :         }</span>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span>            :         free_value (a);
+<span class="lineNum">    1172 </span><span class="lineCov">         38 :         free_value (b);</span>
+<span class="lineNum">    1173 </span><span class="lineCov">         38 :         return r;</span>
+<span class="lineNum">    1174 </span><span class="lineCov">         38 : }</span>
+<span class="lineNum">    1175 </span>            : 
+<a name="1176"><span class="lineNum">    1176 </span>            : static struct val *</a>
+<span class="lineNum">    1177 </span>            : op_ge (struct val *a, struct val *b)
+<span class="lineNum">    1178 </span><span class="lineCov">          3 : {</span>
+<span class="lineNum">    1179 </span>            :         struct val *r;
+<span class="lineNum">    1180 </span>            : 
+<span class="lineNum">    1181 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1182 </span><span class="lineCov">          3 :                 to_string (a);</span>
+<span class="lineNum">    1183 </span><span class="lineNoCov">          0 :                 to_string (b);</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) &gt;= 0));</span>
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :         } else {</span>
+<span class="lineNum">    1186 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1187 </span><span class="lineCov">          3 :                 (void)to_number(b);</span>
+<span class="lineNum">    1188 </span><span class="lineCov">          3 :                 r = make_number ((FP___TYPE)(a-&gt;u.i &gt;= b-&gt;u.i));</span>
+<span class="lineNum">    1189 </span><span class="lineCov">          3 :         }</span>
+<span class="lineNum">    1190 </span>            : 
+<span class="lineNum">    1191 </span>            :         free_value (a);
+<span class="lineNum">    1192 </span><span class="lineCov">          3 :         free_value (b);</span>
+<span class="lineNum">    1193 </span><span class="lineCov">          3 :         return r;</span>
+<span class="lineNum">    1194 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">    1195 </span>            : 
+<a name="1196"><span class="lineNum">    1196 </span>            : static struct val *</a>
+<span class="lineNum">    1197 </span>            : op_le (struct val *a, struct val *b)
+<span class="lineNum">    1198 </span><span class="lineCov">         13 : {</span>
+<span class="lineNum">    1199 </span>            :         struct val *r;
+<span class="lineNum">    1200 </span>            : 
+<span class="lineNum">    1201 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1202 </span><span class="lineCov">         13 :                 to_string (a);</span>
+<span class="lineNum">    1203 </span><span class="lineNoCov">          0 :                 to_string (b);</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">          0 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) &lt;= 0));</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">          0 :         } else {</span>
+<span class="lineNum">    1206 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1207 </span><span class="lineCov">         13 :                 (void)to_number(b);</span>
+<span class="lineNum">    1208 </span><span class="lineCov">         13 :                 r = make_number ((FP___TYPE)(a-&gt;u.i &lt;= b-&gt;u.i));</span>
+<span class="lineNum">    1209 </span><span class="lineCov">         13 :         }</span>
+<span class="lineNum">    1210 </span>            : 
+<span class="lineNum">    1211 </span>            :         free_value (a);
+<span class="lineNum">    1212 </span><span class="lineCov">         13 :         free_value (b);</span>
+<span class="lineNum">    1213 </span><span class="lineCov">         13 :         return r;</span>
+<span class="lineNum">    1214 </span><span class="lineCov">         13 : }</span>
+<span class="lineNum">    1215 </span>            : 
+<a name="1216"><span class="lineNum">    1216 </span>            : static struct val *</a>
+<span class="lineNum">    1217 </span>            : op_cond (struct val *a, struct val *b, struct val *c)
+<span class="lineNum">    1218 </span><span class="lineCov">          1 : {</span>
+<span class="lineNum">    1219 </span>            :         struct val *r;
+<span class="lineNum">    1220 </span>            : 
+<span class="lineNum">    1221 </span>            :         if( isstring(a) )
+<span class="lineNum">    1222 </span><span class="lineCov">          1 :         {</span>
+<span class="lineNum">    1223 </span>            :                 if( strlen(a-&gt;u.s) &amp;&amp; strcmp(a-&gt;u.s, &quot;\&quot;\&quot;&quot;) != 0 &amp;&amp; strcmp(a-&gt;u.s,&quot;0&quot;) != 0 )
+<span class="lineNum">    1224 </span><span class="lineNoCov">          0 :                 {</span>
+<span class="lineNum">    1225 </span>            :                         free_value(a);
+<span class="lineNum">    1226 </span><span class="lineNoCov">          0 :                         free_value(c);</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">          0 :                         r = b;</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1229 </span>            :                 else
+<span class="lineNum">    1230 </span>            :                 {
+<span class="lineNum">    1231 </span>            :                         free_value(a);
+<span class="lineNum">    1232 </span><span class="lineNoCov">          0 :                         free_value(b);</span>
+<span class="lineNum">    1233 </span><span class="lineNoCov">          0 :                         r = c;</span>
+<span class="lineNum">    1234 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1235 </span>            :         }
+<span class="lineNum">    1236 </span>            :         else
+<span class="lineNum">    1237 </span>            :         {
+<span class="lineNum">    1238 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1239 </span><span class="lineCov">          1 :                 if( a-&gt;u.i )</span>
+<span class="lineNum">    1240 </span><span class="lineCov">          1 :                 {</span>
+<span class="lineNum">    1241 </span>            :                         free_value(a);
+<span class="lineNum">    1242 </span><span class="lineCov">          1 :                         free_value(c);</span>
+<span class="lineNum">    1243 </span><span class="lineCov">          1 :                         r = b;</span>
+<span class="lineNum">    1244 </span><span class="lineCov">          1 :                 }</span>
+<span class="lineNum">    1245 </span>            :                 else
+<span class="lineNum">    1246 </span>            :                 {
+<span class="lineNum">    1247 </span>            :                         free_value(a);
+<span class="lineNum">    1248 </span><span class="lineNoCov">          0 :                         free_value(b);</span>
+<span class="lineNum">    1249 </span><span class="lineNoCov">          0 :                         r = c;</span>
+<span class="lineNum">    1250 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1251 </span>            :         }
+<span class="lineNum">    1252 </span>            :         return r;
+<span class="lineNum">    1253 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">    1254 </span>            : 
+<a name="1255"><span class="lineNum">    1255 </span>            : static struct val *</a>
+<span class="lineNum">    1256 </span>            : op_ne (struct val *a, struct val *b)
+<span class="lineNum">    1257 </span><span class="lineCov">         63 : {</span>
+<span class="lineNum">    1258 </span>            :         struct val *r;
+<span class="lineNum">    1259 </span>            : 
+<span class="lineNum">    1260 </span>            :         if (isstring (a) || isstring (b)) {
+<span class="lineNum">    1261 </span><span class="lineCov">         63 :                 to_string (a);</span>
+<span class="lineNum">    1262 </span><span class="lineCov">         54 :                 to_string (b);</span>
+<span class="lineNum">    1263 </span><span class="lineCov">         54 :                 r = make_number ((FP___TYPE)(strcoll (a-&gt;u.s, b-&gt;u.s) != 0));</span>
+<span class="lineNum">    1264 </span><span class="lineCov">         54 :         } else {</span>
+<span class="lineNum">    1265 </span>            :                 (void)to_number(a);
+<span class="lineNum">    1266 </span><span class="lineCov">          9 :                 (void)to_number(b);</span>
+<span class="lineNum">    1267 </span><span class="lineCov">          9 :                 r = make_number ((FP___TYPE)(a-&gt;u.i != b-&gt;u.i));</span>
+<span class="lineNum">    1268 </span><span class="lineCov">          9 :         }</span>
+<span class="lineNum">    1269 </span>            : 
+<span class="lineNum">    1270 </span>            :         free_value (a);
+<span class="lineNum">    1271 </span><span class="lineCov">         63 :         free_value (b);</span>
+<span class="lineNum">    1272 </span><span class="lineCov">         63 :         return r;</span>
+<span class="lineNum">    1273 </span><span class="lineCov">         63 : }</span>
+<span class="lineNum">    1274 </span>            : 
+<a name="1275"><span class="lineNum">    1275 </span>            : static int</a>
+<span class="lineNum">    1276 </span>            : chk_plus (FP___TYPE a, FP___TYPE b, FP___TYPE r)
+<span class="lineNum">    1277 </span><span class="lineCov">        294 : {</span>
+<span class="lineNum">    1278 </span>            :         /* sum of two positive numbers must be positive */
+<span class="lineNum">    1279 </span>            :         if (a &gt; 0 &amp;&amp; b &gt; 0 &amp;&amp; r &lt;= 0)
+<span class="lineNum">    1280 </span><span class="lineCov">        294 :                 return 1;</span>
+<span class="lineNum">    1281 </span><span class="lineNoCov">          0 :         /* sum of two negative numbers must be negative */</span>
+<span class="lineNum">    1282 </span>            :         if (a &lt; 0 &amp;&amp; b &lt; 0 &amp;&amp; r &gt;= 0)
+<span class="lineNum">    1283 </span><span class="lineCov">        294 :                 return 1;</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :         /* all other cases are OK */</span>
+<span class="lineNum">    1285 </span>            :         return 0;
+<span class="lineNum">    1286 </span><span class="lineCov">        294 : }</span>
+<span class="lineNum">    1287 </span>            : 
+<a name="1288"><span class="lineNum">    1288 </span>            : static struct val *</a>
+<span class="lineNum">    1289 </span>            : op_plus (struct val *a, struct val *b)
+<span class="lineNum">    1290 </span><span class="lineCov">         57 : {</span>
+<span class="lineNum">    1291 </span>            :         struct val *r;
+<span class="lineNum">    1292 </span>            : 
+<span class="lineNum">    1293 </span>            :         if (!to_number (a)) {
+<span class="lineNum">    1294 </span><span class="lineCov">         57 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1295 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING,&quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :                 if (!to_number (b)) {</span>
+<span class="lineNum">    1297 </span><span class="lineNoCov">          0 :                         free_value(a);</span>
+<span class="lineNum">    1298 </span><span class="lineNoCov">          0 :                         free_value(b);</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">          0 :                         return make_number(0);</span>
+<span class="lineNum">    1300 </span><span class="lineNoCov">          0 :                 } else {</span>
+<span class="lineNum">    1301 </span>            :                         free_value(a);
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :                         return (b);</span>
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1304 </span>            :         } else if (!to_number(b)) {
+<span class="lineNum">    1305 </span><span class="lineCov">         57 :                 free_value(b);</span>
+<span class="lineNum">    1306 </span><span class="lineNoCov">          0 :                 return (a);</span>
+<span class="lineNum">    1307 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1308 </span>            : 
+<span class="lineNum">    1309 </span>            :         r = make_number (a-&gt;u.i + b-&gt;u.i);
+<span class="lineNum">    1310 </span><span class="lineCov">         57 :         if (chk_plus (a-&gt;u.i, b-&gt;u.i, r-&gt;u.i)) {</span>
+<span class="lineNum">    1311 </span><span class="lineCov">         57 :                 ast_log(LOG_WARNING,&quot;overflow\n&quot;);</span>
+<span class="lineNum">    1312 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1313 </span>            :         free_value (a);
+<span class="lineNum">    1314 </span><span class="lineCov">         57 :         free_value (b);</span>
+<span class="lineNum">    1315 </span><span class="lineCov">         57 :         return r;</span>
+<span class="lineNum">    1316 </span><span class="lineCov">         57 : }</span>
+<span class="lineNum">    1317 </span>            : 
+<a name="1318"><span class="lineNum">    1318 </span>            : static int</a>
+<span class="lineNum">    1319 </span>            : chk_minus (FP___TYPE a, FP___TYPE b, FP___TYPE r)
+<span class="lineNum">    1320 </span><span class="lineCov">        237 : {</span>
+<span class="lineNum">    1321 </span>            :         /* special case subtraction of QUAD_MIN */
+<span class="lineNum">    1322 </span>            :         if (b == QUAD_MIN) {
+<span class="lineNum">    1323 </span><span class="lineCov">        237 :                 if (a &gt;= 0)</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">    1325 </span><span class="lineNoCov">          0 :                 else</span>
+<span class="lineNum">    1326 </span>            :                         return 0;
+<span class="lineNum">    1327 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1328 </span>            :         /* this is allowed for b != QUAD_MIN */
+<span class="lineNum">    1329 </span>            :         return chk_plus (a, -b, r);
+<span class="lineNum">    1330 </span><span class="lineCov">        237 : }</span>
+<span class="lineNum">    1331 </span>            : 
+<a name="1332"><span class="lineNum">    1332 </span>            : static struct val *</a>
+<span class="lineNum">    1333 </span>            : op_minus (struct val *a, struct val *b)
+<span class="lineNum">    1334 </span><span class="lineCov">        229 : {</span>
+<span class="lineNum">    1335 </span>            :         struct val *r;
+<span class="lineNum">    1336 </span>            : 
+<span class="lineNum">    1337 </span>            :         if (!to_number (a)) {
+<span class="lineNum">    1338 </span><span class="lineCov">        229 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1339 </span><span class="lineCov">          8 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1340 </span><span class="lineCov">          8 :                 if (!to_number (b)) {</span>
+<span class="lineNum">    1341 </span><span class="lineCov">          8 :                         free_value(a);</span>
+<span class="lineNum">    1342 </span><span class="lineCov">          8 :                         free_value(b);</span>
+<span class="lineNum">    1343 </span><span class="lineCov">          8 :                         return make_number(0);</span>
+<span class="lineNum">    1344 </span><span class="lineCov">          8 :                 } else {</span>
+<span class="lineNum">    1345 </span>            :                         r = make_number(0 - b-&gt;u.i);
+<span class="lineNum">    1346 </span><span class="lineNoCov">          0 :                         free_value(a);</span>
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 :                         free_value(b);</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">          0 :                         return (r);</span>
+<span class="lineNum">    1349 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1350 </span>            :         } else if (!to_number(b)) {
+<span class="lineNum">    1351 </span><span class="lineCov">        221 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1352 </span><span class="lineCov">         12 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1353 </span><span class="lineCov">         12 :                 free_value(b);</span>
+<span class="lineNum">    1354 </span><span class="lineCov">         12 :                 return (a);</span>
+<span class="lineNum">    1355 </span><span class="lineCov">         12 :         }</span>
+<span class="lineNum">    1356 </span>            : 
+<span class="lineNum">    1357 </span>            :         r = make_number (a-&gt;u.i - b-&gt;u.i);
+<span class="lineNum">    1358 </span><span class="lineCov">        209 :         if (chk_minus (a-&gt;u.i, b-&gt;u.i, r-&gt;u.i)) {</span>
+<span class="lineNum">    1359 </span><span class="lineCov">        209 :                 ast_log(LOG_WARNING, &quot;overflow\n&quot;);</span>
+<span class="lineNum">    1360 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1361 </span>            :         free_value (a);
+<span class="lineNum">    1362 </span><span class="lineCov">        209 :         free_value (b);</span>
+<span class="lineNum">    1363 </span><span class="lineCov">        209 :         return r;</span>
+<span class="lineNum">    1364 </span><span class="lineCov">        209 : }</span>
+<span class="lineNum">    1365 </span>            : 
+<a name="1366"><span class="lineNum">    1366 </span>            : static struct val *</a>
+<span class="lineNum">    1367 </span>            : op_negate (struct val *a)
+<span class="lineNum">    1368 </span><span class="lineCov">         28 : {</span>
+<span class="lineNum">    1369 </span>            :         struct val *r;
+<span class="lineNum">    1370 </span>            : 
+<span class="lineNum">    1371 </span>            :         if (!to_number (a) ) {
+<span class="lineNum">    1372 </span><span class="lineCov">         28 :                 free_value(a);</span>
+<span class="lineNum">    1373 </span><span class="lineNoCov">          0 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1374 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1375 </span><span class="lineNoCov">          0 :                 return make_number(0);</span>
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1377 </span>            : 
+<span class="lineNum">    1378 </span>            :         r = make_number (- a-&gt;u.i);
+<span class="lineNum">    1379 </span><span class="lineCov">         28 :         if (chk_minus (0, a-&gt;u.i, r-&gt;u.i)) {</span>
+<span class="lineNum">    1380 </span><span class="lineCov">         28 :                 ast_log(LOG_WARNING, &quot;overflow\n&quot;);</span>
+<span class="lineNum">    1381 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1382 </span>            :         free_value (a);
+<span class="lineNum">    1383 </span><span class="lineCov">         28 :         return r;</span>
+<span class="lineNum">    1384 </span><span class="lineCov">         28 : }</span>
+<span class="lineNum">    1385 </span>            : 
+<a name="1386"><span class="lineNum">    1386 </span>            : static struct val *</a>
+<span class="lineNum">    1387 </span>            : op_compl (struct val *a)
+<span class="lineNum">    1388 </span><span class="lineCov">          9 : {</span>
+<span class="lineNum">    1389 </span>            :         int v1 = 1;
+<span class="lineNum">    1390 </span><span class="lineCov">          9 :         struct val *r;</span>
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span>            :         if( !a )
+<span class="lineNum">    1393 </span><span class="lineCov">          9 :         {</span>
+<span class="lineNum">    1394 </span>            :                 v1 = 0;
+<span class="lineNum">    1395 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1396 </span>            :         else
+<span class="lineNum">    1397 </span>            :         {
+<span class="lineNum">    1398 </span>            :                 switch( a-&gt;type )
+<span class="lineNum">    1399 </span><span class="lineCov">          9 :                 {</span>
+<span class="lineNum">    1400 </span>            :                 case AST_EXPR_number:
+<span class="lineNum">    1401 </span><span class="lineNoCov">          0 :                         if( a-&gt;u.i == 0 )</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">          0 :                                 v1 = 0;</span>
+<span class="lineNum">    1403 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1404 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1405 </span>            :                 case AST_EXPR_string:
+<span class="lineNum">    1406 </span><span class="lineNoCov">          0 :                         if( a-&gt;u.s == 0 )</span>
+<span class="lineNum">    1407 </span><span class="lineNoCov">          0 :                                 v1 = 0;</span>
+<span class="lineNum">    1408 </span><span class="lineNoCov">          0 :                         else</span>
+<span class="lineNum">    1409 </span>            :                         {
+<span class="lineNum">    1410 </span>            :                                 if( a-&gt;u.s[0] == 0 )
+<span class="lineNum">    1411 </span><span class="lineNoCov">          0 :                                         v1 = 0;</span>
+<span class="lineNum">    1412 </span><span class="lineNoCov">          0 :                                 else if (strlen(a-&gt;u.s) == 1 &amp;&amp; a-&gt;u.s[0] == '0' )</span>
+<span class="lineNum">    1413 </span><span class="lineNoCov">          0 :                                         v1 = 0;</span>
+<span class="lineNum">    1414 </span><span class="lineNoCov">          0 :                                 else</span>
+<span class="lineNum">    1415 </span>            :                                         v1 = atoi(a-&gt;u.s);
+<span class="lineNum">    1416 </span><span class="lineNoCov">          0 :                         }</span>
+<span class="lineNum">    1417 </span>            :                         break;
+<span class="lineNum">    1418 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1419 </span>            :                 case AST_EXPR_numeric_string:
+<span class="lineNum">    1420 </span><span class="lineCov">          9 :                         if( a-&gt;u.s == 0 )</span>
+<span class="lineNum">    1421 </span><span class="lineCov">          9 :                                 v1 = 0;</span>
+<span class="lineNum">    1422 </span><span class="lineNoCov">          0 :                         else</span>
+<span class="lineNum">    1423 </span>            :                         {
+<span class="lineNum">    1424 </span>            :                                 if( a-&gt;u.s[0] == 0 )
+<span class="lineNum">    1425 </span><span class="lineCov">          9 :                                         v1 = 0;</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">          0 :                                 else if (strlen(a-&gt;u.s) == 1 &amp;&amp; a-&gt;u.s[0] == '0' )</span>
+<span class="lineNum">    1427 </span><span class="lineCov">          9 :                                         v1 = 0;</span>
+<span class="lineNum">    1428 </span><span class="lineCov">          4 :                                 else</span>
+<span class="lineNum">    1429 </span>            :                                         v1 = atoi(a-&gt;u.s);
+<span class="lineNum">    1430 </span><span class="lineCov">          5 :                         }</span>
+<span class="lineNum">    1431 </span>            :                         break;
+<span class="lineNum">    1432 </span><span class="lineCov">          9 :                 }</span>
+<span class="lineNum">    1433 </span>            :         }
+<span class="lineNum">    1434 </span><span class="lineCov">          9 : </span>
+<span class="lineNum">    1435 </span>            :         r = make_number (!v1);
+<span class="lineNum">    1436 </span><span class="lineCov">          9 :         free_value (a);</span>
+<span class="lineNum">    1437 </span><span class="lineCov">          9 :         return r;</span>
+<span class="lineNum">    1438 </span><span class="lineCov">          9 : }</span>
+<span class="lineNum">    1439 </span>            : 
+<a name="1440"><span class="lineNum">    1440 </span>            : static int</a>
+<span class="lineNum">    1441 </span>            : chk_times (FP___TYPE a, FP___TYPE b, FP___TYPE r)
+<span class="lineNum">    1442 </span><span class="lineCov">          4 : {</span>
+<span class="lineNum">    1443 </span>            :         /* special case: first operand is 0, no overflow possible */
+<span class="lineNum">    1444 </span>            :         if (a == 0)
+<span class="lineNum">    1445 </span><span class="lineCov">          4 :                 return 0;</span>
+<span class="lineNum">    1446 </span><span class="lineNoCov">          0 :         /* cerify that result of division matches second operand */</span>
+<span class="lineNum">    1447 </span>            :         if (r / a != b)
+<span class="lineNum">    1448 </span><span class="lineCov">          4 :                 return 1;</span>
+<span class="lineNum">    1449 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1450 </span><span class="lineCov">          4 : }</span>
+<span class="lineNum">    1451 </span>            : 
+<a name="1452"><span class="lineNum">    1452 </span>            : static struct val *</a>
+<span class="lineNum">    1453 </span>            : op_times (struct val *a, struct val *b)
+<span class="lineNum">    1454 </span><span class="lineCov">          4 : {</span>
+<span class="lineNum">    1455 </span>            :         struct val *r;
+<span class="lineNum">    1456 </span>            : 
+<span class="lineNum">    1457 </span>            :         if (!to_number (a) || !to_number (b)) {
+<span class="lineNum">    1458 </span><span class="lineCov">          4 :                 free_value(a);</span>
+<span class="lineNum">    1459 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1460 </span><span class="lineNoCov">          0 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1461 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :                 return(make_number(0));</span>
+<span class="lineNum">    1463 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1464 </span>            : 
+<span class="lineNum">    1465 </span>            :         r = make_number (a-&gt;u.i * b-&gt;u.i);
+<span class="lineNum">    1466 </span><span class="lineCov">          4 :         if (chk_times (a-&gt;u.i, b-&gt;u.i, r-&gt;u.i)) {</span>
+<span class="lineNum">    1467 </span><span class="lineCov">          4 :                 ast_log(LOG_WARNING, &quot;overflow\n&quot;);</span>
+<span class="lineNum">    1468 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1469 </span>            :         free_value (a);
+<span class="lineNum">    1470 </span><span class="lineCov">          4 :         free_value (b);</span>
+<span class="lineNum">    1471 </span><span class="lineCov">          4 :         return (r);</span>
+<span class="lineNum">    1472 </span><span class="lineCov">          4 : }</span>
+<span class="lineNum">    1473 </span>            : 
+<a name="1474"><span class="lineNum">    1474 </span>            : static int</a>
+<span class="lineNum">    1475 </span>            : chk_div (FP___TYPE a, FP___TYPE b)
+<span class="lineNum">    1476 </span><span class="lineCov">          3 : {</span>
+<span class="lineNum">    1477 </span>            :         /* div by zero has been taken care of before */
+<span class="lineNum">    1478 </span>            :         /* only QUAD_MIN / -1 causes overflow */
+<span class="lineNum">    1479 </span>            :         if (a == QUAD_MIN &amp;&amp; b == -1)
+<span class="lineNum">    1480 </span><span class="lineCov">          3 :                 return 1;</span>
+<span class="lineNum">    1481 </span><span class="lineNoCov">          0 :         /* everything else is OK */</span>
+<span class="lineNum">    1482 </span>            :         return 0;
+<span class="lineNum">    1483 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">    1484 </span>            : 
+<a name="1485"><span class="lineNum">    1485 </span>            : static struct val *</a>
+<span class="lineNum">    1486 </span>            : op_div (struct val *a, struct val *b)
+<span class="lineNum">    1487 </span><span class="lineCov">          3 : {</span>
+<span class="lineNum">    1488 </span>            :         struct val *r;
+<span class="lineNum">    1489 </span>            : 
+<span class="lineNum">    1490 </span>            :         if (!to_number (a)) {
+<span class="lineNum">    1491 </span><span class="lineCov">          3 :                 free_value(a);</span>
+<span class="lineNum">    1492 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1493 </span><span class="lineNoCov">          0 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1494 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1495 </span><span class="lineNoCov">          0 :                 return make_number(0);</span>
+<span class="lineNum">    1496 </span><span class="lineNoCov">          0 :         } else if (!to_number (b)) {</span>
+<span class="lineNum">    1497 </span><span class="lineCov">          3 :                 free_value(a);</span>
+<span class="lineNum">    1498 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1499 </span><span class="lineNoCov">          0 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1500 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1501 </span><span class="lineNoCov">          0 :                 return make_number(INT_MAX);</span>
+<span class="lineNum">    1502 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1503 </span>            : 
+<span class="lineNum">    1504 </span>            :         if (b-&gt;u.i == 0) {
+<span class="lineNum">    1505 </span><span class="lineCov">          3 :                 ast_log(LOG_WARNING, &quot;division by zero\n&quot;);</span>
+<span class="lineNum">    1506 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1507 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1508 </span><span class="lineNoCov">          0 :                 return make_number(INT_MAX);</span>
+<span class="lineNum">    1509 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1510 </span>            : 
+<span class="lineNum">    1511 </span>            :         r = make_number (a-&gt;u.i / b-&gt;u.i);
+<span class="lineNum">    1512 </span><span class="lineCov">          3 :         if (chk_div (a-&gt;u.i, b-&gt;u.i)) {</span>
+<span class="lineNum">    1513 </span><span class="lineCov">          3 :                 ast_log(LOG_WARNING, &quot;overflow\n&quot;);</span>
+<span class="lineNum">    1514 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1515 </span>            :         free_value (a);
+<span class="lineNum">    1516 </span><span class="lineCov">          3 :         free_value (b);</span>
+<span class="lineNum">    1517 </span><span class="lineCov">          3 :         return r;</span>
+<span class="lineNum">    1518 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">    1519 </span>            : 
+<a name="1520"><span class="lineNum">    1520 </span>            : static struct val *</a>
+<span class="lineNum">    1521 </span>            : op_rem (struct val *a, struct val *b)
+<span class="lineNum">    1522 </span><span class="lineCov">         14 : {</span>
+<span class="lineNum">    1523 </span>            :         struct val *r;
+<span class="lineNum">    1524 </span>            : 
+<span class="lineNum">    1525 </span>            :         if (!to_number (a) || !to_number (b)) {
+<span class="lineNum">    1526 </span><span class="lineCov">         14 :                 if( !extra_error_message_supplied )</span>
+<span class="lineNum">    1527 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;non-numeric argument\n&quot;);</span>
+<span class="lineNum">    1528 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1529 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1530 </span><span class="lineNoCov">          0 :                 return make_number(0);</span>
+<span class="lineNum">    1531 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1532 </span>            : 
+<span class="lineNum">    1533 </span>            :         if (b-&gt;u.i == 0) {
+<span class="lineNum">    1534 </span><span class="lineCov">         14 :                 ast_log(LOG_WARNING, &quot;div by zero\n&quot;);</span>
+<span class="lineNum">    1535 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1536 </span><span class="lineNoCov">          0 :                 return(b);</span>
+<span class="lineNum">    1537 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1538 </span>            : 
+<span class="lineNum">    1539 </span>            :         r = make_number (FUNC_FMOD(a-&gt;u.i, b-&gt;u.i)); /* either fmod or fmodl if FP___TYPE is available */
+<span class="lineNum">    1540 </span><span class="lineCov">         14 :         /* chk_rem necessary ??? */</span>
+<span class="lineNum">    1541 </span>            :         free_value (a);
+<span class="lineNum">    1542 </span><span class="lineCov">         14 :         free_value (b);</span>
+<span class="lineNum">    1543 </span><span class="lineCov">         14 :         return r;</span>
+<span class="lineNum">    1544 </span><span class="lineCov">         14 : }</span>
+<span class="lineNum">    1545 </span>            : 
+<span class="lineNum">    1546 </span>            : 
+<a name="1547"><span class="lineNum">    1547 </span>            : static struct val *</a>
+<span class="lineNum">    1548 </span>            : op_colon (struct val *a, struct val *b)
+<span class="lineNum">    1549 </span><span class="lineCov">         67 : {</span>
+<span class="lineNum">    1550 </span>            :         regex_t rp;
+<span class="lineNum">    1551 </span>            :         regmatch_t rm[2];
+<span class="lineNum">    1552 </span>            :         char errbuf[256];
+<span class="lineNum">    1553 </span>            :         int eval;
+<span class="lineNum">    1554 </span>            :         struct val *v;
+<span class="lineNum">    1555 </span>            : 
+<span class="lineNum">    1556 </span>            :         /* coerce to both arguments to strings */
+<span class="lineNum">    1557 </span>            :         to_string(a);
+<span class="lineNum">    1558 </span><span class="lineCov">         67 :         to_string(b);</span>
+<span class="lineNum">    1559 </span><span class="lineCov">         67 :         /* strip double quotes from both -- they'll screw up the pattern, and the search string starting at ^ */</span>
+<span class="lineNum">    1560 </span>            :         strip_quotes(a);
+<span class="lineNum">    1561 </span><span class="lineCov">         67 :         strip_quotes(b);</span>
+<span class="lineNum">    1562 </span><span class="lineCov">         67 :         /* compile regular expression */</span>
+<span class="lineNum">    1563 </span>            :         if ((eval = regcomp (&amp;rp, b-&gt;u.s, REG_EXTENDED)) != 0) {
+<span class="lineNum">    1564 </span><span class="lineCov">         67 :                 regerror (eval, &amp;rp, errbuf, sizeof(errbuf));</span>
+<span class="lineNum">    1565 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;regcomp() error : %s\n&quot;, errbuf);</span>
+<span class="lineNum">    1566 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1567 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1568 </span><span class="lineNoCov">          0 :                 return make_str(&quot;&quot;);</span>
+<span class="lineNum">    1569 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1570 </span>            : 
+<span class="lineNum">    1571 </span>            :         /* compare string against pattern */
+<span class="lineNum">    1572 </span>            :         /* remember that patterns are anchored to the beginning of the line */
+<span class="lineNum">    1573 </span>            :         if (regexec(&amp;rp, a-&gt;u.s, (size_t)2, rm, 0) == 0 &amp;&amp; rm[0].rm_so == 0) {
+<span class="lineNum">    1574 </span><span class="lineCov">         67 :                 if (rm[1].rm_so &gt;= 0) {</span>
+<span class="lineNum">    1575 </span><span class="lineCov">         14 :                         *(a-&gt;u.s + rm[1].rm_eo) = '\0';</span>
+<span class="lineNum">    1576 </span><span class="lineCov">          2 :                         v = make_str (a-&gt;u.s + rm[1].rm_so);</span>
+<span class="lineNum">    1577 </span><span class="lineCov">          2 : </span>
+<span class="lineNum">    1578 </span>            :                 } else {
+<span class="lineNum">    1579 </span>            :                         v = make_number ((FP___TYPE)(rm[0].rm_eo - rm[0].rm_so));
+<span class="lineNum">    1580 </span><span class="lineCov">          5 :                 }</span>
+<span class="lineNum">    1581 </span>            :         } else {
+<span class="lineNum">    1582 </span>            :                 if (rp.re_nsub == 0) {
+<span class="lineNum">    1583 </span><span class="lineCov">         60 :                         v = make_number ((FP___TYPE)0);</span>
+<span class="lineNum">    1584 </span><span class="lineCov">         58 :                 } else {</span>
+<span class="lineNum">    1585 </span>            :                         v = make_str (&quot;&quot;);
+<span class="lineNum">    1586 </span><span class="lineCov">          2 :                 }</span>
+<span class="lineNum">    1587 </span>            :         }
+<span class="lineNum">    1588 </span>            : 
+<span class="lineNum">    1589 </span>            :         /* free arguments and pattern buffer */
+<span class="lineNum">    1590 </span>            :         free_value (a);
+<span class="lineNum">    1591 </span><span class="lineCov">         67 :         free_value (b);</span>
+<span class="lineNum">    1592 </span><span class="lineCov">         67 :         regfree (&amp;rp);</span>
+<span class="lineNum">    1593 </span><span class="lineCov">         67 : </span>
+<span class="lineNum">    1594 </span>            :         return v;
+<span class="lineNum">    1595 </span><span class="lineCov">         67 : }</span>
+<span class="lineNum">    1596 </span>            : 
+<span class="lineNum">    1597 </span>            : 
+<a name="1598"><span class="lineNum">    1598 </span>            : static struct val *</a>
+<span class="lineNum">    1599 </span>            : op_eqtilde (struct val *a, struct val *b)
+<span class="lineNum">    1600 </span><span class="lineCov">         16 : {</span>
+<span class="lineNum">    1601 </span>            :         regex_t rp;
+<span class="lineNum">    1602 </span>            :         regmatch_t rm[2];
+<span class="lineNum">    1603 </span>            :         char errbuf[256];
+<span class="lineNum">    1604 </span>            :         int eval;
+<span class="lineNum">    1605 </span>            :         struct val *v;
+<span class="lineNum">    1606 </span>            : 
+<span class="lineNum">    1607 </span>            :         /* coerce to both arguments to strings */
+<span class="lineNum">    1608 </span>            :         to_string(a);
+<span class="lineNum">    1609 </span><span class="lineCov">         16 :         to_string(b);</span>
+<span class="lineNum">    1610 </span><span class="lineCov">         16 :         /* strip double quotes from both -- they'll screw up the pattern, and the search string starting at ^ */</span>
+<span class="lineNum">    1611 </span>            :         strip_quotes(a);
+<span class="lineNum">    1612 </span><span class="lineCov">         16 :         strip_quotes(b);</span>
+<span class="lineNum">    1613 </span><span class="lineCov">         16 :         /* compile regular expression */</span>
+<span class="lineNum">    1614 </span>            :         if ((eval = regcomp (&amp;rp, b-&gt;u.s, REG_EXTENDED)) != 0) {
+<span class="lineNum">    1615 </span><span class="lineCov">         16 :                 regerror (eval, &amp;rp, errbuf, sizeof(errbuf));</span>
+<span class="lineNum">    1616 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;regcomp() error : %s\n&quot;, errbuf);</span>
+<span class="lineNum">    1617 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1618 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1619 </span><span class="lineNoCov">          0 :                 return make_str(&quot;&quot;);</span>
+<span class="lineNum">    1620 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1621 </span>            : 
+<span class="lineNum">    1622 </span>            :         /* compare string against pattern */
+<span class="lineNum">    1623 </span>            :         /* remember that patterns are anchored to the beginning of the line */
+<span class="lineNum">    1624 </span>            :         if (regexec(&amp;rp, a-&gt;u.s, (size_t)2, rm, 0) == 0 ) {
+<span class="lineNum">    1625 </span><span class="lineCov">         16 :                 if (rm[1].rm_so &gt;= 0) {</span>
+<span class="lineNum">    1626 </span><span class="lineCov">         12 :                         *(a-&gt;u.s + rm[1].rm_eo) = '\0';</span>
+<span class="lineNum">    1627 </span><span class="lineCov">          4 :                         v = make_str (a-&gt;u.s + rm[1].rm_so);</span>
+<span class="lineNum">    1628 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">    1629 </span>            :                 } else {
+<span class="lineNum">    1630 </span>            :                         v = make_number ((FP___TYPE)(rm[0].rm_eo - rm[0].rm_so));
+<span class="lineNum">    1631 </span><span class="lineCov">          8 :                 }</span>
+<span class="lineNum">    1632 </span>            :         } else {
+<span class="lineNum">    1633 </span>            :                 if (rp.re_nsub == 0) {
+<span class="lineNum">    1634 </span><span class="lineCov">          4 :                         v = make_number ((FP___TYPE)0.0);</span>
+<span class="lineNum">    1635 </span><span class="lineCov">          4 :                 } else {</span>
+<span class="lineNum">    1636 </span>            :                         v = make_str (&quot;&quot;);
+<span class="lineNum">    1637 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">    1638 </span>            :         }
+<span class="lineNum">    1639 </span>            : 
+<span class="lineNum">    1640 </span>            :         /* free arguments and pattern buffer */
+<span class="lineNum">    1641 </span>            :         free_value (a);
+<span class="lineNum">    1642 </span><span class="lineCov">         16 :         free_value (b);</span>
+<span class="lineNum">    1643 </span><span class="lineCov">         16 :         regfree (&amp;rp);</span>
+<span class="lineNum">    1644 </span><span class="lineCov">         16 : </span>
+<span class="lineNum">    1645 </span>            :         return v;
+<span class="lineNum">    1646 </span><span class="lineCov">         16 : }</span>
+<span class="lineNum">    1647 </span>            : 
+<a name="1648"><span class="lineNum">    1648 </span>            : static struct val *  /* this is a string concat operator */</a>
+<span class="lineNum">    1649 </span>            : op_tildetilde (struct val *a, struct val *b)
+<span class="lineNum">    1650 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">    1651 </span>            :         struct val *v;
+<span class="lineNum">    1652 </span>            :         char *vs;
+<span class="lineNum">    1653 </span>            : 
+<span class="lineNum">    1654 </span>            :         /* coerce to both arguments to strings */
+<span class="lineNum">    1655 </span>            :         to_string(a);
+<span class="lineNum">    1656 </span><span class="lineNoCov">          0 :         to_string(b);</span>
+<span class="lineNum">    1657 </span><span class="lineNoCov">          0 :         /* strip double quotes from both -- */</span>
+<span class="lineNum">    1658 </span>            :         strip_quotes(a);
+<span class="lineNum">    1659 </span><span class="lineNoCov">          0 :         strip_quotes(b);</span>
+<span class="lineNum">    1660 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1661 </span>            :         vs = malloc(strlen(a-&gt;u.s)+strlen(b-&gt;u.s)+1);
+<span class="lineNum">    1662 </span><span class="lineNoCov">          0 :         if (vs == NULL) {</span>
+<span class="lineNum">    1663 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;malloc() failed\n&quot;);</span>
+<span class="lineNum">    1664 </span><span class="lineNoCov">          0 :                 free_value(a);</span>
+<span class="lineNum">    1665 </span><span class="lineNoCov">          0 :                 free_value(b);</span>
+<span class="lineNum">    1666 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1667 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1668 </span>            : 
+<span class="lineNum">    1669 </span>            :         strcpy(vs,a-&gt;u.s);
+<span class="lineNum">    1670 </span><span class="lineNoCov">          0 :         strcat(vs,b-&gt;u.s);</span>
+<span class="lineNum">    1671 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1672 </span>            :         v = make_str(vs);
+<span class="lineNum">    1673 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1674 </span>            :         free(vs);
+<span class="lineNum">    1675 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1676 </span>            :         /* free arguments */
+<span class="lineNum">    1677 </span>            :         free_value(a);
+<span class="lineNum">    1678 </span><span class="lineNoCov">          0 :         free_value(b);</span>
+<span class="lineNum">    1679 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1680 </span>            :         return v;
+<span class="lineNum">    1681 </span><span class="lineNoCov">          0 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,616 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - channels/iax2/codec_pref.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">channels/iax2</a> - codec_pref.c<span style="font-size: 80%;"> (source / <a href="codec_pref.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">147</td>
+            <td class="headerCovTableEntry">186</td>
+            <td class="headerCovTableEntryMed">79.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2014, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Media Format Bitfield Compatibility API
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/codec.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/format.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/format_compatibility.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/format_cap.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #include &quot;include/codec_pref.h&quot;
+<a name="42"><span class="lineNum">      42 </span>            : #include &quot;include/format_compatibility.h&quot;</a>
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineCov">        119 : void iax2_codec_pref_convert(struct iax2_codec_pref *pref, char *buf, size_t size, int right)</span>
+<span class="lineNum">      45 </span>            : {
+<span class="lineNum">      46 </span>            :         static int differential = (int) 'A';
+<span class="lineNum">      47 </span>            :         int x;
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span><span class="lineCov">        119 :         if (right) {</span>
+<span class="lineNum">      50 </span><span class="lineCov">         53 :                 --size;/* Save room for the nul string terminator. */</span>
+<span class="lineNum">      51 </span><span class="lineCov">        556 :                 for (x = 0; x &lt; ARRAY_LEN(pref-&gt;order) &amp;&amp; x &lt; size; ++x) {</span>
+<span class="lineNum">      52 </span><span class="lineCov">        556 :                         if (!pref-&gt;order[x]) {</span>
+<span class="lineNum">      53 </span><span class="lineCov">         53 :                                 break;</span>
+<span class="lineNum">      54 </span>            :                         }
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineCov">        503 :                         buf[x] = pref-&gt;order[x] + differential;</span>
+<span class="lineNum">      57 </span>            :                 }
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">         53 :                 buf[x] = '\0';</span>
+<span class="lineNum">      60 </span>            :         } else {
+<span class="lineNum">      61 </span><span class="lineCov">        642 :                 for (x = 0; x &lt; ARRAY_LEN(pref-&gt;order) &amp;&amp; x &lt; size; ++x) {</span>
+<span class="lineNum">      62 </span><span class="lineCov">        642 :                         if (buf[x] == '\0') {</span>
+<span class="lineNum">      63 </span><span class="lineCov">         66 :                                 break;</span>
+<span class="lineNum">      64 </span>            :                         }
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span><span class="lineCov">        576 :                         pref-&gt;order[x] = buf[x] - differential;</span>
+<span class="lineNum">      67 </span><span class="lineCov">        576 :                         pref-&gt;framing[x] = 0;</span>
+<span class="lineNum">      68 </span>            :                 }
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span><span class="lineCov">         66 :                 if (x &lt; ARRAY_LEN(pref-&gt;order)) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">         66 :                         pref-&gt;order[x] = 0;</span>
+<span class="lineNum">      72 </span><span class="lineCov">         66 :                         pref-&gt;framing[x] = 0;</span>
+<span class="lineNum">      73 </span>            :                 }
+<span class="lineNum">      74 </span>            :         }
+<a name="75"><span class="lineNum">      75 </span><span class="lineCov">        119 : }</span></a>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span><span class="lineCov">         37 : struct ast_format *iax2_codec_pref_index(struct iax2_codec_pref *pref, int idx, struct ast_format **result)</span>
+<span class="lineNum">      78 </span>            : {
+<span class="lineNum">      79 </span><span class="lineCov">         37 :         if (0 &lt;= idx &amp;&amp; idx &lt; ARRAY_LEN(pref-&gt;order) &amp;&amp; pref-&gt;order[idx]) {</span>
+<span class="lineNum">      80 </span>            :                 uint64_t pref_bitfield;
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">         37 :                 pref_bitfield = iax2_codec_pref_order_value_to_format_bitfield(pref-&gt;order[idx]);</span>
+<span class="lineNum">      83 </span><span class="lineCov">         37 :                 *result = ast_format_compatibility_bitfield2format(pref_bitfield);</span>
+<span class="lineNum">      84 </span>            :         } else {
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 *result = NULL;</span>
+<span class="lineNum">      86 </span>            :         }
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineCov">         37 :         return *result;</span>
+<a name="89"><span class="lineNum">      89 </span>            : }</a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineCov">       1132 : int iax2_codec_pref_to_cap(struct iax2_codec_pref *pref, struct ast_format_cap *cap)</span>
+<span class="lineNum">      92 </span>            : {
+<span class="lineNum">      93 </span>            :         int idx;
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineCov">       8046 :         for (idx = 0; idx &lt; ARRAY_LEN(pref-&gt;order); ++idx) {</span>
+<span class="lineNum">      96 </span>            :                 uint64_t pref_bitfield;
+<span class="lineNum">      97 </span>            :                 struct ast_format *pref_format;
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">       8046 :                 pref_bitfield = iax2_codec_pref_order_value_to_format_bitfield(pref-&gt;order[idx]);</span>
+<span class="lineNum">     100 </span><span class="lineCov">       8046 :                 if (!pref_bitfield) {</span>
+<span class="lineNum">     101 </span><span class="lineCov">       1132 :                         break;</span>
+<span class="lineNum">     102 </span>            :                 }
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">       6914 :                 pref_format = ast_format_compatibility_bitfield2format(pref_bitfield);</span>
+<span class="lineNum">     105 </span><span class="lineCov">       6914 :                 if (pref_format &amp;&amp; ast_format_cap_append(cap, pref_format, pref-&gt;framing[idx])) {</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     107 </span>            :                 }
+<span class="lineNum">     108 </span>            :         }
+<span class="lineNum">     109 </span><span class="lineCov">       1132 :         return 0;</span>
+<a name="110"><span class="lineNum">     110 </span>            : }</a>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">        127 : int iax2_codec_pref_best_bitfield2cap(uint64_t bitfield, struct iax2_codec_pref *prefs, struct ast_format_cap *cap)</span>
+<span class="lineNum">     113 </span>            : {
+<span class="lineNum">     114 </span>            :         uint64_t best_bitfield;
+<span class="lineNum">     115 </span>            :         struct ast_format *format;
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span>            :         /* Add any user preferred codecs first. */
+<span class="lineNum">     118 </span><span class="lineCov">        127 :         if (prefs) {</span>
+<span class="lineNum">     119 </span>            :                 int idx;
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">        676 :                 for (idx = 0; bitfield &amp;&amp; idx &lt; ARRAY_LEN(prefs-&gt;order); ++idx) {</span>
+<span class="lineNum">     122 </span><span class="lineCov">        586 :                         best_bitfield = iax2_codec_pref_order_value_to_format_bitfield(prefs-&gt;order[idx]);</span>
+<span class="lineNum">     123 </span><span class="lineCov">        586 :                         if (!best_bitfield) {</span>
+<span class="lineNum">     124 </span><span class="lineCov">         37 :                                 break;</span>
+<span class="lineNum">     125 </span>            :                         }
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">        549 :                         if (best_bitfield &amp; bitfield) {</span>
+<span class="lineNum">     128 </span><span class="lineCov">        540 :                                 format = ast_format_compatibility_bitfield2format(best_bitfield);</span>
+<span class="lineNum">     129 </span><span class="lineCov">        540 :                                 if (format &amp;&amp; ast_format_cap_append(cap, format, prefs-&gt;framing[idx])) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     131 </span>            :                                 }
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            :                                 /* Remove just added codec. */
+<span class="lineNum">     134 </span><span class="lineCov">        540 :                                 bitfield &amp;= ~best_bitfield;</span>
+<span class="lineNum">     135 </span>            :                         }
+<span class="lineNum">     136 </span>            :                 }
+<span class="lineNum">     137 </span>            :         }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :         /* Add the hard coded &quot;best&quot; codecs. */
+<span class="lineNum">     140 </span><span class="lineCov">        164 :         while (bitfield) {</span>
+<span class="lineNum">     141 </span><span class="lineCov">         37 :                 best_bitfield = iax2_format_compatibility_best(bitfield);</span>
+<span class="lineNum">     142 </span><span class="lineCov">         37 :                 if (!best_bitfield) {</span>
+<span class="lineNum">     143 </span>            :                         /* No more codecs considered best. */
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     145 </span>            :                 }
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">         37 :                 format = ast_format_compatibility_bitfield2format(best_bitfield);</span>
+<span class="lineNum">     148 </span>            :                 /* The best_bitfield should always be convertible to a format. */
+<span class="lineNum">     149 </span><span class="lineCov">         37 :                 ast_assert(format != NULL);</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">         37 :                 if (ast_format_cap_append(cap, format, 0)) {</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     153 </span>            :                 }
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            :                 /* Remove just added &quot;best&quot; codec to find the next &quot;best&quot;. */
+<span class="lineNum">     156 </span><span class="lineCov">         37 :                 bitfield &amp;= ~best_bitfield;</span>
+<span class="lineNum">     157 </span>            :         }
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span>            :         /* Add any remaining codecs. */
+<span class="lineNum">     160 </span><span class="lineCov">        127 :         if (bitfield) {</span>
+<span class="lineNum">     161 </span>            :                 int bit;
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 for (bit = 0; bit &lt; 64; ++bit) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                         uint64_t mask = (1ULL &lt;&lt; bit);</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                         if (mask &amp; bitfield) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                                 format = ast_format_compatibility_bitfield2format(mask);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                                 if (format &amp;&amp; ast_format_cap_append(cap, format, 0)) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     170 </span>            :                                 }
+<span class="lineNum">     171 </span>            :                         }
+<span class="lineNum">     172 </span>            :                 }
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">        127 :         return 0;</span>
+<a name="176"><span class="lineNum">     176 </span>            : }</a>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">         74 : int iax2_codec_pref_string(struct iax2_codec_pref *pref, char *buf, size_t size)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span>            :         int x;
+<span class="lineNum">     181 </span>            :         struct ast_format_cap *cap;
+<span class="lineNum">     182 </span>            :         size_t total_len;
+<span class="lineNum">     183 </span>            :         char *cur;
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span>            :         /* This function is useless if you have less than a 6 character buffer.
+<span class="lineNum">     186 </span>            :          * '(...)' is six characters. */
+<span class="lineNum">     187 </span><span class="lineCov">         74 :         if (size &lt; 6) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     189 </span>            :         }
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            :         /* Convert the preferences into a format cap so that we can read the format names */
+<span class="lineNum">     192 </span><span class="lineCov">         74 :         cap = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     193 </span><span class="lineCov">         74 :         if (!cap || iax2_codec_pref_to_cap(pref, cap)) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 strcpy(buf, &quot;(...)&quot;); /* Safe */</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 ao2_cleanup(cap);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :         /* We know that at a minimum, 3 characters are used - (, ), and \0 */
+<span class="lineNum">     200 </span><span class="lineCov">         74 :         total_len = size - 3;</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            :         /* This character has already been accounted for total_len purposes */
+<span class="lineNum">     203 </span><span class="lineCov">         74 :         buf[0] = '(';</span>
+<span class="lineNum">     204 </span><span class="lineCov">         74 :         cur = buf + 1;</span>
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span>            :         /* Loop through the formats and write as many into the buffer as we can */
+<span class="lineNum">     207 </span><span class="lineCov">        568 :         for (x = 0; x &lt; ast_format_cap_count(cap); x++) {</span>
+<span class="lineNum">     208 </span>            :                 size_t name_len;
+<span class="lineNum">     209 </span><span class="lineCov">        494 :                 struct ast_format *fmt = ast_format_cap_get_format(cap, x);</span>
+<span class="lineNum">     210 </span><span class="lineCov">        494 :                 const char *name = ast_format_get_name(fmt);</span>
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineCov">        494 :                 name_len = strlen(name);</span>
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span>            :                 /* all entries after the first need a delimiter character */
+<span class="lineNum">     215 </span><span class="lineCov">        494 :                 if (x) {</span>
+<span class="lineNum">     216 </span><span class="lineCov">        420 :                         name_len++;</span>
+<span class="lineNum">     217 </span>            :                 }
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            :                 /* Terminate the list early if we don't have room for the entry.
+<span class="lineNum">     220 </span>            :                  * If it's not the last entry in the list, save enough room to write '...'.
+<span class="lineNum">     221 </span>            :                  */
+<span class="lineNum">     222 </span><span class="lineCov">        494 :                 if (((x == ast_format_cap_count(cap) - 1) &amp;&amp; (total_len &lt; name_len)) ||</span>
+<span class="lineNum">     223 </span><span class="lineCov">        494 :                                 ((x &lt; ast_format_cap_count(cap) - 1) &amp;&amp; (total_len &lt; name_len + 3))) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                         strcpy(cur, &quot;...&quot;);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :                         cur += 3;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                         total_len -= 3;</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                         ao2_ref(fmt, -1);</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     229 </span>            :                 }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">        494 :                 sprintf(cur, &quot;%s%s&quot;, x ? &quot;|&quot; : &quot;&quot;, name);</span>
+<span class="lineNum">     232 </span><span class="lineCov">        494 :                 cur += name_len;</span>
+<span class="lineNum">     233 </span><span class="lineCov">        494 :                 total_len -= name_len;</span>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">        494 :                 ao2_ref(fmt, -1);</span>
+<span class="lineNum">     236 </span>            :         }
+<span class="lineNum">     237 </span><span class="lineCov">         74 :         ao2_ref(cap, -1);</span>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            :         /* These two characters have already been accounted for total_len purposes */
+<span class="lineNum">     240 </span><span class="lineCov">         74 :         cur[0] = ')';</span>
+<span class="lineNum">     241 </span><span class="lineCov">         74 :         cur[1] = '\0';</span>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">         74 :         return size - total_len;</span>
+<a name="244"><span class="lineNum">     244 </span>            : }</a>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">       6420 : static void codec_pref_remove_index(struct iax2_codec_pref *pref, int codec_pref_index)</span>
+<span class="lineNum">     247 </span>            : {
+<span class="lineNum">     248 </span>            :         int idx;
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">       6420 :         idx = codec_pref_index;</span>
+<span class="lineNum">     251 </span><span class="lineCov">       6420 :         if (idx == ARRAY_LEN(pref-&gt;order) - 1) {</span>
+<span class="lineNum">     252 </span>            :                 /* Remove from last array entry. */
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                 pref-&gt;order[idx] = 0;</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 pref-&gt;framing[idx] = 0;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     256 </span>            :         }
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">      28904 :         for (; idx &lt; ARRAY_LEN(pref-&gt;order); ++idx) {</span>
+<span class="lineNum">     259 </span><span class="lineCov">      28904 :                 pref-&gt;order[idx] = pref-&gt;order[idx + 1];</span>
+<span class="lineNum">     260 </span><span class="lineCov">      28904 :                 pref-&gt;framing[idx] = pref-&gt;framing[idx + 1];</span>
+<span class="lineNum">     261 </span><span class="lineCov">      28904 :                 if (!pref-&gt;order[idx]) {</span>
+<span class="lineNum">     262 </span><span class="lineCov">       6420 :                         return;</span>
+<span class="lineNum">     263 </span>            :                 }
+<span class="lineNum">     264 </span>            :         }
+<span class="lineNum">     265 </span>            : }
+<a name="266"><span class="lineNum">     266 </span>            : </a>
+<span class="lineNum">     267 </span>            : /*! \brief Remove codec from pref list */
+<span class="lineNum">     268 </span><span class="lineCov">      29100 : static void codec_pref_remove(struct iax2_codec_pref *pref, int format_index)</span>
+<span class="lineNum">     269 </span>            : {
+<span class="lineNum">     270 </span>            :         int x;
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">      29100 :         if (!pref-&gt;order[0]) {</span>
+<span class="lineNum">     273 </span><span class="lineCov">       2155 :                 return;</span>
+<span class="lineNum">     274 </span>            :         }
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">     176075 :         for (x = 0; x &lt; ARRAY_LEN(pref-&gt;order); ++x) {</span>
+<span class="lineNum">     277 </span><span class="lineCov">     176075 :                 if (!pref-&gt;order[x]) {</span>
+<span class="lineNum">     278 </span><span class="lineCov">      21835 :                         break;</span>
+<span class="lineNum">     279 </span>            :                 }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">     154240 :                 if (pref-&gt;order[x] == format_index) {</span>
+<span class="lineNum">     282 </span><span class="lineCov">       5110 :                         codec_pref_remove_index(pref, x);</span>
+<span class="lineNum">     283 </span><span class="lineCov">       5110 :                         break;</span>
+<span class="lineNum">     284 </span>            :                 }
+<span class="lineNum">     285 </span>            :         }
+<a name="286"><span class="lineNum">     286 </span>            : }</a>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">       1058 : void iax2_codec_pref_remove_missing(struct iax2_codec_pref *pref, uint64_t bitfield)</span>
+<span class="lineNum">     289 </span>            : {
+<span class="lineNum">     290 </span>            :         int idx;
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">       1058 :         if (!pref-&gt;order[0]) {</span>
+<span class="lineNum">     293 </span><span class="lineCov">         18 :                 return;</span>
+<span class="lineNum">     294 </span>            :         }
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span>            :         /*
+<span class="lineNum">     297 </span>            :          * Work from the end of the list so we always deal with
+<span class="lineNum">     298 </span>            :          * unmodified entries in case we have to remove a pref.
+<span class="lineNum">     299 </span>            :          */
+<span class="lineNum">     300 </span><span class="lineCov">      67600 :         for (idx = ARRAY_LEN(pref-&gt;order); idx--;) {</span>
+<span class="lineNum">     301 </span>            :                 uint64_t pref_bitfield;
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">      66560 :                 pref_bitfield = iax2_codec_pref_order_value_to_format_bitfield(pref-&gt;order[idx]);</span>
+<span class="lineNum">     304 </span><span class="lineCov">      66560 :                 if (!pref_bitfield) {</span>
+<span class="lineNum">     305 </span><span class="lineCov">      60140 :                         continue;</span>
+<span class="lineNum">     306 </span>            :                 }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            :                 /* If this format isn't in the bitfield, remove it from the prefs. */
+<span class="lineNum">     309 </span><span class="lineCov">       6420 :                 if (!(pref_bitfield &amp; bitfield)) {</span>
+<span class="lineNum">     310 </span><span class="lineCov">       1310 :                         codec_pref_remove_index(pref, idx);</span>
+<span class="lineNum">     311 </span>            :                 }
+<span class="lineNum">     312 </span>            :         }
+<span class="lineNum">     313 </span>            : }
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            : /*!
+<span class="lineNum">     316 </span>            :  * \brief Formats supported by IAX2.
+<span class="lineNum">     317 </span>            :  *
+<span class="lineNum">     318 </span>            :  * \note All AST_FORMAT_xxx compatibility bit defines must be
+<span class="lineNum">     319 </span>            :  *  represented here.
+<span class="lineNum">     320 </span>            :  *
+<span class="lineNum">     321 </span>            :  * \note The order is important because the array index+1 values
+<span class="lineNum">     322 </span>            :  * go out over the wire.
+<span class="lineNum">     323 </span>            :  */
+<span class="lineNum">     324 </span>            : static const uint64_t iax2_supported_formats[] = {
+<span class="lineNum">     325 </span>            :         AST_FORMAT_G723,
+<span class="lineNum">     326 </span>            :         AST_FORMAT_GSM,
+<span class="lineNum">     327 </span>            :         AST_FORMAT_ULAW,
+<span class="lineNum">     328 </span>            :         AST_FORMAT_ALAW,
+<span class="lineNum">     329 </span>            :         AST_FORMAT_G726,
+<span class="lineNum">     330 </span>            :         AST_FORMAT_ADPCM,
+<span class="lineNum">     331 </span>            :         AST_FORMAT_SLIN,
+<span class="lineNum">     332 </span>            :         AST_FORMAT_LPC10,
+<span class="lineNum">     333 </span>            :         AST_FORMAT_G729,
+<span class="lineNum">     334 </span>            :         AST_FORMAT_SPEEX,
+<span class="lineNum">     335 </span>            :         AST_FORMAT_SPEEX16,
+<span class="lineNum">     336 </span>            :         AST_FORMAT_ILBC,
+<span class="lineNum">     337 </span>            :         AST_FORMAT_G726_AAL2,
+<span class="lineNum">     338 </span>            :         AST_FORMAT_G722,
+<span class="lineNum">     339 </span>            :         AST_FORMAT_SLIN16,
+<span class="lineNum">     340 </span>            :         AST_FORMAT_JPEG,
+<span class="lineNum">     341 </span>            :         AST_FORMAT_PNG,
+<span class="lineNum">     342 </span>            :         AST_FORMAT_H261,
+<span class="lineNum">     343 </span>            :         AST_FORMAT_H263,
+<span class="lineNum">     344 </span>            :         AST_FORMAT_H263P,
+<span class="lineNum">     345 </span>            :         AST_FORMAT_H264,
+<span class="lineNum">     346 </span>            :         AST_FORMAT_MP4,
+<span class="lineNum">     347 </span>            :         AST_FORMAT_T140_RED,
+<span class="lineNum">     348 </span>            :         AST_FORMAT_T140,
+<span class="lineNum">     349 </span>            :         AST_FORMAT_SIREN7,
+<span class="lineNum">     350 </span>            :         AST_FORMAT_SIREN14,
+<span class="lineNum">     351 </span>            :         AST_FORMAT_TESTLAW,
+<span class="lineNum">     352 </span>            :         AST_FORMAT_G719,
+<span class="lineNum">     353 </span>            :         0, /* Place holder */
+<span class="lineNum">     354 </span>            :         0, /* Place holder */
+<span class="lineNum">     355 </span>            :         0, /* Place holder */
+<span class="lineNum">     356 </span>            :         0, /* Place holder */
+<span class="lineNum">     357 </span>            :         0, /* Place holder */
+<span class="lineNum">     358 </span>            :         0, /* Place holder */
+<span class="lineNum">     359 </span>            :         0, /* Place holder */
+<span class="lineNum">     360 </span>            :         0, /* Place holder */
+<span class="lineNum">     361 </span>            :         AST_FORMAT_OPUS,
+<span class="lineNum">     362 </span>            :         AST_FORMAT_VP8,
+<span class="lineNum">     363 </span>            :         /* ONLY ADD TO THE END OF THIS LIST */
+<span class="lineNum">     364 </span>            :         /* XXX Use up the place holder slots first. */
+<a name="365"><span class="lineNum">     365 </span>            : };</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineCov">      75266 : uint64_t iax2_codec_pref_order_value_to_format_bitfield(int order_value)</span>
+<span class="lineNum">     368 </span>            : {
+<span class="lineNum">     369 </span><span class="lineCov">      75266 :         if (order_value &lt; 1 || ARRAY_LEN(iax2_supported_formats) &lt; order_value) {</span>
+<span class="lineNum">     370 </span><span class="lineCov">      61309 :                 return 0;</span>
+<span class="lineNum">     371 </span>            :         }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span><span class="lineCov">      13957 :         return iax2_supported_formats[order_value - 1];</span>
+<a name="374"><span class="lineNum">     374 </span>            : }</a>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineCov">      29153 : int iax2_codec_pref_format_bitfield_to_order_value(uint64_t bitfield)</span>
+<span class="lineNum">     377 </span>            : {
+<span class="lineNum">     378 </span>            :         int idx;
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">      29153 :         if (bitfield) {</span>
+<span class="lineNum">     381 </span><span class="lineCov">     256371 :                 for (idx = 0; idx &lt; ARRAY_LEN(iax2_supported_formats); ++idx) {</span>
+<span class="lineNum">     382 </span><span class="lineCov">     256371 :                         if (iax2_supported_formats[idx] == bitfield) {</span>
+<span class="lineNum">     383 </span><span class="lineCov">      29153 :                                 return idx + 1;</span>
+<span class="lineNum">     384 </span>            :                         }
+<span class="lineNum">     385 </span>            :                 }
+<span class="lineNum">     386 </span>            :         }
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     388 </span>            : }
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span>            : /*!
+<span class="lineNum">     391 </span>            :  * \internal
+<span class="lineNum">     392 </span>            :  * \brief Append the bitfield format to the codec preference list.
+<span class="lineNum">     393 </span>            :  * \since 13.0.0
+<span class="lineNum">     394 </span>            :  *
+<span class="lineNum">     395 </span>            :  * \param pref Codec preference list to append the given bitfield.
+<span class="lineNum">     396 </span>            :  * \param bitfield Format bitfield to append.
+<span class="lineNum">     397 </span>            :  * \param framing Framing size of the codec.
+<span class="lineNum">     398 </span>            :  *
+<a name="399"><span class="lineNum">     399 </span>            :  * \return Nothing</a>
+<span class="lineNum">     400 </span>            :  */
+<span class="lineNum">     401 </span><span class="lineCov">      29100 : static void iax2_codec_pref_append_bitfield(struct iax2_codec_pref *pref, uint64_t bitfield, unsigned int framing)</span>
+<span class="lineNum">     402 </span>            : {
+<span class="lineNum">     403 </span>            :         int format_index;
+<span class="lineNum">     404 </span>            :         int x;
+<span class="lineNum">     405 </span>            : 
+<span class="lineNum">     406 </span><span class="lineCov">      29100 :         format_index = iax2_codec_pref_format_bitfield_to_order_value(bitfield);</span>
+<span class="lineNum">     407 </span><span class="lineCov">      29100 :         if (!format_index) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     409 </span>            :         }
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineCov">      29100 :         codec_pref_remove(pref, format_index);</span>
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineCov">     198670 :         for (x = 0; x &lt; ARRAY_LEN(pref-&gt;order); ++x) {</span>
+<span class="lineNum">     414 </span><span class="lineCov">     198670 :                 if (!pref-&gt;order[x]) {</span>
+<span class="lineNum">     415 </span><span class="lineCov">      29100 :                         pref-&gt;order[x] = format_index;</span>
+<span class="lineNum">     416 </span><span class="lineCov">      29100 :                         pref-&gt;framing[x] = framing;</span>
+<span class="lineNum">     417 </span><span class="lineCov">      29100 :                         break;</span>
+<span class="lineNum">     418 </span>            :                 }
+<span class="lineNum">     419 </span>            :         }
+<a name="420"><span class="lineNum">     420 </span>            : }</a>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span><span class="lineCov">       5128 : void iax2_codec_pref_append(struct iax2_codec_pref *pref, struct ast_format *format, unsigned int framing)</span>
+<span class="lineNum">     423 </span>            : {
+<span class="lineNum">     424 </span>            :         uint64_t bitfield;
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">       5128 :         bitfield = ast_format_compatibility_format2bitfield(format);</span>
+<span class="lineNum">     427 </span><span class="lineCov">       5128 :         if (!bitfield) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     429 </span>            :         }
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">       5128 :         iax2_codec_pref_append_bitfield(pref, bitfield, framing);</span>
+<a name="432"><span class="lineNum">     432 </span>            : }</a>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">         53 : void iax2_codec_pref_prepend(struct iax2_codec_pref *pref, struct ast_format *format, unsigned int framing,</span>
+<span class="lineNum">     435 </span>            :         int only_if_existing)
+<span class="lineNum">     436 </span>            : {
+<span class="lineNum">     437 </span>            :         uint64_t bitfield;
+<span class="lineNum">     438 </span>            :         int format_index;
+<span class="lineNum">     439 </span>            :         int x;
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineCov">         53 :         bitfield = ast_format_compatibility_format2bitfield(format);</span>
+<span class="lineNum">     442 </span><span class="lineCov">         53 :         if (!bitfield) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     444 </span>            :         }
+<span class="lineNum">     445 </span><span class="lineCov">         53 :         format_index = iax2_codec_pref_format_bitfield_to_order_value(bitfield);</span>
+<span class="lineNum">     446 </span><span class="lineCov">         53 :         if (!format_index) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     448 </span>            :         }
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            :         /* Now find any existing occurrence, or the end */
+<span class="lineNum">     451 </span><span class="lineCov">        203 :         for (x = 0; x &lt; ARRAY_LEN(pref-&gt;order); ++x) {</span>
+<span class="lineNum">     452 </span><span class="lineCov">        203 :                 if (!pref-&gt;order[x] || pref-&gt;order[x] == format_index)</span>
+<span class="lineNum">     453 </span>            :                         break;
+<span class="lineNum">     454 </span>            :         }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span>            :         /*
+<span class="lineNum">     457 </span>            :          * The array can never be full without format_index
+<span class="lineNum">     458 </span>            :          * also being in the array.
+<span class="lineNum">     459 </span>            :          */
+<span class="lineNum">     460 </span><span class="lineCov">         53 :         ast_assert(x &lt; ARRAY_LEN(pref-&gt;order));</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span>            :         /* If we failed to find any occurrence, set to the end for safety. */
+<span class="lineNum">     463 </span><span class="lineCov">         53 :         if (ARRAY_LEN(pref-&gt;order) &lt;= x) {</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 x = ARRAY_LEN(pref-&gt;order) - 1;</span>
+<span class="lineNum">     465 </span>            :         }
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineCov">         53 :         if (only_if_existing &amp;&amp; !pref-&gt;order[x]) {</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     469 </span>            :         }
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span>            :         /* Move down to make space to insert - either all the way to the end,
+<span class="lineNum">     472 </span>            :            or as far as the existing location (which will be overwritten) */
+<span class="lineNum">     473 </span><span class="lineCov">        203 :         for (; x &gt; 0; --x) {</span>
+<span class="lineNum">     474 </span><span class="lineCov">        150 :                 pref-&gt;order[x] = pref-&gt;order[x - 1];</span>
+<span class="lineNum">     475 </span><span class="lineCov">        150 :                 pref-&gt;framing[x] = pref-&gt;framing[x - 1];</span>
+<span class="lineNum">     476 </span>            :         }
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span>            :         /* And insert the new entry */
+<span class="lineNum">     479 </span><span class="lineCov">         53 :         pref-&gt;order[0] = format_index;</span>
+<span class="lineNum">     480 </span><span class="lineCov">         53 :         pref-&gt;framing[0] = framing;</span>
+<a name="481"><span class="lineNum">     481 </span>            : }</a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">       2137 : uint64_t iax2_codec_pref_from_bitfield(struct iax2_codec_pref *pref, uint64_t bitfield)</span>
+<span class="lineNum">     484 </span>            : {
+<span class="lineNum">     485 </span>            :         int bit;
+<span class="lineNum">     486 </span>            :         uint64_t working_bitfield;
+<span class="lineNum">     487 </span>            :         uint64_t best_bitfield;
+<span class="lineNum">     488 </span>            :         struct ast_format *format;
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span>            :         /* Init the preference list. */
+<span class="lineNum">     491 </span><span class="lineCov">       2137 :         memset(pref, 0, sizeof(*pref));</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineCov">       2137 :         working_bitfield = bitfield;</span>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span>            :         /* Add the &quot;best&quot; codecs first. */
+<span class="lineNum">     496 </span><span class="lineCov">      26109 :         while (working_bitfield) {</span>
+<span class="lineNum">     497 </span><span class="lineCov">      23972 :                 best_bitfield = iax2_format_compatibility_best(working_bitfield);</span>
+<span class="lineNum">     498 </span><span class="lineCov">      23972 :                 if (!best_bitfield) {</span>
+<span class="lineNum">     499 </span>            :                         /* No more codecs considered best. */
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     501 </span>            :                 }
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span>            :                 /* Remove current &quot;best&quot; codec to find the next &quot;best&quot;. */
+<span class="lineNum">     504 </span><span class="lineCov">      23972 :                 working_bitfield &amp;= ~best_bitfield;</span>
+<span class="lineNum">     505 </span>            : 
+<span class="lineNum">     506 </span><span class="lineCov">      23972 :                 format = ast_format_compatibility_bitfield2format(best_bitfield);</span>
+<span class="lineNum">     507 </span>            :                 /* The best_bitfield should always be convertible to a format. */
+<span class="lineNum">     508 </span><span class="lineCov">      23972 :                 ast_assert(format != NULL);</span>
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">      23972 :                 iax2_codec_pref_append_bitfield(pref, best_bitfield, 0);</span>
+<span class="lineNum">     511 </span>            :         }
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            :         /* Add any remaining codecs. */
+<span class="lineNum">     514 </span><span class="lineCov">       2137 :         if (working_bitfield) {</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                 for (bit = 0; bit &lt; 64; ++bit) {</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                         uint64_t mask = (1ULL &lt;&lt; bit);</span>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                         if (mask &amp; working_bitfield) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                                 format = ast_format_compatibility_bitfield2format(mask);</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                                 if (!format) {</span>
+<span class="lineNum">     521 </span>            :                                         /* The bit is not associated with any format. */
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                                         bitfield &amp;= ~mask;</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     524 </span>            :                                 }
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                                 iax2_codec_pref_append_bitfield(pref, mask, 0);</span>
+<span class="lineNum">     527 </span>            :                         }
+<span class="lineNum">     528 </span>            :                 }
+<span class="lineNum">     529 </span>            :         }
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineCov">       2137 :         return bitfield;</span>
+<span class="lineNum">     532 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

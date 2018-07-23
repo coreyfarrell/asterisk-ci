@@ -1,0 +1,361 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - apps/app_authenticate.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_authenticate.c<span style="font-size: 80%;"> (source / <a href="app_authenticate.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">31</td>
+            <td class="headerCovTableEntry">93</td>
+            <td class="headerCovTableEntryLo">33.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Execute arbitrary authenticate commands
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \ingroup applications
+<span class="lineNum">      26 </span>            :  */
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*** MODULEINFO
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/astdb.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : enum {
+<span class="lineNum">      44 </span>            :         OPT_ACCOUNT = (1 &lt;&lt; 0),
+<span class="lineNum">      45 </span>            :         OPT_DATABASE = (1 &lt;&lt; 1),
+<span class="lineNum">      46 </span>            :         OPT_MULTIPLE = (1 &lt;&lt; 3),
+<span class="lineNum">      47 </span>            :         OPT_REMOVE = (1 &lt;&lt; 4),
+<span class="lineNum">      48 </span>            : };
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : AST_APP_OPTIONS(auth_app_options, {
+<span class="lineNum">      51 </span>            :         AST_APP_OPTION('a', OPT_ACCOUNT),
+<span class="lineNum">      52 </span>            :         AST_APP_OPTION('d', OPT_DATABASE),
+<span class="lineNum">      53 </span>            :         AST_APP_OPTION('m', OPT_MULTIPLE),
+<span class="lineNum">      54 </span>            :         AST_APP_OPTION('r', OPT_REMOVE),
+<span class="lineNum">      55 </span>            : });
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : static const char app[] = &quot;Authenticate&quot;;
+<span class="lineNum">      59 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      60 </span>            :         &lt;application name=&quot;Authenticate&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      61 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      62 </span>            :                         Authenticate a user
+<span class="lineNum">      63 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      64 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      65 </span>            :                         &lt;parameter name=&quot;password&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      66 </span>            :                                 &lt;para&gt;Password the user should know&lt;/para&gt;
+<span class="lineNum">      67 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      68 </span>            :                         &lt;parameter name=&quot;options&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      69 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      70 </span>            :                                         &lt;option name=&quot;a&quot;&gt;
+<span class="lineNum">      71 </span>            :                                                 &lt;para&gt;Set the channels' account code to the password that is entered&lt;/para&gt;
+<span class="lineNum">      72 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      73 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">      74 </span>            :                                                 &lt;para&gt;Interpret the given path as database key, not a literal file.&lt;/para&gt;
+<span class="lineNum">      75 </span>            :                                                 &lt;note&gt;
+<span class="lineNum">      76 </span>            :                                                         &lt;para&gt;The value is not used at all in the authentication when using this option.
+<span class="lineNum">      77 </span>            :                                                         If the family/key is set to &lt;literal&gt;/pin/100&lt;/literal&gt; (value does not matter)
+<span class="lineNum">      78 </span>            :                                                         then the password field needs to be set to &lt;literal&gt;/pin&lt;/literal&gt; and the pin entered
+<span class="lineNum">      79 </span>            :                                                         by the user would be authenticated against &lt;literal&gt;100&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">      80 </span>            :                                                 &lt;/note&gt;
+<span class="lineNum">      81 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;option name=&quot;m&quot;&gt;
+<span class="lineNum">      83 </span>            :                                                 &lt;para&gt;Interpret the given path as a file which contains a list of account
+<span class="lineNum">      84 </span>            :                                                 codes and password hashes delimited with &lt;literal&gt;:&lt;/literal&gt;, listed one per line in
+<span class="lineNum">      85 </span>            :                                                 the file. When one of the passwords is matched, the channel will have
+<span class="lineNum">      86 </span>            :                                                 its account code set to the corresponding account code in the file.&lt;/para&gt;
+<span class="lineNum">      87 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      88 </span>            :                                         &lt;option name=&quot;r&quot;&gt;
+<span class="lineNum">      89 </span>            :                                                 &lt;para&gt;Remove the database key upon successful entry (valid with &lt;literal&gt;d&lt;/literal&gt; only)&lt;/para&gt;
+<span class="lineNum">      90 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      91 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">      92 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      93 </span>            :                         &lt;parameter name=&quot;maxdigits&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      94 </span>            :                                 &lt;para&gt;maximum acceptable number of digits. Stops reading after
+<span class="lineNum">      95 </span>            :                                 maxdigits have been entered (without requiring the user to press the &lt;literal&gt;#&lt;/literal&gt; key).
+<span class="lineNum">      96 </span>            :                                 Defaults to 0 - no limit - wait for the user press the &lt;literal&gt;#&lt;/literal&gt; key.&lt;/para&gt;
+<span class="lineNum">      97 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      98 </span>            :                         &lt;parameter name=&quot;prompt&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      99 </span>            :                                 &lt;para&gt;Override the agent-pass prompt file.&lt;/para&gt;
+<span class="lineNum">     100 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     101 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     102 </span>            :                 &lt;description&gt;
+<span class="lineNum">     103 </span>            :                         &lt;para&gt;This application asks the caller to enter a given password in order to continue dialplan execution.&lt;/para&gt;
+<span class="lineNum">     104 </span>            :                         &lt;para&gt;If the password begins with the &lt;literal&gt;/&lt;/literal&gt; character,
+<span class="lineNum">     105 </span>            :                         it is interpreted as a file which contains a list of valid passwords, listed 1 password per line in the file.&lt;/para&gt;
+<span class="lineNum">     106 </span>            :                         &lt;para&gt;When using a database key, the value associated with the key can be anything.&lt;/para&gt;
+<span class="lineNum">     107 </span>            :                         &lt;para&gt;Users have three attempts to authenticate before the channel is hung up.&lt;/para&gt;
+<span class="lineNum">     108 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     109 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     110 </span>            :                         &lt;ref type=&quot;application&quot;&gt;VMAuthenticate&lt;/ref&gt;
+<span class="lineNum">     111 </span>            :                         &lt;ref type=&quot;application&quot;&gt;DISA&lt;/ref&gt;
+<span class="lineNum">     112 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     113 </span>            :         &lt;/application&gt;
+<a name="114"><span class="lineNum">     114 </span>            :  ***/</a>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">          1 : static int auth_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span><span class="lineCov">          1 :         int res = 0, retries, maxdigits;</span>
+<span class="lineNum">     119 </span><span class="lineCov">          1 :         char passwd[256], *prompt = &quot;agent-pass&quot;, *argcopy = NULL;</span>
+<span class="lineNum">     120 </span><span class="lineCov">          1 :         struct ast_flags flags = {0};</span>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">          1 :         AST_DECLARE_APP_ARGS(arglist,</span>
+<span class="lineNum">     123 </span>            :                 AST_APP_ARG(password);
+<span class="lineNum">     124 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     125 </span>            :                 AST_APP_ARG(maxdigits);
+<span class="lineNum">     126 </span>            :                 AST_APP_ARG(prompt);
+<span class="lineNum">     127 </span>            :         );
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">          1 :         if (ast_strlen_zero(data)) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Authenticate requires an argument(password)\n&quot;);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     132 </span>            :         }
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">          1 :         if (ast_channel_state(chan) != AST_STATE_UP) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 if ((res = ast_answer(chan)))</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     137 </span>            :         }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">          1 :         argcopy = ast_strdupa(data);</span>
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">          1 :         AST_STANDARD_APP_ARGS(arglist, argcopy);</span>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">          1 :         if (!ast_strlen_zero(arglist.options))</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 ast_app_parse_options(auth_app_options, &amp;flags, NULL, arglist.options);</span>
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">          1 :         if (!ast_strlen_zero(arglist.maxdigits)) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 maxdigits = atoi(arglist.maxdigits);</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 if ((maxdigits&lt;1) || (maxdigits&gt;sizeof(passwd)-2))</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                         maxdigits = sizeof(passwd) - 2;</span>
+<span class="lineNum">     150 </span>            :         } else {
+<span class="lineNum">     151 </span><span class="lineCov">          1 :                 maxdigits = sizeof(passwd) - 2;</span>
+<span class="lineNum">     152 </span>            :         }
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">          1 :         if (!ast_strlen_zero(arglist.prompt)) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 prompt = arglist.prompt;</span>
+<span class="lineNum">     156 </span>            :         } else {
+<span class="lineNum">     157 </span><span class="lineCov">          1 :                 prompt = &quot;agent-pass&quot;;</span>
+<span class="lineNum">     158 </span>            :         }
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span>            :         /* Start asking for password */
+<span class="lineNum">     161 </span><span class="lineCov">          3 :         for (retries = 0; retries &lt; 3; retries++) {</span>
+<span class="lineNum">     162 </span><span class="lineCov">          3 :                 if ((res = ast_app_getdata(chan, prompt, passwd, maxdigits, 0)) &lt; 0)</span>
+<span class="lineNum">     163 </span><span class="lineCov">          1 :                         break;</span>
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineCov">          2 :                 res = 0;</span>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">          2 :                 if (arglist.password[0] != '/') {</span>
+<span class="lineNum">     168 </span>            :                         /* Compare against a fixed password */
+<span class="lineNum">     169 </span><span class="lineCov">          2 :                         if (!strcmp(passwd, arglist.password))</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                 } else if (ast_test_flag(&amp;flags,OPT_DATABASE)) {</span>
+<span class="lineNum">     172 </span>            :                         char tmp[256];
+<span class="lineNum">     173 </span>            :                         /* Compare against a database key */
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                         if (!ast_db_get(arglist.password + 1, passwd, tmp, sizeof(tmp))) {</span>
+<span class="lineNum">     175 </span>            :                                 /* It's a good password */
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                                 if (ast_test_flag(&amp;flags,OPT_REMOVE))</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                                         ast_db_del(arglist.password + 1, passwd);</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     179 </span>            :                         }
+<span class="lineNum">     180 </span>            :                 } else {
+<span class="lineNum">     181 </span>            :                         /* Compare against a file */
+<span class="lineNum">     182 </span>            :                         FILE *f;
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                         char buf[256] = &quot;&quot;, md5passwd[33] = &quot;&quot;, *md5secret = NULL;</span>
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                         if (!(f = fopen(arglist.password, &quot;r&quot;))) {</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Unable to open file '%s' for authentication: %s\n&quot;, arglist.password, strerror(errno));</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     188 </span>            :                         }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                         for (;;) {</span>
+<span class="lineNum">     191 </span>            :                                 size_t len;
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :                                 if (feof(f))</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                                 if (!fgets(buf, sizeof(buf), f)) {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     198 </span>            :                                 }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                                 if (ast_strlen_zero(buf))</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                                 len = strlen(buf) - 1;</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                                 if (buf[len] == '\n')</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                                         buf[len] = '\0';</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                                 if (ast_test_flag(&amp;flags, OPT_MULTIPLE)) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                                         md5secret = buf;</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                                         strsep(&amp;md5secret, &quot;:&quot;);</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                                         if (!md5secret)</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                                 continue;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                                         ast_md5_hash(md5passwd, passwd);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                                         if (!strcmp(md5passwd, md5secret)) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                                                 if (ast_test_flag(&amp;flags, OPT_ACCOUNT)) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                                                         ast_channel_lock(chan);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                                                         ast_channel_accountcode_set(chan, buf);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                                                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     218 </span>            :                                                 }
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     220 </span>            :                                         }
+<span class="lineNum">     221 </span>            :                                 } else {
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                                         if (!strcmp(passwd, buf)) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                                                 if (ast_test_flag(&amp;flags, OPT_ACCOUNT)) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                                                         ast_channel_lock(chan);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :                                                         ast_channel_accountcode_set(chan, buf);</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                                                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     227 </span>            :                                                 }
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     229 </span>            :                                         }
+<span class="lineNum">     230 </span>            :                                 }
+<span class="lineNum">     231 </span>            :                         }
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                         fclose(f);</span>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                         if (!ast_strlen_zero(buf)) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                                 if (ast_test_flag(&amp;flags, OPT_MULTIPLE)) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :                                         if (md5secret &amp;&amp; !strcmp(md5passwd, md5secret))</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     239 </span>            :                                 } else {
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                                         if (!strcmp(passwd, buf))</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     242 </span>            :                                 }
+<span class="lineNum">     243 </span>            :                         }
+<span class="lineNum">     244 </span>            :                 }
+<span class="lineNum">     245 </span><span class="lineCov">          2 :                 prompt = &quot;auth-incorrect&quot;;</span>
+<span class="lineNum">     246 </span>            :         }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">          1 :         if ((retries &lt; 3) &amp;&amp; !res) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(&amp;flags,OPT_ACCOUNT) &amp;&amp; !ast_test_flag(&amp;flags,OPT_MULTIPLE)) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                         ast_channel_accountcode_set(chan, passwd);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     253 </span>            :                 }
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 if (!(res = ast_streamfile(chan, &quot;auth-thankyou&quot;, ast_channel_language(chan))))</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                         res = ast_waitstream(chan, &quot;&quot;);</span>
+<span class="lineNum">     256 </span>            :         } else {
+<span class="lineNum">     257 </span><span class="lineCov">          1 :                 if (!ast_streamfile(chan, &quot;vm-goodbye&quot;, ast_channel_language(chan)))</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                         res = ast_waitstream(chan, &quot;&quot;);</span>
+<span class="lineNum">     259 </span><span class="lineCov">          1 :                 res = -1;</span>
+<span class="lineNum">     260 </span>            :         }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">          1 :         return res;</span>
+<a name="263"><span class="lineNum">     263 </span>            : }</a>
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span><span class="lineCov">       1115 :         return ast_unregister_application(app);</span>
+<a name="268"><span class="lineNum">     268 </span>            : }</a>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span><span class="lineCov">       1117 :         if (ast_register_application_xml(app, auth_exec))</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     274 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="275"><span class="lineNum">     275 </span>            : }</a>
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Authentication Application&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

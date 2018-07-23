@@ -1,0 +1,322 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_mutestream.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_mutestream.c<span style="font-size: 80%;"> (source / <a href="res_mutestream.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">60</td>
+            <td class="headerCovTableEntryLo">15.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">62.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2009, Olle E. Johansson
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Olle E. Johansson &lt;oej@edvina.net&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief MUTESTREAM audiohooks
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Olle E. Johansson &lt;oej@edvina.net&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  *  \ingroup functions
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  * \note This module only handles audio streams today, but can easily be appended to also
+<span class="lineNum">      28 </span>            :  * zero out text streams if there's an application for it.
+<span class="lineNum">      29 </span>            :  * When we know and understands what happens if we zero out video, we can do that too.
+<span class="lineNum">      30 </span>            :  */
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : /*** MODULEINFO
+<span class="lineNum">      33 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      34 </span>            :  ***/
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/options.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/audiohook.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      51 </span>            :         &lt;function name=&quot;MUTEAUDIO&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      52 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      53 </span>            :                         Muting audio streams in the channel
+<span class="lineNum">      54 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      55 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      56 </span>            :                         &lt;parameter name=&quot;direction&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      57 </span>            :                                 &lt;para&gt;Must be one of &lt;/para&gt;
+<span class="lineNum">      58 </span>            :                                 &lt;enumlist&gt;
+<span class="lineNum">      59 </span>            :                                         &lt;enum name=&quot;in&quot;&gt;
+<span class="lineNum">      60 </span>            :                                                 &lt;para&gt;Inbound stream (to the PBX)&lt;/para&gt;
+<span class="lineNum">      61 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      62 </span>            :                                         &lt;enum name=&quot;out&quot;&gt;
+<span class="lineNum">      63 </span>            :                                                 &lt;para&gt;Outbound stream (from the PBX)&lt;/para&gt;
+<span class="lineNum">      64 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      65 </span>            :                                         &lt;enum name=&quot;all&quot;&gt;
+<span class="lineNum">      66 </span>            :                                                 &lt;para&gt;Both streams&lt;/para&gt;
+<span class="lineNum">      67 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      68 </span>            :                                 &lt;/enumlist&gt;
+<span class="lineNum">      69 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      70 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      71 </span>            :                 &lt;description&gt;
+<span class="lineNum">      72 </span>            :                         &lt;para&gt;The MUTEAUDIO function can be used to mute inbound (to the PBX) or outbound audio in a call.
+<span class="lineNum">      73 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      74 </span>            :                         &lt;para&gt;Examples:
+<span class="lineNum">      75 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      76 </span>            :                         &lt;para&gt;
+<span class="lineNum">      77 </span>            :                         MUTEAUDIO(in)=on
+<span class="lineNum">      78 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      79 </span>            :                         &lt;para&gt;
+<span class="lineNum">      80 </span>            :                         MUTEAUDIO(in)=off
+<span class="lineNum">      81 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      82 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      83 </span>            :         &lt;/function&gt;
+<span class="lineNum">      84 </span>            :         &lt;manager name=&quot;MuteAudio&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      85 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      86 </span>            :                         Mute an audio stream.
+<span class="lineNum">      87 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      88 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      89 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      90 </span>            :                         &lt;parameter name=&quot;Channel&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      91 </span>            :                                 &lt;para&gt;The channel you want to mute.&lt;/para&gt;
+<span class="lineNum">      92 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      93 </span>            :                         &lt;parameter name=&quot;Direction&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      94 </span>            :                                 &lt;enumlist&gt;
+<span class="lineNum">      95 </span>            :                                         &lt;enum name=&quot;in&quot;&gt;
+<span class="lineNum">      96 </span>            :                                                 &lt;para&gt;Set muting on inbound audio stream. (to the PBX)&lt;/para&gt;
+<span class="lineNum">      97 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">      98 </span>            :                                         &lt;enum name=&quot;out&quot;&gt;
+<span class="lineNum">      99 </span>            :                                                 &lt;para&gt;Set muting on outbound audio stream. (from the PBX)&lt;/para&gt;
+<span class="lineNum">     100 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     101 </span>            :                                         &lt;enum name=&quot;all&quot;&gt;
+<span class="lineNum">     102 </span>            :                                                 &lt;para&gt;Set muting on inbound and outbound audio streams.&lt;/para&gt;
+<span class="lineNum">     103 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     104 </span>            :                                 &lt;/enumlist&gt;
+<span class="lineNum">     105 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     106 </span>            :                         &lt;parameter name=&quot;State&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     107 </span>            :                                 &lt;enumlist&gt;
+<span class="lineNum">     108 </span>            :                                         &lt;enum name=&quot;on&quot;&gt;
+<span class="lineNum">     109 </span>            :                                                 &lt;para&gt;Turn muting on.&lt;/para&gt;
+<span class="lineNum">     110 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     111 </span>            :                                         &lt;enum name=&quot;off&quot;&gt;
+<span class="lineNum">     112 </span>            :                                                 &lt;para&gt;Turn muting off.&lt;/para&gt;
+<span class="lineNum">     113 </span>            :                                         &lt;/enum&gt;
+<span class="lineNum">     114 </span>            :                                 &lt;/enumlist&gt;
+<span class="lineNum">     115 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     116 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     117 </span>            :                 &lt;description&gt;
+<span class="lineNum">     118 </span>            :                         &lt;para&gt;Mute an incoming or outgoing audio stream on a channel.&lt;/para&gt;
+<span class="lineNum">     119 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     120 </span>            :         &lt;/manager&gt;
+<span class="lineNum">     121 </span>            :  ***/
+<a name="122"><span class="lineNum">     122 </span>            : </a>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 : static int mute_channel(struct ast_channel *chan, const char *direction, int mute)</span>
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         unsigned int mute_direction = 0;</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         enum ast_frame_type frametype = AST_FRAME_VOICE;</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         int ret = 0;</span>
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         if (!strcmp(direction, &quot;in&quot;)) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 mute_direction = AST_MUTE_DIRECTION_READ;</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :         } else if (!strcmp(direction, &quot;out&quot;)) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 mute_direction = AST_MUTE_DIRECTION_WRITE;</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         } else if (!strcmp(direction, &quot;all&quot;)) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 mute_direction = AST_MUTE_DIRECTION_READ | AST_MUTE_DIRECTION_WRITE;</span>
+<span class="lineNum">     136 </span>            :         } else {
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         if (mute) {</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 ret = ast_channel_suppress(chan, mute_direction, frametype);</span>
+<span class="lineNum">     144 </span>            :         } else {
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 ret = ast_channel_unsuppress(chan, mute_direction, frametype);</span>
+<span class="lineNum">     146 </span>            :         }
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         return ret;</span>
+<span class="lineNum">     151 </span>            : }
+<a name="152"><span class="lineNum">     152 </span>            : </a>
+<span class="lineNum">     153 </span>            : /*! \brief Mute dialplan function */
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 : static int func_mute_write(struct ast_channel *chan, const char *cmd, char *data, const char *value)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         if (!chan) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, cmd);</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     159 </span>            :         }
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :         return mute_channel(chan, data, ast_true(value));</span>
+<span class="lineNum">     162 </span>            : }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            : /* Function for debugging - might be useful */
+<span class="lineNum">     165 </span>            : static struct ast_custom_function mute_function = {
+<span class="lineNum">     166 </span>            :         .name = &quot;MUTEAUDIO&quot;,
+<span class="lineNum">     167 </span>            :         .write = func_mute_write,
+<a name="168"><span class="lineNum">     168 </span>            : };</a>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : static int manager_mutestream(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         const char *channel = astman_get_header(m, &quot;Channel&quot;);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :         const char *id = astman_get_header(m,&quot;ActionID&quot;);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         const char *state = astman_get_header(m,&quot;State&quot;);</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         const char *direction = astman_get_header(m,&quot;Direction&quot;);</span>
+<span class="lineNum">     176 </span>            :         char id_text[256];
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :         struct ast_channel *c = NULL;</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(channel)) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Channel not specified&quot;);</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(state)) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;State not specified&quot;);</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     186 </span>            :         }
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(direction)) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Direction not specified&quot;);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span>            :         /* Ok, we have everything */
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :         c = ast_channel_get_by_name(channel);</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         if (!c) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No such channel&quot;);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :         if (mute_channel(c, direction, ast_true(state))) {</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Failed to mute/unmute stream&quot;);</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 ast_channel_unref(c);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :         ast_channel_unref(c);</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(id)) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 snprintf(id_text, sizeof(id_text), &quot;ActionID: %s\r\n&quot;, id);</span>
+<span class="lineNum">     209 </span>            :         } else {
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 id_text[0] = '\0';</span>
+<span class="lineNum">     211 </span>            :         }
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         astman_append(s, &quot;Response: Success\r\n&quot;</span>
+<span class="lineNum">     213 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     214 </span>            :                 &quot;\r\n&quot;, id_text);
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     216 </span>            : }
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     220 </span>            : {
+<span class="lineNum">     221 </span>            :         int res;
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span><span class="lineCov">       1117 :         res = ast_custom_function_register(&amp;mute_function);</span>
+<span class="lineNum">     224 </span><span class="lineCov">       1117 :         res |= ast_manager_register_xml(&quot;MuteAudio&quot;, EVENT_FLAG_SYSTEM, manager_mutestream);</span>
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">       1117 :         return (res ? AST_MODULE_LOAD_DECLINE : AST_MODULE_LOAD_SUCCESS);</span>
+<a name="227"><span class="lineNum">     227 </span>            : }</a>
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span><span class="lineCov">       1115 :         ast_custom_function_unregister(&amp;mute_function);</span>
+<span class="lineNum">     232 </span>            :         /* Unregister AMI actions */
+<span class="lineNum">     233 </span><span class="lineCov">       1115 :         ast_manager_unregister(&quot;MuteAudio&quot;);</span>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">       1115 :         return 0;</span>
+<a name="236"><span class="lineNum">     236 </span>            : }</a>
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span><span class="lineCov">       4468 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Mute audio stream resources&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

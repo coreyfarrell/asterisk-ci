@@ -1,0 +1,1372 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - funcs/func_env.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">funcs</a> - func_env.c<span style="font-size: 80%;"> (source / <a href="func_env.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">319</td>
+            <td class="headerCovTableEntry">583</td>
+            <td class="headerCovTableEntryLo">54.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryLo">73.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2010, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       7 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       8 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">       9 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      10 </span>            :  * channels for your use.
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      13 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      14 </span>            :  * at the top of the source tree.
+<span class="lineNum">      15 </span>            :  */
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : /*! \file
+<span class="lineNum">      18 </span>            :  *
+<span class="lineNum">      19 </span>            :  * \brief Environment related dialplan functions
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \ingroup functions
+<span class="lineNum">      22 </span>            :  */
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : /*** MODULEINFO
+<span class="lineNum">      25 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      26 </span>            :  ***/
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &lt;sys/stat.h&gt;   /* stat(2) */
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      40 </span>            :         &lt;function name=&quot;ENV&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      41 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      42 </span>            :                         Gets or sets the environment variable specified.
+<span class="lineNum">      43 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      44 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      45 </span>            :                         &lt;parameter name=&quot;varname&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      46 </span>            :                                 &lt;para&gt;Environment variable name&lt;/para&gt;
+<span class="lineNum">      47 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      48 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      49 </span>            :                 &lt;description&gt;
+<span class="lineNum">      50 </span>            :                         &lt;para&gt;Variables starting with &lt;literal&gt;AST_&lt;/literal&gt; are reserved to the system and may not be set.&lt;/para&gt;
+<span class="lineNum">      51 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      52 </span>            :         &lt;/function&gt;
+<span class="lineNum">      53 </span>            :         &lt;function name=&quot;STAT&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      54 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      55 </span>            :                         Does a check on the specified file.
+<span class="lineNum">      56 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      57 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      58 </span>            :                         &lt;parameter name=&quot;flag&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;para&gt;Flag may be one of the following:&lt;/para&gt;
+<span class="lineNum">      60 </span>            :                                 &lt;para&gt;d - Checks if the file is a directory.&lt;/para&gt;
+<span class="lineNum">      61 </span>            :                                 &lt;para&gt;e - Checks if the file exists.&lt;/para&gt;
+<span class="lineNum">      62 </span>            :                                 &lt;para&gt;f - Checks if the file is a regular file.&lt;/para&gt;
+<span class="lineNum">      63 </span>            :                                 &lt;para&gt;m - Returns the file mode (in octal)&lt;/para&gt;
+<span class="lineNum">      64 </span>            :                                 &lt;para&gt;s - Returns the size (in bytes) of the file&lt;/para&gt;
+<span class="lineNum">      65 </span>            :                                 &lt;para&gt;A - Returns the epoch at which the file was last accessed.&lt;/para&gt;
+<span class="lineNum">      66 </span>            :                                 &lt;para&gt;C - Returns the epoch at which the inode was last changed.&lt;/para&gt;
+<span class="lineNum">      67 </span>            :                                 &lt;para&gt;M - Returns the epoch at which the file was last modified.&lt;/para&gt;
+<span class="lineNum">      68 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      69 </span>            :                         &lt;parameter name=&quot;filename&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      70 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      71 </span>            :                 &lt;description&gt;
+<span class="lineNum">      72 </span>            :                         &lt;note&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">      74 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">      75 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">      76 </span>            :                         &lt;/note&gt;
+<span class="lineNum">      77 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      78 </span>            :         &lt;/function&gt;
+<span class="lineNum">      79 </span>            :         &lt;function name=&quot;FILE&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      80 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      81 </span>            :                         Read or write text file.
+<span class="lineNum">      82 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      83 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      84 </span>            :                         &lt;parameter name=&quot;filename&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      85 </span>            :                         &lt;parameter name=&quot;offset&quot;&gt;
+<span class="lineNum">      86 </span>            :                                 &lt;para&gt;Maybe specified as any number. If negative, &lt;replaceable&gt;offset&lt;/replaceable&gt; specifies the number
+<span class="lineNum">      87 </span>            :                                 of bytes back from the end of the file.&lt;/para&gt;
+<span class="lineNum">      88 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      89 </span>            :                         &lt;parameter name=&quot;length&quot;&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;para&gt;If specified, will limit the length of the data read to that size. If negative,
+<span class="lineNum">      91 </span>            :                                 trims &lt;replaceable&gt;length&lt;/replaceable&gt; bytes from the end of the file.&lt;/para&gt;
+<span class="lineNum">      92 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      93 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">      94 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      95 </span>            :                                         &lt;option name=&quot;l&quot;&gt;
+<span class="lineNum">      96 </span>            :                                                 &lt;para&gt;Line mode:  offset and length are assumed to be
+<span class="lineNum">      97 </span>            :                                                 measured in lines, instead of byte offsets.&lt;/para&gt;
+<span class="lineNum">      98 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      99 </span>            :                                         &lt;option name=&quot;a&quot;&gt;
+<span class="lineNum">     100 </span>            :                                                 &lt;para&gt;In write mode only, the append option is used to
+<span class="lineNum">     101 </span>            :                                                 append to the end of the file, instead of overwriting
+<span class="lineNum">     102 </span>            :                                                 the existing file.&lt;/para&gt;
+<span class="lineNum">     103 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     104 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">     105 </span>            :                                                 &lt;para&gt;In write mode and line mode only, this option does
+<span class="lineNum">     106 </span>            :                                                 not automatically append a newline string to the end of
+<span class="lineNum">     107 </span>            :                                                 a value.  This is useful for deleting lines, instead of
+<span class="lineNum">     108 </span>            :                                                 setting them to blank.&lt;/para&gt;
+<span class="lineNum">     109 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     110 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     111 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     112 </span>            :                         &lt;parameter name=&quot;format&quot;&gt;
+<span class="lineNum">     113 </span>            :                                 &lt;para&gt;The &lt;replaceable&gt;format&lt;/replaceable&gt; parameter may be
+<span class="lineNum">     114 </span>            :                                 used to delimit the type of line terminators in line mode.&lt;/para&gt;
+<span class="lineNum">     115 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">     116 </span>            :                                         &lt;option name=&quot;u&quot;&gt;
+<span class="lineNum">     117 </span>            :                                                 &lt;para&gt;Unix newline format.&lt;/para&gt;
+<span class="lineNum">     118 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     119 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">     120 </span>            :                                                 &lt;para&gt;DOS newline format.&lt;/para&gt;
+<span class="lineNum">     121 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     122 </span>            :                                         &lt;option name=&quot;m&quot;&gt;
+<span class="lineNum">     123 </span>            :                                                 &lt;para&gt;Macintosh newline format.&lt;/para&gt;
+<span class="lineNum">     124 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     125 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     126 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     127 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     128 </span>            :                 &lt;description&gt;
+<span class="lineNum">     129 </span>            :                         &lt;para&gt;Read and write text file in character and line mode.&lt;/para&gt;
+<span class="lineNum">     130 </span>            :                         &lt;para&gt;Examples:&lt;/para&gt;
+<span class="lineNum">     131 </span>            :                         &lt;para/&gt;
+<span class="lineNum">     132 </span>            :                         &lt;para&gt;Read mode (byte):&lt;/para&gt;
+<span class="lineNum">     133 </span>            :                         &lt;para&gt;    ;reads the entire content of the file.&lt;/para&gt;
+<span class="lineNum">     134 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt)})&lt;/para&gt;
+<span class="lineNum">     135 </span>            :                         &lt;para&gt;    ;reads from the 11th byte to the end of the file (i.e. skips the first 10).&lt;/para&gt;
+<span class="lineNum">     136 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,10)})&lt;/para&gt;
+<span class="lineNum">     137 </span>            :                         &lt;para&gt;    ;reads from the 11th to 20th byte in the file (i.e. skip the first 10, then read 10 bytes).&lt;/para&gt;
+<span class="lineNum">     138 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,10,10)})&lt;/para&gt;
+<span class="lineNum">     139 </span>            :                         &lt;para/&gt;
+<span class="lineNum">     140 </span>            :                         &lt;para&gt;Read mode (line):&lt;/para&gt;
+<span class="lineNum">     141 </span>            :                         &lt;para&gt;    ; reads the 3rd line of the file.&lt;/para&gt;
+<span class="lineNum">     142 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,3,1,l)})&lt;/para&gt;
+<span class="lineNum">     143 </span>            :                         &lt;para&gt;    ; reads the 3rd and 4th lines of the file.&lt;/para&gt;
+<span class="lineNum">     144 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,3,2,l)})&lt;/para&gt;
+<span class="lineNum">     145 </span>            :                         &lt;para&gt;    ; reads from the third line to the end of the file.&lt;/para&gt;
+<span class="lineNum">     146 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,3,,l)})&lt;/para&gt;
+<span class="lineNum">     147 </span>            :                         &lt;para&gt;    ; reads the last three lines of the file.&lt;/para&gt;
+<span class="lineNum">     148 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,-3,,l)})&lt;/para&gt;
+<span class="lineNum">     149 </span>            :                         &lt;para&gt;    ; reads the 3rd line of a DOS-formatted file.&lt;/para&gt;
+<span class="lineNum">     150 </span>            :                         &lt;para&gt;    Set(foo=${FILE(/tmp/test.txt,3,1,l,d)})&lt;/para&gt;
+<span class="lineNum">     151 </span>            :                         &lt;para/&gt;
+<span class="lineNum">     152 </span>            :                         &lt;para&gt;Write mode (byte):&lt;/para&gt;
+<span class="lineNum">     153 </span>            :                         &lt;para&gt;    ; truncate the file and write &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     154 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt)=bar)&lt;/para&gt;
+<span class="lineNum">     155 </span>            :                         &lt;para&gt;    ; Append &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     156 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt,,,a)=bar)&lt;/para&gt;
+<span class="lineNum">     157 </span>            :                         &lt;para&gt;    ; Replace the first byte with &quot;bar&quot; (replaces 1 character with 3)&lt;/para&gt;
+<span class="lineNum">     158 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt,0,1)=bar)&lt;/para&gt;
+<span class="lineNum">     159 </span>            :                         &lt;para&gt;    ; Replace 10 bytes beginning at the 21st byte of the file with &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     160 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt,20,10)=bar)&lt;/para&gt;
+<span class="lineNum">     161 </span>            :                         &lt;para&gt;    ; Replace all bytes from the 21st with &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     162 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt,20)=bar)&lt;/para&gt;
+<span class="lineNum">     163 </span>            :                         &lt;para&gt;    ; Insert &quot;bar&quot; after the 4th character&lt;/para&gt;
+<span class="lineNum">     164 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/test.txt,4,0)=bar)&lt;/para&gt;
+<span class="lineNum">     165 </span>            :                         &lt;para/&gt;
+<span class="lineNum">     166 </span>            :                         &lt;para&gt;Write mode (line):&lt;/para&gt;
+<span class="lineNum">     167 </span>            :                         &lt;para&gt;    ; Replace the first line of the file with &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     168 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/foo.txt,0,1,l)=bar)&lt;/para&gt;
+<span class="lineNum">     169 </span>            :                         &lt;para&gt;    ; Replace the last line of the file with &quot;bar&quot;&lt;/para&gt;
+<span class="lineNum">     170 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/foo.txt,-1,,l)=bar)&lt;/para&gt;
+<span class="lineNum">     171 </span>            :                         &lt;para&gt;    ; Append &quot;bar&quot; to the file with a newline&lt;/para&gt;
+<span class="lineNum">     172 </span>            :                         &lt;para&gt;    Set(FILE(/tmp/foo.txt,,,al)=bar)&lt;/para&gt;
+<span class="lineNum">     173 </span>            :                         &lt;note&gt;
+<span class="lineNum">     174 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">     175 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">     176 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">     177 </span>            :                         &lt;/note&gt;
+<span class="lineNum">     178 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     179 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     180 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE_COUNT_LINE&lt;/ref&gt;
+<span class="lineNum">     181 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE_FORMAT&lt;/ref&gt;
+<span class="lineNum">     182 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     183 </span>            :         &lt;/function&gt;
+<span class="lineNum">     184 </span>            :         &lt;function name=&quot;FILE_COUNT_LINE&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     185 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     186 </span>            :                         Obtains the number of lines of a text file.
+<span class="lineNum">     187 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     188 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     189 </span>            :                         &lt;parameter name=&quot;filename&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     190 </span>            :                         &lt;parameter name=&quot;format&quot;&gt;
+<span class="lineNum">     191 </span>            :                                 &lt;para&gt;Format may be one of the following:&lt;/para&gt;
+<span class="lineNum">     192 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">     193 </span>            :                                         &lt;option name=&quot;u&quot;&gt;
+<span class="lineNum">     194 </span>            :                                                 &lt;para&gt;Unix newline format.&lt;/para&gt;
+<span class="lineNum">     195 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     196 </span>            :                                         &lt;option name=&quot;d&quot;&gt;
+<span class="lineNum">     197 </span>            :                                                 &lt;para&gt;DOS newline format.&lt;/para&gt;
+<span class="lineNum">     198 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     199 </span>            :                                         &lt;option name=&quot;m&quot;&gt;
+<span class="lineNum">     200 </span>            :                                                 &lt;para&gt;Macintosh newline format.&lt;/para&gt;
+<span class="lineNum">     201 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">     202 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     203 </span>            :                                 &lt;note&gt;&lt;para&gt;If not specified, an attempt will be made to determine the newline format type.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     204 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     205 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     206 </span>            :                 &lt;description&gt;
+<span class="lineNum">     207 </span>            :                         &lt;para&gt;Returns the number of lines, or &lt;literal&gt;-1&lt;/literal&gt; on error.&lt;/para&gt;
+<span class="lineNum">     208 </span>            :                         &lt;note&gt;
+<span class="lineNum">     209 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">     210 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">     211 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">     212 </span>            :                         &lt;/note&gt;
+<span class="lineNum">     213 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     214 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     215 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE&lt;/ref&gt;
+<span class="lineNum">     216 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE_FORMAT&lt;/ref&gt;
+<span class="lineNum">     217 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     218 </span>            :         &lt;/function&gt;
+<span class="lineNum">     219 </span>            :         &lt;function name=&quot;FILE_FORMAT&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     220 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     221 </span>            :                         Return the newline format of a text file.
+<span class="lineNum">     222 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     223 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     224 </span>            :                         &lt;parameter name=&quot;filename&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     225 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     226 </span>            :                 &lt;description&gt;
+<span class="lineNum">     227 </span>            :                         &lt;para&gt;Return the line terminator type:&lt;/para&gt;
+<span class="lineNum">     228 </span>            :                         &lt;para&gt;'u' - Unix &quot;\n&quot; format&lt;/para&gt;
+<span class="lineNum">     229 </span>            :                         &lt;para&gt;'d' - DOS &quot;\r\n&quot; format&lt;/para&gt;
+<span class="lineNum">     230 </span>            :                         &lt;para&gt;'m' - Macintosh &quot;\r&quot; format&lt;/para&gt;
+<span class="lineNum">     231 </span>            :                         &lt;para&gt;'x' - Cannot be determined&lt;/para&gt;
+<span class="lineNum">     232 </span>            :                         &lt;note&gt;
+<span class="lineNum">     233 </span>            :                                 &lt;para&gt;If &lt;literal&gt;live_dangerously&lt;/literal&gt; in &lt;literal&gt;asterisk.conf&lt;/literal&gt;
+<span class="lineNum">     234 </span>            :                                 is set to &lt;literal&gt;no&lt;/literal&gt;, this function can only be executed from the
+<span class="lineNum">     235 </span>            :                                 dialplan, and not directly from external protocols.&lt;/para&gt;
+<span class="lineNum">     236 </span>            :                         &lt;/note&gt;
+<span class="lineNum">     237 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     238 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     239 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE&lt;/ref&gt;
+<span class="lineNum">     240 </span>            :                         &lt;ref type=&quot;function&quot;&gt;FILE_COUNT_LINE&lt;/ref&gt;
+<span class="lineNum">     241 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     242 </span>            :         &lt;/function&gt;
+<a name="243"><span class="lineNum">     243 </span>            :  ***/</a>
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">          6 : static int env_read(struct ast_channel *chan, const char *cmd, char *data,</span>
+<span class="lineNum">     246 </span>            :                         char *buf, size_t len)
+<span class="lineNum">     247 </span>            : {
+<span class="lineNum">     248 </span><span class="lineCov">          6 :         char *ret = NULL;</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">          6 :         *buf = '\0';</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">          6 :         if (data)</span>
+<span class="lineNum">     253 </span><span class="lineCov">          6 :                 ret = getenv(data);</span>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">          6 :         if (ret)</span>
+<span class="lineNum">     256 </span><span class="lineCov">          6 :                 ast_copy_string(buf, ret, len);</span>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">          6 :         return 0;</span>
+<a name="259"><span class="lineNum">     259 </span>            : }</a>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">          3 : static int env_write(struct ast_channel *chan, const char *cmd, char *data,</span>
+<span class="lineNum">     262 </span>            :                          const char *value)
+<span class="lineNum">     263 </span>            : {
+<span class="lineNum">     264 </span><span class="lineCov">          3 :         if (!ast_strlen_zero(data) &amp;&amp; strncmp(data, &quot;AST_&quot;, 4)) {</span>
+<span class="lineNum">     265 </span><span class="lineCov">          3 :                 if (!ast_strlen_zero(value)) {</span>
+<span class="lineNum">     266 </span><span class="lineCov">          3 :                         setenv(data, value, 1);</span>
+<span class="lineNum">     267 </span>            :                 } else {
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                         unsetenv(data);</span>
+<span class="lineNum">     269 </span>            :                 }
+<span class="lineNum">     270 </span>            :         }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="273"><span class="lineNum">     273 </span>            : }</a>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 : static int stat_read(struct ast_channel *chan, const char *cmd, char *data,</span>
+<span class="lineNum">     276 </span>            :                          char *buf, size_t len)
+<span class="lineNum">     277 </span>            : {
+<span class="lineNum">     278 </span>            :         char *action;
+<span class="lineNum">     279 </span>            :         struct stat s;
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, &quot;0&quot;, len);</span>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         action = strsep(&amp;data, &quot;,&quot;);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         if (stat(data, &amp;s)) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     286 </span>            :         } else {
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 switch (*action) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 case 'e':</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                         strcpy(buf, &quot;1&quot;);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 case 's':</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%u&quot;, (unsigned int) s.st_size);</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 case 'f':</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%d&quot;, S_ISREG(s.st_mode) ? 1 : 0);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                 case 'd':</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%d&quot;, S_ISDIR(s.st_mode) ? 1 : 0);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 case 'M':</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%d&quot;, (int) s.st_mtime);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 case 'A':</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%d&quot;, (int) s.st_mtime);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 case 'C':</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%d&quot;, (int) s.st_ctime);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 case 'm':</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                         snprintf(buf, len, &quot;%o&quot;, (unsigned int) s.st_mode);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     312 </span>            :                 }
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     316 </span>            : }
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span>            : enum file_format {
+<span class="lineNum">     319 </span>            :         FF_UNKNOWN = -1,
+<span class="lineNum">     320 </span>            :         FF_UNIX,
+<span class="lineNum">     321 </span>            :         FF_DOS,
+<span class="lineNum">     322 </span>            :         FF_MAC,
+<a name="323"><span class="lineNum">     323 </span>            : };</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 : static int64_t count_lines(const char *filename, enum file_format newline_format)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :         int count = 0;</span>
+<span class="lineNum">     328 </span>            :         char fbuf[4096];
+<span class="lineNum">     329 </span>            :         FILE *ff;
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         if (!(ff = fopen(filename, &quot;r&quot;))) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to open '%s': %s\n&quot;, filename, strerror(errno));</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     334 </span>            :         }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         while (fgets(fbuf, sizeof(fbuf), ff)) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 char *next = fbuf, *first_cr = NULL, *first_nl = NULL;</span>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span>            :                 /* Must do it this way, because if the fileformat is FF_MAC, then Unix
+<span class="lineNum">     340 </span>            :                  * assumptions about line-format will not come into play. */
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 while (next) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                         if (newline_format == FF_DOS || newline_format == FF_MAC || newline_format == FF_UNKNOWN) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                                 first_cr = strchr(next, '\r');</span>
+<span class="lineNum">     344 </span>            :                         }
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                         if (newline_format == FF_UNIX || newline_format == FF_UNKNOWN) {</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                                 first_nl = strchr(next, '\n');</span>
+<span class="lineNum">     347 </span>            :                         }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            :                         /* No terminators found in buffer */
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                         if (!first_cr &amp;&amp; !first_nl) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     352 </span>            :                         }
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                         if (newline_format == FF_UNKNOWN) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                                 if ((first_cr &amp;&amp; !first_nl) || (first_cr &amp;&amp; first_cr &lt; first_nl)) {</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                                         if (first_nl &amp;&amp; first_nl == first_cr + 1) {</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                                                 newline_format = FF_DOS;</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :                                         } else if (first_cr &amp;&amp; first_cr == &amp;fbuf[sizeof(fbuf) - 2]) {</span>
+<span class="lineNum">     359 </span>            :                                                 /* Get it on the next pass */
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                                                 fseek(ff, -1, SEEK_CUR);</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     362 </span>            :                                         } else {
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                                                 newline_format = FF_MAC;</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                                                 first_nl = NULL;</span>
+<span class="lineNum">     365 </span>            :                                         }
+<span class="lineNum">     366 </span>            :                                 } else {
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                                         newline_format = FF_UNIX;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                                         first_cr = NULL;</span>
+<span class="lineNum">     369 </span>            :                                 }
+<span class="lineNum">     370 </span>            :                                 /* Jump down into next section */
+<span class="lineNum">     371 </span>            :                         }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         if (newline_format == FF_DOS) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                                 if (first_nl &amp;&amp; first_cr &amp;&amp; first_nl == first_cr + 1) {</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                                         next = first_nl + 1;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                                         count++;</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                                 } else if (first_cr == &amp;fbuf[sizeof(fbuf) - 2]) {</span>
+<span class="lineNum">     378 </span>            :                                         /* Get it on the next pass */
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                                         fseek(ff, -1, SEEK_CUR);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     381 </span>            :                                 }
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                         } else if (newline_format == FF_MAC) {</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                                 if (first_cr) {</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                                         next = first_cr + 1;</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                                         count++;</span>
+<span class="lineNum">     386 </span>            :                                 }
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         } else if (newline_format == FF_UNIX) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                                 if (first_nl) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                                         next = first_nl + 1;</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                                         count++;</span>
+<span class="lineNum">     391 </span>            :                                 }
+<span class="lineNum">     392 </span>            :                         }
+<span class="lineNum">     393 </span>            :                 }
+<span class="lineNum">     394 </span>            :         }
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         fclose(ff);</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :         return count;</span>
+<a name="398"><span class="lineNum">     398 </span>            : }</a>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 : static int file_count_line(struct ast_channel *chan, const char *cmd, char *data, struct ast_str **buf, ssize_t len)</span>
+<span class="lineNum">     401 </span>            : {
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         enum file_format newline_format = FF_UNKNOWN;</span>
+<span class="lineNum">     403 </span>            :         int64_t count;
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     405 </span>            :                 AST_APP_ARG(filename);
+<span class="lineNum">     406 </span>            :                 AST_APP_ARG(format);
+<span class="lineNum">     407 </span>            :         );
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :         AST_STANDARD_APP_ARGS(args, data);</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :         if (args.argc &gt; 1) {</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                 if (tolower(args.format[0]) == 'd') {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                         newline_format = FF_DOS;</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                 } else if (tolower(args.format[0]) == 'm') {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         newline_format = FF_MAC;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 } else if (tolower(args.format[0]) == 'u') {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                         newline_format = FF_UNIX;</span>
+<span class="lineNum">     417 </span>            :                 }
+<span class="lineNum">     418 </span>            :         }
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         count = count_lines(args.filename, newline_format);</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :         ast_str_set(buf, len, &quot;%&quot; PRId64, count);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     423 </span>            : }
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span>            : #define LINE_COUNTER(cptr, term, counter) \
+<span class="lineNum">     426 </span>            :         if (*cptr == '\n' &amp;&amp; term == FF_UNIX) { \
+<span class="lineNum">     427 </span>            :                 counter++; \
+<span class="lineNum">     428 </span>            :         } else if (*cptr == '\n' &amp;&amp; term == FF_DOS &amp;&amp; dos_state == 0) { \
+<span class="lineNum">     429 </span>            :                 dos_state = 1; \
+<span class="lineNum">     430 </span>            :         } else if (*cptr == '\r' &amp;&amp; term == FF_DOS &amp;&amp; dos_state == 1) { \
+<span class="lineNum">     431 </span>            :                 dos_state = 0; \
+<span class="lineNum">     432 </span>            :                 counter++; \
+<span class="lineNum">     433 </span>            :         } else if (*cptr == '\r' &amp;&amp; term == FF_MAC) { \
+<span class="lineNum">     434 </span>            :                 counter++; \
+<span class="lineNum">     435 </span>            :         } else if (term == FF_DOS) { \
+<span class="lineNum">     436 </span>            :                 dos_state = 0; \
+<a name="437"><span class="lineNum">     437 </span>            :         }</a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">         88 : static enum file_format file2format(const char *filename)</span>
+<span class="lineNum">     440 </span>            : {
+<span class="lineNum">     441 </span>            :         FILE *ff;
+<span class="lineNum">     442 </span>            :         char fbuf[4096];
+<span class="lineNum">     443 </span>            :         char *first_cr, *first_nl;
+<span class="lineNum">     444 </span><span class="lineCov">         88 :         enum file_format newline_format = FF_UNKNOWN;</span>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineCov">         88 :         if (!(ff = fopen(filename, &quot;r&quot;))) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Cannot open '%s': %s\n&quot;, filename, strerror(errno));</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     449 </span>            :         }
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span><span class="lineCov">         88 :         while (fgets(fbuf, sizeof(fbuf), ff)) {</span>
+<span class="lineNum">     452 </span><span class="lineCov">         88 :                 first_cr = strchr(fbuf, '\r');</span>
+<span class="lineNum">     453 </span><span class="lineCov">         88 :                 first_nl = strchr(fbuf, '\n');</span>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">         88 :                 if (!first_cr &amp;&amp; !first_nl) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     457 </span>            :                 }
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">         88 :                 if ((first_cr &amp;&amp; !first_nl) || (first_cr &amp;&amp; first_cr &lt; first_nl)) {</span>
+<span class="lineNum">     460 </span>            : 
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :                         if (first_nl &amp;&amp; first_nl == first_cr + 1) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                                 newline_format = FF_DOS;</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                         } else if (first_cr &amp;&amp; first_cr == &amp;fbuf[sizeof(fbuf) - 2]) {</span>
+<span class="lineNum">     464 </span>            :                                 /* Edge case: get it on the next pass */
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                 fseek(ff, -1, SEEK_CUR);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     467 </span>            :                         } else {
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                 newline_format = FF_MAC;</span>
+<span class="lineNum">     469 </span>            :                         }
+<span class="lineNum">     470 </span>            :                 } else {
+<span class="lineNum">     471 </span><span class="lineCov">         88 :                         newline_format = FF_UNIX;</span>
+<span class="lineNum">     472 </span>            :                 }
+<span class="lineNum">     473 </span><span class="lineCov">         88 :                 break;</span>
+<span class="lineNum">     474 </span>            :         }
+<span class="lineNum">     475 </span><span class="lineCov">         88 :         fclose(ff);</span>
+<span class="lineNum">     476 </span><span class="lineCov">         88 :         return newline_format;</span>
+<a name="477"><span class="lineNum">     477 </span>            : }</a>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 : static int file_format(struct ast_channel *chan, const char *cmd, char *data, struct ast_str **buf, ssize_t len)</span>
+<span class="lineNum">     480 </span>            : {
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :         enum file_format newline_format = file2format(data);</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :         ast_str_set(buf, len, &quot;%c&quot;, newline_format == FF_UNIX ? 'u' : newline_format == FF_DOS ? 'd' : newline_format == FF_MAC ? 'm' : 'x');</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="484"><span class="lineNum">     484 </span>            : }</a>
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span><span class="lineCov">         26 : static int file_read(struct ast_channel *chan, const char *cmd, char *data, struct ast_str **buf, ssize_t len)</span>
+<span class="lineNum">     487 </span>            : {
+<span class="lineNum">     488 </span>            :         FILE *ff;
+<span class="lineNum">     489 </span><span class="lineCov">         26 :         int64_t offset = 0, length = LLONG_MAX;</span>
+<span class="lineNum">     490 </span><span class="lineCov">         26 :         enum file_format format = FF_UNKNOWN;</span>
+<span class="lineNum">     491 </span>            :         char fbuf[4096];
+<span class="lineNum">     492 </span>            :         int64_t flength, i; /* iterator needs to be signed, so it can go negative and terminate the loop */
+<span class="lineNum">     493 </span><span class="lineCov">         26 :         int64_t offset_offset = -1, length_offset = -1;</span>
+<span class="lineNum">     494 </span><span class="lineCov">         26 :         char dos_state = 0;</span>
+<span class="lineNum">     495 </span><span class="lineCov">         26 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     496 </span>            :                 AST_APP_ARG(filename);
+<span class="lineNum">     497 </span>            :                 AST_APP_ARG(offset);
+<span class="lineNum">     498 </span>            :                 AST_APP_ARG(length);
+<span class="lineNum">     499 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     500 </span>            :                 AST_APP_ARG(fileformat);
+<span class="lineNum">     501 </span>            :         );
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineCov">         26 :         AST_STANDARD_APP_ARGS(args, data);</span>
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span><span class="lineCov">         26 :         if (args.argc &gt; 1) {</span>
+<span class="lineNum">     506 </span><span class="lineCov">         26 :                 sscanf(args.offset, &quot;%&quot; SCNd64, &amp;offset);</span>
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span><span class="lineCov">         26 :         if (args.argc &gt; 2) {</span>
+<span class="lineNum">     509 </span><span class="lineCov">         24 :                 sscanf(args.length, &quot;%&quot; SCNd64, &amp;length);</span>
+<span class="lineNum">     510 </span>            :         }
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">         26 :         if (args.argc &lt; 4 || !strchr(args.options, 'l')) {</span>
+<span class="lineNum">     513 </span>            :                 /* Character-based mode */
+<span class="lineNum">     514 </span>            :                 off_t off_i;
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineCov">         15 :                 if (!(ff = fopen(args.filename, &quot;r&quot;))) {</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Cannot open file '%s' for reading: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     519 </span>            :                 }
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span><span class="lineCov">         15 :                 if (fseeko(ff, 0, SEEK_END) &lt; 0) {</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Cannot seek to end of '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                         fclose(ff);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     525 </span>            :                 }
+<span class="lineNum">     526 </span><span class="lineCov">         15 :                 flength = ftello(ff);</span>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineCov">         15 :                 if (offset &lt; 0) {</span>
+<span class="lineNum">     529 </span><span class="lineCov">          7 :                         fseeko(ff, offset, SEEK_END);</span>
+<span class="lineNum">     530 </span><span class="lineCov">          7 :                         if ((offset = ftello(ff)) &lt; 0) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                                 ast_log(AST_LOG_ERROR, &quot;Cannot determine offset position of '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     534 </span>            :                         }
+<span class="lineNum">     535 </span>            :                 }
+<span class="lineNum">     536 </span><span class="lineCov">         15 :                 if (length &lt; 0) {</span>
+<span class="lineNum">     537 </span><span class="lineCov">          5 :                         fseeko(ff, length, SEEK_END);</span>
+<span class="lineNum">     538 </span><span class="lineCov">          5 :                         if ((length = ftello(ff)) - offset &lt; 0) {</span>
+<span class="lineNum">     539 </span>            :                                 /* Eliminates all results */
+<span class="lineNum">     540 </span><span class="lineCov">          2 :                                 fclose(ff);</span>
+<span class="lineNum">     541 </span><span class="lineCov">          2 :                                 return -1;</span>
+<span class="lineNum">     542 </span>            :                         }
+<span class="lineNum">     543 </span><span class="lineCov">         10 :                 } else if (length == LLONG_MAX) {</span>
+<span class="lineNum">     544 </span><span class="lineCov">          2 :                         fseeko(ff, 0, SEEK_END);</span>
+<span class="lineNum">     545 </span><span class="lineCov">          2 :                         length = ftello(ff);</span>
+<span class="lineNum">     546 </span>            :                 }
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineCov">         13 :                 ast_str_reset(*buf);</span>
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span><span class="lineCov">         13 :                 fseeko(ff, offset, SEEK_SET);</span>
+<span class="lineNum">     551 </span><span class="lineCov">         22 :                 for (off_i = ftello(ff); off_i &lt; flength &amp;&amp; off_i &lt; offset + length; off_i += sizeof(fbuf)) {</span>
+<span class="lineNum">     552 </span>            :                         /* Calculate if we need to retrieve just a portion of the file in memory */
+<span class="lineNum">     553 </span><span class="lineCov">          9 :                         size_t toappend = sizeof(fbuf);</span>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineCov">          9 :                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     558 </span>            :                         }
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span>            :                         /* Don't go past the length requested */
+<span class="lineNum">     561 </span><span class="lineCov">          9 :                         if (off_i + toappend &gt; offset + length) {</span>
+<span class="lineNum">     562 </span><span class="lineCov">          9 :                                 toappend = MIN(offset + length - off_i, flength - off_i);</span>
+<span class="lineNum">     563 </span>            :                         }
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span><span class="lineCov">          9 :                         ast_str_append_substr(buf, len, fbuf, toappend);</span>
+<span class="lineNum">     566 </span>            :                 }
+<span class="lineNum">     567 </span><span class="lineCov">         13 :                 fclose(ff);</span>
+<span class="lineNum">     568 </span><span class="lineCov">         13 :                 return 0;</span>
+<span class="lineNum">     569 </span>            :         }
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span>            :         /* Line-based read */
+<span class="lineNum">     572 </span><span class="lineCov">         11 :         if (args.argc == 5) {</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">          0 :                 if (tolower(args.fileformat[0]) == 'd') {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                         format = FF_DOS;</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                 } else if (tolower(args.fileformat[0]) == 'm') {</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                         format = FF_MAC;</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 } else if (tolower(args.fileformat[0]) == 'u') {</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                         format = FF_UNIX;</span>
+<span class="lineNum">     579 </span>            :                 }
+<span class="lineNum">     580 </span>            :         }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">         11 :         if (format == FF_UNKNOWN) {</span>
+<span class="lineNum">     583 </span><span class="lineCov">         11 :                 if ((format = file2format(args.filename)) == FF_UNKNOWN) {</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;'%s' is not a line-based file\n&quot;, args.filename);</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     586 </span>            :                 }
+<span class="lineNum">     587 </span>            :         }
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span><span class="lineCov">         11 :         if (offset &lt; 0 &amp;&amp; length &lt;= offset) {</span>
+<span class="lineNum">     590 </span>            :                 /* Length eliminates all content */
+<span class="lineNum">     591 </span><span class="lineCov">          2 :                 return -1;</span>
+<span class="lineNum">     592 </span><span class="lineCov">          9 :         } else if (offset == 0) {</span>
+<span class="lineNum">     593 </span><span class="lineCov">          3 :                 offset_offset = 0;</span>
+<span class="lineNum">     594 </span>            :         }
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">          9 :         if (!(ff = fopen(args.filename, &quot;r&quot;))) {</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Cannot open '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     599 </span>            :         }
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineCov">          9 :         if (fseek(ff, 0, SEEK_END)) {</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Cannot seek to end of file '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 fclose(ff);</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     605 </span>            :         }
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineCov">          9 :         flength = ftello(ff);</span>
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span><span class="lineCov">          9 :         if (length == LLONG_MAX) {</span>
+<span class="lineNum">     610 </span><span class="lineCov">          2 :                 length_offset = flength;</span>
+<span class="lineNum">     611 </span>            :         }
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span>            :         /* For negative offset and/or negative length */
+<span class="lineNum">     614 </span><span class="lineCov">          9 :         if (offset &lt; 0 || length &lt; 0) {</span>
+<span class="lineNum">     615 </span><span class="lineCov">          6 :                 int64_t count = 0;</span>
+<span class="lineNum">     616 </span>            :                 /* Start with an even multiple of fbuf, so at the end of reading with a
+<span class="lineNum">     617 </span>            :                  * 0 offset, we don't try to go past the beginning of the file. */
+<span class="lineNum">     618 </span><span class="lineCov">          9 :                 for (i = (flength / sizeof(fbuf)) * sizeof(fbuf); i &gt;= 0; i -= sizeof(fbuf)) {</span>
+<span class="lineNum">     619 </span>            :                         size_t end;
+<span class="lineNum">     620 </span>            :                         char *pos;
+<span class="lineNum">     621 </span><span class="lineCov">          6 :                         if (fseeko(ff, i, SEEK_SET)) {</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Cannot seek to offset %&quot; PRId64 &quot;: %s\n&quot;, i, strerror(errno));</span>
+<span class="lineNum">     623 </span>            :                         }
+<span class="lineNum">     624 </span><span class="lineCov">          6 :                         end = fread(fbuf, 1, sizeof(fbuf), ff);</span>
+<span class="lineNum">     625 </span><span class="lineCov">         74 :                         for (pos = (end &lt; sizeof(fbuf) ? fbuf + end - 1 : fbuf + sizeof(fbuf) - 1); pos &gt;= fbuf; pos--) {</span>
+<span class="lineNum">     626 </span><span class="lineCov">         69 :                                 LINE_COUNTER(pos, format, count);</span>
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span><span class="lineCov">         69 :                                 if (length &lt; 0 &amp;&amp; count * -1 == length) {</span>
+<span class="lineNum">     629 </span><span class="lineCov">         12 :                                         length_offset = i + (pos - fbuf);</span>
+<span class="lineNum">     630 </span><span class="lineCov">         57 :                                 } else if (offset &lt; 0 &amp;&amp; count * -1 == (offset - 1)) {</span>
+<span class="lineNum">     631 </span>            :                                         /* Found our initial offset.  We're done with reverse motion! */
+<span class="lineNum">     632 </span><span class="lineCov">          1 :                                         if (format == FF_DOS) {</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">          0 :                                                 offset_offset = i + (pos - fbuf) + 2;</span>
+<span class="lineNum">     634 </span>            :                                         } else {
+<span class="lineNum">     635 </span><span class="lineCov">          1 :                                                 offset_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">     636 </span>            :                                         }
+<span class="lineNum">     637 </span><span class="lineCov">          1 :                                         break;</span>
+<span class="lineNum">     638 </span>            :                                 }
+<span class="lineNum">     639 </span>            :                         }
+<span class="lineNum">     640 </span><span class="lineCov">          6 :                         if ((offset &lt; 0 &amp;&amp; offset_offset &gt;= 0) || (offset &gt;= 0 &amp;&amp; length_offset &gt;= 0)) {</span>
+<span class="lineNum">     641 </span>            :                                 break;
+<span class="lineNum">     642 </span>            :                         }
+<span class="lineNum">     643 </span>            :                 }
+<span class="lineNum">     644 </span>            :                 /* We're at the beginning, and the negative offset indicates the exact number of lines in the file */
+<span class="lineNum">     645 </span><span class="lineCov">          6 :                 if (offset &lt; 0 &amp;&amp; offset_offset &lt; 0 &amp;&amp; offset == count * -1) {</span>
+<span class="lineNum">     646 </span><span class="lineCov">          3 :                         offset_offset = 0;</span>
+<span class="lineNum">     647 </span>            :                 }
+<span class="lineNum">     648 </span>            :         }
+<span class="lineNum">     649 </span>            : 
+<span class="lineNum">     650 </span>            :         /* Positve line offset */
+<span class="lineNum">     651 </span><span class="lineCov">          9 :         if (offset &gt; 0) {</span>
+<span class="lineNum">     652 </span><span class="lineCov">          2 :                 int64_t count = 0;</span>
+<span class="lineNum">     653 </span><span class="lineCov">          2 :                 fseek(ff, 0, SEEK_SET);</span>
+<span class="lineNum">     654 </span><span class="lineCov">          2 :                 for (i = 0; i &lt; flength; i += sizeof(fbuf)) {</span>
+<span class="lineNum">     655 </span>            :                         char *pos;
+<span class="lineNum">     656 </span><span class="lineCov">          2 :                         if (i + sizeof(fbuf) &lt;= flength) {</span>
+<span class="lineNum">     657 </span>            :                                 /* Don't let previous values influence current counts, due to short reads */
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                                 memset(fbuf, 0, sizeof(fbuf));</span>
+<span class="lineNum">     659 </span>            :                         }
+<span class="lineNum">     660 </span><span class="lineCov">          2 :                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     664 </span>            :                         }
+<span class="lineNum">     665 </span><span class="lineCov">         12 :                         for (pos = fbuf; pos &lt; fbuf + sizeof(fbuf); pos++) {</span>
+<span class="lineNum">     666 </span><span class="lineCov">         12 :                                 LINE_COUNTER(pos, format, count);</span>
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span><span class="lineCov">         12 :                                 if (count == offset) {</span>
+<span class="lineNum">     669 </span><span class="lineCov">          2 :                                         offset_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">     670 </span><span class="lineCov">          2 :                                         break;</span>
+<span class="lineNum">     671 </span>            :                                 }
+<span class="lineNum">     672 </span>            :                         }
+<span class="lineNum">     673 </span><span class="lineCov">          2 :                         if (offset_offset &gt;= 0) {</span>
+<span class="lineNum">     674 </span><span class="lineCov">          2 :                                 break;</span>
+<span class="lineNum">     675 </span>            :                         }
+<span class="lineNum">     676 </span>            :                 }
+<span class="lineNum">     677 </span>            :         }
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span><span class="lineCov">          9 :         if (offset_offset &lt; 0) {</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Offset '%s' refers to before the beginning of the file!\n&quot;, args.offset);</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                 fclose(ff);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     683 </span>            :         }
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineCov">          9 :         ast_str_reset(*buf);</span>
+<span class="lineNum">     686 </span><span class="lineCov">          9 :         if (fseeko(ff, offset_offset, SEEK_SET)) {</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;fseeko failed: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     688 </span>            :         }
+<span class="lineNum">     689 </span>            : 
+<span class="lineNum">     690 </span>            :         /* If we have both offset_offset and length_offset, then grabbing the
+<span class="lineNum">     691 </span>            :          * buffer is simply a matter of just retrieving the file and adding it
+<span class="lineNum">     692 </span>            :          * to buf.  Otherwise, we need to run byte-by-byte forward until the
+<span class="lineNum">     693 </span>            :          * length is complete. */
+<span class="lineNum">     694 </span><span class="lineCov">          9 :         if (length_offset &gt;= 0) {</span>
+<span class="lineNum">     695 </span><span class="lineCov">          5 :                 ast_debug(3, &quot;offset=%&quot; PRId64 &quot;, length=%&quot; PRId64 &quot;, offset_offset=%&quot; PRId64 &quot;, length_offset=%&quot; PRId64 &quot;\n&quot;, offset, length, offset_offset, length_offset);</span>
+<span class="lineNum">     696 </span><span class="lineCov">          9 :                 for (i = offset_offset; i &lt; length_offset; i += sizeof(fbuf)) {</span>
+<span class="lineNum">     697 </span><span class="lineCov">          4 :                         if (fread(fbuf, 1, i + sizeof(fbuf) &gt; flength ? flength - i : sizeof(fbuf), ff) &lt; (i + sizeof(fbuf) &gt; flength ? flength - i : sizeof(fbuf))) {</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     699 </span>            :                         }
+<span class="lineNum">     700 </span><span class="lineCov">          4 :                         ast_debug(3, &quot;Appending first %&quot; PRId64&quot; bytes of fbuf=%s\n&quot;, (int64_t)(i + sizeof(fbuf) &gt; length_offset ? length_offset - i : sizeof(fbuf)), fbuf);</span>
+<span class="lineNum">     701 </span><span class="lineCov">          4 :                         ast_str_append_substr(buf, len, fbuf, i + sizeof(fbuf) &gt; length_offset ? length_offset - i : sizeof(fbuf));</span>
+<span class="lineNum">     702 </span>            :                 }
+<span class="lineNum">     703 </span><span class="lineCov">          4 :         } else if (length == 0) {</span>
+<span class="lineNum">     704 </span>            :                 /* Nothing to do */
+<span class="lineNum">     705 </span>            :         } else {
+<span class="lineNum">     706 </span>            :                 /* Positive line offset */
+<span class="lineNum">     707 </span><span class="lineCov">          2 :                 int64_t current_length = 0;</span>
+<span class="lineNum">     708 </span><span class="lineCov">          2 :                 char dos_state = 0;</span>
+<span class="lineNum">     709 </span><span class="lineCov">          2 :                 ast_debug(3, &quot;offset=%&quot; PRId64 &quot;, length=%&quot; PRId64 &quot;, offset_offset=%&quot; PRId64 &quot;, length_offset=%&quot; PRId64 &quot;\n&quot;, offset, length, offset_offset, length_offset);</span>
+<span class="lineNum">     710 </span><span class="lineCov">          2 :                 for (i = offset_offset; i &lt; flength; i += sizeof(fbuf)) {</span>
+<span class="lineNum">     711 </span>            :                         char *pos;
+<span class="lineNum">     712 </span><span class="lineCov">          2 :                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     716 </span>            :                         }
+<span class="lineNum">     717 </span><span class="lineCov">          8 :                         for (pos = fbuf; pos &lt; fbuf + sizeof(fbuf); pos++) {</span>
+<span class="lineNum">     718 </span><span class="lineCov">          8 :                                 LINE_COUNTER(pos, format, current_length);</span>
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span><span class="lineCov">          8 :                                 if (current_length == length) {</span>
+<span class="lineNum">     721 </span><span class="lineCov">          2 :                                         length_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">     722 </span><span class="lineCov">          2 :                                         break;</span>
+<span class="lineNum">     723 </span>            :                                 }
+<span class="lineNum">     724 </span>            :                         }
+<span class="lineNum">     725 </span><span class="lineCov">          2 :                         ast_debug(3, &quot;length_offset=%&quot; PRId64 &quot;, length_offset - i=%&quot; PRId64 &quot;\n&quot;, length_offset, length_offset - i);</span>
+<span class="lineNum">     726 </span><span class="lineCov">          2 :                         ast_str_append_substr(buf, len, fbuf, (length_offset &gt;= 0) ? length_offset - i : (flength &gt; i + sizeof(fbuf)) ? sizeof(fbuf) : flength - i);</span>
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span><span class="lineCov">          2 :                         if (length_offset &gt;= 0) {</span>
+<span class="lineNum">     729 </span><span class="lineCov">          2 :                                 break;</span>
+<span class="lineNum">     730 </span>            :                         }
+<span class="lineNum">     731 </span>            :                 }
+<span class="lineNum">     732 </span>            :         }
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineCov">          9 :         fclose(ff);</span>
+<span class="lineNum">     735 </span><span class="lineCov">          9 :         return 0;</span>
+<span class="lineNum">     736 </span>            : }
+<a name="737"><span class="lineNum">     737 </span>            : </a>
+<span class="lineNum">     738 </span>            : const char *format2term(enum file_format f) __attribute__((const));
+<span class="lineNum">     739 </span><span class="lineCov">        316 : const char *format2term(enum file_format f)</span>
+<span class="lineNum">     740 </span>            : {
+<span class="lineNum">     741 </span><span class="lineCov">        316 :         const char *term[] = { &quot;&quot;, &quot;\n&quot;, &quot;\r\n&quot;, &quot;\r&quot; };</span>
+<span class="lineNum">     742 </span><span class="lineCov">        316 :         return term[f + 1];</span>
+<a name="743"><span class="lineNum">     743 </span>            : }</a>
+<span class="lineNum">     744 </span>            : 
+<span class="lineNum">     745 </span><span class="lineCov">        106 : static int file_write(struct ast_channel *chan, const char *cmd, char *data, const char *value)</span>
+<span class="lineNum">     746 </span>            : {
+<span class="lineNum">     747 </span><span class="lineCov">        106 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     748 </span>            :                 AST_APP_ARG(filename);
+<span class="lineNum">     749 </span>            :                 AST_APP_ARG(offset);
+<span class="lineNum">     750 </span>            :                 AST_APP_ARG(length);
+<span class="lineNum">     751 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     752 </span>            :                 AST_APP_ARG(format);
+<span class="lineNum">     753 </span>            :         );
+<span class="lineNum">     754 </span><span class="lineCov">        106 :         int64_t offset = 0, length = LLONG_MAX;</span>
+<span class="lineNum">     755 </span>            :         off_t flength, vlength;
+<span class="lineNum">     756 </span><span class="lineCov">        106 :         size_t foplen = 0;</span>
+<span class="lineNum">     757 </span>            :         FILE *ff;
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">        106 :         AST_STANDARD_APP_ARGS(args, data);</span>
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineCov">        106 :         if (args.argc &gt; 1) {</span>
+<span class="lineNum">     762 </span><span class="lineCov">        106 :                 sscanf(args.offset, &quot;%&quot; SCNd64, &amp;offset);</span>
+<span class="lineNum">     763 </span>            :         }
+<span class="lineNum">     764 </span><span class="lineCov">        106 :         if (args.argc &gt; 2) {</span>
+<span class="lineNum">     765 </span><span class="lineCov">        101 :                 sscanf(args.length, &quot;%&quot; SCNd64, &amp;length);</span>
+<span class="lineNum">     766 </span>            :         }
+<span class="lineNum">     767 </span>            : 
+<span class="lineNum">     768 </span><span class="lineCov">        106 :         vlength = strlen(value);</span>
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span><span class="lineCov">        106 :         if (args.argc &lt; 4 || !strchr(args.options, 'l')) {</span>
+<span class="lineNum">     771 </span>            :                 /* Character-based mode */
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span><span class="lineCov">         29 :                 if (args.argc &gt; 3 &amp;&amp; strchr(args.options, 'a')) {</span>
+<span class="lineNum">     774 </span>            :                         /* Append mode */
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                         if (!(ff = fopen(args.filename, &quot;a&quot;))) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Cannot open file '%s' for appending: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :                                 return 0;</span>
+<span class="lineNum">     778 </span>            :                         }
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     781 </span>            :                         }
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :                         fclose(ff);</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     784 </span><span class="lineCov">         29 :                 } else if (offset == 0 &amp;&amp; length == LLONG_MAX) {</span>
+<span class="lineNum">     785 </span><span class="lineCov">          2 :                         if (!(ff = fopen(args.filename, &quot;w&quot;))) {</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Cannot open file '%s' for writing: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :                                 return 0;</span>
+<span class="lineNum">     788 </span>            :                         }
+<span class="lineNum">     789 </span><span class="lineCov">          2 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     791 </span>            :                         }
+<span class="lineNum">     792 </span><span class="lineCov">          2 :                         fclose(ff);</span>
+<span class="lineNum">     793 </span><span class="lineCov">          2 :                         return 0;</span>
+<span class="lineNum">     794 </span>            :                 }
+<span class="lineNum">     795 </span>            : 
+<span class="lineNum">     796 </span><span class="lineCov">         27 :                 if (!(ff = fopen(args.filename, &quot;r+&quot;))) {</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Cannot open file '%s' for modification: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     799 </span>            :                 }
+<span class="lineNum">     800 </span><span class="lineCov">         27 :                 fseeko(ff, 0, SEEK_END);</span>
+<span class="lineNum">     801 </span><span class="lineCov">         27 :                 flength = ftello(ff);</span>
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span><span class="lineCov">         27 :                 if (offset &lt; 0) {</span>
+<span class="lineNum">     804 </span><span class="lineCov">         12 :                         if (fseeko(ff, offset, SEEK_END)) {</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Cannot seek to offset of '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     808 </span>            :                         }
+<span class="lineNum">     809 </span><span class="lineCov">         12 :                         if ((offset = ftello(ff)) &lt; 0) {</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                                 ast_log(AST_LOG_ERROR, &quot;Cannot determine offset position of '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     813 </span>            :                         }
+<span class="lineNum">     814 </span>            :                 }
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span><span class="lineCov">         27 :                 if (length &lt; 0) {</span>
+<span class="lineNum">     817 </span><span class="lineCov">         10 :                         length = flength - offset + length;</span>
+<span class="lineNum">     818 </span><span class="lineCov">         10 :                         if (length &lt; 0) {</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Length '%s' exceeds the file length.  No data will be written.\n&quot;, args.length);</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     822 </span>            :                         }
+<span class="lineNum">     823 </span>            :                 }
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span><span class="lineCov">         27 :                 fseeko(ff, offset, SEEK_SET);</span>
+<span class="lineNum">     826 </span>            : 
+<span class="lineNum">     827 </span><span class="lineCov">         27 :                 ast_debug(3, &quot;offset=%s/%&quot; PRId64 &quot;, length=%s/%&quot; PRId64 &quot;, vlength=%&quot; PRId64 &quot;, flength=%&quot; PRId64 &quot;\n&quot;,</span>
+<span class="lineNum">     828 </span>            :                         S_OR(args.offset, &quot;(null)&quot;), offset, S_OR(args.length, &quot;(null)&quot;), length, vlength, flength);
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span><span class="lineCov">         54 :                 if (length == vlength) {</span>
+<span class="lineNum">     831 </span>            :                         /* Simplest case, a straight replace */
+<span class="lineNum">     832 </span><span class="lineCov">          9 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     834 </span>            :                         }
+<span class="lineNum">     835 </span><span class="lineCov">          9 :                         fclose(ff);</span>
+<span class="lineNum">     836 </span><span class="lineCov">         18 :                 } else if (length == LLONG_MAX) {</span>
+<span class="lineNum">     837 </span>            :                         /* Simple truncation */
+<span class="lineNum">     838 </span><span class="lineCov">          4 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     839 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     840 </span>            :                         }
+<span class="lineNum">     841 </span><span class="lineCov">          4 :                         fclose(ff);</span>
+<span class="lineNum">     842 </span><span class="lineCov">          4 :                         if (truncate(args.filename, offset + vlength)) {</span>
+<span class="lineNum">     843 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to truncate the file: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     844 </span>            :                         }
+<span class="lineNum">     845 </span><span class="lineCov">         14 :                 } else if (length &gt; vlength) {</span>
+<span class="lineNum">     846 </span>            :                         /* More complex -- need to close a gap */
+<span class="lineNum">     847 </span>            :                         char fbuf[4096];
+<span class="lineNum">     848 </span>            :                         off_t cur;
+<span class="lineNum">     849 </span><span class="lineCov">          9 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     851 </span>            :                         }
+<span class="lineNum">     852 </span><span class="lineCov">          9 :                         fseeko(ff, length - vlength, SEEK_CUR);</span>
+<span class="lineNum">     853 </span><span class="lineCov">         19 :                         while ((cur = ftello(ff)) &lt; flength) {</span>
+<span class="lineNum">     854 </span><span class="lineCov">         10 :                                 if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     856 </span>            :                                 }
+<span class="lineNum">     857 </span><span class="lineCov">         10 :                                 fseeko(ff, cur + vlength - length, SEEK_SET);</span>
+<span class="lineNum">     858 </span><span class="lineCov">         10 :                                 if (fwrite(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     860 </span>            :                                 }
+<span class="lineNum">     861 </span>            :                                 /* Seek to where we stopped reading */
+<span class="lineNum">     862 </span><span class="lineCov">         10 :                                 if (fseeko(ff, cur + sizeof(fbuf), SEEK_SET) &lt; 0) {</span>
+<span class="lineNum">     863 </span>            :                                         /* Only reason for seek to fail is EOF */
+<span class="lineNum">     864 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     865 </span>            :                                 }
+<span class="lineNum">     866 </span>            :                         }
+<span class="lineNum">     867 </span><span class="lineCov">          9 :                         fclose(ff);</span>
+<span class="lineNum">     868 </span><span class="lineCov">          9 :                         if (truncate(args.filename, flength - (length - vlength))) {</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to truncate the file: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     870 </span>            :                         }
+<span class="lineNum">     871 </span>            :                 } else {
+<span class="lineNum">     872 </span>            :                         /* Most complex -- need to open a gap */
+<span class="lineNum">     873 </span>            :                         char fbuf[4096];
+<span class="lineNum">     874 </span><span class="lineCov">          5 :                         off_t lastwritten = flength + vlength - length;</span>
+<span class="lineNum">     875 </span>            : 
+<span class="lineNum">     876 </span>            :                         /* Start reading exactly the buffer size back from the end. */
+<span class="lineNum">     877 </span><span class="lineCov">          5 :                         fseeko(ff, flength - sizeof(fbuf), SEEK_SET);</span>
+<span class="lineNum">     878 </span><span class="lineCov">          5 :                         while (offset &lt; ftello(ff)) {</span>
+<span class="lineNum">     879 </span><span class="lineCov">          1 :                                 if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">     880 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     881 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     883 </span>            :                                 }
+<span class="lineNum">     884 </span>            :                                 /* Since the read moved our file ptr forward, we reverse, but
+<span class="lineNum">     885 </span>            :                                  * seek an offset equal to the amount we want to extend the
+<span class="lineNum">     886 </span>            :                                  * file by */
+<span class="lineNum">     887 </span><span class="lineCov">          1 :                                 fseeko(ff, vlength - length - sizeof(fbuf), SEEK_CUR);</span>
+<span class="lineNum">     888 </span>            : 
+<span class="lineNum">     889 </span>            :                                 /* Note the location of this buffer -- we must not overwrite this position. */
+<span class="lineNum">     890 </span><span class="lineCov">          1 :                                 lastwritten = ftello(ff);</span>
+<span class="lineNum">     891 </span>            : 
+<span class="lineNum">     892 </span><span class="lineCov">          1 :                                 if (fwrite(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     896 </span>            :                                 }
+<span class="lineNum">     897 </span>            : 
+<span class="lineNum">     898 </span><span class="lineCov">          1 :                                 if (lastwritten &lt; offset + sizeof(fbuf)) {</span>
+<span class="lineNum">     899 </span><span class="lineCov">          1 :                                         break;</span>
+<span class="lineNum">     900 </span>            :                                 }
+<span class="lineNum">     901 </span>            :                                 /* Our file pointer is now either pointing to the end of the
+<span class="lineNum">     902 </span>            :                                  * file (new position) or a multiple of the fbuf size back from
+<span class="lineNum">     903 </span>            :                                  * that point.  Move back to where we want to start reading
+<span class="lineNum">     904 </span>            :                                  * again.  We never actually try to read beyond the end of the
+<span class="lineNum">     905 </span>            :                                  * file, so we don't have do deal with short reads, as we would
+<span class="lineNum">     906 </span>            :                                  * when we're shortening the file. */
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :                                 fseeko(ff, 2 * sizeof(fbuf) + vlength - length, SEEK_CUR);</span>
+<span class="lineNum">     908 </span>            :                         }
+<span class="lineNum">     909 </span>            : 
+<span class="lineNum">     910 </span>            :                         /* Last part of the file that we need to preserve */
+<span class="lineNum">     911 </span><span class="lineCov">          5 :                         if (fseeko(ff, offset + length, SEEK_SET)) {</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Unable to seek to %&quot; PRId64 &quot; + %&quot; PRId64 &quot; != %&quot; PRId64 &quot;?)\n&quot;, offset, length, ftello(ff));</span>
+<span class="lineNum">     913 </span>            :                         }
+<span class="lineNum">     914 </span>            : 
+<span class="lineNum">     915 </span>            :                         /* Doesn't matter how much we read -- just need to restrict the write */
+<span class="lineNum">     916 </span><span class="lineCov">          5 :                         ast_debug(1, &quot;Reading at %&quot; PRId64 &quot;\n&quot;, ftello(ff));</span>
+<span class="lineNum">     917 </span><span class="lineCov">          5 :                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">     919 </span>            :                         }
+<span class="lineNum">     920 </span><span class="lineCov">          5 :                         fseek(ff, offset, SEEK_SET);</span>
+<span class="lineNum">     921 </span>            :                         /* Write out the value, then write just up until where we last moved some data */
+<span class="lineNum">     922 </span><span class="lineCov">          5 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     924 </span>            :                         } else {
+<span class="lineNum">     925 </span><span class="lineCov">          5 :                                 off_t curpos = ftello(ff);</span>
+<span class="lineNum">     926 </span><span class="lineCov">          5 :                                 foplen = lastwritten - curpos;</span>
+<span class="lineNum">     927 </span><span class="lineCov">          5 :                                 if (fwrite(fbuf, 1, foplen, ff) &lt; foplen) {</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     929 </span>            :                                 }
+<span class="lineNum">     930 </span>            :                         }
+<span class="lineNum">     931 </span><span class="lineCov">          5 :                         fclose(ff);</span>
+<span class="lineNum">     932 </span>            :                 }
+<span class="lineNum">     933 </span>            :         } else {
+<span class="lineNum">     934 </span><span class="lineCov">         77 :                 enum file_format newline_format = FF_UNKNOWN;</span>
+<span class="lineNum">     935 </span>            : 
+<span class="lineNum">     936 </span>            :                 /* Line mode */
+<span class="lineNum">     937 </span><span class="lineCov">         77 :                 if (args.argc == 5) {</span>
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :                         if (tolower(args.format[0]) == 'u') {</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">          0 :                                 newline_format = FF_UNIX;</span>
+<span class="lineNum">     940 </span><span class="lineNoCov">          0 :                         } else if (tolower(args.format[0]) == 'm') {</span>
+<span class="lineNum">     941 </span><span class="lineNoCov">          0 :                                 newline_format = FF_MAC;</span>
+<span class="lineNum">     942 </span><span class="lineNoCov">          0 :                         } else if (tolower(args.format[0]) == 'd') {</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                                 newline_format = FF_DOS;</span>
+<span class="lineNum">     944 </span>            :                         }
+<span class="lineNum">     945 </span>            :                 }
+<span class="lineNum">     946 </span><span class="lineCov">         77 :                 if (newline_format == FF_UNKNOWN &amp;&amp; (newline_format = file2format(args.filename)) == FF_UNKNOWN) {</span>
+<span class="lineNum">     947 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;File '%s' not in line format\n&quot;, args.filename);</span>
+<span class="lineNum">     948 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     949 </span>            :                 }
+<span class="lineNum">     950 </span>            : 
+<span class="lineNum">     951 </span><span class="lineCov">         77 :                 if (strchr(args.options, 'a')) {</span>
+<span class="lineNum">     952 </span>            :                         /* Append to file */
+<span class="lineNum">     953 </span><span class="lineCov">          1 :                         if (!(ff = fopen(args.filename, &quot;a&quot;))) {</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to open '%s' for appending: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     956 </span>            :                         }
+<span class="lineNum">     957 </span><span class="lineCov">          1 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     959 </span><span class="lineCov">          1 :                         } else if (!strchr(args.options, 'd') &amp;&amp; fwrite(format2term(newline_format), 1, strlen(format2term(newline_format)), ff) &lt; strlen(format2term(newline_format))) {</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     961 </span>            :                         }
+<span class="lineNum">     962 </span><span class="lineCov">          1 :                         fclose(ff);</span>
+<span class="lineNum">     963 </span><span class="lineCov">         78 :                 } else if (offset == 0 &amp;&amp; length == LLONG_MAX) {</span>
+<span class="lineNum">     964 </span>            :                         /* Overwrite file */
+<span class="lineNum">     965 </span>            :                         off_t truncsize;
+<span class="lineNum">     966 </span><span class="lineCov">          2 :                         if (!(ff = fopen(args.filename, &quot;w&quot;))) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to open '%s' for writing: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     969 </span>            :                         }
+<span class="lineNum">     970 </span><span class="lineCov">          2 :                         if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     972 </span><span class="lineCov">          2 :                         } else if (!strchr(args.options, 'd') &amp;&amp; fwrite(format2term(newline_format), 1, strlen(format2term(newline_format)), ff) &lt; strlen(format2term(newline_format))) {</span>
+<span class="lineNum">     973 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">     974 </span>            :                         }
+<span class="lineNum">     975 </span><span class="lineCov">          2 :                         if ((truncsize = ftello(ff)) &lt; 0) {</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :                                 ast_log(AST_LOG_ERROR, &quot;Unable to determine truncate position of '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     977 </span>            :                         }
+<span class="lineNum">     978 </span><span class="lineCov">          2 :                         fclose(ff);</span>
+<span class="lineNum">     979 </span><span class="lineCov">          2 :                         if (truncsize &gt;= 0 &amp;&amp; truncate(args.filename, truncsize)) {</span>
+<span class="lineNum">     980 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to truncate file '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     982 </span>            :                         }
+<span class="lineNum">     983 </span>            :                 } else {
+<span class="lineNum">     984 </span><span class="lineCov">         74 :                         int64_t offset_offset = (offset == 0 ? 0 : -1), length_offset = -1, flength, i, current_length = 0;</span>
+<span class="lineNum">     985 </span><span class="lineCov">         74 :                         char dos_state = 0, fbuf[4096];</span>
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span><span class="lineCov">         74 :                         if (offset &lt; 0 &amp;&amp; length &lt; offset) {</span>
+<span class="lineNum">     988 </span>            :                                 /* Nonsense! */
+<span class="lineNum">     989 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Length cannot specify a position prior to the offset\n&quot;);</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     991 </span>            :                         }
+<span class="lineNum">     992 </span>            : 
+<span class="lineNum">     993 </span><span class="lineCov">         74 :                         if (!(ff = fopen(args.filename, &quot;r+&quot;))) {</span>
+<span class="lineNum">     994 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Cannot open '%s' for modification: %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     996 </span>            :                         }
+<span class="lineNum">     997 </span>            : 
+<span class="lineNum">     998 </span><span class="lineCov">         74 :                         if (fseek(ff, 0, SEEK_END)) {</span>
+<span class="lineNum">     999 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Cannot seek to end of file '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">    1002 </span>            :                         }
+<span class="lineNum">    1003 </span><span class="lineCov">         74 :                         if ((flength = ftello(ff)) &lt; 0) {</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">          0 :                                 ast_log(AST_LOG_ERROR, &quot;Cannot determine end position of file '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">    1007 </span>            :                         }
+<span class="lineNum">    1008 </span>            : 
+<span class="lineNum">    1009 </span>            :                         /* For negative offset and/or negative length */
+<span class="lineNum">    1010 </span><span class="lineCov">         74 :                         if (offset &lt; 0 || length &lt; 0) {</span>
+<span class="lineNum">    1011 </span><span class="lineCov">         48 :                                 int64_t count = 0;</span>
+<span class="lineNum">    1012 </span><span class="lineCov">         65 :                                 for (i = (flength / sizeof(fbuf)) * sizeof(fbuf); i &gt;= 0; i -= sizeof(fbuf)) {</span>
+<span class="lineNum">    1013 </span>            :                                         char *pos;
+<span class="lineNum">    1014 </span><span class="lineCov">         48 :                                         if (fseeko(ff, i, SEEK_SET)) {</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Cannot seek to offset %&quot; PRId64 &quot;: %s\n&quot;, i, strerror(errno));</span>
+<span class="lineNum">    1016 </span>            :                                         }
+<span class="lineNum">    1017 </span><span class="lineCov">         48 :                                         if (i + sizeof(fbuf) &gt;= flength) {</span>
+<span class="lineNum">    1018 </span><span class="lineCov">         48 :                                                 memset(fbuf, 0, sizeof(fbuf));</span>
+<span class="lineNum">    1019 </span>            :                                         }
+<span class="lineNum">    1020 </span><span class="lineCov">         48 :                                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short read: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">    1022 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1024 </span>            :                                         }
+<span class="lineNum">    1025 </span><span class="lineCov">     196580 :                                         for (pos = fbuf + sizeof(fbuf) - 1; pos &gt;= fbuf; pos--) {</span>
+<span class="lineNum">    1026 </span><span class="lineCov">     196550 :                                                 LINE_COUNTER(pos, newline_format, count);</span>
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span><span class="lineCov">     196550 :                                                 if (length &lt; 0 &amp;&amp; count * -1 == length) {</span>
+<span class="lineNum">    1029 </span><span class="lineCov">        104 :                                                         length_offset = i + (pos - fbuf);</span>
+<span class="lineNum">    1030 </span><span class="lineCov">     196446 :                                                 } else if (offset &lt; 0 &amp;&amp; count * -1 == (offset - 1)) {</span>
+<span class="lineNum">    1031 </span>            :                                                         /* Found our initial offset.  We're done with reverse motion! */
+<span class="lineNum">    1032 </span><span class="lineCov">         18 :                                                         if (newline_format == FF_DOS) {</span>
+<span class="lineNum">    1033 </span><span class="lineNoCov">          0 :                                                                 offset_offset = i + (pos - fbuf) + 2;</span>
+<span class="lineNum">    1034 </span>            :                                                         } else {
+<span class="lineNum">    1035 </span><span class="lineCov">         18 :                                                                 offset_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">    1036 </span>            :                                                         }
+<span class="lineNum">    1037 </span><span class="lineCov">         18 :                                                         break;</span>
+<span class="lineNum">    1038 </span>            :                                                 }
+<span class="lineNum">    1039 </span>            :                                         }
+<span class="lineNum">    1040 </span><span class="lineCov">         48 :                                         if ((offset &lt; 0 &amp;&amp; offset_offset &gt;= 0) || (offset &gt;= 0 &amp;&amp; length_offset &gt;= 0)) {</span>
+<span class="lineNum">    1041 </span>            :                                                 break;
+<span class="lineNum">    1042 </span>            :                                         }
+<span class="lineNum">    1043 </span>            :                                 }
+<span class="lineNum">    1044 </span>            :                                 /* We're at the beginning, and the negative offset indicates the exact number of lines in the file */
+<span class="lineNum">    1045 </span><span class="lineCov">         48 :                                 if (offset &lt; 0 &amp;&amp; offset_offset &lt; 0 &amp;&amp; offset == count * -1) {</span>
+<span class="lineNum">    1046 </span><span class="lineCov">         17 :                                         offset_offset = 0;</span>
+<span class="lineNum">    1047 </span>            :                                 }
+<span class="lineNum">    1048 </span>            :                         }
+<span class="lineNum">    1049 </span>            : 
+<span class="lineNum">    1050 </span>            :                         /* Positve line offset */
+<span class="lineNum">    1051 </span><span class="lineCov">         74 :                         if (offset &gt; 0) {</span>
+<span class="lineNum">    1052 </span><span class="lineCov">         19 :                                 int64_t count = 0;</span>
+<span class="lineNum">    1053 </span><span class="lineCov">         19 :                                 fseek(ff, 0, SEEK_SET);</span>
+<span class="lineNum">    1054 </span><span class="lineCov">         19 :                                 for (i = 0; i &lt; flength; i += sizeof(fbuf)) {</span>
+<span class="lineNum">    1055 </span>            :                                         char *pos;
+<span class="lineNum">    1056 </span><span class="lineCov">         19 :                                         if (i + sizeof(fbuf) &gt;= flength) {</span>
+<span class="lineNum">    1057 </span><span class="lineCov">         19 :                                                 memset(fbuf, 0, sizeof(fbuf));</span>
+<span class="lineNum">    1058 </span>            :                                         }
+<span class="lineNum">    1059 </span><span class="lineCov">         19 :                                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1062 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1063 </span>            :                                         }
+<span class="lineNum">    1064 </span><span class="lineCov">         88 :                                         for (pos = fbuf; pos &lt; fbuf + sizeof(fbuf); pos++) {</span>
+<span class="lineNum">    1065 </span><span class="lineCov">         88 :                                                 LINE_COUNTER(pos, newline_format, count);</span>
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span><span class="lineCov">         88 :                                                 if (count == offset) {</span>
+<span class="lineNum">    1068 </span><span class="lineCov">         19 :                                                         offset_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">    1069 </span><span class="lineCov">         19 :                                                         break;</span>
+<span class="lineNum">    1070 </span>            :                                                 }
+<span class="lineNum">    1071 </span>            :                                         }
+<span class="lineNum">    1072 </span><span class="lineCov">         19 :                                         if (offset_offset &gt;= 0) {</span>
+<span class="lineNum">    1073 </span><span class="lineCov">         19 :                                                 break;</span>
+<span class="lineNum">    1074 </span>            :                                         }
+<span class="lineNum">    1075 </span>            :                                 }
+<span class="lineNum">    1076 </span>            :                         }
+<span class="lineNum">    1077 </span>            : 
+<span class="lineNum">    1078 </span><span class="lineCov">         74 :                         if (offset_offset &lt; 0) {</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Offset '%s' refers to before the beginning of the file!\n&quot;, args.offset);</span>
+<span class="lineNum">    1080 </span><span class="lineNoCov">          0 :                                 fclose(ff);</span>
+<span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">    1082 </span>            :                         }
+<span class="lineNum">    1083 </span>            : 
+<span class="lineNum">    1084 </span><span class="lineCov">         74 :                         if (length == 0) {</span>
+<span class="lineNum">    1085 </span><span class="lineCov">          7 :                                 length_offset = offset_offset;</span>
+<span class="lineNum">    1086 </span><span class="lineCov">         67 :                         } else if (length == LLONG_MAX) {</span>
+<span class="lineNum">    1087 </span><span class="lineCov">          6 :                                 length_offset = flength;</span>
+<span class="lineNum">    1088 </span>            :                         }
+<span class="lineNum">    1089 </span>            : 
+<span class="lineNum">    1090 </span>            :                         /* Positive line length */
+<span class="lineNum">    1091 </span><span class="lineCov">         74 :                         if (length_offset &lt; 0) {</span>
+<span class="lineNum">    1092 </span><span class="lineCov">         35 :                                 fseeko(ff, offset_offset, SEEK_SET);</span>
+<span class="lineNum">    1093 </span><span class="lineCov">         35 :                                 for (i = offset_offset; i &lt; flength; i += sizeof(fbuf)) {</span>
+<span class="lineNum">    1094 </span>            :                                         char *pos;
+<span class="lineNum">    1095 </span><span class="lineCov">         35 :                                         if (i + sizeof(fbuf) &gt;= flength) {</span>
+<span class="lineNum">    1096 </span><span class="lineCov">         32 :                                                 memset(fbuf, 0, sizeof(fbuf));</span>
+<span class="lineNum">    1097 </span>            :                                         }
+<span class="lineNum">    1098 </span><span class="lineCov">         35 :                                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">    1100 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1101 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1102 </span>            :                                         }
+<span class="lineNum">    1103 </span><span class="lineCov">       1212 :                                         for (pos = fbuf; pos &lt; fbuf + sizeof(fbuf); pos++) {</span>
+<span class="lineNum">    1104 </span><span class="lineCov">       1212 :                                                 LINE_COUNTER(pos, newline_format, current_length);</span>
+<span class="lineNum">    1105 </span>            : 
+<span class="lineNum">    1106 </span><span class="lineCov">       1212 :                                                 if (current_length == length) {</span>
+<span class="lineNum">    1107 </span><span class="lineCov">         35 :                                                         length_offset = i + (pos - fbuf) + 1;</span>
+<span class="lineNum">    1108 </span><span class="lineCov">         35 :                                                         break;</span>
+<span class="lineNum">    1109 </span>            :                                                 }
+<span class="lineNum">    1110 </span>            :                                         }
+<span class="lineNum">    1111 </span><span class="lineCov">         35 :                                         if (length_offset &gt;= 0) {</span>
+<span class="lineNum">    1112 </span><span class="lineCov">         35 :                                                 break;</span>
+<span class="lineNum">    1113 </span>            :                                         }
+<span class="lineNum">    1114 </span>            :                                 }
+<span class="lineNum">    1115 </span><span class="lineCov">         35 :                                 if (length_offset &lt; 0) {</span>
+<span class="lineNum">    1116 </span>            :                                         /* Exceeds length of file */
+<span class="lineNum">    1117 </span><span class="lineNoCov">          0 :                                         ast_debug(3, &quot;Exceeds length of file? length=%&quot; PRId64 &quot;, count=%&quot; PRId64 &quot;, flength=%&quot; PRId64 &quot;\n&quot;, length, current_length, flength);</span>
+<span class="lineNum">    1118 </span><span class="lineNoCov">          0 :                                         length_offset = flength;</span>
+<span class="lineNum">    1119 </span>            :                                 }
+<span class="lineNum">    1120 </span>            :                         }
+<span class="lineNum">    1121 </span>            : 
+<span class="lineNum">    1122 </span>            :                         /* Have offset_offset and length_offset now */
+<span class="lineNum">    1123 </span><span class="lineCov">         74 :                         if (length_offset - offset_offset == vlength + (strchr(args.options, 'd') ? 0 : strlen(format2term(newline_format)))) {</span>
+<span class="lineNum">    1124 </span>            :                                 /* Simple case - replacement of text inline */
+<span class="lineNum">    1125 </span><span class="lineCov">         17 :                                 fseeko(ff, offset_offset, SEEK_SET);</span>
+<span class="lineNum">    1126 </span><span class="lineCov">         17 :                                 if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1128 </span><span class="lineCov">         17 :                                 } else if (!strchr(args.options, 'd') &amp;&amp; fwrite(format2term(newline_format), 1, strlen(format2term(newline_format)), ff) &lt; strlen(format2term(newline_format))) {</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1130 </span>            :                                 }
+<span class="lineNum">    1131 </span><span class="lineCov">         17 :                                 fclose(ff);</span>
+<span class="lineNum">    1132 </span><span class="lineCov">         57 :                         } else if (length_offset - offset_offset &gt; vlength + (strchr(args.options, 'd') ? 0 : strlen(format2term(newline_format)))) {</span>
+<span class="lineNum">    1133 </span>            :                                 /* More complex case - need to shorten file */
+<span class="lineNum">    1134 </span>            :                                 off_t cur;
+<span class="lineNum">    1135 </span><span class="lineCov">         34 :                                 int64_t length_length = length_offset - offset_offset;</span>
+<span class="lineNum">    1136 </span><span class="lineCov">         34 :                                 size_t vlen = vlength + (strchr(args.options, 'd') ? 0 : strlen(format2term(newline_format)));</span>
+<span class="lineNum">    1137 </span>            : 
+<span class="lineNum">    1138 </span><span class="lineCov">         34 :                                 ast_debug(3, &quot;offset=%s/%&quot; PRId64 &quot;, length=%s/%&quot; PRId64 &quot; (%&quot; PRId64 &quot;), vlength=%&quot; PRId64 &quot;, flength=%&quot; PRId64 &quot;\n&quot;,</span>
+<span class="lineNum">    1139 </span>            :                                         args.offset, offset_offset, args.length, length_offset, length_length, vlength, flength);
+<span class="lineNum">    1140 </span>            : 
+<span class="lineNum">    1141 </span><span class="lineCov">         34 :                                 fseeko(ff, offset_offset, SEEK_SET);</span>
+<span class="lineNum">    1142 </span><span class="lineCov">         34 :                                 if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">    1143 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1144 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">    1145 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">    1146 </span><span class="lineCov">         34 :                                 } else if (!strchr(args.options, 'd') &amp;&amp; fwrite(format2term(newline_format), 1, vlen - vlength, ff) &lt; vlen - vlength) {</span>
+<span class="lineNum">    1147 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1148 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">    1149 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">    1150 </span>            :                                 }
+<span class="lineNum">    1151 </span><span class="lineCov">         70 :                                 while ((cur = ftello(ff)) &lt; flength) {</span>
+<span class="lineNum">    1152 </span><span class="lineCov">         36 :                                         if (cur &lt; 0) {</span>
+<span class="lineNum">    1153 </span><span class="lineNoCov">          0 :                                                 ast_log(AST_LOG_ERROR, &quot;Unable to determine last write position for '%s': %s\n&quot;, args.filename, strerror(errno));</span>
+<span class="lineNum">    1154 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1156 </span>            :                                         }
+<span class="lineNum">    1157 </span><span class="lineCov">         36 :                                         fseeko(ff, length_length - vlen, SEEK_CUR);</span>
+<span class="lineNum">    1158 </span><span class="lineCov">         36 :                                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">    1159 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">    1160 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1162 </span>            :                                         }
+<span class="lineNum">    1163 </span>            :                                         /* Seek to where we last stopped writing */
+<span class="lineNum">    1164 </span><span class="lineCov">         36 :                                         fseeko(ff, cur, SEEK_SET);</span>
+<span class="lineNum">    1165 </span><span class="lineCov">         36 :                                         if (fwrite(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1168 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1169 </span>            :                                         }
+<span class="lineNum">    1170 </span>            :                                 }
+<span class="lineNum">    1171 </span><span class="lineCov">         34 :                                 fclose(ff);</span>
+<span class="lineNum">    1172 </span><span class="lineCov">         34 :                                 if (truncate(args.filename, flength - (length_length - vlen))) {</span>
+<span class="lineNum">    1173 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Truncation of file failed: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">    1174 </span>            :                                 }
+<span class="lineNum">    1175 </span>            :                         } else {
+<span class="lineNum">    1176 </span>            :                                 /* Most complex case - need to lengthen file */
+<span class="lineNum">    1177 </span><span class="lineCov">         23 :                                 size_t vlen = vlength + (strchr(args.options, 'd') ? 0 : strlen(format2term(newline_format)));</span>
+<span class="lineNum">    1178 </span><span class="lineCov">         23 :                                 int64_t origlen = length_offset - offset_offset;</span>
+<span class="lineNum">    1179 </span><span class="lineCov">         23 :                                 off_t lastwritten = flength + vlen - origlen;</span>
+<span class="lineNum">    1180 </span>            : 
+<span class="lineNum">    1181 </span><span class="lineCov">         23 :                                 ast_debug(3, &quot;offset=%s/%&quot; PRId64 &quot;, length=%s/%&quot; PRId64 &quot;, vlength=%&quot; PRId64 &quot;, flength=%&quot; PRId64 &quot;\n&quot;,</span>
+<span class="lineNum">    1182 </span>            :                                         args.offset, offset_offset, args.length, length_offset, vlength, flength);
+<span class="lineNum">    1183 </span>            : 
+<span class="lineNum">    1184 </span><span class="lineCov">         23 :                                 fseeko(ff, flength - sizeof(fbuf), SEEK_SET);</span>
+<span class="lineNum">    1185 </span><span class="lineCov">         23 :                                 while (offset_offset + sizeof(fbuf) &lt; ftello(ff)) {</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :                                         if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">    1187 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">    1188 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1189 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1190 </span>            :                                         }
+<span class="lineNum">    1191 </span><span class="lineNoCov">          0 :                                         fseeko(ff, sizeof(fbuf) - vlen - origlen, SEEK_CUR);</span>
+<span class="lineNum">    1192 </span><span class="lineNoCov">          0 :                                         if (fwrite(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf)) {</span>
+<span class="lineNum">    1193 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1194 </span><span class="lineNoCov">          0 :                                                 fclose(ff);</span>
+<span class="lineNum">    1195 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">    1196 </span>            :                                         }
+<span class="lineNum">    1197 </span><span class="lineNoCov">          0 :                                         if ((lastwritten = ftello(ff) - sizeof(fbuf)) &lt; offset_offset + sizeof(fbuf)) {</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">    1199 </span>            :                                         }
+<span class="lineNum">    1200 </span><span class="lineNoCov">          0 :                                         fseeko(ff, 2 * sizeof(fbuf) + vlen - origlen, SEEK_CUR);</span>
+<span class="lineNum">    1201 </span>            :                                 }
+<span class="lineNum">    1202 </span><span class="lineCov">         23 :                                 fseek(ff, length_offset, SEEK_SET);</span>
+<span class="lineNum">    1203 </span><span class="lineCov">         23 :                                 if (fread(fbuf, 1, sizeof(fbuf), ff) &lt; sizeof(fbuf) &amp;&amp; !feof(ff)) {</span>
+<span class="lineNum">    1204 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short read?!!\n&quot;);</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">    1206 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">    1207 </span>            :                                 }
+<span class="lineNum">    1208 </span><span class="lineCov">         23 :                                 fseek(ff, offset_offset, SEEK_SET);</span>
+<span class="lineNum">    1209 </span><span class="lineCov">         23 :                                 if (fwrite(value, 1, vlength, ff) &lt; vlength) {</span>
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">    1212 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">    1213 </span><span class="lineCov">         23 :                                 } else if (!strchr(args.options, 'd') &amp;&amp; fwrite(format2term(newline_format), 1, strlen(format2term(newline_format)), ff) &lt; strlen(format2term(newline_format))) {</span>
+<span class="lineNum">    1214 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1215 </span><span class="lineNoCov">          0 :                                         fclose(ff);</span>
+<span class="lineNum">    1216 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">    1217 </span>            :                                 } else {
+<span class="lineNum">    1218 </span><span class="lineCov">         23 :                                         off_t curpos = ftello(ff);</span>
+<span class="lineNum">    1219 </span><span class="lineCov">         23 :                                         foplen = lastwritten - curpos;</span>
+<span class="lineNum">    1220 </span><span class="lineCov">         23 :                                         if (fwrite(fbuf, 1, foplen, ff) &lt; foplen) {</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;Short write?!!\n&quot;);</span>
+<span class="lineNum">    1222 </span>            :                                         }
+<span class="lineNum">    1223 </span>            :                                 }
+<span class="lineNum">    1224 </span><span class="lineCov">         23 :                                 fclose(ff);</span>
+<span class="lineNum">    1225 </span>            :                         }
+<span class="lineNum">    1226 </span>            :                 }
+<span class="lineNum">    1227 </span>            :         }
+<span class="lineNum">    1228 </span>            : 
+<span class="lineNum">    1229 </span><span class="lineCov">        104 :         return 0;</span>
+<span class="lineNum">    1230 </span>            : }
+<span class="lineNum">    1231 </span>            : 
+<span class="lineNum">    1232 </span>            : static struct ast_custom_function env_function = {
+<span class="lineNum">    1233 </span>            :         .name = &quot;ENV&quot;,
+<span class="lineNum">    1234 </span>            :         .read = env_read,
+<span class="lineNum">    1235 </span>            :         .write = env_write
+<span class="lineNum">    1236 </span>            : };
+<span class="lineNum">    1237 </span>            : 
+<span class="lineNum">    1238 </span>            : static struct ast_custom_function stat_function = {
+<span class="lineNum">    1239 </span>            :         .name = &quot;STAT&quot;,
+<span class="lineNum">    1240 </span>            :         .read = stat_read,
+<span class="lineNum">    1241 </span>            :         .read_max = 12,
+<span class="lineNum">    1242 </span>            : };
+<span class="lineNum">    1243 </span>            : 
+<span class="lineNum">    1244 </span>            : static struct ast_custom_function file_function = {
+<span class="lineNum">    1245 </span>            :         .name = &quot;FILE&quot;,
+<span class="lineNum">    1246 </span>            :         .read2 = file_read,
+<span class="lineNum">    1247 </span>            :         .write = file_write,
+<span class="lineNum">    1248 </span>            : };
+<span class="lineNum">    1249 </span>            : 
+<span class="lineNum">    1250 </span>            : static struct ast_custom_function file_count_line_function = {
+<span class="lineNum">    1251 </span>            :         .name = &quot;FILE_COUNT_LINE&quot;,
+<span class="lineNum">    1252 </span>            :         .read2 = file_count_line,
+<span class="lineNum">    1253 </span>            :         .read_max = 12,
+<span class="lineNum">    1254 </span>            : };
+<span class="lineNum">    1255 </span>            : 
+<span class="lineNum">    1256 </span>            : static struct ast_custom_function file_format_function = {
+<span class="lineNum">    1257 </span>            :         .name = &quot;FILE_FORMAT&quot;,
+<span class="lineNum">    1258 </span>            :         .read2 = file_format,
+<span class="lineNum">    1259 </span>            :         .read_max = 2,
+<a name="1260"><span class="lineNum">    1260 </span>            : };</a>
+<span class="lineNum">    1261 </span>            : 
+<span class="lineNum">    1262 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">    1263 </span>            : {
+<span class="lineNum">    1264 </span><span class="lineCov">       1115 :         int res = 0;</span>
+<span class="lineNum">    1265 </span>            : 
+<span class="lineNum">    1266 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;env_function);</span>
+<span class="lineNum">    1267 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;stat_function);</span>
+<span class="lineNum">    1268 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;file_function);</span>
+<span class="lineNum">    1269 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;file_count_line_function);</span>
+<span class="lineNum">    1270 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;file_format_function);</span>
+<span class="lineNum">    1271 </span>            : 
+<span class="lineNum">    1272 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="1273"><span class="lineNum">    1273 </span>            : }</a>
+<span class="lineNum">    1274 </span>            : 
+<span class="lineNum">    1275 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">    1276 </span>            : {
+<span class="lineNum">    1277 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;env_function);</span>
+<span class="lineNum">    1280 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;stat_function, AST_CFE_READ);</span>
+<span class="lineNum">    1281 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;file_function, AST_CFE_BOTH);</span>
+<span class="lineNum">    1282 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;file_count_line_function, AST_CFE_READ);</span>
+<span class="lineNum">    1283 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register_escalating(&amp;file_format_function, AST_CFE_READ);</span>
+<span class="lineNum">    1284 </span>            : 
+<span class="lineNum">    1285 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="1286"><span class="lineNum">    1286 </span>            : }</a>
+<span class="lineNum">    1287 </span>            : 
+<span class="lineNum">    1288 </span><span class="lineCov">       7819 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Environment/filesystem dialplan functions&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

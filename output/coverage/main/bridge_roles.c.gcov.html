@@ -1,0 +1,585 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/bridge_roles.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - bridge_roles.c<span style="font-size: 80%;"> (source / <a href="bridge_roles.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">136</td>
+            <td class="headerCovTableEntry">163</td>
+            <td class="headerCovTableEntryMed">83.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Channel Bridging Roles API
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \ingroup bridges
+<span class="lineNum">      26 </span>            :  */
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*** MODULEINFO
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/datastore.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/bridge_roles.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/stringfields.h&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : struct bridge_role_option {
+<span class="lineNum">      45 </span>            :         AST_LIST_ENTRY(bridge_role_option) list;
+<span class="lineNum">      46 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">      47 </span>            :                 AST_STRING_FIELD(option);
+<span class="lineNum">      48 </span>            :                 AST_STRING_FIELD(value);
+<span class="lineNum">      49 </span>            :         );
+<span class="lineNum">      50 </span>            : };
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : struct bridge_role {
+<span class="lineNum">      53 </span>            :         AST_LIST_ENTRY(bridge_role) list;
+<span class="lineNum">      54 </span>            :         AST_LIST_HEAD_NOLOCK(, bridge_role_option) options;
+<span class="lineNum">      55 </span>            :         char role[AST_ROLE_LEN];
+<span class="lineNum">      56 </span>            : };
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : struct bridge_roles_datastore {
+<span class="lineNum">      59 </span>            :         AST_LIST_HEAD_NOLOCK(, bridge_role) role_list;
+<span class="lineNum">      60 </span>            : };
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : /*!
+<span class="lineNum">      63 </span>            :  * \internal
+<span class="lineNum">      64 </span>            :  * \brief Destructor function for a bridge role
+<span class="lineNum">      65 </span>            :  * \since 12.0.0
+<span class="lineNum">      66 </span>            :  *
+<span class="lineNum">      67 </span>            :  * \param role bridge_role being destroyed
+<span class="lineNum">      68 </span>            :  *
+<a name="69"><span class="lineNum">      69 </span>            :  * \return Nothing</a>
+<span class="lineNum">      70 </span>            :  */
+<span class="lineNum">      71 </span><span class="lineCov">        257 : static void bridge_role_destroy(struct bridge_role *role)</span>
+<span class="lineNum">      72 </span>            : {
+<span class="lineNum">      73 </span>            :         struct bridge_role_option *role_option;
+<span class="lineNum">      74 </span><span class="lineCov">        564 :         while ((role_option = AST_LIST_REMOVE_HEAD(&amp;role-&gt;options, list))) {</span>
+<span class="lineNum">      75 </span><span class="lineCov">        307 :                 ast_string_field_free_memory(role_option);</span>
+<span class="lineNum">      76 </span><span class="lineCov">        307 :                 ast_free(role_option);</span>
+<span class="lineNum">      77 </span>            :         }
+<span class="lineNum">      78 </span><span class="lineCov">        257 :         ast_free(role);</span>
+<span class="lineNum">      79 </span><span class="lineCov">        257 : }</span>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : /*!
+<span class="lineNum">      82 </span>            :  * \internal
+<span class="lineNum">      83 </span>            :  * \brief Destructor function for bridge role datastores
+<span class="lineNum">      84 </span>            :  * \since 12.0.0
+<span class="lineNum">      85 </span>            :  *
+<span class="lineNum">      86 </span>            :  * \param data Pointer to the datastore being destroyed
+<span class="lineNum">      87 </span>            :  *
+<a name="88"><span class="lineNum">      88 </span>            :  * \return Nothing</a>
+<span class="lineNum">      89 </span>            :  */
+<span class="lineNum">      90 </span><span class="lineCov">        262 : static void bridge_role_datastore_destroy(void *data)</span>
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span><span class="lineCov">        262 :         struct bridge_roles_datastore *roles_datastore = data;</span>
+<span class="lineNum">      93 </span>            :         struct bridge_role *role;
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineCov">        474 :         while ((role = AST_LIST_REMOVE_HEAD(&amp;roles_datastore-&gt;role_list, list))) {</span>
+<span class="lineNum">      96 </span><span class="lineCov">        212 :                 bridge_role_destroy(role);</span>
+<span class="lineNum">      97 </span>            :         }
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">        262 :         ast_free(roles_datastore);</span>
+<span class="lineNum">     100 </span><span class="lineCov">        262 : }</span>
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : static const struct ast_datastore_info bridge_role_info = {
+<span class="lineNum">     103 </span>            :         .type = &quot;bridge roles&quot;,
+<span class="lineNum">     104 </span>            :         .destroy = bridge_role_datastore_destroy,
+<span class="lineNum">     105 </span>            : };
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : /*!
+<span class="lineNum">     108 </span>            :  * \internal
+<span class="lineNum">     109 </span>            :  * \brief Setup a bridge role datastore on a channel
+<span class="lineNum">     110 </span>            :  * \since 12.0.0
+<span class="lineNum">     111 </span>            :  *
+<span class="lineNum">     112 </span>            :  * \param chan Chan the datastore is being setup on
+<span class="lineNum">     113 </span>            :  *
+<span class="lineNum">     114 </span>            :  * \retval NULL if failed
+<a name="115"><span class="lineNum">     115 </span>            :  * \retval pointer to the newly created datastore</a>
+<span class="lineNum">     116 </span>            :  */
+<span class="lineNum">     117 </span><span class="lineCov">        124 : static struct bridge_roles_datastore *setup_bridge_roles_datastore(struct ast_channel *chan)</span>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineCov">        124 :         struct ast_datastore *datastore = NULL;</span>
+<span class="lineNum">     120 </span><span class="lineCov">        124 :         struct bridge_roles_datastore *roles_datastore = NULL;</span>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">        124 :         if (!(datastore = ast_datastore_alloc(&amp;bridge_role_info, NULL))) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     124 </span>            :         }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">        124 :         if (!(roles_datastore = ast_calloc(1, sizeof(*roles_datastore)))) {</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 ast_datastore_free(datastore);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     129 </span>            :         }
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineCov">        124 :         AST_LIST_HEAD_INIT_NOLOCK(&amp;roles_datastore-&gt;role_list);</span>
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineCov">        124 :         datastore-&gt;data = roles_datastore;</span>
+<span class="lineNum">     134 </span><span class="lineCov">        124 :         ast_channel_datastore_add(chan, datastore);</span>
+<span class="lineNum">     135 </span><span class="lineCov">        124 :         return roles_datastore;</span>
+<span class="lineNum">     136 </span>            : }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : /*!
+<span class="lineNum">     139 </span>            :  * \internal
+<span class="lineNum">     140 </span>            :  * \brief Get the bridge_roles_datastore from a channel if it exists. Don't create one if it doesn't.
+<span class="lineNum">     141 </span>            :  * \since 12.0.0
+<span class="lineNum">     142 </span>            :  *
+<span class="lineNum">     143 </span>            :  * \param chan Channel we want the bridge_roles_datastore from
+<span class="lineNum">     144 </span>            :  *
+<span class="lineNum">     145 </span>            :  * \retval NULL if we can't find the datastore
+<a name="146"><span class="lineNum">     146 </span>            :  * \retval pointer to the bridge_roles_datastore</a>
+<span class="lineNum">     147 </span>            :  */
+<span class="lineNum">     148 </span><span class="lineCov">       2532 : static struct bridge_roles_datastore *fetch_bridge_roles_datastore(struct ast_channel *chan)</span>
+<span class="lineNum">     149 </span>            : {
+<span class="lineNum">     150 </span><span class="lineCov">       2532 :         struct ast_datastore *datastore = NULL;</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">       2532 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     153 </span><span class="lineCov">       2532 :         if (!(datastore = ast_channel_datastore_find(chan, &amp;bridge_role_info, NULL))) {</span>
+<span class="lineNum">     154 </span><span class="lineCov">       2094 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     155 </span><span class="lineCov">       2094 :                 return NULL;</span>
+<span class="lineNum">     156 </span>            :         }
+<span class="lineNum">     157 </span><span class="lineCov">        438 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">        438 :         return datastore-&gt;data;</span>
+<span class="lineNum">     160 </span>            : }
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span>            : /*!
+<span class="lineNum">     163 </span>            :  * \internal
+<span class="lineNum">     164 </span>            :  * \brief Get the bridge_roles_datastore from a channel if it exists. If not, create one.
+<span class="lineNum">     165 </span>            :  * \since 12.0.0
+<span class="lineNum">     166 </span>            :  *
+<span class="lineNum">     167 </span>            :  * \param chan Channel we want the bridge_roles_datastore from
+<span class="lineNum">     168 </span>            :  *
+<span class="lineNum">     169 </span>            :  * \retval NULL If we can't find and can't create the datastore
+<a name="170"><span class="lineNum">     170 </span>            :  * \retval pointer to the bridge_roles_datastore</a>
+<span class="lineNum">     171 </span>            :  */
+<span class="lineNum">     172 </span><span class="lineCov">        127 : static struct bridge_roles_datastore *fetch_or_create_bridge_roles_datastore(struct ast_channel *chan)</span>
+<span class="lineNum">     173 </span>            : {
+<span class="lineNum">     174 </span>            :         struct bridge_roles_datastore *roles_datastore;
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">        127 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     177 </span><span class="lineCov">        127 :         roles_datastore = fetch_bridge_roles_datastore(chan);</span>
+<span class="lineNum">     178 </span><span class="lineCov">        127 :         if (!roles_datastore) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">        124 :                 roles_datastore = setup_bridge_roles_datastore(chan);</span>
+<span class="lineNum">     180 </span>            :         }
+<span class="lineNum">     181 </span><span class="lineCov">        127 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">        127 :         return roles_datastore;</span>
+<span class="lineNum">     184 </span>            : }
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span>            : /*!
+<span class="lineNum">     187 </span>            :  * \internal
+<span class="lineNum">     188 </span>            :  * \brief Obtain a role from a bridge_roles_datastore if the datastore has it
+<span class="lineNum">     189 </span>            :  * \since 12.0.0
+<span class="lineNum">     190 </span>            :  *
+<span class="lineNum">     191 </span>            :  * \param roles_datastore The bridge_roles_datastore we are looking for the role of
+<span class="lineNum">     192 </span>            :  * \param role_name Name of the role being sought
+<span class="lineNum">     193 </span>            :  *
+<span class="lineNum">     194 </span>            :  * \retval NULL if the datastore does not have the requested role
+<a name="195"><span class="lineNum">     195 </span>            :  * \retval pointer to the requested role</a>
+<span class="lineNum">     196 </span>            :  */
+<span class="lineNum">     197 </span><span class="lineCov">        523 : static struct bridge_role *get_role_from_datastore(struct bridge_roles_datastore *roles_datastore, const char *role_name)</span>
+<span class="lineNum">     198 </span>            : {
+<span class="lineNum">     199 </span>            :         struct bridge_role *role;
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span><span class="lineCov">        576 :         AST_LIST_TRAVERSE(&amp;roles_datastore-&gt;role_list, role, list) {</span>
+<span class="lineNum">     202 </span><span class="lineCov">        396 :                 if (!strcmp(role-&gt;role, role_name)) {</span>
+<span class="lineNum">     203 </span><span class="lineCov">        343 :                         return role;</span>
+<span class="lineNum">     204 </span>            :                 }
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">        180 :         return NULL;</span>
+<span class="lineNum">     208 </span>            : }
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            : /*!
+<span class="lineNum">     211 </span>            :  * \internal
+<span class="lineNum">     212 </span>            :  * \brief Obtain a role from a channel structure if the channel's datastore has it
+<span class="lineNum">     213 </span>            :  * \since 12.0.0
+<span class="lineNum">     214 </span>            :  *
+<span class="lineNum">     215 </span>            :  * \param channel The channel we are checking the role of
+<span class="lineNum">     216 </span>            :  * \param role_name Name of the role sought
+<span class="lineNum">     217 </span>            :  *
+<span class="lineNum">     218 </span>            :  * \retval NULL if the channel's datastore does not have the requested role
+<a name="219"><span class="lineNum">     219 </span>            :  * \retval pointer to the requested role</a>
+<span class="lineNum">     220 </span>            :  */
+<span class="lineNum">     221 </span><span class="lineCov">        304 : static struct bridge_role *get_role_from_channel(struct ast_channel *channel, const char *role_name)</span>
+<span class="lineNum">     222 </span>            : {
+<span class="lineNum">     223 </span><span class="lineCov">        304 :         struct bridge_roles_datastore *roles_datastore = fetch_bridge_roles_datastore(channel);</span>
+<span class="lineNum">     224 </span><span class="lineCov">        304 :         return roles_datastore ? get_role_from_datastore(roles_datastore, role_name) : NULL;</span>
+<span class="lineNum">     225 </span>            : }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span>            : /*!
+<span class="lineNum">     228 </span>            :  * \internal
+<span class="lineNum">     229 </span>            :  * \brief Obtain a role option from a bridge role if it exists in the bridge role's option list
+<span class="lineNum">     230 </span>            :  * \since 12.0.0
+<span class="lineNum">     231 </span>            :  *
+<span class="lineNum">     232 </span>            :  * \param role a pointer to the bridge role wea re searching for the option of
+<span class="lineNum">     233 </span>            :  * \param option Name of the option sought
+<span class="lineNum">     234 </span>            :  *
+<span class="lineNum">     235 </span>            :  * \retval NULL if the bridge role doesn't have the requested option
+<a name="236"><span class="lineNum">     236 </span>            :  * \retval pointer to the requested option</a>
+<span class="lineNum">     237 </span>            :  */
+<span class="lineNum">     238 </span><span class="lineCov">        325 : static struct bridge_role_option *get_role_option(struct bridge_role *role, const char *option)</span>
+<span class="lineNum">     239 </span>            : {
+<span class="lineNum">     240 </span><span class="lineCov">        325 :         struct bridge_role_option *role_option = NULL;</span>
+<span class="lineNum">     241 </span><span class="lineCov">        611 :         AST_LIST_TRAVERSE(&amp;role-&gt;options, role_option, list) {</span>
+<span class="lineNum">     242 </span><span class="lineCov">        424 :                 if (!strcmp(role_option-&gt;option, option)) {</span>
+<span class="lineNum">     243 </span><span class="lineCov">        138 :                         return role_option;</span>
+<span class="lineNum">     244 </span>            :                 }
+<span class="lineNum">     245 </span>            :         }
+<span class="lineNum">     246 </span><span class="lineCov">        187 :         return NULL;</span>
+<span class="lineNum">     247 </span>            : }
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span>            : /*!
+<span class="lineNum">     250 </span>            :  * \internal
+<span class="lineNum">     251 </span>            :  * \brief Setup a bridge role on an existing bridge role datastore
+<span class="lineNum">     252 </span>            :  * \since 12.0.0
+<span class="lineNum">     253 </span>            :  *
+<span class="lineNum">     254 </span>            :  * \param roles_datastore bridge_roles_datastore receiving the new role
+<span class="lineNum">     255 </span>            :  * \param role_name Name of the role being received
+<span class="lineNum">     256 </span>            :  *
+<span class="lineNum">     257 </span>            :  * \retval 0 on success
+<a name="258"><span class="lineNum">     258 </span>            :  * \retval -1 on failure</a>
+<span class="lineNum">     259 </span>            :  */
+<span class="lineNum">     260 </span><span class="lineCov">        257 : static int setup_bridge_role(struct bridge_roles_datastore *roles_datastore, const char *role_name)</span>
+<span class="lineNum">     261 </span>            : {
+<span class="lineNum">     262 </span>            :         struct bridge_role *role;
+<span class="lineNum">     263 </span><span class="lineCov">        257 :         role = ast_calloc(1, sizeof(*role));</span>
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">        257 :         if (!role) {</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     267 </span>            :         }
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">        257 :         AST_LIST_HEAD_INIT_NOLOCK(&amp;role-&gt;options);</span>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineCov">        257 :         ast_copy_string(role-&gt;role, role_name, sizeof(role-&gt;role));</span>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineCov">        257 :         AST_LIST_INSERT_TAIL(&amp;roles_datastore-&gt;role_list, role, list);</span>
+<span class="lineNum">     274 </span><span class="lineCov">        257 :         ast_debug(3, &quot;Set role '%s'\n&quot;, role_name);</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">        257 :         return 0;</span>
+<span class="lineNum">     277 </span>            : }
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            : /*!
+<span class="lineNum">     280 </span>            :  * \internal
+<span class="lineNum">     281 </span>            :  * \brief Setup a bridge role option on an existing bridge role
+<span class="lineNum">     282 </span>            :  * \since 12.0.0
+<span class="lineNum">     283 </span>            :  *
+<span class="lineNum">     284 </span>            :  * \param role The role receiving the option
+<span class="lineNum">     285 </span>            :  * \param option Name of the option
+<span class="lineNum">     286 </span>            :  * \param value the option's value
+<span class="lineNum">     287 </span>            :  *
+<span class="lineNum">     288 </span>            :  * \retval 0 on success
+<a name="289"><span class="lineNum">     289 </span>            :  * \retval -1 on failure</a>
+<span class="lineNum">     290 </span>            :  */
+<span class="lineNum">     291 </span><span class="lineCov">        307 : static int setup_bridge_role_option(struct bridge_role *role, const char *option, const char *value)</span>
+<span class="lineNum">     292 </span>            : {
+<span class="lineNum">     293 </span>            :         struct bridge_role_option *role_option;
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineCov">        307 :         if (!value) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                 value = &quot;&quot;;</span>
+<span class="lineNum">     297 </span>            :         }
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineCov">        307 :         role_option = ast_calloc(1, sizeof(*role_option));</span>
+<span class="lineNum">     300 </span><span class="lineCov">        307 :         if (!role_option) {</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     302 </span>            :         }
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">        307 :         if (ast_string_field_init(role_option, 32)) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 ast_free(role_option);</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">        307 :         ast_string_field_set(role_option, option, option);</span>
+<span class="lineNum">     310 </span><span class="lineCov">        307 :         ast_string_field_set(role_option, value, value);</span>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">        307 :         AST_LIST_INSERT_TAIL(&amp;role-&gt;options, role_option, list);</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineCov">        307 :         return 0;</span>
+<a name="315"><span class="lineNum">     315 </span>            : }</a>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineCov">        127 : int ast_channel_add_bridge_role(struct ast_channel *chan, const char *role_name)</span>
+<span class="lineNum">     318 </span>            : {
+<span class="lineNum">     319 </span><span class="lineCov">        127 :         struct bridge_roles_datastore *roles_datastore = fetch_or_create_bridge_roles_datastore(chan);</span>
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">        127 :         if (!roles_datastore) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to set up bridge role datastore on channel %s\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            :         /* Check to make sure we aren't adding a redundant role */
+<span class="lineNum">     327 </span><span class="lineCov">        127 :         if (get_role_from_datastore(roles_datastore, role_name)) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;Bridge role %s is already applied to the channel %s\n&quot;, role_name, ast_channel_name(chan));</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            :         /* It wasn't already there, so we can just finish setting it up now. */
+<span class="lineNum">     333 </span><span class="lineCov">        127 :         return setup_bridge_role(roles_datastore, role_name);</span>
+<a name="334"><span class="lineNum">     334 </span>            : }</a>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">         35 : void ast_channel_remove_bridge_role(struct ast_channel *chan, const char *role_name)</span>
+<span class="lineNum">     337 </span>            : {
+<span class="lineNum">     338 </span><span class="lineCov">         35 :         struct bridge_roles_datastore *roles_datastore = fetch_bridge_roles_datastore(chan);</span>
+<span class="lineNum">     339 </span>            :         struct bridge_role *role;
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">         35 :         if (!roles_datastore) {</span>
+<span class="lineNum">     342 </span>            :                 /* The roles datastore didn't already exist, so there is no need to remove a role */
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;Role %s did not exist on channel %s\n&quot;, role_name, ast_channel_name(chan));</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     345 </span>            :         }
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">         35 :         AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;roles_datastore-&gt;role_list, role, list) {</span>
+<span class="lineNum">     348 </span><span class="lineCov">         35 :                 if (!strcmp(role-&gt;role, role_name)) {</span>
+<span class="lineNum">     349 </span><span class="lineCov">         35 :                         ast_debug(2, &quot;Removing bridge role %s from channel %s\n&quot;, role_name, ast_channel_name(chan));</span>
+<span class="lineNum">     350 </span><span class="lineCov">         35 :                         AST_LIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">     351 </span><span class="lineCov">         35 :                         bridge_role_destroy(role);</span>
+<span class="lineNum">     352 </span><span class="lineCov">         35 :                         return;</span>
+<span class="lineNum">     353 </span>            :                 }
+<span class="lineNum">     354 </span>            :         }
+<span class="lineNum">     355 </span>            :         AST_LIST_TRAVERSE_SAFE_END;
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :         ast_debug(2, &quot;Role %s did not exist on channel %s\n&quot;, role_name, ast_channel_name(chan));</span>
+<a name="358"><span class="lineNum">     358 </span>            : }</a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">         92 : void ast_channel_clear_bridge_roles(struct ast_channel *chan)</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span><span class="lineCov">         92 :         struct bridge_roles_datastore *roles_datastore = fetch_bridge_roles_datastore(chan);</span>
+<span class="lineNum">     363 </span>            :         struct bridge_role *role;
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">         92 :         if (!roles_datastore) {</span>
+<span class="lineNum">     366 </span>            :                 /* The roles datastore didn't already exist, so there is no need to remove any roles */
+<span class="lineNum">     367 </span><span class="lineCov">         77 :                 ast_debug(2, &quot;Roles did not exist on channel %s\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     368 </span><span class="lineCov">         77 :                 return;</span>
+<span class="lineNum">     369 </span>            :         }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineCov">         25 :         AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;roles_datastore-&gt;role_list, role, list) {</span>
+<span class="lineNum">     372 </span><span class="lineCov">         10 :                 ast_debug(2, &quot;Removing bridge role %s from channel %s\n&quot;, role-&gt;role, ast_channel_name(chan));</span>
+<span class="lineNum">     373 </span><span class="lineCov">         10 :                 AST_LIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">     374 </span><span class="lineCov">         10 :                 bridge_role_destroy(role);</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            :         AST_LIST_TRAVERSE_SAFE_END;
+<a name="377"><span class="lineNum">     377 </span>            : }</a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineCov">        167 : int ast_channel_set_bridge_role_option(struct ast_channel *channel, const char *role_name, const char *option, const char *value)</span>
+<span class="lineNum">     380 </span>            : {
+<span class="lineNum">     381 </span><span class="lineCov">        167 :         struct bridge_role *role = get_role_from_channel(channel, role_name);</span>
+<span class="lineNum">     382 </span>            :         struct bridge_role_option *role_option;
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineCov">        167 :         if (!role) {</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     386 </span>            :         }
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">        167 :         role_option = get_role_option(role, option);</span>
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineCov">        167 :         if (role_option) {</span>
+<span class="lineNum">     391 </span><span class="lineCov">          6 :                 ast_string_field_set(role_option, value, value);</span>
+<span class="lineNum">     392 </span><span class="lineCov">          6 :                 return 0;</span>
+<span class="lineNum">     393 </span>            :         }
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineCov">        161 :         return setup_bridge_role_option(role, option, value);</span>
+<a name="396"><span class="lineNum">     396 </span>            : }</a>
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span><span class="lineCov">         73 : int ast_channel_has_role(struct ast_channel *channel, const char *role_name)</span>
+<span class="lineNum">     399 </span>            : {
+<span class="lineNum">     400 </span><span class="lineCov">         73 :         return get_role_from_channel(channel, role_name) ? 1 : 0;</span>
+<a name="401"><span class="lineNum">     401 </span>            : }</a>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineCov">         64 : const char *ast_channel_get_role_option(struct ast_channel *channel, const char *role_name, const char *option)</span>
+<span class="lineNum">     404 </span>            : {
+<span class="lineNum">     405 </span>            :         struct bridge_role *role;
+<span class="lineNum">     406 </span>            :         struct bridge_role_option *role_option;
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">         64 :         role = get_role_from_channel(channel, role_name);</span>
+<span class="lineNum">     409 </span><span class="lineCov">         64 :         if (!role) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     411 </span>            :         }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineCov">         64 :         role_option = get_role_option(role, option);</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">         64 :         return role_option ? role_option-&gt;value : NULL;</span>
+<a name="416"><span class="lineNum">     416 </span>            : }</a>
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineCov">         57 : int ast_bridge_channel_has_role(struct ast_bridge_channel *bridge_channel, const char *role_name)</span>
+<span class="lineNum">     419 </span>            : {
+<span class="lineNum">     420 </span><span class="lineCov">         57 :         if (!bridge_channel-&gt;bridge_roles) {</span>
+<span class="lineNum">     421 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">     422 </span>            :         }
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">         55 :         return get_role_from_datastore(bridge_channel-&gt;bridge_roles, role_name) ? 1 : 0;</span>
+<a name="425"><span class="lineNum">     425 </span>            : }</a>
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineCov">         98 : const char *ast_bridge_channel_get_role_option(struct ast_bridge_channel *bridge_channel, const char *role_name, const char *option)</span>
+<span class="lineNum">     428 </span>            : {
+<span class="lineNum">     429 </span>            :         struct bridge_role *role;
+<span class="lineNum">     430 </span><span class="lineCov">         98 :         struct bridge_role_option *role_option = NULL;</span>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">         98 :         if (!bridge_channel-&gt;bridge_roles) {</span>
+<span class="lineNum">     433 </span><span class="lineCov">          4 :                 return NULL;</span>
+<span class="lineNum">     434 </span>            :         }
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineCov">         94 :         role = get_role_from_datastore(bridge_channel-&gt;bridge_roles, role_name);</span>
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineCov">         94 :         if (!role) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     440 </span>            :         }
+<span class="lineNum">     441 </span>            : 
+<span class="lineNum">     442 </span><span class="lineCov">         94 :         role_option = get_role_option(role, option);</span>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineCov">         94 :         return role_option ? role_option-&gt;value : NULL;</span>
+<a name="445"><span class="lineNum">     445 </span>            : }</a>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineCov">       1974 : int ast_bridge_channel_establish_roles(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     448 </span>            : {
+<span class="lineNum">     449 </span>            :         struct bridge_roles_datastore *roles_datastore;
+<span class="lineNum">     450 </span><span class="lineCov">       1974 :         struct bridge_role *role = NULL;</span>
+<span class="lineNum">     451 </span>            :         struct bridge_role_option *role_option;
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">       1974 :         if (!bridge_channel-&gt;chan) {</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;Attempted to set roles on a bridge channel that has no associated channel. That's a bad idea.\n&quot;);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     456 </span>            :         }
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineCov">       1974 :         if (bridge_channel-&gt;bridge_roles) {</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;Attempted to reset roles while roles were already established. Purge existing roles first.\n&quot;);</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     461 </span>            :         }
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">       1974 :         roles_datastore = fetch_bridge_roles_datastore(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     464 </span><span class="lineCov">       1974 :         if (!roles_datastore) {</span>
+<span class="lineNum">     465 </span>            :                 /* No roles to establish. */
+<span class="lineNum">     466 </span><span class="lineCov">       1836 :                 return 0;</span>
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">        138 :         if (!(bridge_channel-&gt;bridge_roles = ast_calloc(1, sizeof(*bridge_channel-&gt;bridge_roles)))) {</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     471 </span>            :         }
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span><span class="lineCov">        268 :         AST_LIST_TRAVERSE(&amp;roles_datastore-&gt;role_list, role, list) {</span>
+<span class="lineNum">     474 </span>            :                 struct bridge_role *this_role_copy;
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">        130 :                 if (setup_bridge_role(bridge_channel-&gt;bridge_roles, role-&gt;role)) {</span>
+<span class="lineNum">     477 </span>            :                         /* We need to abandon the copy because we couldn't setup a role */
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                         ast_bridge_channel_clear_roles(bridge_channel);</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     480 </span>            :                 }
+<span class="lineNum">     481 </span><span class="lineCov">        130 :                 this_role_copy = AST_LIST_LAST(&amp;bridge_channel-&gt;bridge_roles-&gt;role_list);</span>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">        276 :                 AST_LIST_TRAVERSE(&amp;role-&gt;options, role_option, list) {</span>
+<span class="lineNum">     484 </span><span class="lineCov">        146 :                         if (setup_bridge_role_option(this_role_copy, role_option-&gt;option, role_option-&gt;value)) {</span>
+<span class="lineNum">     485 </span>            :                                 /* We need to abandon the copy because we couldn't setup a role option */
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                                 ast_bridge_channel_clear_roles(bridge_channel);</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     488 </span>            :                         }
+<span class="lineNum">     489 </span>            :                 }
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">        138 :         return 0;</span>
+<a name="493"><span class="lineNum">     493 </span>            : }</a>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineCov">       1974 : void ast_bridge_channel_clear_roles(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     496 </span>            : {
+<span class="lineNum">     497 </span><span class="lineCov">       1974 :         if (bridge_channel-&gt;bridge_roles) {</span>
+<span class="lineNum">     498 </span><span class="lineCov">        138 :                 bridge_role_datastore_destroy(bridge_channel-&gt;bridge_roles);</span>
+<span class="lineNum">     499 </span><span class="lineCov">        138 :                 bridge_channel-&gt;bridge_roles = NULL;</span>
+<span class="lineNum">     500 </span>            :         }
+<span class="lineNum">     501 </span><span class="lineCov">       1974 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

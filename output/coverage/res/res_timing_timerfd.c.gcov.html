@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_timing_timerfd.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_timing_timerfd.c<span style="font-size: 80%;"> (source / <a href="res_timing_timerfd.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">78</td>
+            <td class="headerCovTableEntry">100</td>
+            <td class="headerCovTableEntryMed">78.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2008, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Michelson &lt;mmichelson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \author Mark Michelson &lt;mmichelson@digium.com&gt;
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \brief timerfd timing interface
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;depend&gt;timerfd&lt;/depend&gt;
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &lt;sys/timerfd.h&gt;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/timing.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/time.h&quot;
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : static void *timing_funcs_handle;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : static void *timerfd_timer_open(void);
+<span class="lineNum">      45 </span>            : static void timerfd_timer_close(void *data);
+<span class="lineNum">      46 </span>            : static int timerfd_timer_set_rate(void *data, unsigned int rate);
+<span class="lineNum">      47 </span>            : static int timerfd_timer_ack(void *data, unsigned int quantity);
+<span class="lineNum">      48 </span>            : static int timerfd_timer_enable_continuous(void *data);
+<span class="lineNum">      49 </span>            : static int timerfd_timer_disable_continuous(void *data);
+<span class="lineNum">      50 </span>            : static enum ast_timer_event timerfd_timer_get_event(void *data);
+<span class="lineNum">      51 </span>            : static unsigned int timerfd_timer_get_max_rate(void *data);
+<span class="lineNum">      52 </span>            : static int timerfd_timer_fd(void *data);
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            : static struct ast_timing_interface timerfd_timing = {
+<span class="lineNum">      55 </span>            :         .name = &quot;timerfd&quot;,
+<span class="lineNum">      56 </span>            :         .priority = 200,
+<span class="lineNum">      57 </span>            :         .timer_open = timerfd_timer_open,
+<span class="lineNum">      58 </span>            :         .timer_close = timerfd_timer_close,
+<span class="lineNum">      59 </span>            :         .timer_set_rate = timerfd_timer_set_rate,
+<span class="lineNum">      60 </span>            :         .timer_ack = timerfd_timer_ack,
+<span class="lineNum">      61 </span>            :         .timer_enable_continuous = timerfd_timer_enable_continuous,
+<span class="lineNum">      62 </span>            :         .timer_disable_continuous = timerfd_timer_disable_continuous,
+<span class="lineNum">      63 </span>            :         .timer_get_event = timerfd_timer_get_event,
+<span class="lineNum">      64 </span>            :         .timer_get_max_rate = timerfd_timer_get_max_rate,
+<span class="lineNum">      65 </span>            :         .timer_fd = timerfd_timer_fd,
+<span class="lineNum">      66 </span>            : };
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : #define TIMERFD_MAX_RATE 1000
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            : struct timerfd_timer {
+<span class="lineNum">      71 </span>            :         int fd;
+<span class="lineNum">      72 </span>            :         struct itimerspec saved_timer;
+<span class="lineNum">      73 </span>            :         unsigned int is_continuous:1;
+<a name="74"><span class="lineNum">      74 </span>            : };</a>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineCov">       5615 : static void timer_destroy(void *obj)</span>
+<span class="lineNum">      77 </span>            : {
+<span class="lineNum">      78 </span><span class="lineCov">       5615 :         struct timerfd_timer *timer = obj;</span>
+<span class="lineNum">      79 </span><span class="lineCov">       5615 :         if (timer-&gt;fd &gt; -1) {</span>
+<span class="lineNum">      80 </span><span class="lineCov">       5615 :                 close(timer-&gt;fd);</span>
+<span class="lineNum">      81 </span>            :         }
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">       5615 : }</span></a>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineCov">       5618 : static void *timerfd_timer_open(void)</span>
+<span class="lineNum">      85 </span>            : {
+<span class="lineNum">      86 </span>            :         struct timerfd_timer *timer;
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineCov">       5618 :         if (!(timer = ao2_alloc(sizeof(*timer), timer_destroy))) {</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not allocate memory for timerfd_timer structure\n&quot;);</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      91 </span>            :         }
+<span class="lineNum">      92 </span><span class="lineCov">       5618 :         if ((timer-&gt;fd = timerfd_create(CLOCK_MONOTONIC, 0)) &lt; 0) {</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to create timerfd timer: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 ao2_ref(timer, -1);</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      96 </span>            :         }
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineCov">       5618 :         return timer;</span>
+<a name="99"><span class="lineNum">      99 </span>            : }</a>
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span><span class="lineCov">       5615 : static void timerfd_timer_close(void *data)</span>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span><span class="lineCov">       5615 :         ao2_ref(data, -1);</span>
+<a name="104"><span class="lineNum">     104 </span><span class="lineCov">       5615 : }</span></a>
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">      10074 : static int timerfd_timer_set_rate(void *data, unsigned int rate)</span>
+<span class="lineNum">     107 </span>            : {
+<span class="lineNum">     108 </span><span class="lineCov">      10074 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     109 </span><span class="lineCov">      10074 :         int res = 0;</span>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">      10074 :         ao2_lock(timer);</span>
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">      10074 :         timer-&gt;saved_timer.it_value.tv_sec = 0;</span>
+<span class="lineNum">     114 </span><span class="lineCov">      10074 :         timer-&gt;saved_timer.it_value.tv_nsec = rate ? (long) (1000000000 / rate) : 0L;</span>
+<span class="lineNum">     115 </span><span class="lineCov">      10074 :         timer-&gt;saved_timer.it_interval.tv_sec = timer-&gt;saved_timer.it_value.tv_sec;</span>
+<span class="lineNum">     116 </span><span class="lineCov">      10074 :         timer-&gt;saved_timer.it_interval.tv_nsec = timer-&gt;saved_timer.it_value.tv_nsec;</span>
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span><span class="lineCov">      10074 :         if (!timer-&gt;is_continuous) {</span>
+<span class="lineNum">     119 </span><span class="lineCov">      10066 :                 res = timerfd_settime(timer-&gt;fd, 0, &amp;timer-&gt;saved_timer, NULL);</span>
+<span class="lineNum">     120 </span>            :         }
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">      10074 :         ao2_unlock(timer);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">      10074 :         return res;</span>
+<a name="125"><span class="lineNum">     125 </span>            : }</a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">    1221143 : static int timerfd_timer_ack(void *data, unsigned int quantity)</span>
+<span class="lineNum">     128 </span>            : {
+<span class="lineNum">     129 </span><span class="lineCov">    1221143 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     130 </span>            :         uint64_t expirations;
+<span class="lineNum">     131 </span><span class="lineCov">    1221143 :         int read_result = 0;</span>
+<span class="lineNum">     132 </span><span class="lineCov">    1221143 :         int res = 0;</span>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">    1221143 :         ao2_lock(timer);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            :         do {
+<span class="lineNum">     137 </span>            :                 struct itimerspec timer_status;
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">    1221143 :                 if (timerfd_gettime(timer-&gt;fd, &amp;timer_status)) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Call to timerfd_gettime() using handle %d error: %s\n&quot;, timer-&gt;fd, strerror(errno));</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                         expirations = 0;</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                         res = -1;</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     144 </span>            :                 }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">    1221143 :                 if (timer_status.it_value.tv_sec == 0 &amp;&amp; timer_status.it_value.tv_nsec == 0) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;Avoiding read on disarmed timerfd %d\n&quot;, timer-&gt;fd);</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                         expirations = 0;</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     150 </span>            :                 }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">    1221143 :                 read_result = read(timer-&gt;fd, &amp;expirations, sizeof(expirations));</span>
+<span class="lineNum">     153 </span><span class="lineCov">    1221143 :                 if (read_result == -1) {</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                         if (errno == EINTR || errno == EAGAIN) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     156 </span>            :                         } else {
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Read error: %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                                 res = -1;</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     160 </span>            :                         }
+<span class="lineNum">     161 </span>            :                 }
+<span class="lineNum">     162 </span><span class="lineCov">    1221143 :         } while (read_result != sizeof(expirations));</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">    1221143 :         ao2_unlock(timer);</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineCov">    1221143 :         if (expirations != quantity) {</span>
+<span class="lineNum">     167 </span><span class="lineCov">         69 :                 ast_debug(2, &quot;Expected to acknowledge %u ticks but got %llu instead\n&quot;, quantity, (unsigned long long) expirations);</span>
+<span class="lineNum">     168 </span>            :         }
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">    1221143 :         return res;</span>
+<a name="171"><span class="lineNum">     171 </span>            : }</a>
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span><span class="lineCov">        424 : static int timerfd_timer_enable_continuous(void *data)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span><span class="lineCov">        424 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     176 </span>            :         int res;
+<span class="lineNum">     177 </span>            :         static const struct itimerspec continuous_timer = {
+<span class="lineNum">     178 </span>            :                 .it_value.tv_nsec = 1L,
+<span class="lineNum">     179 </span>            :         };
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">        424 :         ao2_lock(timer);</span>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">        424 :         if (timer-&gt;is_continuous) {</span>
+<span class="lineNum">     184 </span>            :                 /*It's already in continous mode, no need to do
+<span class="lineNum">     185 </span>            :                  * anything further
+<span class="lineNum">     186 </span>            :                  */
+<span class="lineNum">     187 </span><span class="lineCov">        165 :                 ao2_unlock(timer);</span>
+<span class="lineNum">     188 </span><span class="lineCov">        165 :                 return 0;</span>
+<span class="lineNum">     189 </span>            :         }
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">        259 :         res = timerfd_settime(timer-&gt;fd, 0, &amp;continuous_timer, &amp;timer-&gt;saved_timer);</span>
+<span class="lineNum">     192 </span><span class="lineCov">        259 :         timer-&gt;is_continuous = 1;</span>
+<span class="lineNum">     193 </span><span class="lineCov">        259 :         ao2_unlock(timer);</span>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">        259 :         return res;</span>
+<a name="196"><span class="lineNum">     196 </span>            : }</a>
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span><span class="lineCov">        184 : static int timerfd_timer_disable_continuous(void *data)</span>
+<span class="lineNum">     199 </span>            : {
+<span class="lineNum">     200 </span><span class="lineCov">        184 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     201 </span>            :         int res;
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">        184 :         ao2_lock(timer);</span>
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineCov">        184 :         if (!timer-&gt;is_continuous) {</span>
+<span class="lineNum">     206 </span>            :                 /* No reason to do anything if we're not
+<span class="lineNum">     207 </span>            :                  * in continuous mode
+<span class="lineNum">     208 </span>            :                  */
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 ao2_unlock(timer);</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     211 </span>            :         }
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">        184 :         res = timerfd_settime(timer-&gt;fd, 0, &amp;timer-&gt;saved_timer, NULL);</span>
+<span class="lineNum">     214 </span><span class="lineCov">        184 :         timer-&gt;is_continuous = 0;</span>
+<span class="lineNum">     215 </span><span class="lineCov">        184 :         memset(&amp;timer-&gt;saved_timer, 0, sizeof(timer-&gt;saved_timer));</span>
+<span class="lineNum">     216 </span><span class="lineCov">        184 :         ao2_unlock(timer);</span>
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineCov">        184 :         return res;</span>
+<a name="219"><span class="lineNum">     219 </span>            : }</a>
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">     354423 : static enum ast_timer_event timerfd_timer_get_event(void *data)</span>
+<span class="lineNum">     222 </span>            : {
+<span class="lineNum">     223 </span><span class="lineCov">     354423 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     224 </span>            :         enum ast_timer_event res;
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">     354423 :         ao2_lock(timer);</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">     354423 :         if (timer-&gt;is_continuous) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">      82874 :                 res = AST_TIMING_EVENT_CONTINUOUS;</span>
+<span class="lineNum">     230 </span>            :         } else {
+<span class="lineNum">     231 </span><span class="lineCov">     271549 :                 res = AST_TIMING_EVENT_EXPIRED;</span>
+<span class="lineNum">     232 </span>            :         }
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineCov">     354423 :         ao2_unlock(timer);</span>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">     354423 :         return res;</span>
+<a name="237"><span class="lineNum">     237 </span>            : }</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">       2639 : static unsigned int timerfd_timer_get_max_rate(void *data)</span>
+<span class="lineNum">     240 </span>            : {
+<span class="lineNum">     241 </span><span class="lineCov">       2639 :         return TIMERFD_MAX_RATE;</span>
+<a name="242"><span class="lineNum">     242 </span>            : }</a>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">       5618 : static int timerfd_timer_fd(void *data)</span>
+<span class="lineNum">     245 </span>            : {
+<span class="lineNum">     246 </span><span class="lineCov">       5618 :         struct timerfd_timer *timer = data;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">       5618 :         return timer-&gt;fd;</span>
+<a name="249"><span class="lineNum">     249 </span>            : }</a>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     252 </span>            : {
+<span class="lineNum">     253 </span>            :         int fd;
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :         /* Make sure we support the necessary clock type */
+<span class="lineNum">     256 </span><span class="lineCov">       1117 :         if ((fd = timerfd_create(CLOCK_MONOTONIC, 0)) &lt; 0) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;timerfd_create() not supported by the kernel.  Not loading.\n&quot;);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     259 </span>            :         }
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">       1117 :         close(fd);</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">       1117 :         if (!(timing_funcs_handle = ast_register_timing_interface(&amp;timerfd_timing))) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="268"><span class="lineNum">     268 </span>            : }</a>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">       1114 : static int unload_module(void)</span>
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span><span class="lineCov">       1114 :         return ast_unregister_timing_interface(timing_funcs_handle);</span>
+<a name="273"><span class="lineNum">     273 </span>            : }</a>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineCov">       3351 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;Timerfd Timing Interface&quot;,</span>
+<span class="lineNum">     276 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     277 </span>            :         .load = load_module,
+<span class="lineNum">     278 </span>            :         .unload = unload_module,
+<span class="lineNum">     279 </span>            :         .load_pri = AST_MODPRI_TIMING,
+<span class="lineNum">     280 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

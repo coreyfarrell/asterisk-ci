@@ -1,0 +1,1016 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/stasis_cache.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - stasis_cache.c<span style="font-size: 80%;"> (source / <a href="stasis_cache.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">349</td>
+            <td class="headerCovTableEntry">399</td>
+            <td class="headerCovTableEntryMed">87.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stasis Message API.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/hashtab.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/stasis_internal.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/stasis.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #ifdef LOW_MEMORY
+<span class="lineNum">      40 </span>            : #define NUM_CACHE_BUCKETS 17
+<span class="lineNum">      41 </span>            : #else
+<span class="lineNum">      42 </span>            : #define NUM_CACHE_BUCKETS 563
+<span class="lineNum">      43 </span>            : #endif
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*! \internal */
+<span class="lineNum">      46 </span>            : struct stasis_cache {
+<span class="lineNum">      47 </span>            :         struct ao2_container *entries;
+<span class="lineNum">      48 </span>            :         snapshot_get_id id_fn;
+<span class="lineNum">      49 </span>            :         cache_aggregate_calc_fn aggregate_calc_fn;
+<span class="lineNum">      50 </span>            :         cache_aggregate_publish_fn aggregate_publish_fn;
+<span class="lineNum">      51 </span>            : };
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : /*! \internal */
+<span class="lineNum">      54 </span>            : struct stasis_caching_topic {
+<span class="lineNum">      55 </span>            :         struct stasis_cache *cache;
+<span class="lineNum">      56 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">      57 </span>            :         struct stasis_topic *original_topic;
+<span class="lineNum">      58 </span>            :         struct stasis_subscription *sub;
+<a name="59"><span class="lineNum">      59 </span>            : };</a>
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span><span class="lineCov">      35370 : static void stasis_caching_topic_dtor(void *obj)</span>
+<span class="lineNum">      62 </span>            : {
+<span class="lineNum">      63 </span><span class="lineCov">      35370 :         struct stasis_caching_topic *caching_topic = obj;</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            :         /* Caching topics contain subscriptions, and must be manually
+<span class="lineNum">      66 </span>            :          * unsubscribed. */
+<span class="lineNum">      67 </span><span class="lineCov">      35370 :         ast_assert(!stasis_subscription_is_subscribed(caching_topic-&gt;sub));</span>
+<span class="lineNum">      68 </span>            :         /* If there are any messages in flight to this subscription; that would
+<span class="lineNum">      69 </span>            :          * be bad. */
+<span class="lineNum">      70 </span><span class="lineCov">      35370 :         ast_assert(stasis_subscription_is_done(caching_topic-&gt;sub));</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineCov">      35370 :         ao2_cleanup(caching_topic-&gt;sub);</span>
+<span class="lineNum">      73 </span><span class="lineCov">      35370 :         caching_topic-&gt;sub = NULL;</span>
+<span class="lineNum">      74 </span><span class="lineCov">      35370 :         ao2_cleanup(caching_topic-&gt;cache);</span>
+<span class="lineNum">      75 </span><span class="lineCov">      35370 :         caching_topic-&gt;cache = NULL;</span>
+<span class="lineNum">      76 </span><span class="lineCov">      35370 :         ao2_cleanup(caching_topic-&gt;topic);</span>
+<span class="lineNum">      77 </span><span class="lineCov">      35370 :         caching_topic-&gt;topic = NULL;</span>
+<span class="lineNum">      78 </span><span class="lineCov">      35370 :         ao2_cleanup(caching_topic-&gt;original_topic);</span>
+<span class="lineNum">      79 </span><span class="lineCov">      35370 :         caching_topic-&gt;original_topic = NULL;</span>
+<a name="80"><span class="lineNum">      80 </span><span class="lineCov">      35370 : }</span></a>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">      32774 : struct stasis_topic *stasis_caching_get_topic(struct stasis_caching_topic *caching_topic)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span><span class="lineCov">      32774 :         return caching_topic-&gt;topic;</span>
+<a name="85"><span class="lineNum">      85 </span>            : }</a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineCov">      40986 : struct stasis_caching_topic *stasis_caching_unsubscribe(struct stasis_caching_topic *caching_topic)</span>
+<span class="lineNum">      88 </span>            : {
+<span class="lineNum">      89 </span><span class="lineCov">      40986 :         if (!caching_topic) {</span>
+<span class="lineNum">      90 </span><span class="lineCov">       5616 :                 return NULL;</span>
+<span class="lineNum">      91 </span>            :         }
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            :         /*
+<span class="lineNum">      94 </span>            :          * The subscription may hold the last reference to this caching
+<span class="lineNum">      95 </span>            :          * topic, but we want to make sure the unsubscribe finishes
+<span class="lineNum">      96 </span>            :          * before kicking of the caching topic's dtor.
+<span class="lineNum">      97 </span>            :          */
+<span class="lineNum">      98 </span><span class="lineCov">      35370 :         ao2_ref(caching_topic, +1);</span>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">      35370 :         if (stasis_subscription_is_subscribed(caching_topic-&gt;sub)) {</span>
+<span class="lineNum">     101 </span>            :                 /*
+<span class="lineNum">     102 </span>            :                  * Increment the reference to hold on to it past the
+<span class="lineNum">     103 </span>            :                  * unsubscribe. Will be cleaned up in dtor.
+<span class="lineNum">     104 </span>            :                  */
+<span class="lineNum">     105 </span><span class="lineCov">      35370 :                 ao2_ref(caching_topic-&gt;sub, +1);</span>
+<span class="lineNum">     106 </span><span class="lineCov">      35370 :                 stasis_unsubscribe(caching_topic-&gt;sub);</span>
+<span class="lineNum">     107 </span>            :         } else {
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;stasis_caching_topic unsubscribed multiple times\n&quot;);</span>
+<span class="lineNum">     109 </span>            :         }
+<span class="lineNum">     110 </span><span class="lineCov">      35370 :         ao2_cleanup(caching_topic);</span>
+<span class="lineNum">     111 </span><span class="lineCov">      35370 :         return NULL;</span>
+<a name="112"><span class="lineNum">     112 </span>            : }</a>
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span><span class="lineCov">       5368 : struct stasis_caching_topic *stasis_caching_unsubscribe_and_join(struct stasis_caching_topic *caching_topic)</span>
+<span class="lineNum">     115 </span>            : {
+<span class="lineNum">     116 </span><span class="lineCov">       5368 :         if (!caching_topic) {</span>
+<span class="lineNum">     117 </span><span class="lineCov">       1123 :                 return NULL;</span>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :         /* Hold a ref past the unsubscribe */
+<span class="lineNum">     121 </span><span class="lineCov">       4245 :         ao2_ref(caching_topic, +1);</span>
+<span class="lineNum">     122 </span><span class="lineCov">       4245 :         stasis_caching_unsubscribe(caching_topic);</span>
+<span class="lineNum">     123 </span><span class="lineCov">       4245 :         stasis_subscription_join(caching_topic-&gt;sub);</span>
+<span class="lineNum">     124 </span><span class="lineCov">       4245 :         ao2_cleanup(caching_topic);</span>
+<span class="lineNum">     125 </span><span class="lineCov">       4245 :         return NULL;</span>
+<span class="lineNum">     126 </span>            : }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : /*!
+<span class="lineNum">     129 </span>            :  * \brief The key for an entry in the cache
+<span class="lineNum">     130 </span>            :  * \note The items in this struct must be immutable for the item in the cache
+<span class="lineNum">     131 </span>            :  */
+<span class="lineNum">     132 </span>            : struct cache_entry_key {
+<span class="lineNum">     133 </span>            :         /*! The message type of the item stored in the cache */
+<span class="lineNum">     134 </span>            :         struct stasis_message_type *type;
+<span class="lineNum">     135 </span>            :         /*! The unique ID of the item stored in the cache */
+<span class="lineNum">     136 </span>            :         const char *id;
+<span class="lineNum">     137 </span>            :         /*! The hash, computed from \c type and \c id */
+<span class="lineNum">     138 </span>            :         unsigned int hash;
+<span class="lineNum">     139 </span>            : };
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            : struct stasis_cache_entry {
+<span class="lineNum">     142 </span>            :         struct cache_entry_key key;
+<span class="lineNum">     143 </span>            :         /*! Aggregate snapshot of the stasis cache. */
+<span class="lineNum">     144 </span>            :         struct stasis_message *aggregate;
+<span class="lineNum">     145 </span>            :         /*! Local entity snapshot of the stasis event. */
+<span class="lineNum">     146 </span>            :         struct stasis_message *local;
+<span class="lineNum">     147 </span>            :         /*! Remote entity snapshots of the stasis event. */
+<span class="lineNum">     148 </span>            :         AST_VECTOR(, struct stasis_message *) remote;
+<a name="149"><span class="lineNum">     149 </span>            : };</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">      15475 : static void cache_entry_dtor(void *obj)</span>
+<span class="lineNum">     152 </span>            : {
+<span class="lineNum">     153 </span><span class="lineCov">      15475 :         struct stasis_cache_entry *entry = obj;</span>
+<span class="lineNum">     154 </span>            :         size_t idx;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">      15475 :         ao2_cleanup(entry-&gt;key.type);</span>
+<span class="lineNum">     157 </span><span class="lineCov">      15475 :         entry-&gt;key.type = NULL;</span>
+<span class="lineNum">     158 </span><span class="lineCov">      15475 :         ast_free((char *) entry-&gt;key.id);</span>
+<span class="lineNum">     159 </span><span class="lineCov">      15475 :         entry-&gt;key.id = NULL;</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">      15475 :         ao2_cleanup(entry-&gt;aggregate);</span>
+<span class="lineNum">     162 </span><span class="lineCov">      15475 :         entry-&gt;aggregate = NULL;</span>
+<span class="lineNum">     163 </span><span class="lineCov">      15475 :         ao2_cleanup(entry-&gt;local);</span>
+<span class="lineNum">     164 </span><span class="lineCov">      15475 :         entry-&gt;local = NULL;</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineCov">      15476 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;entry-&gt;remote); ++idx) {</span>
+<span class="lineNum">     167 </span>            :                 struct stasis_message *remote;
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineCov">          1 :                 remote = AST_VECTOR_GET(&amp;entry-&gt;remote, idx);</span>
+<span class="lineNum">     170 </span><span class="lineCov">          1 :                 ao2_cleanup(remote);</span>
+<span class="lineNum">     171 </span>            :         }
+<span class="lineNum">     172 </span><span class="lineCov">      15475 :         AST_VECTOR_FREE(&amp;entry-&gt;remote);</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">      15475 : }</span></a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">     213745 : static void cache_entry_compute_hash(struct cache_entry_key *key)</span>
+<span class="lineNum">     176 </span>            : {
+<span class="lineNum">     177 </span><span class="lineCov">     213745 :         key-&gt;hash = ast_hashtab_hash_string(stasis_message_type_name(key-&gt;type));</span>
+<span class="lineNum">     178 </span><span class="lineCov">     213745 :         key-&gt;hash += ast_hashtab_hash_string(key-&gt;id);</span>
+<a name="179"><span class="lineNum">     179 </span><span class="lineCov">     213745 : }</span></a>
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">      15838 : static struct stasis_cache_entry *cache_entry_create(struct stasis_message_type *type, const char *id, struct stasis_message *snapshot)</span>
+<span class="lineNum">     182 </span>            : {
+<span class="lineNum">     183 </span>            :         struct stasis_cache_entry *entry;
+<span class="lineNum">     184 </span>            :         int is_remote;
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">      15838 :         ast_assert(id != NULL);</span>
+<span class="lineNum">     187 </span><span class="lineCov">      15838 :         ast_assert(snapshot != NULL);</span>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">      15838 :         if (!type) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     191 </span>            :         }
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineCov">      15838 :         entry = ao2_alloc_options(sizeof(*entry), cache_entry_dtor,</span>
+<span class="lineNum">     194 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     195 </span><span class="lineCov">      15838 :         if (!entry) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">      15838 :         entry-&gt;key.id = ast_strdup(id);</span>
+<span class="lineNum">     200 </span><span class="lineCov">      15838 :         if (!entry-&gt;key.id) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 ao2_cleanup(entry);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span><span class="lineCov">      15838 :         entry-&gt;key.type = ao2_bump(type);</span>
+<span class="lineNum">     205 </span><span class="lineCov">      15838 :         cache_entry_compute_hash(&amp;entry-&gt;key);</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">      15838 :         is_remote = ast_eid_cmp(&amp;ast_eid_default, stasis_message_eid(snapshot)) ? 1 : 0;</span>
+<span class="lineNum">     208 </span><span class="lineCov">      15838 :         if (AST_VECTOR_INIT(&amp;entry-&gt;remote, is_remote)) {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 ao2_cleanup(entry);</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     211 </span>            :         }
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">      15838 :         if (is_remote) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 if (AST_VECTOR_APPEND(&amp;entry-&gt;remote, snapshot)) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         ao2_cleanup(entry);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     217 </span>            :                 }
+<span class="lineNum">     218 </span>            :         } else {
+<span class="lineNum">     219 </span><span class="lineCov">      15838 :                 entry-&gt;local = snapshot;</span>
+<span class="lineNum">     220 </span>            :         }
+<span class="lineNum">     221 </span><span class="lineCov">      15838 :         ao2_bump(snapshot);</span>
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span><span class="lineCov">      15838 :         return entry;</span>
+<a name="224"><span class="lineNum">     224 </span>            : }</a>
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">     224815 : static int cache_entry_hash(const void *obj, int flags)</span>
+<span class="lineNum">     227 </span>            : {
+<span class="lineNum">     228 </span>            :         const struct stasis_cache_entry *object;
+<span class="lineNum">     229 </span>            :         const struct cache_entry_key *key;
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">     224815 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     232 </span><span class="lineCov">     197907 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     233 </span><span class="lineCov">     197907 :                 key = obj;</span>
+<span class="lineNum">     234 </span><span class="lineCov">     197907 :                 break;</span>
+<span class="lineNum">     235 </span><span class="lineCov">      26908 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     236 </span><span class="lineCov">      26908 :                 object = obj;</span>
+<span class="lineNum">     237 </span><span class="lineCov">      26908 :                 key = &amp;object-&gt;key;</span>
+<span class="lineNum">     238 </span><span class="lineCov">      26908 :                 break;</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     240 </span>            :                 /* Hash can only work on something with a full key. */
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     243 </span>            :         }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">     224815 :         return (int)key-&gt;hash;</span>
+<a name="246"><span class="lineNum">     246 </span>            : }</a>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">     185660 : static int cache_entry_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     249 </span>            : {
+<span class="lineNum">     250 </span><span class="lineCov">     185660 :         const struct stasis_cache_entry *object_left = obj;</span>
+<span class="lineNum">     251 </span><span class="lineCov">     185660 :         const struct stasis_cache_entry *object_right = arg;</span>
+<span class="lineNum">     252 </span><span class="lineCov">     185660 :         const struct cache_entry_key *right_key = arg;</span>
+<span class="lineNum">     253 </span>            :         int cmp;
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">     185660 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 right_key = &amp;object_right-&gt;key;</span>
+<span class="lineNum">     258 </span>            :                 /* Fall through */
+<span class="lineNum">     259 </span><span class="lineCov">     185660 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     260 </span><span class="lineCov">     371320 :                 cmp = object_left-&gt;key.type != right_key-&gt;type</span>
+<span class="lineNum">     261 </span><span class="lineCov">     185660 :                         || strcmp(object_left-&gt;key.id, right_key-&gt;id);</span>
+<span class="lineNum">     262 </span><span class="lineCov">     185660 :                 break;</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     264 </span>            :                 /* Not supported by container */
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                 cmp = -1;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     269 </span>            :                 /*
+<span class="lineNum">     270 </span>            :                  * What arg points to is specific to this traversal callback
+<span class="lineNum">     271 </span>            :                  * and has no special meaning to astobj2.
+<span class="lineNum">     272 </span>            :                  */
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     275 </span>            :         }
+<span class="lineNum">     276 </span><span class="lineCov">     185660 :         if (cmp) {</span>
+<span class="lineNum">     277 </span><span class="lineCov">       5276 :                 return 0;</span>
+<span class="lineNum">     278 </span>            :         }
+<span class="lineNum">     279 </span>            :         /*
+<span class="lineNum">     280 </span>            :          * At this point the traversal callback is identical to a sorted
+<span class="lineNum">     281 </span>            :          * container.
+<span class="lineNum">     282 </span>            :          */
+<span class="lineNum">     283 </span><span class="lineCov">     180384 :         return CMP_MATCH;</span>
+<a name="284"><span class="lineNum">     284 </span>            : }</a>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">       7174 : static void cache_dtor(void *obj)</span>
+<span class="lineNum">     287 </span>            : {
+<span class="lineNum">     288 </span><span class="lineCov">       7174 :         struct stasis_cache *cache = obj;</span>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">       7174 :         ao2_cleanup(cache-&gt;entries);</span>
+<span class="lineNum">     291 </span><span class="lineCov">       7174 :         cache-&gt;entries = NULL;</span>
+<a name="292"><span class="lineNum">     292 </span><span class="lineCov">       7174 : }</span></a>
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">       7874 : struct stasis_cache *stasis_cache_create_full(snapshot_get_id id_fn,</span>
+<span class="lineNum">     295 </span>            :         cache_aggregate_calc_fn aggregate_calc_fn,
+<span class="lineNum">     296 </span>            :         cache_aggregate_publish_fn aggregate_publish_fn)
+<span class="lineNum">     297 </span>            : {
+<span class="lineNum">     298 </span>            :         struct stasis_cache *cache;
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">       7874 :         cache = ao2_alloc_options(sizeof(*cache), cache_dtor,</span>
+<span class="lineNum">     301 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     302 </span><span class="lineCov">       7874 :         if (!cache) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     304 </span>            :         }
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">       7874 :         cache-&gt;entries = ao2_container_alloc_hash(AO2_ALLOC_OPT_LOCK_RWLOCK, 0,</span>
+<span class="lineNum">     307 </span>            :                 NUM_CACHE_BUCKETS, cache_entry_hash, NULL, cache_entry_cmp);
+<span class="lineNum">     308 </span><span class="lineCov">       7874 :         if (!cache-&gt;entries) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 ao2_cleanup(cache);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     311 </span>            :         }
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span><span class="lineCov">       7874 :         cache-&gt;id_fn = id_fn;</span>
+<span class="lineNum">     314 </span><span class="lineCov">       7874 :         cache-&gt;aggregate_calc_fn = aggregate_calc_fn;</span>
+<span class="lineNum">     315 </span><span class="lineCov">       7874 :         cache-&gt;aggregate_publish_fn = aggregate_publish_fn;</span>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineCov">       7874 :         return cache;</span>
+<a name="318"><span class="lineNum">     318 </span>            : }</a>
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">       6749 : struct stasis_cache *stasis_cache_create(snapshot_get_id id_fn)</span>
+<span class="lineNum">     321 </span>            : {
+<span class="lineNum">     322 </span><span class="lineCov">       6749 :         return stasis_cache_create_full(id_fn, NULL, NULL);</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineCov">       5889 : struct stasis_message *stasis_cache_entry_get_aggregate(struct stasis_cache_entry *entry)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineCov">       5889 :         return entry-&gt;aggregate;</span>
+<a name="328"><span class="lineNum">     328 </span>            : }</a>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">       5897 : struct stasis_message *stasis_cache_entry_get_local(struct stasis_cache_entry *entry)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span><span class="lineCov">       5897 :         return entry-&gt;local;</span>
+<a name="333"><span class="lineNum">     333 </span>            : }</a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineCov">       5907 : struct stasis_message *stasis_cache_entry_get_remote(struct stasis_cache_entry *entry, int idx)</span>
+<span class="lineNum">     336 </span>            : {
+<span class="lineNum">     337 </span><span class="lineCov">       5907 :         if (idx &lt; AST_VECTOR_SIZE(&amp;entry-&gt;remote)) {</span>
+<span class="lineNum">     338 </span><span class="lineCov">         10 :                 return AST_VECTOR_GET(&amp;entry-&gt;remote, idx);</span>
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span><span class="lineCov">       5897 :         return NULL;</span>
+<span class="lineNum">     341 </span>            : }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            : /*!
+<span class="lineNum">     344 </span>            :  * \internal
+<span class="lineNum">     345 </span>            :  * \brief Find the cache entry in the cache entries container.
+<span class="lineNum">     346 </span>            :  *
+<span class="lineNum">     347 </span>            :  * \param entries Container of cached entries.
+<span class="lineNum">     348 </span>            :  * \param type Type of message to retrieve the cache entry.
+<span class="lineNum">     349 </span>            :  * \param id Identity of the snapshot to retrieve the cache entry.
+<span class="lineNum">     350 </span>            :  *
+<span class="lineNum">     351 </span>            :  * \note The entries container is already locked.
+<span class="lineNum">     352 </span>            :  *
+<span class="lineNum">     353 </span>            :  * \retval Cache-entry on success.
+<a name="354"><span class="lineNum">     354 </span>            :  * \retval NULL Not in cache.</a>
+<span class="lineNum">     355 </span>            :  */
+<span class="lineNum">     356 </span><span class="lineCov">     197907 : static struct stasis_cache_entry *cache_find(struct ao2_container *entries, struct stasis_message_type *type, const char *id)</span>
+<span class="lineNum">     357 </span>            : {
+<span class="lineNum">     358 </span>            :         struct cache_entry_key search_key;
+<span class="lineNum">     359 </span>            :         struct stasis_cache_entry *entry;
+<span class="lineNum">     360 </span>            : 
+<span class="lineNum">     361 </span><span class="lineCov">     197907 :         search_key.type = type;</span>
+<span class="lineNum">     362 </span><span class="lineCov">     197907 :         search_key.id = id;</span>
+<span class="lineNum">     363 </span><span class="lineCov">     197907 :         cache_entry_compute_hash(&amp;search_key);</span>
+<span class="lineNum">     364 </span><span class="lineCov">     197907 :         entry = ao2_find(entries, &amp;search_key, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span>            :         /* Ensure that what we looked for is what we found. */
+<span class="lineNum">     367 </span><span class="lineCov">     197907 :         ast_assert(!entry</span>
+<span class="lineNum">     368 </span>            :                 || (!strcmp(stasis_message_type_name(entry-&gt;key.type),
+<span class="lineNum">     369 </span>            :                         stasis_message_type_name(type)) &amp;&amp; !strcmp(entry-&gt;key.id, id)));
+<span class="lineNum">     370 </span><span class="lineCov">     197907 :         return entry;</span>
+<span class="lineNum">     371 </span>            : }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span>            : /*!
+<span class="lineNum">     374 </span>            :  * \internal
+<span class="lineNum">     375 </span>            :  * \brief Remove the stasis snapshot in the cache entry determined by eid.
+<span class="lineNum">     376 </span>            :  *
+<span class="lineNum">     377 </span>            :  * \param entries Container of cached entries.
+<span class="lineNum">     378 </span>            :  * \param cached_entry The entry to remove the snapshot from.
+<span class="lineNum">     379 </span>            :  * \param eid Which snapshot in the cached entry.
+<span class="lineNum">     380 </span>            :  *
+<span class="lineNum">     381 </span>            :  * \note The entries container is already locked.
+<span class="lineNum">     382 </span>            :  *
+<a name="383"><span class="lineNum">     383 </span>            :  * \return Previous stasis entry snapshot.</a>
+<span class="lineNum">     384 </span>            :  */
+<span class="lineNum">     385 </span><span class="lineCov">      11072 : static struct stasis_message *cache_remove(struct ao2_container *entries, struct stasis_cache_entry *cached_entry, const struct ast_eid *eid)</span>
+<span class="lineNum">     386 </span>            : {
+<span class="lineNum">     387 </span>            :         struct stasis_message *old_snapshot;
+<span class="lineNum">     388 </span>            :         int is_remote;
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineCov">      11072 :         is_remote = ast_eid_cmp(eid, &amp;ast_eid_default);</span>
+<span class="lineNum">     391 </span><span class="lineCov">      11072 :         if (!is_remote) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">      11070 :                 old_snapshot = cached_entry-&gt;local;</span>
+<span class="lineNum">     393 </span><span class="lineCov">      11070 :                 cached_entry-&gt;local = NULL;</span>
+<span class="lineNum">     394 </span>            :         } else {
+<span class="lineNum">     395 </span>            :                 int idx;
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineCov">          2 :                 old_snapshot = NULL;</span>
+<span class="lineNum">     398 </span><span class="lineCov">          2 :                 for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;cached_entry-&gt;remote); ++idx) {</span>
+<span class="lineNum">     399 </span>            :                         struct stasis_message *cur;
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span><span class="lineCov">          2 :                         cur = AST_VECTOR_GET(&amp;cached_entry-&gt;remote, idx);</span>
+<span class="lineNum">     402 </span><span class="lineCov">          2 :                         if (!ast_eid_cmp(eid, stasis_message_eid(cur))) {</span>
+<span class="lineNum">     403 </span><span class="lineCov">          2 :                                 old_snapshot = AST_VECTOR_REMOVE_UNORDERED(&amp;cached_entry-&gt;remote, idx);</span>
+<span class="lineNum">     404 </span><span class="lineCov">          2 :                                 break;</span>
+<span class="lineNum">     405 </span>            :                         }
+<span class="lineNum">     406 </span>            :                 }
+<span class="lineNum">     407 </span>            :         }
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">      11072 :         if (!cached_entry-&gt;local &amp;&amp; !AST_VECTOR_SIZE(&amp;cached_entry-&gt;remote)) {</span>
+<span class="lineNum">     410 </span><span class="lineCov">      11070 :                 ao2_unlink_flags(entries, cached_entry, OBJ_NOLOCK);</span>
+<span class="lineNum">     411 </span>            :         }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineCov">      11072 :         return old_snapshot;</span>
+<span class="lineNum">     414 </span>            : }
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            : /*!
+<span class="lineNum">     417 </span>            :  * \internal
+<span class="lineNum">     418 </span>            :  * \brief Update the stasis snapshot in the cache entry determined by eid.
+<span class="lineNum">     419 </span>            :  *
+<span class="lineNum">     420 </span>            :  * \param cached_entry The entry to remove the snapshot from.
+<span class="lineNum">     421 </span>            :  * \param eid Which snapshot in the cached entry.
+<span class="lineNum">     422 </span>            :  * \param new_snapshot Snapshot to replace the old snapshot.
+<span class="lineNum">     423 </span>            :  *
+<a name="424"><span class="lineNum">     424 </span>            :  * \return Previous stasis entry snapshot.</a>
+<span class="lineNum">     425 </span>            :  */
+<span class="lineNum">     426 </span><span class="lineCov">     111737 : static struct stasis_message *cache_udpate(struct stasis_cache_entry *cached_entry, const struct ast_eid *eid, struct stasis_message *new_snapshot)</span>
+<span class="lineNum">     427 </span>            : {
+<span class="lineNum">     428 </span>            :         struct stasis_message *old_snapshot;
+<span class="lineNum">     429 </span>            :         int is_remote;
+<span class="lineNum">     430 </span>            :         int idx;
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">     111737 :         is_remote = ast_eid_cmp(eid, &amp;ast_eid_default);</span>
+<span class="lineNum">     433 </span><span class="lineCov">     111737 :         if (!is_remote) {</span>
+<span class="lineNum">     434 </span><span class="lineCov">     111732 :                 old_snapshot = cached_entry-&gt;local;</span>
+<span class="lineNum">     435 </span><span class="lineCov">     111732 :                 cached_entry-&gt;local = ao2_bump(new_snapshot);</span>
+<span class="lineNum">     436 </span><span class="lineCov">     111732 :                 return old_snapshot;</span>
+<span class="lineNum">     437 </span>            :         }
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">          5 :         old_snapshot = NULL;</span>
+<span class="lineNum">     440 </span><span class="lineCov">          7 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;cached_entry-&gt;remote); ++idx) {</span>
+<span class="lineNum">     441 </span>            :                 struct stasis_message *cur;
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">          4 :                 cur = AST_VECTOR_GET(&amp;cached_entry-&gt;remote, idx);</span>
+<span class="lineNum">     444 </span><span class="lineCov">          4 :                 if (!ast_eid_cmp(eid, stasis_message_eid(cur))) {</span>
+<span class="lineNum">     445 </span><span class="lineCov">          2 :                         old_snapshot = AST_VECTOR_REMOVE_UNORDERED(&amp;cached_entry-&gt;remote, idx);</span>
+<span class="lineNum">     446 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     447 </span>            :                 }
+<span class="lineNum">     448 </span>            :         }
+<span class="lineNum">     449 </span><span class="lineCov">          5 :         if (!AST_VECTOR_APPEND(&amp;cached_entry-&gt;remote, new_snapshot)) {</span>
+<span class="lineNum">     450 </span><span class="lineCov">          5 :                 ao2_bump(new_snapshot);</span>
+<span class="lineNum">     451 </span>            :         }
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">          5 :         return old_snapshot;</span>
+<span class="lineNum">     454 </span>            : }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span>            : struct cache_put_snapshots {
+<span class="lineNum">     457 </span>            :         /*! Old cache eid snapshot. */
+<span class="lineNum">     458 </span>            :         struct stasis_message *old;
+<span class="lineNum">     459 </span>            :         /*! Old cache aggregate snapshot. */
+<span class="lineNum">     460 </span>            :         struct stasis_message *aggregate_old;
+<span class="lineNum">     461 </span>            :         /*! New cache aggregate snapshot. */
+<span class="lineNum">     462 </span>            :         struct stasis_message *aggregate_new;
+<a name="463"><span class="lineNum">     463 </span>            : };</a>
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span><span class="lineCov">     138647 : static struct cache_put_snapshots cache_put(struct stasis_cache *cache,</span>
+<span class="lineNum">     466 </span>            :         struct stasis_message_type *type, const char *id, const struct ast_eid *eid,
+<span class="lineNum">     467 </span>            :         struct stasis_message *new_snapshot)
+<span class="lineNum">     468 </span>            : {
+<span class="lineNum">     469 </span>            :         struct stasis_cache_entry *cached_entry;
+<span class="lineNum">     470 </span>            :         struct cache_put_snapshots snapshots;
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">     138647 :         ast_assert(cache-&gt;entries != NULL);</span>
+<span class="lineNum">     473 </span><span class="lineCov">     138647 :         ast_assert(eid != NULL);/* Aggregate snapshots not allowed to be put directly. */</span>
+<span class="lineNum">     474 </span><span class="lineCov">     138647 :         ast_assert(new_snapshot == NULL ||</span>
+<span class="lineNum">     475 </span>            :                 type == stasis_message_type(new_snapshot));
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span><span class="lineCov">     138647 :         memset(&amp;snapshots, 0, sizeof(snapshots));</span>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineCov">     138647 :         ao2_wrlock(cache-&gt;entries);</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">     138647 :         cached_entry = cache_find(cache-&gt;entries, type, id);</span>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span>            :         /* Update the eid snapshot. */
+<span class="lineNum">     484 </span><span class="lineCov">     138647 :         if (!new_snapshot) {</span>
+<span class="lineNum">     485 </span>            :                 /* Remove snapshot from cache */
+<span class="lineNum">     486 </span><span class="lineCov">      11072 :                 if (cached_entry) {</span>
+<span class="lineNum">     487 </span><span class="lineCov">      11072 :                         snapshots.old = cache_remove(cache-&gt;entries, cached_entry, eid);</span>
+<span class="lineNum">     488 </span>            :                 }
+<span class="lineNum">     489 </span><span class="lineCov">     127575 :         } else if (cached_entry) {</span>
+<span class="lineNum">     490 </span>            :                 /* Update snapshot in cache */
+<span class="lineNum">     491 </span><span class="lineCov">     111737 :                 snapshots.old = cache_udpate(cached_entry, eid, new_snapshot);</span>
+<span class="lineNum">     492 </span>            :         } else {
+<span class="lineNum">     493 </span>            :                 /* Insert into the cache */
+<span class="lineNum">     494 </span><span class="lineCov">      15838 :                 cached_entry = cache_entry_create(type, id, new_snapshot);</span>
+<span class="lineNum">     495 </span><span class="lineCov">      15838 :                 if (cached_entry) {</span>
+<span class="lineNum">     496 </span><span class="lineCov">      15838 :                         ao2_link_flags(cache-&gt;entries, cached_entry, OBJ_NOLOCK);</span>
+<span class="lineNum">     497 </span>            :                 }
+<span class="lineNum">     498 </span>            :         }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span>            :         /* Update the aggregate snapshot. */
+<span class="lineNum">     501 </span><span class="lineCov">     138647 :         if (cache-&gt;aggregate_calc_fn &amp;&amp; cached_entry) {</span>
+<span class="lineNum">     502 </span><span class="lineCov">       5897 :                 snapshots.aggregate_new = cache-&gt;aggregate_calc_fn(cached_entry, new_snapshot);</span>
+<span class="lineNum">     503 </span><span class="lineCov">       5897 :                 snapshots.aggregate_old = cached_entry-&gt;aggregate;</span>
+<span class="lineNum">     504 </span><span class="lineCov">       5897 :                 cached_entry-&gt;aggregate = ao2_bump(snapshots.aggregate_new);</span>
+<span class="lineNum">     505 </span>            :         }
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineCov">     138647 :         ao2_unlock(cache-&gt;entries);</span>
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span><span class="lineCov">     138647 :         ao2_cleanup(cached_entry);</span>
+<span class="lineNum">     510 </span><span class="lineCov">     138647 :         return snapshots;</span>
+<span class="lineNum">     511 </span>            : }
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            : /*!
+<span class="lineNum">     514 </span>            :  * \internal
+<span class="lineNum">     515 </span>            :  * \brief Dump all entity snapshots in the cache entry into the given container.
+<span class="lineNum">     516 </span>            :  *
+<span class="lineNum">     517 </span>            :  * \param snapshots Container to put all snapshots in the cache entry.
+<span class="lineNum">     518 </span>            :  * \param entry Cache entry to use.
+<span class="lineNum">     519 </span>            :  *
+<span class="lineNum">     520 </span>            :  * \retval 0 on success.
+<a name="521"><span class="lineNum">     521 </span>            :  * \retval non-zero on error.</a>
+<span class="lineNum">     522 </span>            :  */
+<span class="lineNum">     523 </span><span class="lineCov">        889 : static int cache_entry_dump(struct ao2_container *snapshots, const struct stasis_cache_entry *entry)</span>
+<span class="lineNum">     524 </span>            : {
+<span class="lineNum">     525 </span>            :         int idx;
+<span class="lineNum">     526 </span><span class="lineCov">        889 :         int err = 0;</span>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineCov">        889 :         ast_assert(snapshots != NULL);</span>
+<span class="lineNum">     529 </span><span class="lineCov">        889 :         ast_assert(entry != NULL);</span>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span>            :         /* The aggregate snapshot is not a snapshot from an entity. */
+<span class="lineNum">     532 </span>            : 
+<span class="lineNum">     533 </span><span class="lineCov">        889 :         if (entry-&gt;local) {</span>
+<span class="lineNum">     534 </span><span class="lineCov">        889 :                 err |= !ao2_link(snapshots, entry-&gt;local);</span>
+<span class="lineNum">     535 </span>            :         }
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">        900 :         for (idx = 0; !err &amp;&amp; idx &lt; AST_VECTOR_SIZE(&amp;entry-&gt;remote); ++idx) {</span>
+<span class="lineNum">     538 </span>            :                 struct stasis_message *snapshot;
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineCov">         11 :                 snapshot = AST_VECTOR_GET(&amp;entry-&gt;remote, idx);</span>
+<span class="lineNum">     541 </span><span class="lineCov">         11 :                 err |= !ao2_link(snapshots, snapshot);</span>
+<span class="lineNum">     542 </span>            :         }
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">        889 :         return err;</span>
+<a name="545"><span class="lineNum">     545 </span>            : }</a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">          1 : struct ao2_container *stasis_cache_get_all(struct stasis_cache *cache, struct stasis_message_type *type, const char *id)</span>
+<span class="lineNum">     548 </span>            : {
+<span class="lineNum">     549 </span>            :         struct stasis_cache_entry *cached_entry;
+<span class="lineNum">     550 </span>            :         struct ao2_container *found;
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineCov">          1 :         ast_assert(cache != NULL);</span>
+<span class="lineNum">     553 </span><span class="lineCov">          1 :         ast_assert(cache-&gt;entries != NULL);</span>
+<span class="lineNum">     554 </span><span class="lineCov">          1 :         ast_assert(id != NULL);</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineCov">          1 :         if (!type) {</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     558 </span>            :         }
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineCov">          1 :         found = ao2_container_alloc_list(AO2_ALLOC_OPT_LOCK_NOLOCK, 0, NULL, NULL);</span>
+<span class="lineNum">     561 </span><span class="lineCov">          1 :         if (!found) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     563 </span>            :         }
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span><span class="lineCov">          1 :         ao2_rdlock(cache-&gt;entries);</span>
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span><span class="lineCov">          1 :         cached_entry = cache_find(cache-&gt;entries, type, id);</span>
+<span class="lineNum">     568 </span><span class="lineCov">          1 :         if (cached_entry &amp;&amp; cache_entry_dump(found, cached_entry)) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :                 ao2_cleanup(found);</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                 found = NULL;</span>
+<span class="lineNum">     571 </span>            :         }
+<span class="lineNum">     572 </span>            : 
+<span class="lineNum">     573 </span><span class="lineCov">          1 :         ao2_unlock(cache-&gt;entries);</span>
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span><span class="lineCov">          1 :         ao2_cleanup(cached_entry);</span>
+<span class="lineNum">     576 </span><span class="lineCov">          1 :         return found;</span>
+<span class="lineNum">     577 </span>            : }
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span>            : /*!
+<span class="lineNum">     580 </span>            :  * \internal
+<span class="lineNum">     581 </span>            :  * \brief Retrieve an item from the cache entry for a specific eid.
+<span class="lineNum">     582 </span>            :  *
+<span class="lineNum">     583 </span>            :  * \param entry Cache entry to use.
+<span class="lineNum">     584 </span>            :  * \param eid Specific entity id to retrieve.  NULL for aggregate.
+<span class="lineNum">     585 </span>            :  *
+<span class="lineNum">     586 </span>            :  * \note The returned snapshot has not had its reference bumped.
+<span class="lineNum">     587 </span>            :  *
+<span class="lineNum">     588 </span>            :  * \retval Snapshot from the cache.
+<a name="589"><span class="lineNum">     589 </span>            :  * \retval \c NULL if snapshot is not found.</a>
+<span class="lineNum">     590 </span>            :  */
+<span class="lineNum">     591 </span><span class="lineCov">      60405 : static struct stasis_message *cache_entry_by_eid(const struct stasis_cache_entry *entry, const struct ast_eid *eid)</span>
+<span class="lineNum">     592 </span>            : {
+<span class="lineNum">     593 </span>            :         int is_remote;
+<span class="lineNum">     594 </span>            :         int idx;
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">      60405 :         if (!eid) {</span>
+<span class="lineNum">     597 </span>            :                 /* Get aggregate. */
+<span class="lineNum">     598 </span><span class="lineCov">        209 :                 return entry-&gt;aggregate;</span>
+<span class="lineNum">     599 </span>            :         }
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span>            :         /* Get snapshot with specific eid. */
+<span class="lineNum">     602 </span><span class="lineCov">      60196 :         is_remote = ast_eid_cmp(eid, &amp;ast_eid_default);</span>
+<span class="lineNum">     603 </span><span class="lineCov">      60196 :         if (!is_remote) {</span>
+<span class="lineNum">     604 </span><span class="lineCov">      60194 :                 return entry-&gt;local;</span>
+<span class="lineNum">     605 </span>            :         }
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineCov">          2 :         for (idx = 0; idx &lt; AST_VECTOR_SIZE(&amp;entry-&gt;remote); ++idx) {</span>
+<span class="lineNum">     608 </span>            :                 struct stasis_message *cur;
+<span class="lineNum">     609 </span>            : 
+<span class="lineNum">     610 </span><span class="lineCov">          1 :                 cur = AST_VECTOR_GET(&amp;entry-&gt;remote, idx);</span>
+<span class="lineNum">     611 </span><span class="lineCov">          1 :                 if (!ast_eid_cmp(eid, stasis_message_eid(cur))) {</span>
+<span class="lineNum">     612 </span><span class="lineCov">          1 :                         return cur;</span>
+<span class="lineNum">     613 </span>            :                 }
+<span class="lineNum">     614 </span>            :         }
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">          1 :         return NULL;</span>
+<a name="617"><span class="lineNum">     617 </span>            : }</a>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">      59259 : struct stasis_message *stasis_cache_get_by_eid(struct stasis_cache *cache, struct stasis_message_type *type, const char *id, const struct ast_eid *eid)</span>
+<span class="lineNum">     620 </span>            : {
+<span class="lineNum">     621 </span>            :         struct stasis_cache_entry *cached_entry;
+<span class="lineNum">     622 </span><span class="lineCov">      59259 :         struct stasis_message *snapshot = NULL;</span>
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineCov">      59259 :         ast_assert(cache != NULL);</span>
+<span class="lineNum">     625 </span><span class="lineCov">      59259 :         ast_assert(cache-&gt;entries != NULL);</span>
+<span class="lineNum">     626 </span><span class="lineCov">      59259 :         ast_assert(id != NULL);</span>
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span><span class="lineCov">      59259 :         if (!type) {</span>
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     630 </span>            :         }
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">      59259 :         ao2_rdlock(cache-&gt;entries);</span>
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">      59259 :         cached_entry = cache_find(cache-&gt;entries, type, id);</span>
+<span class="lineNum">     635 </span><span class="lineCov">      59259 :         if (cached_entry) {</span>
+<span class="lineNum">     636 </span><span class="lineCov">      57574 :                 snapshot = cache_entry_by_eid(cached_entry, eid);</span>
+<span class="lineNum">     637 </span><span class="lineCov">      57574 :                 ao2_bump(snapshot);</span>
+<span class="lineNum">     638 </span>            :         }
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineCov">      59259 :         ao2_unlock(cache-&gt;entries);</span>
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span><span class="lineCov">      59259 :         ao2_cleanup(cached_entry);</span>
+<span class="lineNum">     643 </span><span class="lineCov">      59259 :         return snapshot;</span>
+<a name="644"><span class="lineNum">     644 </span>            : }</a>
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span><span class="lineCov">      58820 : struct stasis_message *stasis_cache_get(struct stasis_cache *cache, struct stasis_message_type *type, const char *id)</span>
+<span class="lineNum">     647 </span>            : {
+<span class="lineNum">     648 </span><span class="lineCov">      58820 :         return stasis_cache_get_by_eid(cache, type, id, &amp;ast_eid_default);</span>
+<span class="lineNum">     649 </span>            : }
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span>            : struct cache_dump_data {
+<span class="lineNum">     652 </span>            :         struct ao2_container *container;
+<span class="lineNum">     653 </span>            :         struct stasis_message_type *type;
+<span class="lineNum">     654 </span>            :         const struct ast_eid *eid;
+<a name="655"><span class="lineNum">     655 </span>            : };</a>
+<span class="lineNum">     656 </span>            : 
+<span class="lineNum">     657 </span><span class="lineCov">       2832 : static int cache_dump_by_eid_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     658 </span>            : {
+<span class="lineNum">     659 </span><span class="lineCov">       2832 :         struct cache_dump_data *cache_dump = arg;</span>
+<span class="lineNum">     660 </span><span class="lineCov">       2832 :         struct stasis_cache_entry *entry = obj;</span>
+<span class="lineNum">     661 </span>            : 
+<span class="lineNum">     662 </span><span class="lineCov">       2832 :         if (!cache_dump-&gt;type || entry-&gt;key.type == cache_dump-&gt;type) {</span>
+<span class="lineNum">     663 </span>            :                 struct stasis_message *snapshot;
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span><span class="lineCov">       2831 :                 snapshot = cache_entry_by_eid(entry, cache_dump-&gt;eid);</span>
+<span class="lineNum">     666 </span><span class="lineCov">       2831 :                 if (snapshot) {</span>
+<span class="lineNum">     667 </span><span class="lineCov">       2830 :                         if (!ao2_link(cache_dump-&gt;container, snapshot)) {</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                                 ao2_cleanup(cache_dump-&gt;container);</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :                                 cache_dump-&gt;container = NULL;</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                                 return CMP_STOP;</span>
+<span class="lineNum">     671 </span>            :                         }
+<span class="lineNum">     672 </span>            :                 }
+<span class="lineNum">     673 </span>            :         }
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineCov">       2832 :         return 0;</span>
+<a name="676"><span class="lineNum">     676 </span>            : }</a>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span><span class="lineCov">       2286 : struct ao2_container *stasis_cache_dump_by_eid(struct stasis_cache *cache, struct stasis_message_type *type, const struct ast_eid *eid)</span>
+<span class="lineNum">     679 </span>            : {
+<span class="lineNum">     680 </span>            :         struct cache_dump_data cache_dump;
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span><span class="lineCov">       2286 :         ast_assert(cache != NULL);</span>
+<span class="lineNum">     683 </span><span class="lineCov">       2286 :         ast_assert(cache-&gt;entries != NULL);</span>
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineCov">       2286 :         cache_dump.eid = eid;</span>
+<span class="lineNum">     686 </span><span class="lineCov">       2286 :         cache_dump.type = type;</span>
+<span class="lineNum">     687 </span><span class="lineCov">       2286 :         cache_dump.container = ao2_container_alloc_list(AO2_ALLOC_OPT_LOCK_NOLOCK, 0, NULL, NULL);</span>
+<span class="lineNum">     688 </span><span class="lineCov">       2286 :         if (!cache_dump.container) {</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     690 </span>            :         }
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span><span class="lineCov">       2286 :         ao2_callback(cache-&gt;entries, OBJ_MULTIPLE | OBJ_NODATA, cache_dump_by_eid_cb, &amp;cache_dump);</span>
+<span class="lineNum">     693 </span><span class="lineCov">       2286 :         return cache_dump.container;</span>
+<a name="694"><span class="lineNum">     694 </span>            : }</a>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">       2283 : struct ao2_container *stasis_cache_dump(struct stasis_cache *cache, struct stasis_message_type *type)</span>
+<span class="lineNum">     697 </span>            : {
+<span class="lineNum">     698 </span><span class="lineCov">       2283 :         return stasis_cache_dump_by_eid(cache, type, &amp;ast_eid_default);</span>
+<a name="699"><span class="lineNum">     699 </span>            : }</a>
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">        888 : static int cache_dump_all_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     702 </span>            : {
+<span class="lineNum">     703 </span><span class="lineCov">        888 :         struct cache_dump_data *cache_dump = arg;</span>
+<span class="lineNum">     704 </span><span class="lineCov">        888 :         struct stasis_cache_entry *entry = obj;</span>
+<span class="lineNum">     705 </span>            : 
+<span class="lineNum">     706 </span><span class="lineCov">        888 :         if (!cache_dump-&gt;type || entry-&gt;key.type == cache_dump-&gt;type) {</span>
+<span class="lineNum">     707 </span><span class="lineCov">        888 :                 if (cache_entry_dump(cache_dump-&gt;container, entry)) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :                         ao2_cleanup(cache_dump-&gt;container);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :                         cache_dump-&gt;container = NULL;</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                         return CMP_STOP;</span>
+<span class="lineNum">     711 </span>            :                 }
+<span class="lineNum">     712 </span>            :         }
+<span class="lineNum">     713 </span>            : 
+<span class="lineNum">     714 </span><span class="lineCov">        888 :         return 0;</span>
+<a name="715"><span class="lineNum">     715 </span>            : }</a>
+<span class="lineNum">     716 </span>            : 
+<span class="lineNum">     717 </span><span class="lineCov">       1129 : struct ao2_container *stasis_cache_dump_all(struct stasis_cache *cache, struct stasis_message_type *type)</span>
+<span class="lineNum">     718 </span>            : {
+<span class="lineNum">     719 </span>            :         struct cache_dump_data cache_dump;
+<span class="lineNum">     720 </span>            : 
+<span class="lineNum">     721 </span><span class="lineCov">       1129 :         ast_assert(cache != NULL);</span>
+<span class="lineNum">     722 </span><span class="lineCov">       1129 :         ast_assert(cache-&gt;entries != NULL);</span>
+<span class="lineNum">     723 </span>            : 
+<span class="lineNum">     724 </span><span class="lineCov">       1129 :         cache_dump.eid = NULL;</span>
+<span class="lineNum">     725 </span><span class="lineCov">       1129 :         cache_dump.type = type;</span>
+<span class="lineNum">     726 </span><span class="lineCov">       1129 :         cache_dump.container = ao2_container_alloc_list(AO2_ALLOC_OPT_LOCK_NOLOCK, 0, NULL, NULL);</span>
+<span class="lineNum">     727 </span><span class="lineCov">       1129 :         if (!cache_dump.container) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     729 </span>            :         }
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineCov">       1129 :         ao2_callback(cache-&gt;entries, OBJ_MULTIPLE | OBJ_NODATA, cache_dump_all_cb, &amp;cache_dump);</span>
+<span class="lineNum">     732 </span><span class="lineCov">       1129 :         return cache_dump.container;</span>
+<a name="733"><span class="lineNum">     733 </span>            : }</a>
+<a name="734"><span class="lineNum">     734 </span>            : </a>
+<span class="lineNum">     735 </span><span class="lineCov">     481699 : STASIS_MESSAGE_TYPE_DEFN(stasis_cache_clear_type);</span>
+<a name="736"><span class="lineNum">     736 </span><span class="lineCov">    1754591 : STASIS_MESSAGE_TYPE_DEFN(stasis_cache_update_type);</span></a>
+<span class="lineNum">     737 </span>            : 
+<span class="lineNum">     738 </span><span class="lineCov">       6667 : struct stasis_message *stasis_cache_clear_create(struct stasis_message *id_message)</span>
+<span class="lineNum">     739 </span>            : {
+<span class="lineNum">     740 </span><span class="lineCov">       6667 :         return stasis_message_create(stasis_cache_clear_type(), id_message);</span>
+<a name="741"><span class="lineNum">     741 </span>            : }</a>
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineCov">     142687 : static void stasis_cache_update_dtor(void *obj)</span>
+<span class="lineNum">     744 </span>            : {
+<span class="lineNum">     745 </span><span class="lineCov">     142687 :         struct stasis_cache_update *update = obj;</span>
+<span class="lineNum">     746 </span>            : 
+<span class="lineNum">     747 </span><span class="lineCov">     142687 :         ao2_cleanup(update-&gt;old_snapshot);</span>
+<span class="lineNum">     748 </span><span class="lineCov">     142687 :         update-&gt;old_snapshot = NULL;</span>
+<span class="lineNum">     749 </span><span class="lineCov">     142687 :         ao2_cleanup(update-&gt;new_snapshot);</span>
+<span class="lineNum">     750 </span><span class="lineCov">     142687 :         update-&gt;new_snapshot = NULL;</span>
+<span class="lineNum">     751 </span><span class="lineCov">     142687 :         ao2_cleanup(update-&gt;type);</span>
+<span class="lineNum">     752 </span><span class="lineCov">     142687 :         update-&gt;type = NULL;</span>
+<a name="753"><span class="lineNum">     753 </span><span class="lineCov">     142687 : }</span></a>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span><span class="lineCov">     142687 : static struct stasis_message *update_create(struct stasis_message *old_snapshot, struct stasis_message *new_snapshot)</span>
+<span class="lineNum">     756 </span>            : {
+<span class="lineNum">     757 </span>            :         struct stasis_cache_update *update;
+<span class="lineNum">     758 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span><span class="lineCov">     142687 :         ast_assert(old_snapshot != NULL || new_snapshot != NULL);</span>
+<span class="lineNum">     761 </span>            : 
+<span class="lineNum">     762 </span><span class="lineCov">     142687 :         if (!stasis_cache_update_type()) {</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     764 </span>            :         }
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span><span class="lineCov">     142687 :         update = ao2_alloc_options(sizeof(*update), stasis_cache_update_dtor,</span>
+<span class="lineNum">     767 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     768 </span><span class="lineCov">     142687 :         if (!update) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     770 </span>            :         }
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineCov">     142687 :         if (old_snapshot) {</span>
+<span class="lineNum">     773 </span><span class="lineCov">     125433 :                 ao2_ref(old_snapshot, +1);</span>
+<span class="lineNum">     774 </span><span class="lineCov">     125433 :                 update-&gt;old_snapshot = old_snapshot;</span>
+<span class="lineNum">     775 </span><span class="lineCov">     125433 :                 if (!new_snapshot) {</span>
+<span class="lineNum">     776 </span><span class="lineCov">      11080 :                         ao2_ref(stasis_message_type(old_snapshot), +1);</span>
+<span class="lineNum">     777 </span><span class="lineCov">      11080 :                         update-&gt;type = stasis_message_type(old_snapshot);</span>
+<span class="lineNum">     778 </span>            :                 }
+<span class="lineNum">     779 </span>            :         }
+<span class="lineNum">     780 </span><span class="lineCov">     142687 :         if (new_snapshot) {</span>
+<span class="lineNum">     781 </span><span class="lineCov">     131607 :                 ao2_ref(new_snapshot, +1);</span>
+<span class="lineNum">     782 </span><span class="lineCov">     131607 :                 update-&gt;new_snapshot = new_snapshot;</span>
+<span class="lineNum">     783 </span><span class="lineCov">     131607 :                 ao2_ref(stasis_message_type(new_snapshot), +1);</span>
+<span class="lineNum">     784 </span><span class="lineCov">     131607 :                 update-&gt;type = stasis_message_type(new_snapshot);</span>
+<span class="lineNum">     785 </span>            :         }
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span><span class="lineCov">     142687 :         msg = stasis_message_create(stasis_cache_update_type(), update);</span>
+<span class="lineNum">     788 </span>            : 
+<span class="lineNum">     789 </span><span class="lineCov">     142687 :         ao2_cleanup(update);</span>
+<span class="lineNum">     790 </span><span class="lineCov">     142687 :         return msg;</span>
+<a name="791"><span class="lineNum">     791 </span>            : }</a>
+<span class="lineNum">     792 </span>            : 
+<span class="lineNum">     793 </span><span class="lineCov">     473612 : static void caching_topic_exec(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     794 </span>            :         struct stasis_message *message)
+<span class="lineNum">     795 </span>            : {
+<span class="lineNum">     796 </span>            :         struct stasis_caching_topic *caching_topic_needs_unref;
+<span class="lineNum">     797 </span><span class="lineCov">     473612 :         struct stasis_caching_topic *caching_topic = data;</span>
+<span class="lineNum">     798 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     799 </span>            :         struct stasis_message *msg_put;
+<span class="lineNum">     800 </span>            :         struct stasis_message_type *msg_type;
+<span class="lineNum">     801 </span>            :         const struct ast_eid *msg_eid;
+<span class="lineNum">     802 </span>            :         const char *msg_id;
+<span class="lineNum">     803 </span>            : 
+<span class="lineNum">     804 </span><span class="lineCov">     473612 :         ast_assert(caching_topic != NULL);</span>
+<span class="lineNum">     805 </span><span class="lineCov">     473612 :         ast_assert(caching_topic-&gt;topic != NULL);</span>
+<span class="lineNum">     806 </span><span class="lineCov">     473612 :         ast_assert(caching_topic-&gt;cache != NULL);</span>
+<span class="lineNum">     807 </span><span class="lineCov">     473612 :         ast_assert(caching_topic-&gt;cache-&gt;id_fn != NULL);</span>
+<span class="lineNum">     808 </span>            : 
+<span class="lineNum">     809 </span><span class="lineCov">     473612 :         if (stasis_subscription_final_message(sub, message)) {</span>
+<span class="lineNum">     810 </span><span class="lineCov">      35370 :                 caching_topic_needs_unref = caching_topic;</span>
+<span class="lineNum">     811 </span>            :         } else {
+<span class="lineNum">     812 </span><span class="lineCov">     438242 :                 caching_topic_needs_unref = NULL;</span>
+<span class="lineNum">     813 </span>            :         }
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span><span class="lineCov">     473612 :         msg_type = stasis_message_type(message);</span>
+<span class="lineNum">     816 </span><span class="lineCov">     473612 :         if (stasis_cache_clear_type() == msg_type) {</span>
+<span class="lineNum">     817 </span>            :                 /* Cache clear event. */
+<span class="lineNum">     818 </span><span class="lineCov">      14304 :                 msg_put = NULL;</span>
+<span class="lineNum">     819 </span><span class="lineCov">      14304 :                 msg = stasis_message_data(message);</span>
+<span class="lineNum">     820 </span><span class="lineCov">      14304 :                 msg_type = stasis_message_type(msg);</span>
+<span class="lineNum">     821 </span>            :         } else {
+<span class="lineNum">     822 </span>            :                 /* Normal cache update event. */
+<span class="lineNum">     823 </span><span class="lineCov">     459308 :                 msg_put = message;</span>
+<span class="lineNum">     824 </span><span class="lineCov">     459308 :                 msg = message;</span>
+<span class="lineNum">     825 </span>            :         }
+<span class="lineNum">     826 </span><span class="lineCov">     473612 :         ast_assert(msg_type != NULL);</span>
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span><span class="lineCov">     473612 :         msg_eid = stasis_message_eid(msg);/* msg_eid is NULL for aggregate message. */</span>
+<span class="lineNum">     829 </span><span class="lineCov">     473612 :         msg_id = caching_topic-&gt;cache-&gt;id_fn(msg);</span>
+<span class="lineNum">     830 </span><span class="lineCov">     473612 :         if (msg_id &amp;&amp; msg_eid) {</span>
+<span class="lineNum">     831 </span>            :                 struct stasis_message *update;
+<span class="lineNum">     832 </span>            :                 struct cache_put_snapshots snapshots;
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span>            :                 /* Update the cache */
+<span class="lineNum">     835 </span><span class="lineCov">     138647 :                 snapshots = cache_put(caching_topic-&gt;cache, msg_type, msg_id, msg_eid, msg_put);</span>
+<span class="lineNum">     836 </span><span class="lineCov">     138647 :                 if (snapshots.old || msg_put) {</span>
+<span class="lineNum">     837 </span><span class="lineCov">     138647 :                         update = update_create(snapshots.old, msg_put);</span>
+<span class="lineNum">     838 </span><span class="lineCov">     138647 :                         if (update) {</span>
+<span class="lineNum">     839 </span><span class="lineCov">     138647 :                                 stasis_publish(caching_topic-&gt;topic, update);</span>
+<span class="lineNum">     840 </span>            :                         }
+<span class="lineNum">     841 </span><span class="lineCov">     138647 :                         ao2_cleanup(update);</span>
+<span class="lineNum">     842 </span>            :                 } else {
+<span class="lineNum">     843 </span><span class="lineNoCov">          0 :                         ast_debug(1,</span>
+<span class="lineNum">     844 </span>            :                                 &quot;Attempting to remove an item from the %s cache that isn't there: %s %s\n&quot;,
+<span class="lineNum">     845 </span>            :                                 stasis_topic_name(caching_topic-&gt;topic),
+<span class="lineNum">     846 </span>            :                                 stasis_message_type_name(msg_type), msg_id);
+<span class="lineNum">     847 </span>            :                 }
+<span class="lineNum">     848 </span>            : 
+<span class="lineNum">     849 </span><span class="lineCov">     138647 :                 if (snapshots.aggregate_old != snapshots.aggregate_new) {</span>
+<span class="lineNum">     850 </span><span class="lineCov">       4040 :                         if (snapshots.aggregate_new &amp;&amp; caching_topic-&gt;cache-&gt;aggregate_publish_fn) {</span>
+<span class="lineNum">     851 </span><span class="lineCov">       4032 :                                 caching_topic-&gt;cache-&gt;aggregate_publish_fn(caching_topic-&gt;original_topic,</span>
+<span class="lineNum">     852 </span>            :                                         snapshots.aggregate_new);
+<span class="lineNum">     853 </span>            :                         }
+<span class="lineNum">     854 </span><span class="lineCov">       4040 :                         update = update_create(snapshots.aggregate_old, snapshots.aggregate_new);</span>
+<span class="lineNum">     855 </span><span class="lineCov">       4040 :                         if (update) {</span>
+<span class="lineNum">     856 </span><span class="lineCov">       4040 :                                 stasis_publish(caching_topic-&gt;topic, update);</span>
+<span class="lineNum">     857 </span>            :                         }
+<span class="lineNum">     858 </span><span class="lineCov">       4040 :                         ao2_cleanup(update);</span>
+<span class="lineNum">     859 </span>            :                 }
+<span class="lineNum">     860 </span>            : 
+<span class="lineNum">     861 </span><span class="lineCov">     138647 :                 ao2_cleanup(snapshots.old);</span>
+<span class="lineNum">     862 </span><span class="lineCov">     138647 :                 ao2_cleanup(snapshots.aggregate_old);</span>
+<span class="lineNum">     863 </span><span class="lineCov">     138647 :                 ao2_cleanup(snapshots.aggregate_new);</span>
+<span class="lineNum">     864 </span>            :         }
+<span class="lineNum">     865 </span>            : 
+<span class="lineNum">     866 </span><span class="lineCov">     473612 :         ao2_cleanup(caching_topic_needs_unref);</span>
+<a name="867"><span class="lineNum">     867 </span><span class="lineCov">     473612 : }</span></a>
+<span class="lineNum">     868 </span>            : 
+<span class="lineNum">     869 </span><span class="lineCov">      36113 : struct stasis_caching_topic *stasis_caching_topic_create(struct stasis_topic *original_topic, struct stasis_cache *cache)</span>
+<span class="lineNum">     870 </span>            : {
+<span class="lineNum">     871 </span>            :         struct stasis_caching_topic *caching_topic;
+<span class="lineNum">     872 </span>            :         char *new_name;
+<span class="lineNum">     873 </span>            :         int ret;
+<span class="lineNum">     874 </span>            : 
+<span class="lineNum">     875 </span><span class="lineCov">      36113 :         ret = ast_asprintf(&amp;new_name, &quot;%s-cached&quot;, stasis_topic_name(original_topic));</span>
+<span class="lineNum">     876 </span><span class="lineCov">      36113 :         if (ret &lt; 0) {</span>
+<span class="lineNum">     877 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     878 </span>            :         }
+<span class="lineNum">     879 </span>            : 
+<span class="lineNum">     880 </span><span class="lineCov">      36113 :         caching_topic = ao2_alloc_options(sizeof(*caching_topic),</span>
+<span class="lineNum">     881 </span>            :                 stasis_caching_topic_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     882 </span><span class="lineCov">      36113 :         if (caching_topic == NULL) {</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :                 ast_free(new_name);</span>
+<span class="lineNum">     884 </span>            : 
+<span class="lineNum">     885 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     886 </span>            :         }
+<span class="lineNum">     887 </span>            : 
+<span class="lineNum">     888 </span><span class="lineCov">      36113 :         caching_topic-&gt;topic = stasis_topic_create(new_name);</span>
+<span class="lineNum">     889 </span><span class="lineCov">      36113 :         ast_free(new_name);</span>
+<span class="lineNum">     890 </span><span class="lineCov">      36113 :         if (caching_topic-&gt;topic == NULL) {</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                 ao2_ref(caching_topic, -1);</span>
+<span class="lineNum">     892 </span>            : 
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     894 </span>            :         }
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span><span class="lineCov">      36113 :         ao2_ref(cache, +1);</span>
+<span class="lineNum">     897 </span><span class="lineCov">      36113 :         caching_topic-&gt;cache = cache;</span>
+<span class="lineNum">     898 </span>            : 
+<span class="lineNum">     899 </span><span class="lineCov">      36113 :         caching_topic-&gt;sub = internal_stasis_subscribe(original_topic, caching_topic_exec, caching_topic, 0, 0);</span>
+<span class="lineNum">     900 </span><span class="lineCov">      36113 :         if (caching_topic-&gt;sub == NULL) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 :                 ao2_ref(caching_topic, -1);</span>
+<span class="lineNum">     902 </span>            : 
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     904 </span>            :         }
+<span class="lineNum">     905 </span>            : 
+<span class="lineNum">     906 </span><span class="lineCov">      36113 :         ao2_ref(original_topic, +1);</span>
+<span class="lineNum">     907 </span><span class="lineCov">      36113 :         caching_topic-&gt;original_topic = original_topic;</span>
+<span class="lineNum">     908 </span>            : 
+<span class="lineNum">     909 </span>            :         /* The subscription holds the reference, so no additional ref bump. */
+<span class="lineNum">     910 </span><span class="lineCov">      36113 :         return caching_topic;</span>
+<a name="911"><span class="lineNum">     911 </span>            : }</a>
+<span class="lineNum">     912 </span>            : 
+<span class="lineNum">     913 </span><span class="lineCov">       1061 : static void stasis_cache_cleanup(void)</span>
+<span class="lineNum">     914 </span>            : {
+<span class="lineNum">     915 </span><span class="lineCov">       1061 :         STASIS_MESSAGE_TYPE_CLEANUP(stasis_cache_clear_type);</span>
+<span class="lineNum">     916 </span><span class="lineCov">       1061 :         STASIS_MESSAGE_TYPE_CLEANUP(stasis_cache_update_type);</span>
+<a name="917"><span class="lineNum">     917 </span><span class="lineCov">       1061 : }</span></a>
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineCov">       1124 : int stasis_cache_init(void)</span>
+<span class="lineNum">     920 </span>            : {
+<span class="lineNum">     921 </span><span class="lineCov">       1124 :         ast_register_cleanup(stasis_cache_cleanup);</span>
+<span class="lineNum">     922 </span>            : 
+<span class="lineNum">     923 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(stasis_cache_clear_type) != 0) {</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     925 </span>            :         }
+<span class="lineNum">     926 </span>            : 
+<span class="lineNum">     927 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(stasis_cache_update_type) != 0) {</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     929 </span>            :         }
+<span class="lineNum">     930 </span>            : 
+<span class="lineNum">     931 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">     932 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

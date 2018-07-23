@@ -1,0 +1,437 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - main/fixedjitterbuf.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - fixedjitterbuf.c<span style="font-size: 80%;"> (source / <a href="fixedjitterbuf.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">106</td>
+            <td class="headerCovTableEntry">121</td>
+            <td class="headerCovTableEntryMed">87.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntryHi">92.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Copyright (C) 2005, Attractel OOD
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Contributors:
+<span class="lineNum">       5 </span>            :  * Slav Klenov &lt;slav@securax.org&gt;
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       8 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       9 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      10 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      11 </span>            :  * channels for your use.
+<span class="lineNum">      12 </span>            :  *
+<span class="lineNum">      13 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      14 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      15 </span>            :  * at the top of the source tree.
+<span class="lineNum">      16 </span>            :  *
+<span class="lineNum">      17 </span>            :  * A license has been granted to Digium (via disclaimer) for the use of
+<span class="lineNum">      18 </span>            :  * this code.
+<span class="lineNum">      19 </span>            :  */
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : /*! \file
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \brief Jitterbuffering algorithm.
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \author Slav Klenov &lt;slav@securax.org&gt;
+<span class="lineNum">      26 </span>            :  */
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*** MODULEINFO
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &lt;assert.h&gt;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;fixedjitterbuf.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #undef FIXED_JB_DEBUG
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #ifdef FIXED_JB_DEBUG
+<span class="lineNum">      42 </span>            : #define ASSERT(a)
+<span class="lineNum">      43 </span>            : #else
+<span class="lineNum">      44 </span>            : #define ASSERT(a) assert(a)
+<span class="lineNum">      45 </span>            : #endif
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*! \brief private fixed_jb structure */
+<span class="lineNum">      48 </span>            : struct fixed_jb
+<span class="lineNum">      49 </span>            : {
+<span class="lineNum">      50 </span>            :         struct fixed_jb_frame *frames;
+<span class="lineNum">      51 </span>            :         struct fixed_jb_frame *tail;
+<span class="lineNum">      52 </span>            :         struct fixed_jb_conf conf;
+<span class="lineNum">      53 </span>            :         long rxcore;
+<span class="lineNum">      54 </span>            :         long delay;
+<span class="lineNum">      55 </span>            :         long next_delivery;
+<span class="lineNum">      56 </span>            :         int force_resynch;
+<span class="lineNum">      57 </span>            : };
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : static struct fixed_jb_frame *alloc_jb_frame(struct fixed_jb *jb);
+<span class="lineNum">      61 </span>            : static void release_jb_frame(struct fixed_jb *jb, struct fixed_jb_frame *frame);
+<span class="lineNum">      62 </span>            : static void get_jb_head(struct fixed_jb *jb, struct fixed_jb_frame *frame);
+<a name="63"><span class="lineNum">      63 </span>            : static int resynch_jb(struct fixed_jb *jb, void *data, long ms, long ts, long now);</a>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span><span class="lineCov">       3390 : static inline struct fixed_jb_frame *alloc_jb_frame(struct fixed_jb *jb)</span>
+<span class="lineNum">      66 </span>            : {
+<span class="lineNum">      67 </span><span class="lineCov">       3390 :         return ast_calloc(1, sizeof(*jb));</span>
+<a name="68"><span class="lineNum">      68 </span>            : }</a>
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span><span class="lineCov">       3390 : static inline void release_jb_frame(struct fixed_jb *jb, struct fixed_jb_frame *frame)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span><span class="lineCov">       3390 :         ast_free(frame);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineCov">       3390 : }</span></a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">       3390 : static void get_jb_head(struct fixed_jb *jb, struct fixed_jb_frame *frame)</span>
+<span class="lineNum">      76 </span>            : {
+<span class="lineNum">      77 </span>            :         struct fixed_jb_frame *fr;
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            :         /* unlink the frame */
+<span class="lineNum">      80 </span><span class="lineCov">       3390 :         fr = jb-&gt;frames;</span>
+<span class="lineNum">      81 </span><span class="lineCov">       3390 :         jb-&gt;frames = fr-&gt;next;</span>
+<span class="lineNum">      82 </span><span class="lineCov">       3390 :         if (jb-&gt;frames) {</span>
+<span class="lineNum">      83 </span><span class="lineCov">       3382 :                 jb-&gt;frames-&gt;prev = NULL;</span>
+<span class="lineNum">      84 </span>            :         } else {
+<span class="lineNum">      85 </span>            :                 /* the jb is empty - update tail */
+<span class="lineNum">      86 </span><span class="lineCov">          8 :                 jb-&gt;tail = NULL;</span>
+<span class="lineNum">      87 </span>            :         }
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span>            :         /* update next */
+<span class="lineNum">      90 </span><span class="lineCov">       3390 :         jb-&gt;next_delivery = fr-&gt;delivery + fr-&gt;ms;</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :         /* copy the destination */
+<span class="lineNum">      93 </span><span class="lineCov">       3390 :         memcpy(frame, fr, sizeof(struct fixed_jb_frame));</span>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span>            :         /* and release the frame */
+<span class="lineNum">      96 </span><span class="lineCov">       3390 :         release_jb_frame(jb, fr);</span>
+<span class="lineNum">      97 </span><span class="lineCov">       3390 : }</span>
+<a name="98"><span class="lineNum">      98 </span>            : </a>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">          9 : struct fixed_jb *fixed_jb_new(struct fixed_jb_conf *conf)</span>
+<span class="lineNum">     101 </span>            : {
+<span class="lineNum">     102 </span>            :         struct fixed_jb *jb;
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">          9 :         if (!(jb = ast_calloc(1, sizeof(*jb))))</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            :         /* First copy our config */
+<span class="lineNum">     108 </span><span class="lineCov">          9 :         memcpy(&amp;jb-&gt;conf, conf, sizeof(struct fixed_jb_conf));</span>
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            :         /* we don't need the passed config anymore - continue working with the saved one */
+<span class="lineNum">     111 </span><span class="lineCov">          9 :         conf = &amp;jb-&gt;conf;</span>
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            :         /* validate the configuration */
+<span class="lineNum">     114 </span><span class="lineCov">          9 :         if (conf-&gt;jbsize &lt; 1)</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 conf-&gt;jbsize = FIXED_JB_SIZE_DEFAULT;</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">          9 :         if (conf-&gt;resync_threshold &lt; 1)</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 conf-&gt;resync_threshold = FIXED_JB_RESYNCH_THRESHOLD_DEFAULT;</span>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :         /* Set the constant delay to the jitterbuf */
+<span class="lineNum">     121 </span><span class="lineCov">          9 :         jb-&gt;delay = conf-&gt;jbsize;</span>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineCov">          9 :         return jb;</span>
+<span class="lineNum">     124 </span>            : }
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">          9 : void fixed_jb_destroy(struct fixed_jb *jb)</span>
+<span class="lineNum">     128 </span>            : {
+<span class="lineNum">     129 </span>            :         /* jitterbuf MUST be empty before it can be destroyed */
+<span class="lineNum">     130 </span><span class="lineCov">          9 :         ASSERT(jb-&gt;frames == NULL);</span>
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">          9 :         ast_free(jb);</span>
+<span class="lineNum">     133 </span><span class="lineCov">          9 : }</span>
+<a name="134"><span class="lineNum">     134 </span>            : </a>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">          9 : static int resynch_jb(struct fixed_jb *jb, void *data, long ms, long ts, long now)</span>
+<span class="lineNum">     137 </span>            : {
+<span class="lineNum">     138 </span>            :         long diff, offset;
+<span class="lineNum">     139 </span>            :         struct fixed_jb_frame *frame;
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :         /* If jb is empty, just reinitialize the jb */
+<span class="lineNum">     142 </span><span class="lineCov">          9 :         if (!jb-&gt;frames) {</span>
+<span class="lineNum">     143 </span>            :                 /* debug check: tail should also be NULL */
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 ASSERT(jb-&gt;tail == NULL);</span>
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 return fixed_jb_put_first(jb, data, ms, ts, now);</span>
+<span class="lineNum">     147 </span>            :         }
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :         /* Adjust all jb state just as the new frame is with delivery = the delivery of the last
+<span class="lineNum">     150 </span>            :            frame (e.g. this one with max delivery) + the length of the last frame. */
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :         /* Get the diff in timestamps */
+<span class="lineNum">     153 </span><span class="lineCov">          9 :         diff = ts - jb-&gt;tail-&gt;ts;</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            :         /* Ideally this should be just the length of the last frame. The deviation is the desired
+<span class="lineNum">     156 </span>            :            offset */
+<span class="lineNum">     157 </span><span class="lineCov">          9 :         offset = diff - jb-&gt;tail-&gt;ms;</span>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span>            :         /* Do we really need to resynch, or this is just a frame for dropping? */
+<span class="lineNum">     160 </span><span class="lineCov">          9 :         if (!jb-&gt;force_resynch &amp;&amp; (offset &lt; jb-&gt;conf.resync_threshold &amp;&amp; offset &gt; -jb-&gt;conf.resync_threshold))</span>
+<span class="lineNum">     161 </span><span class="lineCov">          8 :                 return FIXED_JB_DROP;</span>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            :         /* Reset the force resynch flag */
+<span class="lineNum">     164 </span><span class="lineCov">          1 :         jb-&gt;force_resynch = 0;</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            :         /* apply the offset to the jb state */
+<span class="lineNum">     167 </span><span class="lineCov">          1 :         jb-&gt;rxcore -= offset;</span>
+<span class="lineNum">     168 </span><span class="lineCov">          1 :         frame = jb-&gt;frames;</span>
+<span class="lineNum">     169 </span><span class="lineCov">         14 :         while (frame) {</span>
+<span class="lineNum">     170 </span><span class="lineCov">         13 :                 frame-&gt;ts += offset;</span>
+<span class="lineNum">     171 </span><span class="lineCov">         13 :                 frame = frame-&gt;next;</span>
+<span class="lineNum">     172 </span>            :         }
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span>            :         /* now jb_put() should add the frame at a last position */
+<span class="lineNum">     175 </span><span class="lineCov">          1 :         return fixed_jb_put(jb, data, ms, ts, now);</span>
+<span class="lineNum">     176 </span>            : }
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 : void fixed_jb_set_force_resynch(struct fixed_jb *jb)</span>
+<span class="lineNum">     180 </span>            : {
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :         jb-&gt;force_resynch = 1;</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 : }</span>
+<a name="183"><span class="lineNum">     183 </span>            : </a>
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineCov">          8 : int fixed_jb_put_first(struct fixed_jb *jb, void *data, long ms, long ts, long now)</span>
+<span class="lineNum">     186 </span>            : {
+<span class="lineNum">     187 </span>            :         /* this is our first frame - set the base of the receivers time */
+<span class="lineNum">     188 </span><span class="lineCov">          8 :         jb-&gt;rxcore = now - ts;</span>
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            :         /* init next for a first time - it should be the time the first frame should be played */
+<span class="lineNum">     191 </span><span class="lineCov">          8 :         jb-&gt;next_delivery = now + jb-&gt;delay;</span>
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            :         /* put the frame */
+<span class="lineNum">     194 </span><span class="lineCov">          8 :         return fixed_jb_put(jb, data, ms, ts, now);</span>
+<a name="195"><span class="lineNum">     195 </span>            : }</a>
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span><span class="lineCov">       3399 : int fixed_jb_put(struct fixed_jb *jb, void *data, long ms, long ts, long now)</span>
+<span class="lineNum">     198 </span>            : {
+<span class="lineNum">     199 </span>            :         struct fixed_jb_frame *frame, *next, *newframe;
+<span class="lineNum">     200 </span>            :         long delivery;
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            :         /* debug check the validity of the input params */
+<span class="lineNum">     203 </span><span class="lineCov">       3399 :         ASSERT(data != NULL);</span>
+<span class="lineNum">     204 </span>            :         /* do not allow frames shorter than 2 ms */
+<span class="lineNum">     205 </span><span class="lineCov">       3399 :         ASSERT(ms &gt;= 2);</span>
+<span class="lineNum">     206 </span><span class="lineCov">       3399 :         ASSERT(ts &gt;= 0);</span>
+<span class="lineNum">     207 </span><span class="lineCov">       3399 :         ASSERT(now &gt;= 0);</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">       3399 :         delivery = jb-&gt;rxcore + jb-&gt;delay + ts;</span>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            :         /* check if the new frame is not too late */
+<span class="lineNum">     212 </span><span class="lineCov">       3399 :         if (delivery &lt; jb-&gt;next_delivery) {</span>
+<span class="lineNum">     213 </span>            :                 /* should drop the frame, but let first resynch_jb() check if this is not a jump in ts, or
+<span class="lineNum">     214 </span>            :                    the force resynch flag was not set. */
+<span class="lineNum">     215 </span><span class="lineCov">          1 :                 return resynch_jb(jb, data, ms, ts, now);</span>
+<span class="lineNum">     216 </span>            :         }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            :         /* what if the delivery time is bigger than next + delay? Seems like a frame for the future.
+<span class="lineNum">     219 </span>            :            However, allow more resync_threshold ms in advance */
+<span class="lineNum">     220 </span><span class="lineCov">       3398 :         if (delivery &gt; jb-&gt;next_delivery + jb-&gt;delay + jb-&gt;conf.resync_threshold) {</span>
+<span class="lineNum">     221 </span>            :                 /* should drop the frame, but let first resynch_jb() check if this is not a jump in ts, or
+<span class="lineNum">     222 </span>            :                    the force resynch flag was not set. */
+<span class="lineNum">     223 </span><span class="lineCov">          5 :                 return resynch_jb(jb, data, ms, ts, now);</span>
+<span class="lineNum">     224 </span>            :         }
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            :         /* find the right place in the frames list, sorted by delivery time */
+<span class="lineNum">     227 </span><span class="lineCov">       3393 :         frame = jb-&gt;tail;</span>
+<span class="lineNum">     228 </span><span class="lineCov">       3396 :         while (frame &amp;&amp; frame-&gt;delivery &gt; delivery) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">          3 :                 frame = frame-&gt;prev;</span>
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            :         /* Check if the new delivery time is not covered already by the chosen frame */
+<span class="lineNum">     233 </span><span class="lineCov">       3393 :         if (frame &amp;&amp; (frame-&gt;delivery == delivery ||</span>
+<span class="lineNum">     234 </span><span class="lineCov">       3385 :                          delivery &lt; frame-&gt;delivery + frame-&gt;ms ||</span>
+<span class="lineNum">     235 </span><span class="lineCov">       3382 :                          (frame-&gt;next &amp;&amp; delivery + ms &gt; frame-&gt;next-&gt;delivery)))</span>
+<span class="lineNum">     236 </span>            :         {
+<span class="lineNum">     237 </span>            :                 /* TODO: Should we check for resynch here? Be careful to do not allow threshold smaller than
+<span class="lineNum">     238 </span>            :                    the size of the jb */
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            :                 /* should drop the frame, but let first resynch_jb() check if this is not a jump in ts, or
+<span class="lineNum">     241 </span>            :                    the force resynch flag was not set. */
+<span class="lineNum">     242 </span><span class="lineCov">          3 :                 return resynch_jb(jb, data, ms, ts, now);</span>
+<span class="lineNum">     243 </span>            :         }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span>            :         /* Reset the force resynch flag */
+<span class="lineNum">     246 </span><span class="lineCov">       3390 :         jb-&gt;force_resynch = 0;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span>            :         /* Get a new frame */
+<span class="lineNum">     249 </span><span class="lineCov">       3390 :         newframe = alloc_jb_frame(jb);</span>
+<span class="lineNum">     250 </span><span class="lineCov">       3390 :         newframe-&gt;data = data;</span>
+<span class="lineNum">     251 </span><span class="lineCov">       3390 :         newframe-&gt;ts = ts;</span>
+<span class="lineNum">     252 </span><span class="lineCov">       3390 :         newframe-&gt;ms = ms;</span>
+<span class="lineNum">     253 </span><span class="lineCov">       3390 :         newframe-&gt;delivery = delivery;</span>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :         /* and insert it right on place */
+<span class="lineNum">     256 </span><span class="lineCov">       3390 :         if (frame) {</span>
+<span class="lineNum">     257 </span><span class="lineCov">       3382 :                 next = frame-&gt;next;</span>
+<span class="lineNum">     258 </span><span class="lineCov">       3382 :                 frame-&gt;next = newframe;</span>
+<span class="lineNum">     259 </span><span class="lineCov">       3382 :                 if (next) {</span>
+<span class="lineNum">     260 </span><span class="lineCov">          3 :                         newframe-&gt;next = next;</span>
+<span class="lineNum">     261 </span><span class="lineCov">          3 :                         next-&gt;prev = newframe;</span>
+<span class="lineNum">     262 </span>            :                 } else {
+<span class="lineNum">     263 </span>            :                         /* insert after the last frame - should update tail */
+<span class="lineNum">     264 </span><span class="lineCov">       3379 :                         jb-&gt;tail = newframe;</span>
+<span class="lineNum">     265 </span><span class="lineCov">       3379 :                         newframe-&gt;next = NULL;</span>
+<span class="lineNum">     266 </span>            :                 }
+<span class="lineNum">     267 </span><span class="lineCov">       3382 :                 newframe-&gt;prev = frame;</span>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">       3382 :                 return FIXED_JB_OK;</span>
+<span class="lineNum">     270 </span><span class="lineCov">          8 :         } else if (!jb-&gt;frames) {</span>
+<span class="lineNum">     271 </span>            :                 /* the frame list is empty or thats just the first frame ever */
+<span class="lineNum">     272 </span>            :                 /* tail should also be NULL is that case */
+<span class="lineNum">     273 </span><span class="lineCov">          8 :                 ASSERT(jb-&gt;tail == NULL);</span>
+<span class="lineNum">     274 </span><span class="lineCov">          8 :                 jb-&gt;frames = jb-&gt;tail = newframe;</span>
+<span class="lineNum">     275 </span><span class="lineCov">          8 :                 newframe-&gt;next = NULL;</span>
+<span class="lineNum">     276 </span><span class="lineCov">          8 :                 newframe-&gt;prev = NULL;</span>
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span><span class="lineCov">          8 :                 return FIXED_JB_OK;</span>
+<span class="lineNum">     279 </span>            :         } else {
+<span class="lineNum">     280 </span>            :                 /* insert on a first position - should update frames head */
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 newframe-&gt;next = jb-&gt;frames;</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 newframe-&gt;prev = NULL;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                 jb-&gt;frames-&gt;prev = newframe;</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                 jb-&gt;frames = newframe;</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 return FIXED_JB_OK;</span>
+<span class="lineNum">     287 </span>            :         }
+<span class="lineNum">     288 </span>            : }
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span><span class="lineCov">       6730 : int fixed_jb_get(struct fixed_jb *jb, struct fixed_jb_frame *frame, long now, long interpl)</span>
+<span class="lineNum">     292 </span>            : {
+<span class="lineNum">     293 </span><span class="lineCov">       6730 :         ASSERT(now &gt;= 0);</span>
+<span class="lineNum">     294 </span><span class="lineCov">       6730 :         ASSERT(interpl &gt;= 2);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">       6730 :         if (now &lt; jb-&gt;next_delivery) {</span>
+<span class="lineNum">     297 </span>            :                 /* too early for the next frame */
+<span class="lineNum">     298 </span><span class="lineCov">       3080 :                 return FIXED_JB_NOFRAME;</span>
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span>            :         /* Is the jb empty? */
+<span class="lineNum">     302 </span><span class="lineCov">       3650 :         if (!jb-&gt;frames) {</span>
+<span class="lineNum">     303 </span>            :                 /* should interpolate a frame */
+<span class="lineNum">     304 </span>            :                 /* update next */
+<span class="lineNum">     305 </span><span class="lineCov">        245 :                 jb-&gt;next_delivery += interpl;</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineCov">        245 :                 return FIXED_JB_INTERP;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            :         /* Isn't it too late for the first frame available in the jb? */
+<span class="lineNum">     311 </span><span class="lineCov">       3405 :         if (now &gt; jb-&gt;frames-&gt;delivery + jb-&gt;frames-&gt;ms) {</span>
+<span class="lineNum">     312 </span>            :                 /* yes - should drop this frame and update next to point the next frame (get_jb_head() does it) */
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 get_jb_head(jb, frame);</span>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 return FIXED_JB_DROP;</span>
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span>            :         /* isn't it too early to play the first frame available? */
+<span class="lineNum">     319 </span><span class="lineCov">       3405 :         if (now &lt; jb-&gt;frames-&gt;delivery) {</span>
+<span class="lineNum">     320 </span>            :                 /* yes - should interpolate one frame */
+<span class="lineNum">     321 </span>            :                 /* update next */
+<span class="lineNum">     322 </span><span class="lineCov">         29 :                 jb-&gt;next_delivery += interpl;</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineCov">         29 :                 return FIXED_JB_INTERP;</span>
+<span class="lineNum">     325 </span>            :         }
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span>            :         /* we have a frame for playing now (get_jb_head() updates next) */
+<span class="lineNum">     328 </span><span class="lineCov">       3376 :         get_jb_head(jb, frame);</span>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">       3376 :         return FIXED_JB_OK;</span>
+<span class="lineNum">     331 </span>            : }
+<a name="332"><span class="lineNum">     332 </span>            : </a>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">       7492 : long fixed_jb_next(struct fixed_jb *jb)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span><span class="lineCov">       7492 :         return jb-&gt;next_delivery;</span>
+<span class="lineNum">     337 </span>            : }
+<a name="338"><span class="lineNum">     338 </span>            : </a>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">         32 : int fixed_jb_remove(struct fixed_jb *jb, struct fixed_jb_frame *frameout)</span>
+<span class="lineNum">     341 </span>            : {
+<span class="lineNum">     342 </span><span class="lineCov">         32 :         if (!jb-&gt;frames)</span>
+<span class="lineNum">     343 </span><span class="lineCov">         18 :                 return FIXED_JB_NOFRAME;</span>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">         14 :         get_jb_head(jb, frameout);</span>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">         14 :         return FIXED_JB_OK;</span>
+<a name="348"><span class="lineNum">     348 </span>            : }</a>
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineCov">         29 : int fixed_jb_is_late(struct fixed_jb *jb, long ts)</span>
+<span class="lineNum">     351 </span>            : {
+<span class="lineNum">     352 </span><span class="lineCov">         29 :         return jb-&gt;rxcore + jb-&gt;delay + ts &lt; jb-&gt;next_delivery;</span>
+<span class="lineNum">     353 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

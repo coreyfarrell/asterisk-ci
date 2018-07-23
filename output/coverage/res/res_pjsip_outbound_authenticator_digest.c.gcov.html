@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_pjsip_outbound_authenticator_digest.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_pjsip_outbound_authenticator_digest.c<span style="font-size: 80%;"> (source / <a href="res_pjsip_outbound_authenticator_digest.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">63</td>
+            <td class="headerCovTableEntry">99</td>
+            <td class="headerCovTableEntryLo">63.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryMed">87.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Michelson &lt;mmichelson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*** MODULEINFO
+<span class="lineNum">      20 </span>            :         &lt;depend&gt;pjproject&lt;/depend&gt;
+<span class="lineNum">      21 </span>            :         &lt;depend&gt;res_pjsip&lt;/depend&gt;
+<span class="lineNum">      22 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      23 </span>            :  ***/
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/module.h&quot;
+<a name="32"><span class="lineNum">      32 </span>            : #include &quot;asterisk/strings.h&quot;</a>
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span><span class="lineCov">         30 : static pjsip_www_authenticate_hdr *get_auth_header(pjsip_rx_data *challenge,</span>
+<span class="lineNum">      35 </span>            :         const void *start)
+<span class="lineNum">      36 </span>            : {
+<span class="lineNum">      37 </span>            :         pjsip_hdr_e search_type;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span><span class="lineCov">         30 :         if (challenge-&gt;msg_info.msg-&gt;line.status.code == PJSIP_SC_UNAUTHORIZED) {</span>
+<span class="lineNum">      40 </span><span class="lineCov">         30 :                 search_type = PJSIP_H_WWW_AUTHENTICATE;</span>
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :         } else if (challenge-&gt;msg_info.msg-&gt;line.status.code == PJSIP_SC_PROXY_AUTHENTICATION_REQUIRED) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :                 search_type = PJSIP_H_PROXY_AUTHENTICATE;</span>
+<span class="lineNum">      43 </span>            :         } else {
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR,</span>
+<span class="lineNum">      45 </span>            :                                 &quot;Status code %d was received when it should have been 401 or 407.\n&quot;,
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :                                 challenge-&gt;msg_info.msg-&gt;line.status.code);</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                 return NULL ;</span>
+<span class="lineNum">      48 </span>            :         }
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span><span class="lineCov">         30 :         return pjsip_msg_find_hdr(challenge-&gt;msg_info.msg, search_type, start);</span>
+<span class="lineNum">      51 </span>            : 
+<a name="52"><span class="lineNum">      52 </span>            : }</a>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineCov">         29 : static int set_outbound_authentication_credentials(pjsip_auth_clt_sess *auth_sess,</span>
+<span class="lineNum">      55 </span>            :                 const struct ast_sip_auth_vector *auth_vector, pjsip_rx_data *challenge,
+<span class="lineNum">      56 </span>            :                 pjsip_www_authenticate_hdr *auth_hdr)
+<span class="lineNum">      57 </span>            : {
+<span class="lineNum">      58 </span><span class="lineCov">         29 :         size_t auth_size = AST_VECTOR_SIZE(auth_vector);</span>
+<span class="lineNum">      59 </span><span class="lineCov">         29 :         struct ast_sip_auth **auths = ast_alloca(auth_size * sizeof(*auths));</span>
+<span class="lineNum">      60 </span><span class="lineCov">         29 :         pjsip_cred_info *auth_creds = ast_alloca(auth_size * sizeof(*auth_creds));</span>
+<span class="lineNum">      61 </span><span class="lineCov">         29 :         int res = 0;</span>
+<span class="lineNum">      62 </span>            :         int i;
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineCov">         29 :         if (ast_sip_retrieve_auths(auth_vector, auths)) {</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 goto cleanup;</span>
+<span class="lineNum">      67 </span>            :         }
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span><span class="lineCov">         58 :         for (i = 0; i &lt; auth_size; ++i) {</span>
+<span class="lineNum">      70 </span><span class="lineCov">         29 :                 if (ast_strlen_zero(auths[i]-&gt;realm)) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">         23 :                         auth_creds[i].realm = auth_hdr-&gt;challenge.common.realm;</span>
+<span class="lineNum">      72 </span>            :                 } else {
+<span class="lineNum">      73 </span><span class="lineCov">          6 :                         pj_cstr(&amp;auth_creds[i].realm, auths[i]-&gt;realm);</span>
+<span class="lineNum">      74 </span>            :                 }
+<span class="lineNum">      75 </span><span class="lineCov">         29 :                 pj_cstr(&amp;auth_creds[i].username, auths[i]-&gt;auth_user);</span>
+<span class="lineNum">      76 </span><span class="lineCov">         29 :                 pj_cstr(&amp;auth_creds[i].scheme, &quot;digest&quot;);</span>
+<span class="lineNum">      77 </span><span class="lineCov">         29 :                 switch (auths[i]-&gt;type) {</span>
+<span class="lineNum">      78 </span><span class="lineCov">         27 :                 case AST_SIP_AUTH_TYPE_USER_PASS:</span>
+<span class="lineNum">      79 </span><span class="lineCov">         27 :                         pj_cstr(&amp;auth_creds[i].data, auths[i]-&gt;auth_pass);</span>
+<span class="lineNum">      80 </span><span class="lineCov">         27 :                         auth_creds[i].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;</span>
+<span class="lineNum">      81 </span><span class="lineCov">         27 :                         break;</span>
+<span class="lineNum">      82 </span><span class="lineCov">          2 :                 case AST_SIP_AUTH_TYPE_MD5:</span>
+<span class="lineNum">      83 </span><span class="lineCov">          2 :                         pj_cstr(&amp;auth_creds[i].data, auths[i]-&gt;md5_creds);</span>
+<span class="lineNum">      84 </span><span class="lineCov">          2 :                         auth_creds[i].data_type = PJSIP_CRED_DATA_DIGEST;</span>
+<span class="lineNum">      85 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 case AST_SIP_AUTH_TYPE_ARTIFICIAL:</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Trying to set artificial outbound auth credentials shouldn't happen.\n&quot;);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">      89 </span>            :                 }
+<span class="lineNum">      90 </span><span class="lineCov">         29 :         }</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">         29 :         pjsip_auth_clt_set_credentials(auth_sess, auth_size, auth_creds);</span>
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">         29 : cleanup:</span>
+<span class="lineNum">      95 </span><span class="lineCov">         29 :         ast_sip_cleanup_auths(auths, auth_size);</span>
+<span class="lineNum">      96 </span><span class="lineCov">         29 :         return res;</span>
+<a name="97"><span class="lineNum">      97 </span>            : }</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">         30 : static int digest_create_request_with_auth(const struct ast_sip_auth_vector *auths,</span>
+<span class="lineNum">     100 </span>            :         pjsip_rx_data *challenge, pjsip_tx_data *old_request, pjsip_tx_data **new_request)
+<span class="lineNum">     101 </span>            : {
+<span class="lineNum">     102 </span>            :         pjsip_auth_clt_sess auth_sess;
+<span class="lineNum">     103 </span>            :         pjsip_cseq_hdr *cseq;
+<span class="lineNum">     104 </span>            :         pj_status_t status;
+<span class="lineNum">     105 </span>            :         struct ast_sip_endpoint *endpoint;
+<span class="lineNum">     106 </span><span class="lineCov">         30 :         char *id = NULL;</span>
+<span class="lineNum">     107 </span>            :         const char *id_type;
+<span class="lineNum">     108 </span>            :         pjsip_www_authenticate_hdr *auth_hdr;
+<span class="lineNum">     109 </span>            :         struct ast_str *realms;
+<span class="lineNum">     110 </span>            :         pjsip_dialog *dlg;
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">         30 :         dlg = pjsip_rdata_get_dlg(challenge);</span>
+<span class="lineNum">     113 </span><span class="lineCov">         30 :         if (dlg) {</span>
+<span class="lineNum">     114 </span><span class="lineCov">         21 :                 endpoint = ast_sip_dialog_get_endpoint(dlg);</span>
+<span class="lineNum">     115 </span><span class="lineCov">         21 :                 id = endpoint ? ast_strdupa(ast_sorcery_object_get_id(endpoint)) : NULL;</span>
+<span class="lineNum">     116 </span><span class="lineCov">         21 :                 ao2_cleanup(endpoint);</span>
+<span class="lineNum">     117 </span><span class="lineCov">         21 :                 id_type = &quot;Endpoint&quot;;</span>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span>            :         /* If there was no dialog, then this is probably a REGISTER so no endpoint */
+<span class="lineNum">     120 </span><span class="lineCov">         30 :         if (!id) {</span>
+<span class="lineNum">     121 </span><span class="lineCov">          9 :                 id = ast_alloca(strlen(challenge-&gt;pkt_info.src_name) + 7 /* ':' + port + NULL */);</span>
+<span class="lineNum">     122 </span><span class="lineCov">          9 :                 sprintf(id, &quot;%s:%d&quot;, challenge-&gt;pkt_info.src_name, challenge-&gt;pkt_info.src_port);</span>
+<span class="lineNum">     123 </span><span class="lineCov">          9 :                 id_type = &quot;Host&quot;;</span>
+<span class="lineNum">     124 </span>            :         }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">         30 :         auth_hdr = get_auth_header(challenge, NULL);</span>
+<span class="lineNum">     127 </span><span class="lineCov">         30 :         if (auth_hdr == NULL) {</span>
+<span class="lineNum">     128 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;%s: '%s': Unable to find authenticate header in challenge.\n&quot;,</span>
+<span class="lineNum">     129 </span>            :                         id_type, id);
+<span class="lineNum">     130 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     131 </span>            :         }
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineCov">         29 :         if (pjsip_auth_clt_init(&amp;auth_sess, ast_sip_get_pjsip_endpoint(),</span>
+<span class="lineNum">     134 </span>            :                                 old_request-&gt;pool, 0) != PJ_SUCCESS) {
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;%s: '%s': Failed to initialize client authentication session\n&quot;,</span>
+<span class="lineNum">     136 </span>            :                         id_type, id);
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">         29 :         if (set_outbound_authentication_credentials(&amp;auth_sess, auths, challenge, auth_hdr)) {</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;%s: '%s': Failed to set authentication credentials\n&quot;,</span>
+<span class="lineNum">     142 </span>            :                         id_type, id);
+<span class="lineNum">     143 </span>            : #if defined(HAVE_PJSIP_AUTH_CLT_DEINIT)
+<span class="lineNum">     144 </span>            :                 /* In case it is not a noop here in the future. */
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 pjsip_auth_clt_deinit(&amp;auth_sess);</span>
+<span class="lineNum">     146 </span>            : #endif
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     148 </span>            :         }
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span><span class="lineCov">         29 :         status = pjsip_auth_clt_reinit_req(&amp;auth_sess, challenge, old_request, new_request);</span>
+<span class="lineNum">     151 </span>            : #if defined(HAVE_PJSIP_AUTH_CLT_DEINIT)
+<span class="lineNum">     152 </span>            :         /* Release any cached auths */
+<span class="lineNum">     153 </span><span class="lineCov">         29 :         pjsip_auth_clt_deinit(&amp;auth_sess);</span>
+<span class="lineNum">     154 </span>            : #endif
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">         29 :         switch (status) {</span>
+<span class="lineNum">     157 </span><span class="lineCov">         29 :         case PJ_SUCCESS:</span>
+<span class="lineNum">     158 </span>            :                 /* PJSIP creates a new transaction for new_request (meaning it creates a new
+<span class="lineNum">     159 </span>            :                  * branch). However, it recycles the Call-ID, from-tag, and CSeq from the
+<span class="lineNum">     160 </span>            :                  * original request. Some SIP implementations will not process the new request
+<span class="lineNum">     161 </span>            :                  * since the CSeq is the same as the original request. Incrementing it here
+<span class="lineNum">     162 </span>            :                  * fixes the interop issue
+<span class="lineNum">     163 </span>            :                  */
+<span class="lineNum">     164 </span><span class="lineCov">         29 :                 cseq = pjsip_msg_find_hdr((*new_request)-&gt;msg, PJSIP_H_CSEQ, NULL);</span>
+<span class="lineNum">     165 </span><span class="lineCov">         29 :                 ast_assert(cseq != NULL);</span>
+<span class="lineNum">     166 </span><span class="lineCov">         29 :                 ++cseq-&gt;cseq;</span>
+<span class="lineNum">     167 </span><span class="lineCov">         29 :                 return 0;</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         case PJSIP_ENOCREDENTIAL:</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 realms = ast_str_create(32);</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                 if (realms) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                         ast_str_append(&amp;realms, 0, &quot;%.*s&quot;, (int)auth_hdr-&gt;challenge.common.realm.slen,</span>
+<span class="lineNum">     172 </span>            :                                 auth_hdr-&gt;challenge.common.realm.ptr);
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                         while((auth_hdr = get_auth_header(challenge, auth_hdr-&gt;next))) {</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                                 ast_str_append(&amp;realms, 0, &quot;,%.*s&quot;, (int)auth_hdr-&gt;challenge.common.realm.slen,</span>
+<span class="lineNum">     175 </span>            :                                         auth_hdr-&gt;challenge.common.realm.ptr);
+<span class="lineNum">     176 </span>            :                         }
+<span class="lineNum">     177 </span>            :                 }
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">     179 </span>            :                         &quot;%s: '%s': Unable to create request with auth. &quot;
+<span class="lineNum">     180 </span>            :                         &quot;No auth credentials for realm(s) '%s' in challenge.\n&quot;, id_type, id,
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                         realms ? ast_str_buffer(realms) : &quot;&lt;unknown&gt;&quot;);</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                 ast_free(realms);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         case PJSIP_EAUTHSTALECOUNT:</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">     186 </span>            :                         &quot;%s: '%s': Unable to create request with auth.  Number of stale retries exceeded.\n&quot;,
+<span class="lineNum">     187 </span>            :                         id_type, id);
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :         case PJSIP_EFAILEDCREDENTIAL:</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;%s: '%s': Authentication credentials not accepted by server.\n&quot;,</span>
+<span class="lineNum">     191 </span>            :                         id_type, id);
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;%s: '%s': Unable to create request with auth. Unknown failure.\n&quot;,</span>
+<span class="lineNum">     195 </span>            :                         id_type, id);
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     200 </span>            : }
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            : static struct ast_sip_outbound_authenticator digest_authenticator = {
+<span class="lineNum">     203 </span>            :         .create_request_with_auth = digest_create_request_with_auth,
+<a name="204"><span class="lineNum">     204 </span>            : };</a>
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">        852 : static int load_module(void)</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span><span class="lineCov">        852 :         if (ast_sip_register_outbound_authenticator(&amp;digest_authenticator)) {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     210 </span>            :         }
+<span class="lineNum">     211 </span><span class="lineCov">        852 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="212"><span class="lineNum">     212 </span>            : }</a>
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineCov">        851 : static int unload_module(void)</span>
+<span class="lineNum">     215 </span>            : {
+<span class="lineNum">     216 </span><span class="lineCov">        851 :         ast_sip_unregister_outbound_authenticator(&amp;digest_authenticator);</span>
+<span class="lineNum">     217 </span><span class="lineCov">        851 :         return 0;</span>
+<a name="218"><span class="lineNum">     218 </span>            : }</a>
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineCov">       1704 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;PJSIP authentication resource&quot;,</span>
+<span class="lineNum">     221 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     222 </span>            :         .load = load_module,
+<span class="lineNum">     223 </span>            :         .unload = unload_module,
+<span class="lineNum">     224 </span>            :         .load_pri = AST_MODPRI_CHANNEL_DEPEND,
+<span class="lineNum">     225 </span>            :         .requires = &quot;res_pjsip&quot;,
+<span class="lineNum">     226 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

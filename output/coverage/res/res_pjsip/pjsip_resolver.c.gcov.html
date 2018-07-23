@@ -1,0 +1,802 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-9767e98486 - res/res_pjsip/pjsip_resolver.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/res_pjsip</a> - pjsip_resolver.c<span style="font-size: 80%;"> (source / <a href="pjsip_resolver.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-9767e98486</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">231</td>
+            <td class="headerCovTableEntry">265</td>
+            <td class="headerCovTableEntryMed">87.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-22 22:16:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2015, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      22 </span>            : #include &lt;pjlib-util/errno.h&gt;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &lt;arpa/nameser.h&gt;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/dns_core.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/dns_query_set.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/dns_srv.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/dns_naptr.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;include/res_pjsip_private.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/threadpool.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #ifdef HAVE_PJSIP_EXTERNAL_RESOLVER
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : /*! \brief Structure which contains transport+port information for an active query */
+<span class="lineNum">      39 </span>            : struct sip_target {
+<span class="lineNum">      40 </span>            :         /*! \brief The transport to be used */
+<span class="lineNum">      41 </span>            :         pjsip_transport_type_e transport;
+<span class="lineNum">      42 </span>            :         /*! \brief The port */
+<span class="lineNum">      43 </span>            :         int port;
+<span class="lineNum">      44 </span>            : };
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /*! \brief The vector used for current targets */
+<span class="lineNum">      47 </span>            : AST_VECTOR(targets, struct sip_target);
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : /*! \brief Structure which keeps track of resolution */
+<span class="lineNum">      50 </span>            : struct sip_resolve {
+<span class="lineNum">      51 </span>            :         /*! \brief Addresses currently being resolved, indexed based on index of queries in query set */
+<span class="lineNum">      52 </span>            :         struct targets resolving;
+<span class="lineNum">      53 </span>            :         /*! \brief Active queries */
+<span class="lineNum">      54 </span>            :         struct ast_dns_query_set *queries;
+<span class="lineNum">      55 </span>            :         /*! \brief Current viable server addresses */
+<span class="lineNum">      56 </span>            :         pjsip_server_addresses addresses;
+<span class="lineNum">      57 </span>            :         /*! \brief Serializer to run async callback into pjlib. */
+<span class="lineNum">      58 </span>            :         struct ast_taskprocessor *serializer;
+<span class="lineNum">      59 </span>            :         /*! \brief Callback to invoke upon completion */
+<span class="lineNum">      60 </span>            :         pjsip_resolver_callback *callback;
+<span class="lineNum">      61 </span>            :         /*! \brief User provided data */
+<span class="lineNum">      62 </span>            :         void *token;
+<span class="lineNum">      63 </span>            : };
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : /*! \brief Our own defined transports, reduces the size of sip_available_transports */
+<span class="lineNum">      66 </span>            : enum sip_resolver_transport {
+<span class="lineNum">      67 </span>            :         SIP_RESOLVER_TRANSPORT_UDP,
+<span class="lineNum">      68 </span>            :         SIP_RESOLVER_TRANSPORT_TCP,
+<span class="lineNum">      69 </span>            :         SIP_RESOLVER_TRANSPORT_TLS,
+<span class="lineNum">      70 </span>            :         SIP_RESOLVER_TRANSPORT_UDP6,
+<span class="lineNum">      71 </span>            :         SIP_RESOLVER_TRANSPORT_TCP6,
+<span class="lineNum">      72 </span>            :         SIP_RESOLVER_TRANSPORT_TLS6,
+<span class="lineNum">      73 </span>            : };
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span>            : /*! \brief Available transports on the system */
+<span class="lineNum">      76 </span>            : static int sip_available_transports[] = {
+<span class="lineNum">      77 </span>            :         /* This is a list of transports with whether they are available as a valid transport
+<span class="lineNum">      78 </span>            :          * stored. We use our own identifier as to reduce the size of sip_available_transports.
+<span class="lineNum">      79 </span>            :          * As this array is only manipulated at startup it does not require a lock to protect
+<span class="lineNum">      80 </span>            :          * it.
+<span class="lineNum">      81 </span>            :          */
+<span class="lineNum">      82 </span>            :         [SIP_RESOLVER_TRANSPORT_UDP] = 0,
+<span class="lineNum">      83 </span>            :         [SIP_RESOLVER_TRANSPORT_TCP] = 0,
+<span class="lineNum">      84 </span>            :         [SIP_RESOLVER_TRANSPORT_TLS] = 0,
+<span class="lineNum">      85 </span>            :         [SIP_RESOLVER_TRANSPORT_UDP6] = 0,
+<span class="lineNum">      86 </span>            :         [SIP_RESOLVER_TRANSPORT_TCP6] = 0,
+<span class="lineNum">      87 </span>            :         [SIP_RESOLVER_TRANSPORT_TLS6] = 0,
+<span class="lineNum">      88 </span>            : };
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            : /*!
+<span class="lineNum">      91 </span>            :  * \internal
+<span class="lineNum">      92 </span>            :  * \brief Destroy resolution data
+<span class="lineNum">      93 </span>            :  *
+<span class="lineNum">      94 </span>            :  * \param data The resolution data to destroy
+<span class="lineNum">      95 </span>            :  *
+<a name="96"><span class="lineNum">      96 </span>            :  * \return Nothing</a>
+<span class="lineNum">      97 </span>            :  */
+<span class="lineNum">      98 </span><span class="lineCov">         26 : static void sip_resolve_destroy(void *data)</span>
+<span class="lineNum">      99 </span>            : {
+<span class="lineNum">     100 </span><span class="lineCov">         26 :         struct sip_resolve *resolve = data;</span>
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span><span class="lineCov">         26 :         AST_VECTOR_FREE(&amp;resolve-&gt;resolving);</span>
+<span class="lineNum">     103 </span><span class="lineCov">         26 :         ao2_cleanup(resolve-&gt;queries);</span>
+<span class="lineNum">     104 </span><span class="lineCov">         26 :         ast_taskprocessor_unreference(resolve-&gt;serializer);</span>
+<span class="lineNum">     105 </span><span class="lineCov">         26 : }</span>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : /*!
+<span class="lineNum">     108 </span>            :  * \internal
+<span class="lineNum">     109 </span>            :  * \brief Check whether a transport is available or not
+<span class="lineNum">     110 </span>            :  *
+<span class="lineNum">     111 </span>            :  * \param transport The PJSIP transport type
+<span class="lineNum">     112 </span>            :  *
+<span class="lineNum">     113 </span>            :  * \return 1 success (transport is available)
+<a name="114"><span class="lineNum">     114 </span>            :  * \return 0 failure (transport is not available)</a>
+<span class="lineNum">     115 </span>            :  */
+<span class="lineNum">     116 </span><span class="lineCov">        193 : static int sip_transport_is_available(enum pjsip_transport_type_e transport)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span>            :         enum sip_resolver_transport resolver_transport;
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineCov">        193 :         if (transport == PJSIP_TRANSPORT_UDP) {</span>
+<span class="lineNum">     121 </span><span class="lineCov">         58 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_UDP;</span>
+<span class="lineNum">     122 </span><span class="lineCov">        135 :         } else if (transport == PJSIP_TRANSPORT_TCP) {</span>
+<span class="lineNum">     123 </span><span class="lineCov">         37 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TCP;</span>
+<span class="lineNum">     124 </span><span class="lineCov">         98 :         } else if (transport == PJSIP_TRANSPORT_TLS) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TLS;</span>
+<span class="lineNum">     126 </span><span class="lineCov">         98 :         } else if (transport == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     127 </span><span class="lineCov">         54 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_UDP6;</span>
+<span class="lineNum">     128 </span><span class="lineCov">         44 :         } else if (transport == PJSIP_TRANSPORT_TCP6) {</span>
+<span class="lineNum">     129 </span><span class="lineCov">         28 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TCP6;</span>
+<span class="lineNum">     130 </span><span class="lineCov">         16 :         } else if (transport == PJSIP_TRANSPORT_TLS6) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TLS6;</span>
+<span class="lineNum">     132 </span>            :         } else {
+<span class="lineNum">     133 </span><span class="lineCov">         16 :                 return 0;</span>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">        177 :         return sip_available_transports[resolver_transport];</span>
+<span class="lineNum">     137 </span>            : }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : /*!
+<span class="lineNum">     140 </span>            :  * \internal
+<span class="lineNum">     141 </span>            :  * \brief Add a query to be resolved
+<span class="lineNum">     142 </span>            :  *
+<span class="lineNum">     143 </span>            :  * \param resolve The ongoing resolution
+<span class="lineNum">     144 </span>            :  * \param name What to resolve
+<span class="lineNum">     145 </span>            :  * \param rr_type The type of record to look up
+<span class="lineNum">     146 </span>            :  * \param rr_class The type of class to look up
+<span class="lineNum">     147 </span>            :  * \param transport The transport to use for any resulting records
+<span class="lineNum">     148 </span>            :  * \param port The port to use for any resulting records - if not specified the
+<span class="lineNum">     149 </span>            :  *             default for the transport is used
+<span class="lineNum">     150 </span>            :  *
+<span class="lineNum">     151 </span>            :  * \retval 0 success
+<a name="152"><span class="lineNum">     152 </span>            :  * \retval -1 failure</a>
+<span class="lineNum">     153 </span>            :  */
+<span class="lineNum">     154 </span><span class="lineCov">        162 : static int sip_resolve_add(struct sip_resolve *resolve, const char *name, int rr_type, int rr_class, pjsip_transport_type_e transport, int port)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span><span class="lineCov">        162 :         struct sip_target target = {</span>
+<span class="lineNum">     157 </span>            :                 .transport = transport,
+<span class="lineNum">     158 </span>            :                 .port = port,
+<span class="lineNum">     159 </span>            :         };
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">        162 :         if (!resolve-&gt;queries) {</span>
+<span class="lineNum">     162 </span><span class="lineCov">         58 :                 resolve-&gt;queries = ast_dns_query_set_create();</span>
+<span class="lineNum">     163 </span><span class="lineCov">         58 :                 if (!resolve-&gt;queries) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     165 </span>            :                 }
+<span class="lineNum">     166 </span>            :         }
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">        162 :         if (!port) {</span>
+<span class="lineNum">     169 </span><span class="lineCov">        108 :                 target.port = pjsip_transport_get_default_port_for_type(transport);</span>
+<span class="lineNum">     170 </span>            :         }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">        162 :         if (AST_VECTOR_APPEND(&amp;resolve-&gt;resolving, target)) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     174 </span>            :         }
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">        162 :         ast_debug(2, &quot;[%p] Added target '%s' with record type '%d', transport '%s', and port '%d'\n&quot;,</span>
+<span class="lineNum">     177 </span>            :                 resolve, name, rr_type, pjsip_transport_get_type_name(transport), target.port);
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">        162 :         return ast_dns_query_set_add(resolve-&gt;queries, name, rr_type, rr_class);</span>
+<span class="lineNum">     180 </span>            : }
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            : /*!
+<span class="lineNum">     183 </span>            :  * \internal
+<span class="lineNum">     184 </span>            :  * \brief Task used to invoke the user specific callback
+<span class="lineNum">     185 </span>            :  *
+<span class="lineNum">     186 </span>            :  * \param data The complete resolution
+<span class="lineNum">     187 </span>            :  *
+<a name="188"><span class="lineNum">     188 </span>            :  * \return Nothing</a>
+<span class="lineNum">     189 </span>            :  */
+<span class="lineNum">     190 </span><span class="lineCov">         26 : static int sip_resolve_invoke_user_callback(void *data)</span>
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span><span class="lineCov">         26 :         struct sip_resolve *resolve = data;</span>
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineCov">         26 :         if (DEBUG_ATLEAST(2)) {</span>
+<span class="lineNum">     195 </span>            :                 /* This includes space for the IP address, [, ], :, and the port */
+<span class="lineNum">     196 </span>            :                 char addr[PJ_INET6_ADDRSTRLEN + 10];
+<span class="lineNum">     197 </span>            :                 int idx;
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">         74 :                 for (idx = 0; idx &lt; resolve-&gt;addresses.count; ++idx) {</span>
+<span class="lineNum">     200 </span><span class="lineCov">         48 :                         pj_sockaddr_print(&amp;resolve-&gt;addresses.entry[idx].addr, addr, sizeof(addr), 3);</span>
+<span class="lineNum">     201 </span><span class="lineCov">         48 :                         ast_log(LOG_DEBUG, &quot;[%p] Address '%d' is %s with transport '%s'\n&quot;,</span>
+<span class="lineNum">     202 </span>            :                                 resolve, idx, addr,
+<span class="lineNum">     203 </span>            :                                 pjsip_transport_get_type_name(resolve-&gt;addresses.entry[idx].type));
+<span class="lineNum">     204 </span>            :                 }
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">         26 :         ast_debug(2, &quot;[%p] Invoking user callback with '%d' addresses\n&quot;, resolve, resolve-&gt;addresses.count);</span>
+<span class="lineNum">     208 </span><span class="lineCov">         26 :         resolve-&gt;callback(resolve-&gt;addresses.count ? PJ_SUCCESS : PJLIB_UTIL_EDNSNOANSWERREC, resolve-&gt;token, &amp;resolve-&gt;addresses);</span>
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span><span class="lineCov">         26 :         ao2_ref(resolve, -1);</span>
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineCov">         26 :         return 0;</span>
+<span class="lineNum">     213 </span>            : }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            : /*!
+<span class="lineNum">     216 </span>            :  * \internal
+<span class="lineNum">     217 </span>            :  * \brief Handle a NAPTR record according to RFC3263
+<span class="lineNum">     218 </span>            :  *
+<span class="lineNum">     219 </span>            :  * \param resolve The ongoing resolution
+<span class="lineNum">     220 </span>            :  * \param record The NAPTR record itself
+<span class="lineNum">     221 </span>            :  * \param service The service to look for
+<span class="lineNum">     222 </span>            :  * \param transport The transport to use for resulting queries
+<span class="lineNum">     223 </span>            :  *
+<span class="lineNum">     224 </span>            :  * \retval 0 success
+<a name="225"><span class="lineNum">     225 </span>            :  * \retval -1 failure (record not handled / supported)</a>
+<span class="lineNum">     226 </span>            :  */
+<span class="lineNum">     227 </span><span class="lineCov">         35 : static int sip_resolve_handle_naptr(struct sip_resolve *resolve, const struct ast_dns_record *record,</span>
+<span class="lineNum">     228 </span>            :         const char *service, pjsip_transport_type_e transport)
+<span class="lineNum">     229 </span>            : {
+<span class="lineNum">     230 </span><span class="lineCov">         35 :         if (strcasecmp(ast_dns_naptr_get_service(record), service)) {</span>
+<span class="lineNum">     231 </span><span class="lineCov">         22 :                 return -1;</span>
+<span class="lineNum">     232 </span>            :         }
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span>            :         /* It is possible for us to receive an explicit transport that is already IPv6, in that case
+<span class="lineNum">     235 </span>            :          * we can't turn it into an IPv6 transport and check. If it's not IPv6 though we need to check
+<span class="lineNum">     236 </span>            :          * for both IPv4 and IPv6 as PJSIP does not provide enough differentiation to know that we
+<span class="lineNum">     237 </span>            :          * want only IPv4.
+<span class="lineNum">     238 </span>            :          */
+<span class="lineNum">     239 </span><span class="lineCov">         13 :         if (!sip_transport_is_available(transport) &amp;&amp;</span>
+<span class="lineNum">     240 </span><span class="lineCov">          1 :                 (!(transport &amp; PJSIP_TRANSPORT_IPV6) &amp;&amp; !sip_transport_is_available(transport + PJSIP_TRANSPORT_IPV6))) {</span>
+<span class="lineNum">     241 </span><span class="lineCov">          1 :                 ast_debug(2, &quot;[%p] NAPTR service %s skipped as transport is unavailable\n&quot;,</span>
+<span class="lineNum">     242 </span>            :                         resolve, service);
+<span class="lineNum">     243 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     244 </span>            :         }
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">         12 :         if (strcasecmp(ast_dns_naptr_get_flags(record), &quot;s&quot;)) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;[%p] NAPTR service %s received with unsupported flags '%s'\n&quot;,</span>
+<span class="lineNum">     248 </span>            :                         resolve, service, ast_dns_naptr_get_flags(record));
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     250 </span>            :         }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">         12 :         if (ast_strlen_zero(ast_dns_naptr_get_replacement(record))) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     254 </span>            :         }
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineCov">         12 :         return sip_resolve_add(resolve, ast_dns_naptr_get_replacement(record), T_SRV, C_IN,</span>
+<span class="lineNum">     257 </span>            :                 transport, 0);
+<span class="lineNum">     258 </span>            : }
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            : /*!
+<span class="lineNum">     261 </span>            :  * \internal
+<span class="lineNum">     262 </span>            :  * \brief Query set callback function, invoked when all queries have completed
+<span class="lineNum">     263 </span>            :  *
+<span class="lineNum">     264 </span>            :  * \param query_set The completed query set
+<span class="lineNum">     265 </span>            :  *
+<a name="266"><span class="lineNum">     266 </span>            :  * \return Nothing</a>
+<span class="lineNum">     267 </span>            :  */
+<span class="lineNum">     268 </span><span class="lineCov">         58 : static void sip_resolve_callback(const struct ast_dns_query_set *query_set)</span>
+<span class="lineNum">     269 </span>            : {
+<span class="lineNum">     270 </span><span class="lineCov">         58 :         struct sip_resolve *resolve = ast_dns_query_set_get_data(query_set);</span>
+<span class="lineNum">     271 </span><span class="lineCov">         58 :         struct ast_dns_query_set *queries = resolve-&gt;queries;</span>
+<span class="lineNum">     272 </span>            :         struct targets resolving;
+<span class="lineNum">     273 </span><span class="lineCov">         58 :         int idx, address_count = 0, have_naptr = 0, have_srv = 0;</span>
+<span class="lineNum">     274 </span><span class="lineCov">         58 :         unsigned short order = 0;</span>
+<span class="lineNum">     275 </span><span class="lineCov">         58 :         int strict_order = 0;</span>
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">         58 :         ast_debug(2, &quot;[%p] All parallel queries completed\n&quot;, resolve);</span>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">         58 :         resolve-&gt;queries = NULL;</span>
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span>            :         /* This purposely steals the resolving list so we can add entries to the new one in
+<span class="lineNum">     282 </span>            :          * the same loop and also have access to the old.
+<span class="lineNum">     283 </span>            :          */
+<span class="lineNum">     284 </span><span class="lineCov">         58 :         resolving = resolve-&gt;resolving;</span>
+<span class="lineNum">     285 </span><span class="lineCov">         58 :         AST_VECTOR_INIT(&amp;resolve-&gt;resolving, 0);</span>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :         /* The order of queries is what defines the preference order for the records within
+<span class="lineNum">     288 </span>            :          * this specific query set. The preference order overall is defined as a result of
+<span class="lineNum">     289 </span>            :          * drilling down from other records. Each completed query set replaces the results
+<span class="lineNum">     290 </span>            :          * of the last.
+<span class="lineNum">     291 </span>            :          */
+<span class="lineNum">     292 </span><span class="lineCov">        220 :         for (idx = 0; idx &lt; ast_dns_query_set_num_queries(queries); ++idx) {</span>
+<span class="lineNum">     293 </span><span class="lineCov">        162 :                 struct ast_dns_query *query = ast_dns_query_set_get(queries, idx);</span>
+<span class="lineNum">     294 </span><span class="lineCov">        162 :                 struct ast_dns_result *result = ast_dns_query_get_result(query);</span>
+<span class="lineNum">     295 </span>            :                 struct sip_target *target;
+<span class="lineNum">     296 </span>            :                 const struct ast_dns_record *record;
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineCov">        162 :                 if (!result) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                         ast_debug(2, &quot;[%p] No result information for target '%s' of type '%d'\n&quot;, resolve,</span>
+<span class="lineNum">     300 </span>            :                                 ast_dns_query_get_name(query), ast_dns_query_get_rr_type(query));
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     302 </span>            :                 }
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">        162 :                 target = AST_VECTOR_GET_ADDR(&amp;resolving, idx);</span>
+<span class="lineNum">     305 </span><span class="lineCov">        286 :                 for (record = ast_dns_result_get_records(result); record; record = ast_dns_record_get_next(record)) {</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineCov">        201 :                         if (ast_dns_record_get_rr_type(record) == T_A ||</span>
+<span class="lineNum">     308 </span><span class="lineCov">         77 :                                 ast_dns_record_get_rr_type(record) == T_AAAA) {</span>
+<span class="lineNum">     309 </span>            :                                 /* If NAPTR or SRV records exist the subsequent results from them take preference */
+<span class="lineNum">     310 </span><span class="lineCov">         54 :                                 if (have_naptr || have_srv) {</span>
+<span class="lineNum">     311 </span><span class="lineCov">          6 :                                         ast_debug(2, &quot;[%p] %s record being skipped on target '%s' because NAPTR or SRV record exists\n&quot;,</span>
+<span class="lineNum">     312 </span>            :                                                 resolve, ast_dns_record_get_rr_type(record) == T_A ? &quot;A&quot; : &quot;AAAA&quot;,
+<span class="lineNum">     313 </span>            :                                                 ast_dns_query_get_name(query));
+<span class="lineNum">     314 </span><span class="lineCov">          6 :                                         continue;</span>
+<span class="lineNum">     315 </span>            :                                 }
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            :                                 /* PJSIP has a fixed maximum number of addresses that can exist, so limit ourselves to that */
+<span class="lineNum">     318 </span><span class="lineCov">         48 :                                 if (address_count == PJSIP_MAX_RESOLVED_ADDRESSES) {</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     320 </span>            :                                 }
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">         48 :                                 resolve-&gt;addresses.entry[address_count].type = target-&gt;transport;</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            :                                 /* Populate address information for the new address entry */
+<span class="lineNum">     325 </span><span class="lineCov">         48 :                                 if (ast_dns_record_get_rr_type(record) == T_A) {</span>
+<span class="lineNum">     326 </span><span class="lineCov">         41 :                                         ast_debug(2, &quot;[%p] A record received on target '%s'\n&quot;, resolve, ast_dns_query_get_name(query));</span>
+<span class="lineNum">     327 </span><span class="lineCov">         41 :                                         resolve-&gt;addresses.entry[address_count].addr_len = sizeof(pj_sockaddr_in);</span>
+<span class="lineNum">     328 </span><span class="lineCov">         41 :                                         pj_sockaddr_init(pj_AF_INET(), &amp;resolve-&gt;addresses.entry[address_count].addr, NULL,</span>
+<span class="lineNum">     329 </span><span class="lineCov">         41 :                                                 target-&gt;port);</span>
+<span class="lineNum">     330 </span><span class="lineCov">         41 :                                         resolve-&gt;addresses.entry[address_count].addr.ipv4.sin_addr = *(struct pj_in_addr*)ast_dns_record_get_data(record);</span>
+<span class="lineNum">     331 </span>            :                                 } else {
+<span class="lineNum">     332 </span><span class="lineCov">          7 :                                         ast_debug(2, &quot;[%p] AAAA record received on target '%s'\n&quot;, resolve, ast_dns_query_get_name(query));</span>
+<span class="lineNum">     333 </span><span class="lineCov">          7 :                                         resolve-&gt;addresses.entry[address_count].addr_len = sizeof(pj_sockaddr_in6);</span>
+<span class="lineNum">     334 </span><span class="lineCov">          7 :                                         pj_sockaddr_init(pj_AF_INET6(), &amp;resolve-&gt;addresses.entry[address_count].addr, NULL,</span>
+<span class="lineNum">     335 </span><span class="lineCov">          7 :                                                 target-&gt;port);</span>
+<span class="lineNum">     336 </span><span class="lineCov">          7 :                                         pj_memcpy(&amp;resolve-&gt;addresses.entry[address_count].addr.ipv6.sin6_addr, ast_dns_record_get_data(record),</span>
+<span class="lineNum">     337 </span>            :                                                 ast_dns_record_get_data_size(record));
+<span class="lineNum">     338 </span>            :                                 }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">         48 :                                 address_count++;</span>
+<span class="lineNum">     341 </span><span class="lineCov">         70 :                         } else if (ast_dns_record_get_rr_type(record) == T_SRV) {</span>
+<span class="lineNum">     342 </span><span class="lineCov">         55 :                                 if (have_naptr) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                                         ast_debug(2, &quot;[%p] SRV record being skipped on target '%s' because NAPTR record exists\n&quot;,</span>
+<span class="lineNum">     344 </span>            :                                                 resolve, ast_dns_query_get_name(query));
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     346 </span>            :                                 }
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span>            :                                 /* SRV records just create new queries for AAAA+A, nothing fancy */
+<span class="lineNum">     349 </span><span class="lineCov">         55 :                                 ast_debug(2, &quot;[%p] SRV record received on target '%s'\n&quot;, resolve, ast_dns_query_get_name(query));</span>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span>            :                                 /* If an explicit IPv6 target transport has been requested look for only AAAA records */
+<span class="lineNum">     352 </span><span class="lineCov">         55 :                                 if (target-&gt;transport &amp; PJSIP_TRANSPORT_IPV6) {</span>
+<span class="lineNum">     353 </span><span class="lineCov">          4 :                                         sip_resolve_add(resolve, ast_dns_srv_get_host(record), T_AAAA, C_IN, target-&gt;transport,</span>
+<span class="lineNum">     354 </span><span class="lineCov">          4 :                                                 ast_dns_srv_get_port(record));</span>
+<span class="lineNum">     355 </span><span class="lineCov">          4 :                                         have_srv = 1;</span>
+<span class="lineNum">     356 </span><span class="lineCov">         51 :                                 } else if (sip_transport_is_available(target-&gt;transport + PJSIP_TRANSPORT_IPV6)) {</span>
+<span class="lineNum">     357 </span><span class="lineCov">          2 :                                         sip_resolve_add(resolve, ast_dns_srv_get_host(record), T_AAAA, C_IN, target-&gt;transport + PJSIP_TRANSPORT_IPV6,</span>
+<span class="lineNum">     358 </span><span class="lineCov">          2 :                                                 ast_dns_srv_get_port(record));</span>
+<span class="lineNum">     359 </span><span class="lineCov">          2 :                                         have_srv = 1;</span>
+<span class="lineNum">     360 </span>            :                                 }
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineCov">        106 :                                 if (!(target-&gt;transport &amp; PJSIP_TRANSPORT_IPV6) &amp;&amp;</span>
+<span class="lineNum">     363 </span><span class="lineCov">         51 :                                         sip_transport_is_available(target-&gt;transport)) {</span>
+<span class="lineNum">     364 </span><span class="lineCov">         46 :                                         sip_resolve_add(resolve, ast_dns_srv_get_host(record), T_A, C_IN, target-&gt;transport,</span>
+<span class="lineNum">     365 </span><span class="lineCov">         46 :                                                 ast_dns_srv_get_port(record));</span>
+<span class="lineNum">     366 </span><span class="lineCov">         46 :                                         have_srv = 1;</span>
+<span class="lineNum">     367 </span>            :                                 }
+<span class="lineNum">     368 </span><span class="lineCov">         15 :                         } else if (ast_dns_record_get_rr_type(record) == T_NAPTR) {</span>
+<span class="lineNum">     369 </span><span class="lineCov">         15 :                                 int added = -1;</span>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineCov">         15 :                                 ast_debug(2, &quot;[%p] NAPTR record received on target '%s'\n&quot;, resolve, ast_dns_query_get_name(query));</span>
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span><span class="lineCov">         15 :                                 if (strict_order &amp;&amp; (ast_dns_naptr_get_order(record) != order)) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                                         ast_debug(2, &quot;[%p] NAPTR record skipped because order '%hu' does not match strict order '%hu'\n&quot;,</span>
+<span class="lineNum">     375 </span>            :                                                 resolve, ast_dns_naptr_get_order(record), order);
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     377 </span>            :                                 }
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineCov">         15 :                                 if (target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED || target-&gt;transport == PJSIP_TRANSPORT_UDP ||</span>
+<span class="lineNum">     380 </span><span class="lineCov">          3 :                                         target-&gt;transport == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     381 </span><span class="lineCov">         13 :                                         added = sip_resolve_handle_naptr(resolve, record, &quot;sip+d2u&quot;,</span>
+<span class="lineNum">     382 </span><span class="lineCov">         13 :                                                 target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_UDP : target-&gt;transport);</span>
+<span class="lineNum">     383 </span>            :                                 }
+<span class="lineNum">     384 </span><span class="lineCov">         15 :                                 if (target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED || target-&gt;transport == PJSIP_TRANSPORT_TCP ||</span>
+<span class="lineNum">     385 </span><span class="lineCov">          3 :                                         target-&gt;transport == PJSIP_TRANSPORT_TCP6) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">         12 :                                         added = sip_resolve_handle_naptr(resolve, record, &quot;sip+d2t&quot;,</span>
+<span class="lineNum">     387 </span><span class="lineCov">         12 :                                                 target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_TCP : target-&gt;transport);</span>
+<span class="lineNum">     388 </span>            :                                 }
+<span class="lineNum">     389 </span><span class="lineCov">         15 :                                 if (target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED || target-&gt;transport == PJSIP_TRANSPORT_TLS ||</span>
+<span class="lineNum">     390 </span><span class="lineCov">          5 :                                         target-&gt;transport == PJSIP_TRANSPORT_TLS6) {</span>
+<span class="lineNum">     391 </span><span class="lineCov">         10 :                                         added = sip_resolve_handle_naptr(resolve, record, &quot;sips+d2t&quot;,</span>
+<span class="lineNum">     392 </span><span class="lineCov">         10 :                                                 target-&gt;transport == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_TLS : target-&gt;transport);</span>
+<span class="lineNum">     393 </span>            :                                 }
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span>            :                                 /* If this record was successfully handled then we need to limit ourselves to this order */
+<span class="lineNum">     396 </span><span class="lineCov">         15 :                                 if (!added) {</span>
+<span class="lineNum">     397 </span><span class="lineCov">          3 :                                         have_naptr = 1;</span>
+<span class="lineNum">     398 </span><span class="lineCov">          3 :                                         strict_order = 1;</span>
+<span class="lineNum">     399 </span><span class="lineCov">          3 :                                         order = ast_dns_naptr_get_order(record);</span>
+<span class="lineNum">     400 </span>            :                                 }
+<span class="lineNum">     401 </span>            :                         }
+<span class="lineNum">     402 </span>            :                 }
+<span class="lineNum">     403 </span>            :         }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span>            :         /* Update the server addresses count, this is not limited as it can never exceed the max allowed */
+<span class="lineNum">     406 </span><span class="lineCov">         58 :         resolve-&gt;addresses.count = address_count;</span>
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span>            :         /* Free the vector we stole as we are responsible for it */
+<span class="lineNum">     409 </span><span class="lineCov">         58 :         AST_VECTOR_FREE(&amp;resolving);</span>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span>            :         /* If additional queries were added start the resolution process again */
+<span class="lineNum">     412 </span><span class="lineCov">         58 :         if (resolve-&gt;queries) {</span>
+<span class="lineNum">     413 </span><span class="lineCov">         32 :                 ast_debug(2, &quot;[%p] New queries added, performing parallel resolution again\n&quot;, resolve);</span>
+<span class="lineNum">     414 </span><span class="lineCov">         32 :                 ast_dns_query_set_resolve_async(resolve-&gt;queries, sip_resolve_callback, resolve);</span>
+<span class="lineNum">     415 </span><span class="lineCov">         32 :                 ao2_ref(queries, -1);</span>
+<span class="lineNum">     416 </span><span class="lineCov">         32 :                 return;</span>
+<span class="lineNum">     417 </span>            :         }
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">         26 :         ast_debug(2, &quot;[%p] Resolution completed - %d viable targets\n&quot;, resolve, resolve-&gt;addresses.count);</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span>            :         /* Push a task to invoke the callback, we do this so it is guaranteed to run in a PJSIP thread */
+<span class="lineNum">     422 </span><span class="lineCov">         26 :         ao2_ref(resolve, +1);</span>
+<span class="lineNum">     423 </span><span class="lineCov">         26 :         if (ast_sip_push_task(resolve-&gt;serializer, sip_resolve_invoke_user_callback, resolve)) {</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 ao2_ref(resolve, -1);</span>
+<span class="lineNum">     425 </span>            :         }
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineCov">         26 :         ao2_ref(queries, -1);</span>
+<span class="lineNum">     428 </span>            : }
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            : /*!
+<span class="lineNum">     431 </span>            :  * \internal
+<span class="lineNum">     432 </span>            :  * \brief Determine what address family a host may be if it is already an IP address
+<span class="lineNum">     433 </span>            :  *
+<span class="lineNum">     434 </span>            :  * \param host The host (which may be an IP address)
+<span class="lineNum">     435 </span>            :  *
+<span class="lineNum">     436 </span>            :  * \retval 6 The host is an IPv6 address
+<span class="lineNum">     437 </span>            :  * \retval 4 The host is an IPv4 address
+<a name="438"><span class="lineNum">     438 </span>            :  * \retval 0 The host is not an IP address</a>
+<span class="lineNum">     439 </span>            :  */
+<span class="lineNum">     440 </span><span class="lineCov">       1564 : static int sip_resolve_get_ip_addr_ver(const pj_str_t *host)</span>
+<span class="lineNum">     441 </span>            : {
+<span class="lineNum">     442 </span>            :         pj_in_addr dummy;
+<span class="lineNum">     443 </span>            :         pj_in6_addr dummy6;
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineCov">       1564 :         if (pj_inet_aton(host, &amp;dummy) &gt; 0) {</span>
+<span class="lineNum">     446 </span><span class="lineCov">       1421 :                 return 4;</span>
+<span class="lineNum">     447 </span>            :         }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineCov">        143 :         if (pj_inet_pton(pj_AF_INET6(), host, &amp;dummy6) == PJ_SUCCESS) {</span>
+<span class="lineNum">     450 </span><span class="lineCov">        117 :                 return 6;</span>
+<span class="lineNum">     451 </span>            :         }
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">         26 :         return 0;</span>
+<span class="lineNum">     454 </span>            : }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span>            : /*!
+<span class="lineNum">     457 </span>            :  * \internal
+<span class="lineNum">     458 </span>            :  * \brief Perform SIP resolution of a host
+<span class="lineNum">     459 </span>            :  *
+<span class="lineNum">     460 </span>            :  * \param resolver Configured resolver instance
+<span class="lineNum">     461 </span>            :  * \param pool Memory pool to allocate things from
+<span class="lineNum">     462 </span>            :  * \param target The target we are resolving
+<span class="lineNum">     463 </span>            :  * \param token User data to pass to the resolver callback
+<a name="464"><span class="lineNum">     464 </span>            :  * \param cb User resolver callback to invoke upon resolution completion</a>
+<span class="lineNum">     465 </span>            :  */
+<span class="lineNum">     466 </span><span class="lineCov">       1564 : static void sip_resolve(pjsip_resolver_t *resolver, pj_pool_t *pool, const pjsip_host_info *target,</span>
+<span class="lineNum">     467 </span>            :         void *token, pjsip_resolver_callback *cb)
+<span class="lineNum">     468 </span>            : {
+<span class="lineNum">     469 </span>            :         int ip_addr_ver;
+<span class="lineNum">     470 </span><span class="lineCov">       1564 :         pjsip_transport_type_e type = target-&gt;type;</span>
+<span class="lineNum">     471 </span>            :         struct sip_resolve *resolve;
+<span class="lineNum">     472 </span>            :         char host[NI_MAXHOST];
+<span class="lineNum">     473 </span><span class="lineCov">       1564 :         int res = 0;</span>
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineCov">       1564 :         ast_copy_pj_str(host, &amp;target-&gt;addr.host, sizeof(host));</span>
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span><span class="lineCov">       1564 :         ast_debug(2, &quot;Performing SIP DNS resolution of target '%s'\n&quot;, host);</span>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span>            :         /* If the provided target is already an address don't bother resolving */
+<span class="lineNum">     480 </span><span class="lineCov">       1564 :         ip_addr_ver = sip_resolve_get_ip_addr_ver(&amp;target-&gt;addr.host);</span>
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span>            :         /* Determine the transport to use if none has been explicitly specified */
+<span class="lineNum">     483 </span><span class="lineCov">       1564 :         if (type == PJSIP_TRANSPORT_UNSPECIFIED) {</span>
+<span class="lineNum">     484 </span>            :                 /* If we've been told to use a secure or reliable transport restrict ourselves to that */
+<span class="lineNum">     485 </span>            : #if PJ_HAS_TCP
+<span class="lineNum">     486 </span><span class="lineCov">        777 :                 if (target-&gt;flag &amp; PJSIP_TRANSPORT_SECURE) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                         type = PJSIP_TRANSPORT_TLS;</span>
+<span class="lineNum">     488 </span><span class="lineCov">        777 :                 } else if (target-&gt;flag &amp; PJSIP_TRANSPORT_RELIABLE) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         type = PJSIP_TRANSPORT_TCP;</span>
+<span class="lineNum">     490 </span>            :                 } else
+<span class="lineNum">     491 </span>            : #endif
+<span class="lineNum">     492 </span>            :                 /* According to the RFC otherwise if an explicit IP address OR an explicit port is specified
+<span class="lineNum">     493 </span>            :                  * we use UDP
+<span class="lineNum">     494 </span>            :                  */
+<span class="lineNum">     495 </span><span class="lineCov">        777 :                 if (ip_addr_ver || target-&gt;addr.port) {</span>
+<span class="lineNum">     496 </span><span class="lineCov">        765 :                         type = PJSIP_TRANSPORT_UDP;</span>
+<span class="lineNum">     497 </span>            :                 }
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineCov">        777 :                 if (ip_addr_ver == 6) {</span>
+<span class="lineNum">     500 </span><span class="lineCov">          6 :                         type = (pjsip_transport_type_e)((int) type + PJSIP_TRANSPORT_IPV6);</span>
+<span class="lineNum">     501 </span>            :                 }
+<span class="lineNum">     502 </span>            :         }
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">       1564 :         ast_debug(2, &quot;Transport type for target '%s' is '%s'\n&quot;, host, pjsip_transport_get_type_name(type));</span>
+<span class="lineNum">     505 </span>            : 
+<span class="lineNum">     506 </span>            :         /* If it's already an address call the callback immediately */
+<span class="lineNum">     507 </span><span class="lineCov">       1564 :         if (ip_addr_ver) {</span>
+<span class="lineNum">     508 </span><span class="lineCov">       1538 :                 pjsip_server_addresses addresses = {</span>
+<span class="lineNum">     509 </span>            :                         .entry[0].type = type,
+<span class="lineNum">     510 </span>            :                         .count = 1,
+<span class="lineNum">     511 </span>            :                 };
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span><span class="lineCov">       1538 :                 if (ip_addr_ver == 4) {</span>
+<span class="lineNum">     514 </span><span class="lineCov">       1421 :                         addresses.entry[0].addr_len = sizeof(pj_sockaddr_in);</span>
+<span class="lineNum">     515 </span><span class="lineCov">       1421 :                         pj_sockaddr_init(pj_AF_INET(), &amp;addresses.entry[0].addr, NULL, 0);</span>
+<span class="lineNum">     516 </span><span class="lineCov">       1421 :                         pj_inet_aton(&amp;target-&gt;addr.host, &amp;addresses.entry[0].addr.ipv4.sin_addr);</span>
+<span class="lineNum">     517 </span>            :                 } else {
+<span class="lineNum">     518 </span><span class="lineCov">        117 :                         addresses.entry[0].addr_len = sizeof(pj_sockaddr_in6);</span>
+<span class="lineNum">     519 </span><span class="lineCov">        117 :                         pj_sockaddr_init(pj_AF_INET6(), &amp;addresses.entry[0].addr, NULL, 0);</span>
+<span class="lineNum">     520 </span><span class="lineCov">        117 :                         pj_inet_pton(pj_AF_INET6(), &amp;target-&gt;addr.host, &amp;addresses.entry[0].addr.ipv6.sin6_addr);</span>
+<span class="lineNum">     521 </span>            :                 }
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span><span class="lineCov">       1538 :                 pj_sockaddr_set_port(&amp;addresses.entry[0].addr, !target-&gt;addr.port ? pjsip_transport_get_default_port_for_type(type) : target-&gt;addr.port);</span>
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span><span class="lineCov">       1538 :                 ast_debug(2, &quot;Target '%s' is an IP address, skipping resolution\n&quot;, host);</span>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineCov">       1538 :                 cb(PJ_SUCCESS, token, &amp;addresses);</span>
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineCov">       1538 :                 return;</span>
+<span class="lineNum">     530 </span>            :         }
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">         26 :         resolve = ao2_alloc_options(sizeof(*resolve), sip_resolve_destroy, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">     533 </span><span class="lineCov">         26 :         if (!resolve) {</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 cb(PJ_ENOMEM, token, NULL);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     536 </span>            :         }
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">         26 :         resolve-&gt;callback = cb;</span>
+<span class="lineNum">     539 </span><span class="lineCov">         26 :         resolve-&gt;token = token;</span>
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineCov">         26 :         if (AST_VECTOR_INIT(&amp;resolve-&gt;resolving, 4)) {</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                 ao2_ref(resolve, -1);</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                 cb(PJ_ENOMEM, token, NULL);</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     545 </span>            :         }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">         26 :         ast_debug(2, &quot;[%p] Created resolution tracking for target '%s'\n&quot;, resolve, host);</span>
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span>            :         /* If no port has been specified we can do NAPTR + SRV */
+<span class="lineNum">     550 </span><span class="lineCov">         26 :         if (!target-&gt;addr.port) {</span>
+<span class="lineNum">     551 </span>            :                 char srv[NI_MAXHOST];
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            :                 /* When resolving addresses PJSIP can request an explicit transport type. It will explicitly
+<span class="lineNum">     554 </span>            :                  * request an IPv6 transport if a message has been tagged to use an explicitly IPv6 transport.
+<span class="lineNum">     555 </span>            :                  * For other cases it can be left unspecified OR an explicit non-IPv6 transport can be requested.
+<span class="lineNum">     556 </span>            :                  * In the case where a non-IPv6 transport is requested there is no way to differentiate between
+<span class="lineNum">     557 </span>            :                  * a transport being requested as part of a SIP URI (sip:test.com;transport=tcp) and a message
+<span class="lineNum">     558 </span>            :                  * being tagged with a specific IPv4 transport. In this case we look for both IPv4 and IPv6 addresses.
+<span class="lineNum">     559 </span>            :                  * If a message has been tagged with a specific IPv4 transport the IPv6 addresses will simply
+<span class="lineNum">     560 </span>            :                  * be discarded. The code below and elsewhere handles the case where we know they requested IPv6
+<span class="lineNum">     561 </span>            :                  * explicitly and only looks for IPv6 records.
+<span class="lineNum">     562 </span>            :                  */
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">         24 :                 res |= sip_resolve_add(resolve, host, T_NAPTR, C_IN, type, 0);</span>
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span><span class="lineCov">         24 :                 if (type == PJSIP_TRANSPORT_UNSPECIFIED ||</span>
+<span class="lineNum">     567 </span><span class="lineCov">         12 :                         (type == PJSIP_TRANSPORT_TLS &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_TLS)) ||</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                         (type == PJSIP_TRANSPORT_TLS6 &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_TLS6))) {</span>
+<span class="lineNum">     569 </span><span class="lineCov">         12 :                         if (snprintf(srv, sizeof(srv), &quot;_sips._tcp.%s&quot;, host) &lt; NI_MAXHOST) {</span>
+<span class="lineNum">     570 </span><span class="lineCov">         12 :                                 res |= sip_resolve_add(resolve, srv, T_SRV, C_IN,</span>
+<span class="lineNum">     571 </span>            :                                         type == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_TLS : type, 0);
+<span class="lineNum">     572 </span>            :                         }
+<span class="lineNum">     573 </span>            :                 }
+<span class="lineNum">     574 </span><span class="lineCov">         24 :                 if (type == PJSIP_TRANSPORT_UNSPECIFIED ||</span>
+<span class="lineNum">     575 </span><span class="lineCov">         12 :                         (type == PJSIP_TRANSPORT_TCP &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_TCP)) ||</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                         (type == PJSIP_TRANSPORT_TCP6 &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_TCP6))) {</span>
+<span class="lineNum">     577 </span><span class="lineCov">         16 :                         if (snprintf(srv, sizeof(srv), &quot;_sip._tcp.%s&quot;, host) &lt; NI_MAXHOST) {</span>
+<span class="lineNum">     578 </span><span class="lineCov">         16 :                                 res |= sip_resolve_add(resolve, srv, T_SRV, C_IN,</span>
+<span class="lineNum">     579 </span>            :                                         type == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_TCP : type, 0);
+<span class="lineNum">     580 </span>            :                         }
+<span class="lineNum">     581 </span>            :                 }
+<span class="lineNum">     582 </span><span class="lineCov">         24 :                 if (type == PJSIP_TRANSPORT_UNSPECIFIED ||</span>
+<span class="lineNum">     583 </span><span class="lineCov">         12 :                         (type == PJSIP_TRANSPORT_UDP &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_UDP)) ||</span>
+<span class="lineNum">     584 </span><span class="lineCov">          3 :                         (type == PJSIP_TRANSPORT_UDP6 &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_UDP6))) {</span>
+<span class="lineNum">     585 </span><span class="lineCov">         20 :                         if (snprintf(srv, sizeof(srv), &quot;_sip._udp.%s&quot;, host) &lt; NI_MAXHOST) {</span>
+<span class="lineNum">     586 </span><span class="lineCov">         20 :                                 res |= sip_resolve_add(resolve, srv, T_SRV, C_IN,</span>
+<span class="lineNum">     587 </span>            :                                         type == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_UDP : type, 0);
+<span class="lineNum">     588 </span>            :                         }
+<span class="lineNum">     589 </span>            :                 }
+<span class="lineNum">     590 </span>            :         }
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span><span class="lineCov">         52 :         if ((type == PJSIP_TRANSPORT_UNSPECIFIED &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_UDP6)) ||</span>
+<span class="lineNum">     593 </span><span class="lineCov">         26 :                 sip_transport_is_available(type + PJSIP_TRANSPORT_IPV6)) {</span>
+<span class="lineNum">     594 </span><span class="lineCov">          2 :                 res |= sip_resolve_add(resolve, host, T_AAAA, C_IN, (type == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_UDP6 : type + PJSIP_TRANSPORT_IPV6), target-&gt;addr.port);</span>
+<span class="lineNum">     595 </span>            :         }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span><span class="lineCov">         41 :         if ((type == PJSIP_TRANSPORT_UNSPECIFIED &amp;&amp; sip_transport_is_available(PJSIP_TRANSPORT_UDP)) ||</span>
+<span class="lineNum">     598 </span><span class="lineCov">         15 :                 sip_transport_is_available(type)) {</span>
+<span class="lineNum">     599 </span><span class="lineCov">         24 :                 res |= sip_resolve_add(resolve, host, T_A, C_IN, (type == PJSIP_TRANSPORT_UNSPECIFIED ? PJSIP_TRANSPORT_UDP : type), target-&gt;addr.port);</span>
+<span class="lineNum">     600 </span>            :         }
+<span class="lineNum">     601 </span>            : 
+<span class="lineNum">     602 </span><span class="lineCov">         26 :         if (res) {</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 ao2_ref(resolve, -1);</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 cb(PJ_ENOMEM, token, NULL);</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     606 </span>            :         }
+<span class="lineNum">     607 </span><span class="lineCov">         26 :         if (!resolve-&gt;queries) {</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                 ast_debug(2, &quot;[%p] No resolution queries for target '%s'\n&quot;, resolve, host);</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :                 ao2_ref(resolve, -1);</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 cb(PJLIB_UTIL_EDNSNOANSWERREC, token, NULL);</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     612 </span>            :         }
+<span class="lineNum">     613 </span>            : 
+<span class="lineNum">     614 </span><span class="lineCov">         26 :         resolve-&gt;serializer = ao2_bump(ast_threadpool_serializer_get_current());</span>
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">         26 :         ast_debug(2, &quot;[%p] Starting initial resolution using parallel queries for target '%s'\n&quot;, resolve, host);</span>
+<span class="lineNum">     617 </span><span class="lineCov">         26 :         ast_dns_query_set_resolve_async(resolve-&gt;queries, sip_resolve_callback, resolve);</span>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">         26 :         ao2_ref(resolve, -1);</span>
+<span class="lineNum">     620 </span>            : }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            : /*!
+<span class="lineNum">     623 </span>            :  * \internal
+<span class="lineNum">     624 </span>            :  * \brief Determine if a specific transport is configured on the system
+<span class="lineNum">     625 </span>            :  *
+<span class="lineNum">     626 </span>            :  * \param pool A memory pool to allocate things from
+<span class="lineNum">     627 </span>            :  * \param transport The type of transport to check
+<span class="lineNum">     628 </span>            :  * \param name A friendly name to print in the verbose message
+<span class="lineNum">     629 </span>            :  *
+<a name="630"><span class="lineNum">     630 </span>            :  * \return Nothing</a>
+<span class="lineNum">     631 </span>            :  */
+<span class="lineNum">     632 </span><span class="lineCov">       5112 : static void sip_check_transport(pj_pool_t *pool, pjsip_transport_type_e transport, const char *name)</span>
+<span class="lineNum">     633 </span>            : {
+<span class="lineNum">     634 </span>            :         pjsip_tpmgr_fla2_param prm;
+<span class="lineNum">     635 </span>            :         enum sip_resolver_transport resolver_transport;
+<span class="lineNum">     636 </span>            : 
+<span class="lineNum">     637 </span><span class="lineCov">       5112 :         pjsip_tpmgr_fla2_param_default(&amp;prm);</span>
+<span class="lineNum">     638 </span><span class="lineCov">       5112 :         prm.tp_type = transport;</span>
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineCov">       5112 :         if (transport == PJSIP_TRANSPORT_UDP) {</span>
+<span class="lineNum">     641 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_UDP;</span>
+<span class="lineNum">     642 </span><span class="lineCov">       4260 :         } else if (transport == PJSIP_TRANSPORT_TCP) {</span>
+<span class="lineNum">     643 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TCP;</span>
+<span class="lineNum">     644 </span><span class="lineCov">       3408 :         } else if (transport == PJSIP_TRANSPORT_TLS) {</span>
+<span class="lineNum">     645 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TLS;</span>
+<span class="lineNum">     646 </span><span class="lineCov">       2556 :         } else if (transport == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     647 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_UDP6;</span>
+<span class="lineNum">     648 </span><span class="lineCov">       1704 :         } else if (transport == PJSIP_TRANSPORT_TCP6) {</span>
+<span class="lineNum">     649 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TCP6;</span>
+<span class="lineNum">     650 </span><span class="lineCov">        852 :         } else if (transport == PJSIP_TRANSPORT_TLS6) {</span>
+<span class="lineNum">     651 </span><span class="lineCov">        852 :                 resolver_transport = SIP_RESOLVER_TRANSPORT_TLS6;</span>
+<span class="lineNum">     652 </span>            :         } else {
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 ast_verb(2, &quot;'%s' is an unsupported SIP transport\n&quot;, name);</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     655 </span>            :         }
+<span class="lineNum">     656 </span>            : 
+<span class="lineNum">     657 </span><span class="lineCov">       5112 :         if (pjsip_tpmgr_find_local_addr2(pjsip_endpt_get_tpmgr(ast_sip_get_pjsip_endpoint()),</span>
+<span class="lineNum">     658 </span>            :                 pool, &amp;prm) == PJ_SUCCESS) {
+<span class="lineNum">     659 </span><span class="lineCov">        718 :                 ast_verb(2, &quot;'%s' is an available SIP transport\n&quot;, name);</span>
+<span class="lineNum">     660 </span><span class="lineCov">        718 :                 sip_available_transports[resolver_transport] = 1;</span>
+<span class="lineNum">     661 </span>            :         } else {
+<span class="lineNum">     662 </span><span class="lineCov">       4394 :                 ast_verb(2, &quot;'%s' is not an available SIP transport, disabling resolver support for it\n&quot;,</span>
+<span class="lineNum">     663 </span>            :                         name);
+<span class="lineNum">     664 </span>            :         }
+<span class="lineNum">     665 </span>            : }
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span>            : /*! \brief External resolver implementation for PJSIP */
+<span class="lineNum">     668 </span>            : static pjsip_ext_resolver resolver = {
+<span class="lineNum">     669 </span>            :         .resolve = sip_resolve,
+<span class="lineNum">     670 </span>            : };
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span>            : /*!
+<span class="lineNum">     673 </span>            :  * \internal
+<span class="lineNum">     674 </span>            :  * \brief Task to determine available transports and set ourselves an external resolver
+<span class="lineNum">     675 </span>            :  *
+<span class="lineNum">     676 </span>            :  * \retval 0 success
+<a name="677"><span class="lineNum">     677 </span>            :  * \retval -1 failure</a>
+<span class="lineNum">     678 </span>            :  */
+<span class="lineNum">     679 </span><span class="lineCov">        852 : static int sip_replace_resolver(void *data)</span>
+<span class="lineNum">     680 </span>            : {
+<span class="lineNum">     681 </span>            :         pj_pool_t *pool;
+<span class="lineNum">     682 </span>            : 
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span><span class="lineCov">        852 :         pool = pjsip_endpt_create_pool(ast_sip_get_pjsip_endpoint(), &quot;Transport Availability&quot;, 256, 256);</span>
+<span class="lineNum">     685 </span><span class="lineCov">        852 :         if (!pool) {</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     687 </span>            :         }
+<span class="lineNum">     688 </span>            : 
+<span class="lineNum">     689 </span>            :         /* Determine what transports are available on the system */
+<span class="lineNum">     690 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_UDP, &quot;UDP+IPv4&quot;);</span>
+<span class="lineNum">     691 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_TCP, &quot;TCP+IPv4&quot;);</span>
+<span class="lineNum">     692 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_TLS, &quot;TLS+IPv4&quot;);</span>
+<span class="lineNum">     693 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_UDP6, &quot;UDP+IPv6&quot;);</span>
+<span class="lineNum">     694 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_TCP6, &quot;TCP+IPv6&quot;);</span>
+<span class="lineNum">     695 </span><span class="lineCov">        852 :         sip_check_transport(pool, PJSIP_TRANSPORT_TLS6, &quot;TLS+IPv6&quot;);</span>
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span><span class="lineCov">        852 :         pjsip_endpt_release_pool(ast_sip_get_pjsip_endpoint(), pool);</span>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span>            :         /* Replace the PJSIP resolver with our own implementation */
+<span class="lineNum">     700 </span><span class="lineCov">        852 :         pjsip_endpt_set_ext_resolver(ast_sip_get_pjsip_endpoint(), &amp;resolver);</span>
+<span class="lineNum">     701 </span><span class="lineCov">        852 :         return 0;</span>
+<a name="702"><span class="lineNum">     702 </span>            : }</a>
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineCov">        852 : void ast_sip_initialize_resolver(void)</span>
+<span class="lineNum">     705 </span>            : {
+<span class="lineNum">     706 </span>            :         /* Replace the existing PJSIP resolver with our own implementation */
+<span class="lineNum">     707 </span><span class="lineCov">        852 :         ast_sip_push_task_wait_servant(NULL, sip_replace_resolver, NULL);</span>
+<span class="lineNum">     708 </span><span class="lineCov">        852 : }</span>
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span>            : #else
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span>            : void ast_sip_initialize_resolver(void)
+<span class="lineNum">     713 </span>            : {
+<span class="lineNum">     714 </span>            :         /* External resolver support does not exist in the version of PJSIP in use */
+<span class="lineNum">     715 </span>            :         ast_log(LOG_NOTICE, &quot;The version of PJSIP in use does not support external resolvers, using PJSIP provided resolver\n&quot;);
+<span class="lineNum">     716 </span>            : }
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span>            : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
