@@ -21,7 +21,9 @@ RUN	dnf -y update && \
 		autoconf autoconf-archive automake ccache sudo valgrind gdb rsync \
 		python2-pyyaml python2-twisted python2-autobahn python2-construct python2-devel \
 		python2-lxml python2-netifaces python2-numpy python2-requests python2-PyXB python2-Cython \
-		libpcap-devel lksctp-tools-devel python-alembic \
+		libpcap-devel lksctp-tools-devel python-alembic python2-psycopg2 \
+		\
+		postgresql-server postgresql-odbc \
 		\
 		&& \
 	dnf clean all && \
