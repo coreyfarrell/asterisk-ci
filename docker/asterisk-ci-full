@@ -11,9 +11,8 @@ init_repo() {
 	(
 		set -x
 		cd /usr/src/$1
-		git remote add coreyfarrell https://github.com/coreyfarrell/$1 2>/dev/null || :
-		git fetch coreyfarrell --force
-		git checkout -B patches-16 coreyfarrell/patches-16
+		git fetch origin --force
+		git checkout -B 16 origin/16
 	)
 }
 
@@ -21,8 +20,17 @@ init_repo asterisk
 init_repo testsuite
 
 set -x
+rm -fr ${OUTPUT_DIR} || :
 ./tests/CI/buildAsterisk.sh ${output_dir} ${cache_dir} "$@"
 ./tests/CI/installAsterisk.sh
 ./tests/CI/runUnittests.sh ${output_dir}/unittests
+
+#./tests/CI/runTestsuite.sh ${testsuite_dir} --realtime --initialize-db --cleanup-db
+#mv ../testsuite/logs ${OUTPUT_DIR}/testsuite-realtime
+#mv ../testsuite/asterisk-test-suite-report.xml ${OUTPUT_DIR}/testsuite-realtime
+
 ./tests/CI/runTestsuite.sh ${testsuite_dir}
+mv ../testsuite/logs ${OUTPUT_DIR}/testsuite
+mv ../testsuite/asterisk-test-suite-report.xml ${OUTPUT_DIR}/testsuite
+
 ./tests/CI/processCoverage.sh ${output_dir}

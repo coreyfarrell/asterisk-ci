@@ -1,0 +1,30 @@
+#!/bin/bash
+user=postgres
+group=postgres
+RUNUSER="/sbin/runuser -g $group -u $user --"
+PG_OOM_ADJUST_FILE=/proc/self/oom_score_adj
+PG_OOM_ADJUST_VALUE=0
+PGSTARTTIMEOUT=270
+
+export PGDATA=/var/lib/pgsql/data
+PGHBA=$PGDATA/pg_hba.conf
+
+if [ ! -r $PGHBA ]; then
+	$RUNUSER /usr/bin/initdb -E UTF-8 --pgdata=${PGDATA} --auth=ident
+	sed -i -r -e 's/^local/#local/g' $PGHBA
+	sed -i -r -e 's/^host/#host/g' $PGHBA
+
+	cat <<EOF >>$PGHBA
+local   all             all                                     trust
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+EOF
+fi
+
+echo "Starting postgresql"
+cd $PGDATA
+$RUNUSER /usr/bin/pg_ctl start -D ${PGDATA} -s -w -t ${PGSTARTTIMEOUT}
+
+exit 0

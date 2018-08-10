@@ -55,4 +55,6 @@ RUN	dnf -y update && \
 	(cd testsuite && git remote add gerrit https://gerrit.asterisk.org/testsuite)
 
 COPY asterisk-ci-full /usr/bin/
+COPY postgresql-start /usr/local/bin
+
 WORKDIR "/usr/src/asterisk"
