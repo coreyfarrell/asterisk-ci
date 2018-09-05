@@ -1,0 +1,1491 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_pjsip_history.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_pjsip_history.c<span style="font-size: 80%;"> (source / <a href="res_pjsip_history.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntry">536</td>
+            <td class="headerCovTableEntryLo">7.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntryLo">26.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2015, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \brief PJSIP History
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;depend&gt;pjproject&lt;/depend&gt;
+<span class="lineNum">      29 </span>            :         &lt;depend&gt;res_pjsip&lt;/depend&gt;
+<span class="lineNum">      30 </span>            :         &lt;support_level&gt;extended&lt;/support_level&gt;
+<span class="lineNum">      31 </span>            :  ***/
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      36 </span>            : #include &lt;regex.h&gt;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/netsock2.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/res_pjproject.h&quot;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : #define HISTORY_INITIAL_SIZE 256
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : /*! \brief Pool factory used by pjlib to allocate memory. */
+<span class="lineNum">      50 </span>            : static pj_caching_pool cachingpool;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /*! \brief Whether or not we are storing history */
+<span class="lineNum">      53 </span>            : static int enabled;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : /*! \brief Packet count */
+<span class="lineNum">      56 </span>            : static int packet_number;
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /*! \brief An item in the history */
+<span class="lineNum">      59 </span>            : struct pjsip_history_entry {
+<span class="lineNum">      60 </span>            :         /*! \brief Packet number */
+<span class="lineNum">      61 </span>            :         int number;
+<span class="lineNum">      62 </span>            :         /*! \brief Whether or not we transmitted the packet */
+<span class="lineNum">      63 </span>            :         int transmitted;
+<span class="lineNum">      64 </span>            :         /*! \brief Time the packet was transmitted/received */
+<span class="lineNum">      65 </span>            :         struct timeval timestamp;
+<span class="lineNum">      66 </span>            :         /*! \brief Source address */
+<span class="lineNum">      67 </span>            :         pj_sockaddr_in src;
+<span class="lineNum">      68 </span>            :         /*! \brief Destination address */
+<span class="lineNum">      69 </span>            :         pj_sockaddr_in dst;
+<span class="lineNum">      70 </span>            :         /*! \brief Memory pool used to allocate \c msg */
+<span class="lineNum">      71 </span>            :         pj_pool_t *pool;
+<span class="lineNum">      72 </span>            :         /*! \brief The actual SIP message */
+<span class="lineNum">      73 </span>            :         pjsip_msg *msg;
+<span class="lineNum">      74 </span>            : };
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span>            : /*! \brief Mutex that protects \ref vector_history */
+<span class="lineNum">      77 </span>            : AST_MUTEX_DEFINE_STATIC(history_lock);
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            : /*! \brief The one and only history that we've captured */
+<span class="lineNum">      80 </span>            : static AST_VECTOR(vector_history_t, struct pjsip_history_entry *) vector_history;
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            : struct expression_token;
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            : /*! \brief An operator that we understand in an expression */
+<span class="lineNum">      85 </span>            : struct operator {
+<span class="lineNum">      86 </span>            :         /*! \brief Our operator's symbol */
+<span class="lineNum">      87 </span>            :         const char *symbol;
+<span class="lineNum">      88 </span>            :         /*! \brief Precedence of the symbol */
+<span class="lineNum">      89 </span>            :         int precedence;
+<span class="lineNum">      90 </span>            :         /*! \brief Non-zero if the operator is evaluated right-to-left */
+<span class="lineNum">      91 </span>            :         int right_to_left;
+<span class="lineNum">      92 </span>            :         /*! \brief Number of operands the operator takes */
+<span class="lineNum">      93 </span>            :         int operands;
+<span class="lineNum">      94 </span>            :         /*!
+<span class="lineNum">      95 </span>            :          * \brief Evaluation function for unary operators
+<span class="lineNum">      96 </span>            :          *
+<span class="lineNum">      97 </span>            :          * \param op The operator being evaluated
+<span class="lineNum">      98 </span>            :          * \param type The type of value contained in \c operand
+<span class="lineNum">      99 </span>            :          * \param operand A pointer to the value to evaluate
+<span class="lineNum">     100 </span>            :          *
+<span class="lineNum">     101 </span>            :          * \retval -1 error
+<span class="lineNum">     102 </span>            :          * \retval 0 evaluation is False
+<span class="lineNum">     103 </span>            :          * \retval 1 evaluation is True
+<span class="lineNum">     104 </span>            :          */
+<span class="lineNum">     105 </span>            :         int (* const evaluate_unary)(struct operator *op, enum aco_option_type type, void *operand);
+<span class="lineNum">     106 </span>            :         /*!
+<span class="lineNum">     107 </span>            :          * \brief Evaluation function for binary operators
+<span class="lineNum">     108 </span>            :          *
+<span class="lineNum">     109 </span>            :          * \param op The operator being evaluated
+<span class="lineNum">     110 </span>            :          * \param type The type of value contained in \c op_left
+<span class="lineNum">     111 </span>            :          * \param op_left A pointer to the value to evaluate (a result or extracted from an entry)
+<span class="lineNum">     112 </span>            :          * \param op_right The expression token containing the other value (a result or user-provided)
+<span class="lineNum">     113 </span>            :          *
+<span class="lineNum">     114 </span>            :          * \retval -1 error
+<span class="lineNum">     115 </span>            :          * \retval 0 evaluation is False
+<span class="lineNum">     116 </span>            :          * \retval 1 evaluation is True
+<span class="lineNum">     117 </span>            :          */
+<span class="lineNum">     118 </span>            :         int (* const evaluate)(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right);
+<span class="lineNum">     119 </span>            : };
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span>            : /*! \brief A field that we understand and can perform operations on */
+<span class="lineNum">     122 </span>            : struct allowed_field {
+<span class="lineNum">     123 </span>            :         /*! \brief The representation of the field */
+<span class="lineNum">     124 </span>            :         const char *symbol;
+<span class="lineNum">     125 </span>            :         /*! \brief The type /c get_field returns */
+<span class="lineNum">     126 </span>            :         enum aco_option_type return_type;
+<span class="lineNum">     127 </span>            :         /*!
+<span class="lineNum">     128 </span>            :          * \brief Function that returns the field from a pjsip_history_entry
+<span class="lineNum">     129 </span>            :          *
+<span class="lineNum">     130 </span>            :          * Note that the function must return a pointer to the location in
+<span class="lineNum">     131 </span>            :          * \c pjsip_history_entry - no memory should be allocated as the caller
+<span class="lineNum">     132 </span>            :          * will not dispose of any
+<span class="lineNum">     133 </span>            :          */
+<span class="lineNum">     134 </span>            :         void *(* const get_field)(struct pjsip_history_entry *entry);
+<span class="lineNum">     135 </span>            : };
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span>            : /*! \brief The type of token that has been parsed out of an expression */
+<span class="lineNum">     138 </span>            : enum expression_token_type {
+<span class="lineNum">     139 </span>            :         /*! The \c expression_token contains a field */
+<span class="lineNum">     140 </span>            :         TOKEN_TYPE_FIELD,
+<span class="lineNum">     141 </span>            :         /*! The \c expression_token contains an operator */
+<span class="lineNum">     142 </span>            :         TOKEN_TYPE_OPERATOR,
+<span class="lineNum">     143 </span>            :         /*! The \c expression_token contains a previous result */
+<span class="lineNum">     144 </span>            :         TOKEN_TYPE_RESULT
+<span class="lineNum">     145 </span>            : };
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span>            : /*! \brief A token in the expression or an evaluated part of the expression */
+<span class="lineNum">     148 </span>            : struct expression_token {
+<span class="lineNum">     149 </span>            :         /*! \brief The next expression token in the queue */
+<span class="lineNum">     150 </span>            :         struct expression_token *next;
+<span class="lineNum">     151 </span>            :         /*! \brief The type of value stored in the expression token */
+<span class="lineNum">     152 </span>            :         enum expression_token_type token_type;
+<span class="lineNum">     153 </span>            :         /*! \brief An operator that evaluates expressions */
+<span class="lineNum">     154 </span>            :         struct operator *op;
+<span class="lineNum">     155 </span>            :         /*! \brief The result of an evaluated expression */
+<span class="lineNum">     156 </span>            :         int result;
+<span class="lineNum">     157 </span>            :         /*! \brief The field in the expression */
+<span class="lineNum">     158 </span>            :         char field[];
+<span class="lineNum">     159 </span>            : };
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span>            : /*! \brief Log level for history output */
+<span class="lineNum">     162 </span>            : static int log_level = -1;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            : /*!
+<a name="165"><span class="lineNum">     165 </span>            :  * \brief Operator callback for determining equality</a>
+<span class="lineNum">     166 </span>            :  */
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 : static int evaluate_equal(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     168 </span>            : {
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     171 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     172 </span>            :         case OPT_INT_T:
+<span class="lineNum">     173 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     174 </span>            :         {
+<span class="lineNum">     175 </span>            :                 int right;
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%30d&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not an integer\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     180 </span>            :                 }
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 return (*(int *)op_left) == right;</span>
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         case OPT_DOUBLE_T:</span>
+<span class="lineNum">     184 </span>            :         {
+<span class="lineNum">     185 </span>            :                 double right;
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%lf&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a double\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     190 </span>            :                 }
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :                 return (*(double *)op_left) == right;</span>
+<span class="lineNum">     192 </span>            :         }
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :         case OPT_CHAR_ARRAY_T:</span>
+<span class="lineNum">     194 </span>            :         case OPT_STRINGFIELD_T:
+<span class="lineNum">     195 </span>            :                 /* In our case, we operate on pj_str_t */
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 return pj_strcmp2(op_left, op_right-&gt;field) == 0;</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :         case OPT_NOOP_T:</span>
+<span class="lineNum">     198 </span>            :         /* Used for timeval */
+<span class="lineNum">     199 </span>            :         {
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 struct timeval right = { 0, };</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%ld&quot;, &amp;right.tv_sec) != 1) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a timestamp\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     205 </span>            :                 }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 return ast_tvcmp(*(struct timeval *)op_left, right) == 0;</span>
+<span class="lineNum">     208 </span>            :         }
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :         case OPT_SOCKADDR_T:</span>
+<span class="lineNum">     210 </span>            :         /* In our case, we operate only on pj_sockaddr_t */
+<span class="lineNum">     211 </span>            :         {
+<span class="lineNum">     212 </span>            :                 pj_sockaddr right;
+<span class="lineNum">     213 </span>            :                 pj_str_t str_right;
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 pj_cstr(&amp;str_right, op_right-&gt;field);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 if (pj_sockaddr_parse(pj_AF_UNSPEC(), 0, &amp;str_right, &amp;right) != PJ_SUCCESS) {</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to convert field '%s': not an IPv4 or IPv6 address\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 return pj_sockaddr_cmp(op_left, &amp;right) == 0;</span>
+<span class="lineNum">     222 </span>            :         }
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate field '%s': invalid type for operator '%s'\n&quot;,</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :                         op_right-&gt;field, op-&gt;symbol);</span>
+<span class="lineNum">     226 </span>            :         }
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     229 </span>            : }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span>            : /*!
+<a name="232"><span class="lineNum">     232 </span>            :  * \brief Operator callback for determining inequality</a>
+<span class="lineNum">     233 </span>            :  */
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 : static int evaluate_not_equal(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     235 </span>            : {
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         return !evaluate_equal(op, type, op_left, op_right);</span>
+<span class="lineNum">     237 </span>            : }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            : /*
+<a name="240"><span class="lineNum">     240 </span>            :  * \brief Operator callback for determining if one operand is less than another</a>
+<span class="lineNum">     241 </span>            :  */
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 : static int evaluate_less_than(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     243 </span>            : {
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     246 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     247 </span>            :         case OPT_INT_T:
+<span class="lineNum">     248 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     249 </span>            :         {
+<span class="lineNum">     250 </span>            :                 int right;
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%30d&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not an integer\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     255 </span>            :                 }
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 return (*(int *)op_left) &lt; right;</span>
+<span class="lineNum">     257 </span>            :         }
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         case OPT_DOUBLE_T:</span>
+<span class="lineNum">     259 </span>            :         {
+<span class="lineNum">     260 </span>            :                 double right;
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%lf&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a double\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     265 </span>            :                 }
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                 return (*(double *)op_left) &lt; right;</span>
+<span class="lineNum">     267 </span>            :         }
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         case OPT_NOOP_T:</span>
+<span class="lineNum">     269 </span>            :         /* Used for timeval */
+<span class="lineNum">     270 </span>            :         {
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 struct timeval right = { 0, };</span>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%ld&quot;, &amp;right.tv_sec) != 1) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a timestamp\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     276 </span>            :                 }
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 return ast_tvcmp(*(struct timeval *)op_left, right) == -1;</span>
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate field '%s': invalid type for operator '%s'\n&quot;,</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                         op_right-&gt;field, op-&gt;symbol);</span>
+<span class="lineNum">     283 </span>            :         }
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     286 </span>            : }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            : /*
+<a name="289"><span class="lineNum">     289 </span>            :  * \brief Operator callback for determining if one operand is greater than another</a>
+<span class="lineNum">     290 </span>            :  */
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 : static int evaluate_greater_than(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     292 </span>            : {
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     295 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     296 </span>            :         case OPT_INT_T:
+<span class="lineNum">     297 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     298 </span>            :         {
+<span class="lineNum">     299 </span>            :                 int right;
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%30d&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not an integer\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     304 </span>            :                 }
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 return (*(int *)op_left) &gt; right;</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         case OPT_DOUBLE_T:</span>
+<span class="lineNum">     308 </span>            :         {
+<span class="lineNum">     309 </span>            :                 double right;
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%lf&quot;, &amp;right) != 1) {</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a double\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     314 </span>            :                 }
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 return (*(double *)op_left) &gt; right;</span>
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :         case OPT_NOOP_T:</span>
+<span class="lineNum">     318 </span>            :         /* Used for timeval */
+<span class="lineNum">     319 </span>            :         {
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 struct timeval right = { 0, };</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 if (sscanf(op_right-&gt;field, &quot;%ld&quot;, &amp;right.tv_sec) != 1) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to extract field '%s': not a timestamp\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     325 </span>            :                 }
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 return ast_tvcmp(*(struct timeval *)op_left, right) == 1;</span>
+<span class="lineNum">     328 </span>            :         }
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate field '%s': invalid type for operator '%s'\n&quot;,</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         op_right-&gt;field, op-&gt;symbol);</span>
+<span class="lineNum">     332 </span>            :         }
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     335 </span>            : }
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span>            : /*
+<a name="338"><span class="lineNum">     338 </span>            :  * \brief Operator callback for determining if one operand is less than or equal to another</a>
+<span class="lineNum">     339 </span>            :  */
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 : static int evaluate_less_than_or_equal(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     341 </span>            : {
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         return !evaluate_greater_than(op, type, op_left, op_right);</span>
+<span class="lineNum">     343 </span>            : }
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span>            : /*
+<a name="346"><span class="lineNum">     346 </span>            :  * \brief Operator callback for determining if one operand is greater than or equal to another</a>
+<span class="lineNum">     347 </span>            :  */
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 : static int evaluate_greater_than_or_equal(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     349 </span>            : {
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         return !evaluate_less_than(op, type, op_left, op_right);</span>
+<span class="lineNum">     351 </span>            : }
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            : /*
+<a name="354"><span class="lineNum">     354 </span>            :  * \brief Operator callback for determining logical NOT</a>
+<span class="lineNum">     355 </span>            :  */
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 : static int evaluate_not(struct operator *op, enum aco_option_type type, void *operand)</span>
+<span class="lineNum">     357 </span>            : {
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     360 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     361 </span>            :         case OPT_INT_T:
+<span class="lineNum">     362 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                 return !(*(int *)operand);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate: invalid operand type for operator '%s'\n&quot;, op-&gt;symbol);</span>
+<span class="lineNum">     366 </span>            :         }
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     369 </span>            : }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            : /*
+<a name="372"><span class="lineNum">     372 </span>            :  * \brief Operator callback for determining logical AND</a>
+<span class="lineNum">     373 </span>            :  */
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 : static int evaluate_and(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     375 </span>            : {
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     378 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     379 </span>            :         case OPT_INT_T:
+<span class="lineNum">     380 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 return (*(int *)op_left &amp;&amp; op_right-&gt;result);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate: invalid operand type for operator '%s'\n&quot;, op-&gt;symbol);</span>
+<span class="lineNum">     384 </span>            :         }
+<span class="lineNum">     385 </span>            : 
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     387 </span>            : }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span>            : /*
+<a name="390"><span class="lineNum">     390 </span>            :  * \brief Operator callback for determining logical OR</a>
+<span class="lineNum">     391 </span>            :  */
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 : static int evaluate_or(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     393 </span>            : {
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         case OPT_BOOL_T:</span>
+<span class="lineNum">     396 </span>            :         case OPT_BOOLFLAG_T:
+<span class="lineNum">     397 </span>            :         case OPT_INT_T:
+<span class="lineNum">     398 </span>            :         case OPT_UINT_T:
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 return (*(int *)op_left || op_right-&gt;result);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate: invalid operand type for operator '%s'\n&quot;, op-&gt;symbol);</span>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     405 </span>            : }
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span>            : /*
+<a name="408"><span class="lineNum">     408 </span>            :  * \brief Operator callback for regex 'like'</a>
+<span class="lineNum">     409 </span>            :  */
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 : static int evaluate_like(struct operator *op, enum aco_option_type type, void *op_left, struct expression_token *op_right)</span>
+<span class="lineNum">     411 </span>            : {
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         switch (type) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         case OPT_CHAR_ARRAY_T:</span>
+<span class="lineNum">     414 </span>            :         case OPT_STRINGFIELD_T:
+<span class="lineNum">     415 </span>            :         /* In our case, we operate on pj_str_t */
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :         {</span>
+<span class="lineNum">     417 </span>            :                 int result;
+<span class="lineNum">     418 </span>            :                 regex_t regexbuf;
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 char buf[pj_strlen(op_left) + 1];</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 ast_copy_pj_str(buf, op_left, pj_strlen(op_left));</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                 if (regcomp(&amp;regexbuf, op_right-&gt;field, REG_EXTENDED | REG_NOSUB)) {</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Failed to compile '%s' into a regular expression\n&quot;, op_right-&gt;field);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     425 </span>            :                 }
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 result = (regexec(&amp;regexbuf, buf, 0, NULL, 0) == 0);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 regfree(&amp;regexbuf);</span>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 return result;</span>
+<span class="lineNum">     431 </span>            :         }
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot evaluate: invalid operand type for operator '%s'\n&quot;, op-&gt;symbol);</span>
+<span class="lineNum">     434 </span>            :         }
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     437 </span>            : }
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            : /*!
+<span class="lineNum">     440 </span>            :  * \brief Operator token for a left parenthesis.
+<span class="lineNum">     441 </span>            :  *
+<span class="lineNum">     442 </span>            :  * While this is used by the shunting-yard algorithm implementation,
+<span class="lineNum">     443 </span>            :  * it should never appear in the resulting RPN queue of expression tokens
+<span class="lineNum">     444 </span>            :  */
+<span class="lineNum">     445 </span>            : static struct operator left_paren = {
+<span class="lineNum">     446 </span>            :         .symbol = &quot;(&quot;,
+<span class="lineNum">     447 </span>            :         .precedence = 15
+<span class="lineNum">     448 </span>            : };
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            : /*!
+<span class="lineNum">     451 </span>            :  * \brief Our allowed operations
+<span class="lineNum">     452 </span>            :  */
+<span class="lineNum">     453 </span>            : static struct operator allowed_operators[] = {
+<span class="lineNum">     454 </span>            :         { .symbol = &quot;=&quot;, .precedence = 7, .operands = 2, .evaluate = evaluate_equal, },
+<span class="lineNum">     455 </span>            :         { .symbol = &quot;==&quot;, .precedence = 7, .operands = 2, .evaluate = evaluate_equal, },
+<span class="lineNum">     456 </span>            :         { .symbol = &quot;!=&quot;, .precedence = 7, .operands = 2, .evaluate = evaluate_not_equal, },
+<span class="lineNum">     457 </span>            :         { .symbol = &quot;&lt;&quot;, .precedence = 6, .operands = 2, .evaluate = evaluate_less_than, },
+<span class="lineNum">     458 </span>            :         { .symbol = &quot;&gt;&quot;, .precedence = 6, .operands = 2, .evaluate = evaluate_greater_than, },
+<span class="lineNum">     459 </span>            :         { .symbol = &quot;&lt;=&quot;, .precedence = 6, .operands = 2, .evaluate = evaluate_less_than_or_equal, },
+<span class="lineNum">     460 </span>            :         { .symbol = &quot;&gt;=&quot;, .precedence = 6, .operands = 2, .evaluate = evaluate_greater_than_or_equal, },
+<span class="lineNum">     461 </span>            :         { .symbol = &quot;!&quot;, .precedence = 2, .operands = 1, .right_to_left = 1, .evaluate_unary = evaluate_not, },
+<span class="lineNum">     462 </span>            :         { .symbol = &quot;&amp;&amp;&quot;, .precedence = 11, .operands = 2, .evaluate = evaluate_and, },
+<span class="lineNum">     463 </span>            :         { .symbol = &quot;||&quot;, .precedence = 12, .operands = 2, .evaluate = evaluate_or, },
+<span class="lineNum">     464 </span>            :         { .symbol = &quot;like&quot;, .precedence = 7, .operands = 2, .evaluate = evaluate_like, },
+<span class="lineNum">     465 </span>            :         { .symbol = &quot;and&quot;, .precedence = 11, .operands = 2, .evaluate = evaluate_and, },
+<span class="lineNum">     466 </span>            :         { .symbol = &quot;or&quot;, .precedence = 11, .operands = 2, .evaluate = evaluate_or, },
+<span class="lineNum">     467 </span>            :         { .symbol = &quot;not&quot;, .precedence = 2, .operands = 1, .right_to_left = 1, .evaluate_unary = evaluate_not, },
+<span class="lineNum">     468 </span>            : };
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span>            : /*! \brief Callback to retrieve the entry index number */
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 : static void *entry_get_number(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     472 </span>            : {
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :         return &amp;entry-&gt;number;</span>
+<span class="lineNum">     474 </span>            : }
+<a name="475"><span class="lineNum">     475 </span>            : </a>
+<span class="lineNum">     476 </span>            : /*! \brief Callback to retrieve the entry's timestamp */
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 : static void *entry_get_timestamp(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     478 </span>            : {
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :         return &amp;entry-&gt;timestamp;</span>
+<span class="lineNum">     480 </span>            : }
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<span class="lineNum">     482 </span>            : /*! \brief Callback to retrieve the entry's destination address */
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 : static void *entry_get_addr(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     484 </span>            : {
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :         if (entry-&gt;transmitted) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 return &amp;entry-&gt;dst;</span>
+<span class="lineNum">     487 </span>            :         } else {
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                 return &amp;entry-&gt;src;</span>
+<span class="lineNum">     489 </span>            :         }
+<span class="lineNum">     490 </span>            : }
+<a name="491"><span class="lineNum">     491 </span>            : </a>
+<span class="lineNum">     492 </span>            : /*! \brief Callback to retrieve the entry's SIP request method type */
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 : static void *entry_get_sip_msg_request_method(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     494 </span>            : {
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :         if (entry-&gt;msg-&gt;type != PJSIP_REQUEST_MSG) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     497 </span>            :         }
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         return &amp;entry-&gt;msg-&gt;line.req.method.name;</span>
+<span class="lineNum">     500 </span>            : }
+<a name="501"><span class="lineNum">     501 </span>            : </a>
+<span class="lineNum">     502 </span>            : /*! \brief Callback to retrieve the entry's SIP Call-ID header */
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 : static void *entry_get_sip_msg_call_id(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     504 </span>            : {
+<span class="lineNum">     505 </span>            :         pjsip_cid_hdr *cid_hdr;
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :         cid_hdr = PJSIP_MSG_CID_HDR(entry-&gt;msg);</span>
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :         return &amp;cid_hdr-&gt;id;</span>
+<span class="lineNum">     510 </span>            : }
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span>            : /*! \brief The fields we allow */
+<span class="lineNum">     513 </span>            : static struct allowed_field allowed_fields[] = {
+<span class="lineNum">     514 </span>            :         { .symbol = &quot;number&quot;, .return_type = OPT_INT_T, .get_field = entry_get_number, },
+<span class="lineNum">     515 </span>            :         /* We co-op the NOOP type here for timeval */
+<span class="lineNum">     516 </span>            :         { .symbol = &quot;timestamp&quot;, .return_type = OPT_NOOP_T, .get_field = entry_get_timestamp, },
+<span class="lineNum">     517 </span>            :         { .symbol = &quot;addr&quot;, .return_type = OPT_SOCKADDR_T, .get_field = entry_get_addr, },
+<span class="lineNum">     518 </span>            :         { .symbol = &quot;sip.msg.request.method&quot;, .return_type = OPT_CHAR_ARRAY_T, .get_field = entry_get_sip_msg_request_method, },
+<span class="lineNum">     519 </span>            :         { .symbol = &quot;sip.msg.call-id&quot;, .return_type = OPT_CHAR_ARRAY_T, .get_field = entry_get_sip_msg_call_id, },
+<span class="lineNum">     520 </span>            : };
+<a name="521"><span class="lineNum">     521 </span>            : </a>
+<span class="lineNum">     522 </span>            : /*! \brief Free an expression token and all others it references */
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 : static struct expression_token *expression_token_free(struct expression_token *token)</span>
+<span class="lineNum">     524 </span>            : {
+<span class="lineNum">     525 </span>            :         struct expression_token *it_token;
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         it_token = token;</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         while (it_token) {</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                 struct expression_token *prev = it_token;</span>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 it_token = it_token-&gt;next;</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 ast_free(prev);</span>
+<span class="lineNum">     533 </span>            :         }
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     536 </span>            : }
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span>            : /*!
+<span class="lineNum">     539 </span>            :  * \brief Allocate an expression token
+<span class="lineNum">     540 </span>            :  *
+<span class="lineNum">     541 </span>            :  * \param token_type The type of token in the expression
+<span class="lineNum">     542 </span>            :  * \param value The value/operator/result to pack into the token
+<span class="lineNum">     543 </span>            :  *
+<span class="lineNum">     544 </span>            :  * \retval NULL on failure
+<a name="545"><span class="lineNum">     545 </span>            :  * \retval \c expression_token on success</a>
+<span class="lineNum">     546 </span>            :  */
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 : static struct expression_token *expression_token_alloc(enum expression_token_type token_type, void *value)</span>
+<span class="lineNum">     548 </span>            : {
+<span class="lineNum">     549 </span>            :         struct expression_token *token;
+<span class="lineNum">     550 </span>            : 
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :         switch (token_type) {</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :         case TOKEN_TYPE_RESULT:</span>
+<span class="lineNum">     553 </span>            :         case TOKEN_TYPE_OPERATOR:
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :                 token = ast_calloc(1, sizeof(*token));</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :         case TOKEN_TYPE_FIELD:</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 token = ast_calloc(1, sizeof(*token) + strlen((const char *)value) + 1);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         if (!token) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     566 </span>            :         }
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :         token-&gt;token_type = token_type;</span>
+<span class="lineNum">     568 </span>            : 
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :         switch (token_type) {</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         case TOKEN_TYPE_RESULT:</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                 token-&gt;result = *(int *)value;</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">          0 :         case TOKEN_TYPE_OPERATOR:</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                 token-&gt;op = value;</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :         case TOKEN_TYPE_FIELD:</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 strcpy(token-&gt;field, value); /* safe */</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     581 </span>            :         }
+<span class="lineNum">     582 </span>            : 
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :         return token;</span>
+<span class="lineNum">     584 </span>            : }
+<a name="585"><span class="lineNum">     585 </span>            : </a>
+<span class="lineNum">     586 </span>            : /*! \brief Determine if the expression token matches a field in \c allowed_fields */
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 : static struct allowed_field *get_allowed_field(struct expression_token *token)</span>
+<span class="lineNum">     588 </span>            : {
+<span class="lineNum">     589 </span>            :         int i;
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :         ast_assert(token-&gt;token_type == TOKEN_TYPE_FIELD);</span>
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; ARRAY_LEN(allowed_fields); i++) {</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :                 if (strcasecmp(allowed_fields[i].symbol, token-&gt;field)) {</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     596 </span>            :                 }
+<span class="lineNum">     597 </span>            : 
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                 return &amp;allowed_fields[i];</span>
+<span class="lineNum">     599 </span>            :         }
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     602 </span>            : }
+<a name="603"><span class="lineNum">     603 </span>            : </a>
+<span class="lineNum">     604 </span>            : /*! \brief AO2 destructor for \c pjsip_history_entry */
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 : static void pjsip_history_entry_dtor(void *obj)</span>
+<span class="lineNum">     606 </span>            : {
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         struct pjsip_history_entry *entry = obj;</span>
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :         if (entry-&gt;pool) {</span>
+<span class="lineNum">     610 </span>            :                 /* This mimics the behavior of pj_pool_safe_release
+<span class="lineNum">     611 </span>            :                  * which was introduced in pjproject 2.6.
+<span class="lineNum">     612 </span>            :                  */
+<span class="lineNum">     613 </span><span class="lineNoCov">          0 :                 pj_pool_t *temp_pool = entry-&gt;pool;</span>
+<span class="lineNum">     614 </span>            : 
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :                 entry-&gt;pool = NULL;</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                 pj_pool_release(temp_pool);</span>
+<span class="lineNum">     617 </span>            :         }
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span>            : /*!
+<span class="lineNum">     621 </span>            :  * \brief Create a \c pjsip_history_entry AO2 object
+<span class="lineNum">     622 </span>            :  *
+<span class="lineNum">     623 </span>            :  * \param msg The PJSIP message that this history entry wraps
+<span class="lineNum">     624 </span>            :  *
+<span class="lineNum">     625 </span>            :  * \retval An AO2 \c pjsip_history_entry object on success
+<a name="626"><span class="lineNum">     626 </span>            :  * \retval NULL on failure</a>
+<span class="lineNum">     627 </span>            :  */
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 : static struct pjsip_history_entry *pjsip_history_entry_alloc(pjsip_msg *msg)</span>
+<span class="lineNum">     629 </span>            : {
+<span class="lineNum">     630 </span>            :         struct pjsip_history_entry *entry;
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :         entry = ao2_alloc_options(sizeof(*entry), pjsip_history_entry_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">          0 :         if (!entry) {</span>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     635 </span>            :         }
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :         entry-&gt;number = ast_atomic_fetchadd_int(&amp;packet_number, 1);</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :         entry-&gt;timestamp = ast_tvnow();</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :         entry-&gt;timestamp.tv_usec = 0;</span>
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :         entry-&gt;pool = pj_pool_create(&amp;cachingpool.factory, NULL, PJSIP_POOL_RDATA_LEN,</span>
+<span class="lineNum">     641 </span>            :                                      PJSIP_POOL_RDATA_INC, NULL);
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :         if (!entry-&gt;pool) {</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :                 ao2_ref(entry, -1);</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     645 </span>            :         }
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         entry-&gt;msg = pjsip_msg_clone(entry-&gt;pool, msg);</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         if (!entry-&gt;msg) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                 ao2_ref(entry, -1);</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     651 </span>            :         }
+<span class="lineNum">     652 </span>            : 
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :         return entry;</span>
+<span class="lineNum">     654 </span>            : }
+<a name="655"><span class="lineNum">     655 </span>            : </a>
+<span class="lineNum">     656 </span>            : /*! \brief Format single line history entry */
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 : static void sprint_list_entry(struct pjsip_history_entry *entry, char *line, int len)</span>
+<span class="lineNum">     658 </span>            : {
+<span class="lineNum">     659 </span>            :         char addr[64];
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         if (entry-&gt;transmitted) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 pj_sockaddr_print(&amp;entry-&gt;dst, addr, sizeof(addr), 3);</span>
+<span class="lineNum">     663 </span>            :         } else {
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                 pj_sockaddr_print(&amp;entry-&gt;src, addr, sizeof(addr), 3);</span>
+<span class="lineNum">     665 </span>            :         }
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :         if (entry-&gt;msg-&gt;type == PJSIP_REQUEST_MSG) {</span>
+<span class="lineNum">     668 </span>            :                 char uri[128];
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                 pjsip_uri_print(PJSIP_URI_IN_REQ_URI, entry-&gt;msg-&gt;line.req.uri, uri, sizeof(uri));</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                 snprintf(line, len, &quot;%-5.5d %-10.10ld %-5.5s %-24.24s %.*s %s SIP/2.0&quot;,</span>
+<span class="lineNum">     672 </span>            :                         entry-&gt;number,
+<span class="lineNum">     673 </span>            :                         entry-&gt;timestamp.tv_sec,
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                         entry-&gt;transmitted ? &quot;* ==&gt;&quot; : &quot;* &lt;==&quot;,</span>
+<span class="lineNum">     675 </span>            :                         addr,
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                         (int)pj_strlen(&amp;entry-&gt;msg-&gt;line.req.method.name),</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :                         pj_strbuf(&amp;entry-&gt;msg-&gt;line.req.method.name),</span>
+<span class="lineNum">     678 </span>            :                         uri);
+<span class="lineNum">     679 </span>            :         } else {
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                 snprintf(line, len, &quot;%-5.5d %-10.10ld %-5.5s %-24.24s SIP/2.0 %u %.*s&quot;,</span>
+<span class="lineNum">     681 </span>            :                         entry-&gt;number,
+<span class="lineNum">     682 </span>            :                         entry-&gt;timestamp.tv_sec,
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                         entry-&gt;transmitted ? &quot;* ==&gt;&quot; : &quot;* &lt;==&quot;,</span>
+<span class="lineNum">     684 </span>            :                         addr,
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                         entry-&gt;msg-&gt;line.status.code,</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                         (int)pj_strlen(&amp;entry-&gt;msg-&gt;line.status.reason),</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                         pj_strbuf(&amp;entry-&gt;msg-&gt;line.status.reason));</span>
+<span class="lineNum">     688 </span>            :         }
+<span class="lineNum">     689 </span><span class="lineNoCov">          0 : }</span>
+<a name="690"><span class="lineNum">     690 </span>            : </a>
+<span class="lineNum">     691 </span>            : /*! \brief PJSIP callback when a SIP message is transmitted */
+<span class="lineNum">     692 </span><span class="lineCov">       4524 : static pj_status_t history_on_tx_msg(pjsip_tx_data *tdata)</span>
+<span class="lineNum">     693 </span>            : {
+<span class="lineNum">     694 </span>            :         struct pjsip_history_entry *entry;
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">       4524 :         if (!enabled) {</span>
+<span class="lineNum">     697 </span><span class="lineCov">       4524 :                 return PJ_SUCCESS;</span>
+<span class="lineNum">     698 </span>            :         }
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :         entry = pjsip_history_entry_alloc(tdata-&gt;msg);</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">          0 :         if (!entry) {</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :                 return PJ_SUCCESS;</span>
+<span class="lineNum">     703 </span>            :         }
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :         entry-&gt;transmitted = 1;</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :         pj_sockaddr_cp(&amp;entry-&gt;src, &amp;tdata-&gt;tp_info.transport-&gt;local_addr);</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :         pj_sockaddr_cp(&amp;entry-&gt;dst, &amp;tdata-&gt;tp_info.dst_addr);</span>
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_APPEND(&amp;vector_history, entry)) {</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                 ao2_ref(entry, -1);</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                 entry = NULL;</span>
+<span class="lineNum">     712 </span>            :         }
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">     714 </span>            : 
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         if (log_level != -1 &amp;&amp; entry) {</span>
+<span class="lineNum">     716 </span>            :                 char line[256];
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                 sprint_list_entry(entry, line, sizeof(line));</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :                 ast_log_dynamic_level(log_level, &quot;%s\n&quot;, line);</span>
+<span class="lineNum">     720 </span>            :         }
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :         return PJ_SUCCESS;</span>
+<span class="lineNum">     723 </span>            : }
+<a name="724"><span class="lineNum">     724 </span>            : </a>
+<span class="lineNum">     725 </span>            : /*! \brief PJSIP callback when a SIP message is received */
+<span class="lineNum">     726 </span><span class="lineCov">       4226 : static pj_bool_t history_on_rx_msg(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     727 </span>            : {
+<span class="lineNum">     728 </span>            :         struct pjsip_history_entry *entry;
+<span class="lineNum">     729 </span>            : 
+<span class="lineNum">     730 </span><span class="lineCov">       4226 :         if (!enabled) {</span>
+<span class="lineNum">     731 </span><span class="lineCov">       4226 :                 return PJ_FALSE;</span>
+<span class="lineNum">     732 </span>            :         }
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :         if (!rdata-&gt;msg_info.msg) {</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :                 return PJ_FALSE;</span>
+<span class="lineNum">     736 </span>            :         }
+<span class="lineNum">     737 </span>            : 
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :         entry = pjsip_history_entry_alloc(rdata-&gt;msg_info.msg);</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         if (!entry) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :                 return PJ_FALSE;</span>
+<span class="lineNum">     741 </span>            :         }
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :         if (rdata-&gt;tp_info.transport-&gt;addr_len) {</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :                 pj_sockaddr_cp(&amp;entry-&gt;dst, &amp;rdata-&gt;tp_info.transport-&gt;local_addr);</span>
+<span class="lineNum">     745 </span>            :         }
+<span class="lineNum">     746 </span>            : 
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :         if (rdata-&gt;pkt_info.src_addr_len) {</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :                 pj_sockaddr_cp(&amp;entry-&gt;src, &amp;rdata-&gt;pkt_info.src_addr);</span>
+<span class="lineNum">     749 </span>            :         }
+<span class="lineNum">     750 </span>            : 
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_APPEND(&amp;vector_history, entry)) {</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :                 ao2_ref(entry, -1);</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">          0 :                 entry = NULL;</span>
+<span class="lineNum">     755 </span>            :         }
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">     757 </span>            : 
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :         if (log_level != -1 &amp;&amp; entry) {</span>
+<span class="lineNum">     759 </span>            :                 char line[256];
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :                 sprint_list_entry(entry, line, sizeof(line));</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :                 ast_log_dynamic_level(log_level, &quot;%s\n&quot;, line);</span>
+<span class="lineNum">     763 </span>            :         }
+<span class="lineNum">     764 </span>            : 
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :         return PJ_FALSE;</span>
+<span class="lineNum">     766 </span>            : }
+<a name="767"><span class="lineNum">     767 </span>            : </a>
+<span class="lineNum">     768 </span>            : /*! \brief Vector callback that releases the reference for the entry in a history vector */
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 : static void clear_history_entry_cb(struct pjsip_history_entry *entry)</span>
+<span class="lineNum">     770 </span>            : {
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :         ao2_ref(entry, -1);</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span>            : /*!
+<span class="lineNum">     775 </span>            :  * \brief Remove all entries from \ref vector_history
+<span class="lineNum">     776 </span>            :  *
+<a name="777"><span class="lineNum">     777 </span>            :  * This must be called from a registered PJSIP thread</a>
+<span class="lineNum">     778 </span>            :  */
+<span class="lineNum">     779 </span><span class="lineCov">        851 : static int clear_history_entries(void *obj)</span>
+<span class="lineNum">     780 </span>            : {
+<span class="lineNum">     781 </span><span class="lineCov">        851 :         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">     782 </span><span class="lineCov">        851 :         AST_VECTOR_RESET(&amp;vector_history, clear_history_entry_cb);</span>
+<span class="lineNum">     783 </span><span class="lineCov">        851 :         packet_number = 0;</span>
+<span class="lineNum">     784 </span><span class="lineCov">        851 :         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">     785 </span>            : 
+<span class="lineNum">     786 </span><span class="lineCov">        851 :         return 0;</span>
+<span class="lineNum">     787 </span>            : }
+<span class="lineNum">     788 </span>            : 
+<span class="lineNum">     789 </span>            : /*!
+<span class="lineNum">     790 </span>            :  * \brief Build a reverse polish notation expression queue
+<span class="lineNum">     791 </span>            :  *
+<span class="lineNum">     792 </span>            :  * This function is an implementation of the Shunting-Yard Algorithm. It takes
+<span class="lineNum">     793 </span>            :  * a user provided infix-notation expression and converts it into a reverse
+<span class="lineNum">     794 </span>            :  * polish notation expression, which is a queue of tokens that can be easily
+<span class="lineNum">     795 </span>            :  * parsed.
+<span class="lineNum">     796 </span>            :  *
+<span class="lineNum">     797 </span>            :  * \params a The CLI arguments provided by the User, containing the infix expression
+<span class="lineNum">     798 </span>            :  *
+<span class="lineNum">     799 </span>            :  * \retval NULL error
+<a name="800"><span class="lineNum">     800 </span>            :  * \retval expression_token A 'queue' of expression tokens in RPN</a>
+<span class="lineNum">     801 </span>            :  */
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 : static struct expression_token *build_expression_queue(struct ast_cli_args *a)</span>
+<span class="lineNum">     803 </span>            : {
+<span class="lineNum">     804 </span>            :         AST_VECTOR(, struct operator *) operators; /* A stack of saved operators */
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :         struct expression_token *output = NULL;    /* The output queue */</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :         struct expression_token *head = NULL;      /* Pointer to the head of /c output */</span>
+<span class="lineNum">     807 </span>            :         int i;
+<span class="lineNum">     808 </span>            : 
+<span class="lineNum">     809 </span>            : #define APPEND_TO_OUTPUT(output, token) do { \
+<span class="lineNum">     810 </span>            :         if ((output)) { \
+<span class="lineNum">     811 </span>            :                 (output)-&gt;next = (token); \
+<span class="lineNum">     812 </span>            :                 (output) = (token); \
+<span class="lineNum">     813 </span>            :         } else { \
+<span class="lineNum">     814 </span>            :                 (output) = (token); \
+<span class="lineNum">     815 </span>            :                 head = (output); \
+<span class="lineNum">     816 </span>            :         } \
+<span class="lineNum">     817 </span>            : } while (0)
+<span class="lineNum">     818 </span>            : 
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_INIT(&amp;operators, 8)) {</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     821 </span>            :         }
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :         for (i = 4; i &lt; a-&gt;argc; i++) {</span>
+<span class="lineNum">     824 </span>            :                 struct expression_token *out_token;
+<span class="lineNum">     825 </span><span class="lineNoCov">          0 :                 char *token = ast_strdupa(a-&gt;argv[i]);</span>
+<span class="lineNum">     826 </span>            :                 int j;
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span>            :                 /* Strip off and append any left parentheses */
+<span class="lineNum">     829 </span><span class="lineNoCov">          0 :                 if (token[0] == '(') {</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :                         AST_VECTOR_APPEND(&amp;operators, &amp;left_paren);</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :                         if (!token[1]) {</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     833 </span>            :                         }
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :                         token = &amp;token[1];</span>
+<span class="lineNum">     835 </span>            :                 }
+<span class="lineNum">     836 </span>            : 
+<span class="lineNum">     837 </span>            :                 /* Handle the case where the token is an operator */
+<span class="lineNum">     838 </span><span class="lineNoCov">          0 :                 for (j = 0; j &lt; ARRAY_LEN(allowed_operators); j++) {</span>
+<span class="lineNum">     839 </span>            :                         int k;
+<span class="lineNum">     840 </span>            : 
+<span class="lineNum">     841 </span><span class="lineNoCov">          0 :                         if (strcasecmp(token, allowed_operators[j].symbol)) {</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     843 </span>            :                         }
+<span class="lineNum">     844 </span>            : 
+<span class="lineNum">     845 </span><span class="lineNoCov">          0 :                         for (k = AST_VECTOR_SIZE(&amp;operators) - 1; k &gt;= 0; k--) {</span>
+<span class="lineNum">     846 </span><span class="lineNoCov">          0 :                                 struct operator *top = AST_VECTOR_GET(&amp;operators, k);</span>
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :                                 /* Remove and push queued up operators, if they are of
+<span class="lineNum">     849 </span>            :                                  * less precedence than this operator
+<span class="lineNum">     850 </span>            :                                  */
+<span class="lineNum">     851 </span><span class="lineNoCov">          0 :                                 if ((allowed_operators[j].right_to_left &amp;&amp; allowed_operators[j].precedence &gt;= top-&gt;precedence)</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">          0 :                                         || (!allowed_operators[j].right_to_left &amp;&amp; allowed_operators[j].precedence &gt; top-&gt;precedence)) {</span>
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span><span class="lineNoCov">          0 :                                         if (!(out_token = expression_token_alloc(TOKEN_TYPE_OPERATOR, top))) {</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">          0 :                                                 goto error;</span>
+<span class="lineNum">     856 </span>            :                                         }
+<span class="lineNum">     857 </span><span class="lineNoCov">          0 :                                         APPEND_TO_OUTPUT(output, out_token);</span>
+<span class="lineNum">     858 </span><span class="lineNoCov">          0 :                                         AST_VECTOR_REMOVE(&amp;operators, k, 1);</span>
+<span class="lineNum">     859 </span>            :                                 }
+<span class="lineNum">     860 </span>            :                         }
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :                         AST_VECTOR_APPEND(&amp;operators, &amp;allowed_operators[j]);</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">          0 :                         token = NULL;</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     865 </span>            :                 }
+<span class="lineNum">     866 </span>            : 
+<span class="lineNum">     867 </span>            :                 /* Token was an operator; continue to next token */
+<span class="lineNum">     868 </span><span class="lineNoCov">          0 :                 if (!token) {</span>
+<span class="lineNum">     869 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     870 </span>            :                 }
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span>            :                 /* Handle a right parentheses either by itself or as part of the token.
+<span class="lineNum">     873 </span>            :                  * If part of the token, push the token onto the output queue first
+<span class="lineNum">     874 </span>            :                  */
+<span class="lineNum">     875 </span><span class="lineNoCov">          0 :                 if (token[0] == ')' || token[strlen(token) - 1] == ')') {</span>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineNoCov">          0 :                         if (token[strlen(token) - 1] == ')') {</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :                                 token[strlen(token) - 1] = '\0';</span>
+<span class="lineNum">     879 </span>            : 
+<span class="lineNum">     880 </span><span class="lineNoCov">          0 :                                 if (!(out_token = expression_token_alloc(TOKEN_TYPE_FIELD, token))) {</span>
+<span class="lineNum">     881 </span><span class="lineNoCov">          0 :                                         goto error;</span>
+<span class="lineNum">     882 </span>            :                                 }
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :                                 APPEND_TO_OUTPUT(output, out_token);</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 :                                 token = NULL;</span>
+<span class="lineNum">     885 </span>            :                         }
+<span class="lineNum">     886 </span>            : 
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :                         for (j = AST_VECTOR_SIZE(&amp;operators) - 1; j &gt;= 0; j--) {</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                                 struct operator *top = AST_VECTOR_GET(&amp;operators, j);</span>
+<span class="lineNum">     889 </span>            : 
+<span class="lineNum">     890 </span><span class="lineNoCov">          0 :                                 AST_VECTOR_REMOVE(&amp;operators, j, 1);</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                                 if (top == &amp;left_paren) {</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     893 </span>            :                                 }
+<span class="lineNum">     894 </span>            : 
+<span class="lineNum">     895 </span><span class="lineNoCov">          0 :                                 if (!(out_token = expression_token_alloc(TOKEN_TYPE_OPERATOR, top))) {</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                                         goto error;</span>
+<span class="lineNum">     897 </span>            :                                 }
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :                                 APPEND_TO_OUTPUT(output, out_token);</span>
+<span class="lineNum">     899 </span>            :                         }
+<span class="lineNum">     900 </span>            :                 }
+<span class="lineNum">     901 </span>            : 
+<span class="lineNum">     902 </span>            :                 /* Just a plain token, push to the output queue */
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                 if (token) {</span>
+<span class="lineNum">     904 </span><span class="lineNoCov">          0 :                         if (!(out_token = expression_token_alloc(TOKEN_TYPE_FIELD, token))) {</span>
+<span class="lineNum">     905 </span><span class="lineNoCov">          0 :                                 goto error;</span>
+<span class="lineNum">     906 </span>            :                         }
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :                         APPEND_TO_OUTPUT(output, out_token);</span>
+<span class="lineNum">     908 </span>            :                 }
+<span class="lineNum">     909 </span>            :         }
+<span class="lineNum">     910 </span>            : 
+<span class="lineNum">     911 </span>            :         /* Remove any non-applied operators that remain, applying them
+<span class="lineNum">     912 </span>            :          * to the output queue
+<span class="lineNum">     913 </span>            :          */
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :         for (i = AST_VECTOR_SIZE(&amp;operators) - 1; i &gt;= 0; i--) {</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                 struct operator *top = AST_VECTOR_GET(&amp;operators, i);</span>
+<span class="lineNum">     916 </span>            :                 struct expression_token *out_token;
+<span class="lineNum">     917 </span>            : 
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                 AST_VECTOR_REMOVE(&amp;operators, i, 1);</span>
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :                 if (top == &amp;left_paren) {</span>
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unbalanced '(' parentheses in expression!\n&quot;);</span>
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     922 </span>            :                 }
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                 if (!(out_token = expression_token_alloc(TOKEN_TYPE_OPERATOR, top))) {</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">     926 </span>            :                 }
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :                 APPEND_TO_OUTPUT(output, out_token);</span>
+<span class="lineNum">     928 </span>            :         }
+<span class="lineNum">     929 </span>            : 
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :         AST_VECTOR_FREE(&amp;operators);</span>
+<span class="lineNum">     931 </span><span class="lineNoCov">          0 :         return head;</span>
+<span class="lineNum">     932 </span>            : 
+<span class="lineNum">     933 </span><span class="lineNoCov">          0 : error:</span>
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :         AST_VECTOR_FREE(&amp;operators);</span>
+<span class="lineNum">     935 </span><span class="lineNoCov">          0 :         expression_token_free(output);</span>
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     937 </span>            : }
+<span class="lineNum">     938 </span>            : 
+<span class="lineNum">     939 </span>            : /*!
+<span class="lineNum">     940 </span>            :  * \brief Evaluate a single entry in this history using a RPN expression
+<span class="lineNum">     941 </span>            :  *
+<span class="lineNum">     942 </span>            :  * \param entry The entry in the history to evaluate
+<span class="lineNum">     943 </span>            :  * \param queue The RPN expression
+<span class="lineNum">     944 </span>            :  *
+<span class="lineNum">     945 </span>            :  * \retval 0 The expression evaluated FALSE on \c entry
+<span class="lineNum">     946 </span>            :  * \retval 1 The expression evaluated TRUE on \c entry
+<a name="947"><span class="lineNum">     947 </span>            :  * \retval -1 The expression errored</a>
+<span class="lineNum">     948 </span>            :  */
+<span class="lineNum">     949 </span><span class="lineNoCov">          0 : static int evaluate_history_entry(struct pjsip_history_entry *entry, struct expression_token *queue)</span>
+<span class="lineNum">     950 </span>            : {
+<span class="lineNum">     951 </span>            :         AST_VECTOR(, struct expression_token *) stack; /* Our stack of results and operands */
+<span class="lineNum">     952 </span>            :         struct expression_token *it_queue;
+<span class="lineNum">     953 </span>            :         struct expression_token *final;
+<span class="lineNum">     954 </span>            :         int result;
+<span class="lineNum">     955 </span>            :         int i;
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_INIT(&amp;stack, 16)) {</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     959 </span>            :         }
+<span class="lineNum">     960 </span>            : 
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :         for (it_queue = queue; it_queue; it_queue = it_queue-&gt;next) {</span>
+<span class="lineNum">     962 </span>            :                 struct expression_token *op_one;
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                 struct expression_token *op_two = NULL;</span>
+<span class="lineNum">     964 </span>            :                 struct expression_token *result;
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                 int res = 0;</span>
+<span class="lineNum">     966 </span>            : 
+<span class="lineNum">     967 </span>            :                 /* If this is not an operator, push it to the stack */
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                 if (!it_queue-&gt;op) {</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         if (AST_VECTOR_APPEND(&amp;stack, it_queue)) {</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                                 goto error;</span>
+<span class="lineNum">     971 </span>            :                         }
+<span class="lineNum">     972 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     973 </span>            :                 }
+<span class="lineNum">     974 </span>            : 
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :                 if (AST_VECTOR_SIZE(&amp;stack) &lt; it_queue-&gt;op-&gt;operands) {</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to evaluate expression operator '%s': not enough operands\n&quot;,</span>
+<span class="lineNum">     977 </span><span class="lineNoCov">          0 :                                 it_queue-&gt;op-&gt;symbol);</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">     979 </span>            :                 }
+<span class="lineNum">     980 </span>            : 
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                 if (it_queue-&gt;op-&gt;operands == 1) {</span>
+<span class="lineNum">     982 </span>            :                         /* Unary operators currently consist only of 'not', which can only act
+<span class="lineNum">     983 </span>            :                          * upon an evaluated condition result.
+<span class="lineNum">     984 </span>            :                          */
+<span class="lineNum">     985 </span><span class="lineNoCov">          0 :                         ast_assert(it_queue-&gt;op-&gt;evaluate_unary != NULL);</span>
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span><span class="lineNoCov">          0 :                         op_one = AST_VECTOR_REMOVE(&amp;stack, AST_VECTOR_SIZE(&amp;stack) - 1, 1);</span>
+<span class="lineNum">     988 </span><span class="lineNoCov">          0 :                         if (op_one-&gt;token_type != TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">     989 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Unable to evaluate '%s': operand is not the result of an operation\n&quot;,</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                                         it_queue-&gt;op-&gt;symbol);</span>
+<span class="lineNum">     991 </span><span class="lineNoCov">          0 :                                 goto error;</span>
+<span class="lineNum">     992 </span>            :                         }
+<span class="lineNum">     993 </span>            : 
+<span class="lineNum">     994 </span><span class="lineNoCov">          0 :                         res = it_queue-&gt;op-&gt;evaluate_unary(it_queue-&gt;op, OPT_INT_T, &amp;op_one-&gt;result) == 0 ? 0 : 1;</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                 } else if (it_queue-&gt;op-&gt;operands == 2) {</span>
+<span class="lineNum">     996 </span>            :                         struct allowed_field *field;
+<span class="lineNum">     997 </span>            :                         enum aco_option_type type;
+<span class="lineNum">     998 </span>            :                         void *value;
+<span class="lineNum">     999 </span>            : 
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :                         ast_assert(it_queue-&gt;op-&gt;evaluate != NULL);</span>
+<span class="lineNum">    1001 </span>            : 
+<span class="lineNum">    1002 </span><span class="lineNoCov">          0 :                         op_one = AST_VECTOR_REMOVE(&amp;stack, AST_VECTOR_SIZE(&amp;stack) - 1, 1);</span>
+<span class="lineNum">    1003 </span><span class="lineNoCov">          0 :                         op_two = AST_VECTOR_REMOVE(&amp;stack, AST_VECTOR_SIZE(&amp;stack) - 1, 1);</span>
+<span class="lineNum">    1004 </span>            : 
+<span class="lineNum">    1005 </span>            :                         /* If operand two is a field, then it must be a field we recognize. */
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                         if (op_two-&gt;token_type == TOKEN_TYPE_FIELD) {</span>
+<span class="lineNum">    1007 </span><span class="lineNoCov">          0 :                                 field = get_allowed_field(op_two);</span>
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :                                 if (!field) {</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_WARNING, &quot;Unknown or unrecognized field: %s\n&quot;, op_two-&gt;field);</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :                                         goto error;</span>
+<span class="lineNum">    1011 </span>            :                                 }
+<span class="lineNum">    1012 </span>            : 
+<span class="lineNum">    1013 </span><span class="lineNoCov">          0 :                                 type = field-&gt;return_type;</span>
+<span class="lineNum">    1014 </span><span class="lineNoCov">          0 :                                 value = field-&gt;get_field(entry);</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                         } else if (op_two-&gt;token_type == TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :                                 type = OPT_INT_T;</span>
+<span class="lineNum">    1017 </span><span class="lineNoCov">          0 :                                 value = &amp;op_two-&gt;result;</span>
+<span class="lineNum">    1018 </span>            :                         } else {
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Attempting to evaluate an operator: %s\n&quot;, op_two-&gt;op-&gt;symbol);</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :                                 goto error;</span>
+<span class="lineNum">    1021 </span>            :                         }
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                         if (value) {</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                                 res = it_queue-&gt;op-&gt;evaluate(it_queue-&gt;op, type, value, op_one) == 0 ? 0 : 1;</span>
+<span class="lineNum">    1025 </span>            :                         } else {
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :                                 res = 0;</span>
+<span class="lineNum">    1027 </span>            :                         }
+<span class="lineNum">    1028 </span>            :                 } else {
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Operator '%s' has an invalid number of operands\n&quot;, it_queue-&gt;op-&gt;symbol);</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                         ast_assert(0);</span>
+<span class="lineNum">    1031 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">    1032 </span>            :                 }
+<span class="lineNum">    1033 </span>            : 
+<span class="lineNum">    1034 </span>            :                 /* Results are temporary; clean used ones up */
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                 if (op_one &amp;&amp; op_one-&gt;token_type == TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                         ast_free(op_one);</span>
+<span class="lineNum">    1037 </span>            :                 }
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                 if (op_two &amp;&amp; op_two-&gt;token_type == TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                         ast_free(op_two);</span>
+<span class="lineNum">    1040 </span>            :                 }
+<span class="lineNum">    1041 </span>            : 
+<span class="lineNum">    1042 </span>            :                 /* Push the result onto the stack */
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :                 result = expression_token_alloc(TOKEN_TYPE_RESULT, &amp;res);</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                 if (!result) {</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">    1046 </span>            :                 }
+<span class="lineNum">    1047 </span><span class="lineNoCov">          0 :                 if (AST_VECTOR_APPEND(&amp;stack, result)) {</span>
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 :                         expression_token_free(result);</span>
+<span class="lineNum">    1049 </span>            : 
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                         goto error;</span>
+<span class="lineNum">    1051 </span>            :                 }
+<span class="lineNum">    1052 </span>            :         }
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span>            :         /*
+<span class="lineNum">    1055 </span>            :          * When the evaluation is complete, we must have:
+<span class="lineNum">    1056 </span>            :          *  - A single result remaining on the stack
+<span class="lineNum">    1057 </span>            :          *  - An actual result
+<span class="lineNum">    1058 </span>            :          */
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_SIZE(&amp;stack) != 1) {</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Expression was unbalanced: %zu results remained after evaluation\n&quot;,</span>
+<span class="lineNum">    1061 </span>            :                         AST_VECTOR_SIZE(&amp;stack));
+<span class="lineNum">    1062 </span><span class="lineNoCov">          0 :                 goto error;</span>
+<span class="lineNum">    1063 </span>            :         }
+<span class="lineNum">    1064 </span>            : 
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :         final = AST_VECTOR_GET(&amp;stack, 0);</span>
+<span class="lineNum">    1066 </span><span class="lineNoCov">          0 :         if (final-&gt;token_type != TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Expression did not create a usable result\n&quot;);</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 :                 goto error;</span>
+<span class="lineNum">    1069 </span>            :         }
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :         result = final-&gt;result;</span>
+<span class="lineNum">    1071 </span><span class="lineNoCov">          0 :         ast_free(final);</span>
+<span class="lineNum">    1072 </span><span class="lineNoCov">          0 :         AST_VECTOR_FREE(&amp;stack);</span>
+<span class="lineNum">    1073 </span>            : 
+<span class="lineNum">    1074 </span><span class="lineNoCov">          0 :         return result;</span>
+<span class="lineNum">    1075 </span>            : 
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 : error:</span>
+<span class="lineNum">    1077 </span>            :         /* Clean out any remaining result expression tokens */
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;stack); i++) {</span>
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :                 struct expression_token *failed_token = AST_VECTOR_GET(&amp;stack, i);</span>
+<span class="lineNum">    1080 </span>            : 
+<span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                 if (failed_token-&gt;token_type == TOKEN_TYPE_RESULT) {</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                         ast_free(failed_token);</span>
+<span class="lineNum">    1083 </span>            :                 }
+<span class="lineNum">    1084 </span>            :         }
+<span class="lineNum">    1085 </span><span class="lineNoCov">          0 :         AST_VECTOR_FREE(&amp;stack);</span>
+<span class="lineNum">    1086 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">    1087 </span>            : }
+<span class="lineNum">    1088 </span>            : 
+<span class="lineNum">    1089 </span>            : /*!
+<span class="lineNum">    1090 </span>            :  * \brief Create a filtered history based on a user provided expression
+<span class="lineNum">    1091 </span>            :  *
+<span class="lineNum">    1092 </span>            :  * \param a The CLI arguments containing the expression
+<span class="lineNum">    1093 </span>            :  *
+<span class="lineNum">    1094 </span>            :  * \retval NULL on error
+<a name="1095"><span class="lineNum">    1095 </span>            :  * \retval A vector containing the filtered history on success</a>
+<span class="lineNum">    1096 </span>            :  */
+<span class="lineNum">    1097 </span><span class="lineNoCov">          0 : static struct vector_history_t *filter_history(struct ast_cli_args *a)</span>
+<span class="lineNum">    1098 </span>            : {
+<span class="lineNum">    1099 </span>            :         struct vector_history_t *output;
+<span class="lineNum">    1100 </span>            :         struct expression_token *queue;
+<span class="lineNum">    1101 </span>            :         int i;
+<span class="lineNum">    1102 </span>            : 
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :         output = ast_malloc(sizeof(*output));</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :         if (!output) {</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1106 </span>            :         }
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_INIT(output, HISTORY_INITIAL_SIZE / 2)) {</span>
+<span class="lineNum">    1109 </span><span class="lineNoCov">          0 :                 ast_free(output);</span>
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1111 </span>            :         }
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span><span class="lineNoCov">          0 :         queue = build_expression_queue(a);</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">          0 :         if (!queue) {</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                 AST_VECTOR_PTR_FREE(output);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1117 </span>            :         }
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;vector_history); i++) {</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">          0 :                 struct pjsip_history_entry *entry = AST_VECTOR_GET(&amp;vector_history, i);</span>
+<span class="lineNum">    1122 </span>            :                 int res;
+<span class="lineNum">    1123 </span>            : 
+<span class="lineNum">    1124 </span><span class="lineNoCov">          0 :                 res = evaluate_history_entry(entry, queue);</span>
+<span class="lineNum">    1125 </span><span class="lineNoCov">          0 :                 if (res == -1) {</span>
+<span class="lineNum">    1126 </span>            :                         /* Error in expression evaluation; bail */
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :                         AST_VECTOR_RESET(output, clear_history_entry_cb);</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                         AST_VECTOR_FREE(output);</span>
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 :                         ast_free(output);</span>
+<span class="lineNum">    1131 </span><span class="lineNoCov">          0 :                         expression_token_free(queue);</span>
+<span class="lineNum">    1132 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :                 } else if (!res) {</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1135 </span>            :                 } else {
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :                         ao2_bump(entry);</span>
+<span class="lineNum">    1137 </span><span class="lineNoCov">          0 :                         if (AST_VECTOR_APPEND(output, entry)) {</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">          0 :                                 ao2_cleanup(entry);</span>
+<span class="lineNum">    1139 </span>            :                         }
+<span class="lineNum">    1140 </span>            :                 }
+<span class="lineNum">    1141 </span>            :         }
+<span class="lineNum">    1142 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1143 </span>            : 
+<span class="lineNum">    1144 </span><span class="lineNoCov">          0 :         expression_token_free(queue);</span>
+<span class="lineNum">    1145 </span>            : 
+<span class="lineNum">    1146 </span><span class="lineNoCov">          0 :         return output;</span>
+<span class="lineNum">    1147 </span>            : }
+<a name="1148"><span class="lineNum">    1148 </span>            : </a>
+<span class="lineNum">    1149 </span>            : /*! \brief Print a detailed view of a single entry in the history to the CLI */
+<span class="lineNum">    1150 </span><span class="lineNoCov">          0 : static void display_single_entry(struct ast_cli_args *a, struct pjsip_history_entry *entry)</span>
+<span class="lineNum">    1151 </span>            : {
+<span class="lineNum">    1152 </span>            :         char addr[64];
+<span class="lineNum">    1153 </span>            :         char *buf;
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :         buf = ast_calloc(1, PJSIP_MAX_PKT_LEN * sizeof(char));</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">          0 :         if (!buf) {</span>
+<span class="lineNum">    1157 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1158 </span>            :         }
+<span class="lineNum">    1159 </span>            : 
+<span class="lineNum">    1160 </span><span class="lineNoCov">          0 :         if (pjsip_msg_print(entry-&gt;msg, buf, PJSIP_MAX_PKT_LEN) == -1) {</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to print SIP message %d: packet too large!\n&quot;, entry-&gt;number);</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">          0 :                 ast_free(buf);</span>
+<span class="lineNum">    1163 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1164 </span>            :         }
+<span class="lineNum">    1165 </span>            : 
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :         if (entry-&gt;transmitted) {</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">          0 :                 pj_sockaddr_print(&amp;entry-&gt;dst, addr, sizeof(addr), 3);</span>
+<span class="lineNum">    1168 </span>            :         } else {
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                 pj_sockaddr_print(&amp;entry-&gt;src, addr, sizeof(addr), 3);</span>
+<span class="lineNum">    1170 </span>            :         }
+<span class="lineNum">    1171 </span>            : 
+<span class="lineNum">    1172 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;&lt;--- History Entry %d %s %s at %-10.10ld ---&gt;\n&quot;,</span>
+<span class="lineNum">    1173 </span>            :                 entry-&gt;number,
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :                 entry-&gt;transmitted ? &quot;Sent to&quot; : &quot;Received from&quot;,</span>
+<span class="lineNum">    1175 </span>            :                 addr,
+<span class="lineNum">    1176 </span>            :                 entry-&gt;timestamp.tv_sec);
+<span class="lineNum">    1177 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%s\n&quot;, buf);</span>
+<span class="lineNum">    1178 </span>            : 
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :         ast_free(buf);</span>
+<span class="lineNum">    1180 </span>            : }
+<a name="1181"><span class="lineNum">    1181 </span>            : </a>
+<span class="lineNum">    1182 </span>            : /*! \brief Print a list of the entries to the CLI */
+<span class="lineNum">    1183 </span><span class="lineNoCov">          0 : static void display_entry_list(struct ast_cli_args *a, struct vector_history_t *vec)</span>
+<span class="lineNum">    1184 </span>            : {
+<span class="lineNum">    1185 </span>            :         int i;
+<span class="lineNum">    1186 </span>            : 
+<span class="lineNum">    1187 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%-5.5s %-10.10s %-30.30s %-35.35s\n&quot;,</span>
+<span class="lineNum">    1188 </span>            :                 &quot;No.&quot;,
+<span class="lineNum">    1189 </span>            :                 &quot;Timestamp&quot;,
+<span class="lineNum">    1190 </span>            :                 &quot;(Dir) Address&quot;,
+<span class="lineNum">    1191 </span>            :                 &quot;SIP Message&quot;);
+<span class="lineNum">    1192 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;===== ========== ============================== ===================================\n&quot;);</span>
+<span class="lineNum">    1193 </span>            : 
+<span class="lineNum">    1194 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; AST_VECTOR_SIZE(vec); i++) {</span>
+<span class="lineNum">    1195 </span>            :                 struct pjsip_history_entry *entry;
+<span class="lineNum">    1196 </span>            :                 char line[256];
+<span class="lineNum">    1197 </span>            : 
+<span class="lineNum">    1198 </span><span class="lineNoCov">          0 :                 entry = AST_VECTOR_GET(vec, i);</span>
+<span class="lineNum">    1199 </span><span class="lineNoCov">          0 :                 sprint_list_entry(entry, line, sizeof(line));</span>
+<span class="lineNum">    1200 </span>            : 
+<span class="lineNum">    1201 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%s\n&quot;, line);</span>
+<span class="lineNum">    1202 </span>            :         }
+<span class="lineNum">    1203 </span><span class="lineNoCov">          0 : }</span>
+<a name="1204"><span class="lineNum">    1204 </span>            : </a>
+<span class="lineNum">    1205 </span>            : /*! \brief Cleanup routine for a history vector, serviced on a registered PJSIP thread */
+<span class="lineNum">    1206 </span><span class="lineNoCov">          0 : static int safe_vector_cleanup(void *obj)</span>
+<span class="lineNum">    1207 </span>            : {
+<span class="lineNum">    1208 </span><span class="lineNoCov">          0 :         struct vector_history_t *vec = obj;</span>
+<span class="lineNum">    1209 </span>            : 
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :         AST_VECTOR_RESET(vec, clear_history_entry_cb);</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">          0 :         AST_VECTOR_FREE(vec);</span>
+<span class="lineNum">    1212 </span><span class="lineNoCov">          0 :         ast_free(vec);</span>
+<span class="lineNum">    1213 </span>            : 
+<span class="lineNum">    1214 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="1215"><span class="lineNum">    1215 </span>            : }</a>
+<span class="lineNum">    1216 </span>            : 
+<span class="lineNum">    1217 </span><span class="lineCov">        852 : static char *pjsip_show_history(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">    1218 </span>            : {
+<span class="lineNum">    1219 </span><span class="lineCov">        852 :         struct vector_history_t *vec = &amp;vector_history;</span>
+<span class="lineNum">    1220 </span><span class="lineCov">        852 :         struct pjsip_history_entry *entry = NULL;</span>
+<span class="lineNum">    1221 </span>            : 
+<span class="lineNum">    1222 </span><span class="lineCov">        852 :         if (cmd == CLI_INIT) {</span>
+<span class="lineNum">    1223 </span><span class="lineCov">        852 :                 e-&gt;command = &quot;pjsip show history&quot;;</span>
+<span class="lineNum">    1224 </span><span class="lineCov">        852 :                 e-&gt;usage =</span>
+<span class="lineNum">    1225 </span>            :                         &quot;Usage: pjsip show history [entry &lt;num&gt;|where [...]]\n&quot;
+<span class="lineNum">    1226 </span>            :                         &quot;       Displays the currently collected history or an\n&quot;
+<span class="lineNum">    1227 </span>            :                         &quot;       entry within the history.\n\n&quot;
+<span class="lineNum">    1228 </span>            :                         &quot;       * Running the command with no options will display\n&quot;
+<span class="lineNum">    1229 </span>            :                         &quot;         the entire history.\n&quot;
+<span class="lineNum">    1230 </span>            :                         &quot;       * Providing 'entry &lt;num&gt;' will display the full\n&quot;
+<span class="lineNum">    1231 </span>            :                         &quot;         detail of a particular entry in this history.\n&quot;
+<span class="lineNum">    1232 </span>            :                         &quot;       * Providing 'where ...' will allow for filtering\n&quot;
+<span class="lineNum">    1233 </span>            :                         &quot;         the history. The history can be filtered using\n&quot;
+<span class="lineNum">    1234 </span>            :                         &quot;         any of the following fields:\n&quot;
+<span class="lineNum">    1235 </span>            :                         &quot;         - number: The history entry number\n&quot;
+<span class="lineNum">    1236 </span>            :                         &quot;         - timestamp: The time associated with the history entry\n&quot;
+<span class="lineNum">    1237 </span>            :                         &quot;         - addr: The source/destination address of the SIP message\n&quot;
+<span class="lineNum">    1238 </span>            :                         &quot;         - sip.msg.request.method: The request method type\n&quot;
+<span class="lineNum">    1239 </span>            :                         &quot;         - sip.msg.call-id: The Call-ID header of the SIP message\n&quot;
+<span class="lineNum">    1240 </span>            :                         &quot;\n&quot;
+<span class="lineNum">    1241 </span>            :                         &quot;         When filtering, standard Boolean operators can be used,\n&quot;
+<span class="lineNum">    1242 </span>            :                         &quot;         as well as 'like' for regexs.\n&quot;
+<span class="lineNum">    1243 </span>            :                         &quot;\n&quot;
+<span class="lineNum">    1244 </span>            :                         &quot;         Example:\n&quot;
+<span class="lineNum">    1245 </span>            :                         &quot;         'pjsip show history where number &gt; 5 and (addr = \&quot;192.168.0.3:5060\&quot; or addr = \&quot;192.168.0.5:5060\&quot;)'\n&quot;;
+<span class="lineNum">    1246 </span><span class="lineCov">        852 :                 return NULL;</span>
+<span class="lineNum">    1247 </span><span class="lineNoCov">          0 :         } else if (cmd == CLI_GENERATE) {</span>
+<span class="lineNum">    1248 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1249 </span>            :         }
+<span class="lineNum">    1250 </span>            : 
+<span class="lineNum">    1251 </span><span class="lineNoCov">          0 :         if (a-&gt;argc &gt; 3) {</span>
+<span class="lineNum">    1252 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(a-&gt;argv[3], &quot;entry&quot;) &amp;&amp; a-&gt;argc == 5) {</span>
+<span class="lineNum">    1253 </span>            :                         int num;
+<span class="lineNum">    1254 </span>            : 
+<span class="lineNum">    1255 </span><span class="lineNoCov">          0 :                         if (sscanf(a-&gt;argv[4], &quot;%30d&quot;, &amp;num) != 1) {</span>
+<span class="lineNum">    1256 </span><span class="lineNoCov">          0 :                                 ast_cli(a-&gt;fd, &quot;'%s' is not a valid entry number\n&quot;, a-&gt;argv[4]);</span>
+<span class="lineNum">    1257 </span><span class="lineNoCov">          0 :                                 return CLI_FAILURE;</span>
+<span class="lineNum">    1258 </span>            :                         }
+<span class="lineNum">    1259 </span>            : 
+<span class="lineNum">    1260 </span>            :                         /* Get the entry at the provided position */
+<span class="lineNum">    1261 </span><span class="lineNoCov">          0 :                         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :                         if (num &gt;= AST_VECTOR_SIZE(&amp;vector_history) || num &lt; 0) {</span>
+<span class="lineNum">    1263 </span><span class="lineNoCov">          0 :                                 ast_cli(a-&gt;fd, &quot;Entry '%d' does not exist\n&quot;, num);</span>
+<span class="lineNum">    1264 </span><span class="lineNoCov">          0 :                                 ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1265 </span><span class="lineNoCov">          0 :                                 return CLI_FAILURE;</span>
+<span class="lineNum">    1266 </span>            :                         }
+<span class="lineNum">    1267 </span><span class="lineNoCov">          0 :                         entry = ao2_bump(AST_VECTOR_GET(&amp;vector_history, num));</span>
+<span class="lineNum">    1268 </span><span class="lineNoCov">          0 :                         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1269 </span><span class="lineNoCov">          0 :                 } else if (!strcasecmp(a-&gt;argv[3], &quot;where&quot;)) {</span>
+<span class="lineNum">    1270 </span><span class="lineNoCov">          0 :                         vec = filter_history(a);</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :                         if (!vec) {</span>
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :                                 return CLI_FAILURE;</span>
+<span class="lineNum">    1273 </span>            :                         }
+<span class="lineNum">    1274 </span>            :                 } else {
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :                         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1276 </span>            :                 }
+<span class="lineNum">    1277 </span>            :         }
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_SIZE(vec) == 1) {</span>
+<span class="lineNum">    1280 </span><span class="lineNoCov">          0 :                 if (vec == &amp;vector_history) {</span>
+<span class="lineNum">    1281 </span><span class="lineNoCov">          0 :                         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">    1282 </span>            :                 }
+<span class="lineNum">    1283 </span><span class="lineNoCov">          0 :                 entry = ao2_bump(AST_VECTOR_GET(vec, 0));</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :                 if (vec == &amp;vector_history) {</span>
+<span class="lineNum">    1285 </span><span class="lineNoCov">          0 :                         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1286 </span>            :                 }
+<span class="lineNum">    1287 </span>            :         }
+<span class="lineNum">    1288 </span>            : 
+<span class="lineNum">    1289 </span><span class="lineNoCov">          0 :         if (entry) {</span>
+<span class="lineNum">    1290 </span><span class="lineNoCov">          0 :                 display_single_entry(a, entry);</span>
+<span class="lineNum">    1291 </span>            :         } else {
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 :                 if (vec == &amp;vector_history) {</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">          0 :                         ast_mutex_lock(&amp;history_lock);</span>
+<span class="lineNum">    1294 </span>            :                 }
+<span class="lineNum">    1295 </span>            : 
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :                 display_entry_list(a, vec);</span>
+<span class="lineNum">    1297 </span>            : 
+<span class="lineNum">    1298 </span><span class="lineNoCov">          0 :                 if (vec == &amp;vector_history) {</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">          0 :                         ast_mutex_unlock(&amp;history_lock);</span>
+<span class="lineNum">    1300 </span>            :                 }
+<span class="lineNum">    1301 </span>            :         }
+<span class="lineNum">    1302 </span>            : 
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :         if (vec != &amp;vector_history) {</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">          0 :                 ast_sip_push_task(NULL, safe_vector_cleanup, vec);</span>
+<span class="lineNum">    1305 </span>            :         }
+<span class="lineNum">    1306 </span><span class="lineNoCov">          0 :         ao2_cleanup(entry);</span>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="1309"><span class="lineNum">    1309 </span>            : }</a>
+<span class="lineNum">    1310 </span>            : 
+<span class="lineNum">    1311 </span><span class="lineCov">        852 : static char *pjsip_set_history(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">    1312 </span>            : {
+<span class="lineNum">    1313 </span>            :         const char *what;
+<span class="lineNum">    1314 </span>            : 
+<span class="lineNum">    1315 </span><span class="lineCov">        852 :         if (cmd == CLI_INIT) {</span>
+<span class="lineNum">    1316 </span><span class="lineCov">        852 :                 e-&gt;command = &quot;pjsip set history {on|off|clear}&quot;;</span>
+<span class="lineNum">    1317 </span><span class="lineCov">        852 :                 e-&gt;usage =</span>
+<span class="lineNum">    1318 </span>            :                         &quot;Usage: pjsip set history {on|off|clear}\n&quot;
+<span class="lineNum">    1319 </span>            :                         &quot;       Enables/disables/clears the PJSIP history.\n\n&quot;
+<span class="lineNum">    1320 </span>            :                         &quot;       Enabling the history will start recording transmitted/received\n&quot;
+<span class="lineNum">    1321 </span>            :                         &quot;       packets. Disabling the history will stop recording, but keep\n&quot;
+<span class="lineNum">    1322 </span>            :                         &quot;       the already received packets. Clearing the history will wipe\n&quot;
+<span class="lineNum">    1323 </span>            :                         &quot;       the received packets from memory.\n\n&quot;
+<span class="lineNum">    1324 </span>            :                         &quot;       As the PJSIP history is maintained in memory, and includes\n&quot;
+<span class="lineNum">    1325 </span>            :                         &quot;       all received/transmitted requests and responses, it should\n&quot;
+<span class="lineNum">    1326 </span>            :                         &quot;       only be enabled for debugging purposes, and cleared when done.\n&quot;;
+<span class="lineNum">    1327 </span><span class="lineCov">        852 :                 return NULL;</span>
+<span class="lineNum">    1328 </span><span class="lineNoCov">          0 :         } else if (cmd == CLI_GENERATE) {</span>
+<span class="lineNum">    1329 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1330 </span>            :         }
+<span class="lineNum">    1331 </span>            : 
+<span class="lineNum">    1332 </span><span class="lineNoCov">          0 :         what = a-&gt;argv[e-&gt;args - 1];      /* Guaranteed to exist */</span>
+<span class="lineNum">    1333 </span>            : 
+<span class="lineNum">    1334 </span><span class="lineNoCov">          0 :         if (a-&gt;argc == e-&gt;args) {</span>
+<span class="lineNum">    1335 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(what, &quot;on&quot;)) {</span>
+<span class="lineNum">    1336 </span><span class="lineNoCov">          0 :                         enabled = 1;</span>
+<span class="lineNum">    1337 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;PJSIP History enabled\n&quot;);</span>
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :                         return CLI_SUCCESS;</span>
+<span class="lineNum">    1339 </span><span class="lineNoCov">          0 :                 } else if (!strcasecmp(what, &quot;off&quot;)) {</span>
+<span class="lineNum">    1340 </span><span class="lineNoCov">          0 :                         enabled = 0;</span>
+<span class="lineNum">    1341 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;PJSIP History disabled\n&quot;);</span>
+<span class="lineNum">    1342 </span><span class="lineNoCov">          0 :                         return CLI_SUCCESS;</span>
+<span class="lineNum">    1343 </span><span class="lineNoCov">          0 :                 } else if (!strcasecmp(what, &quot;clear&quot;)) {</span>
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :                         ast_sip_push_task(NULL, clear_history_entries, NULL);</span>
+<span class="lineNum">    1345 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;PJSIP History cleared\n&quot;);</span>
+<span class="lineNum">    1346 </span><span class="lineNoCov">          0 :                         return CLI_SUCCESS;</span>
+<span class="lineNum">    1347 </span>            :                 }
+<span class="lineNum">    1348 </span>            :         }
+<span class="lineNum">    1349 </span>            : 
+<span class="lineNum">    1350 </span><span class="lineNoCov">          0 :         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1351 </span>            : }
+<span class="lineNum">    1352 </span>            : 
+<span class="lineNum">    1353 </span>            : static pjsip_module logging_module = {
+<span class="lineNum">    1354 </span>            :         .name = { &quot;History Module&quot;, 14 },
+<span class="lineNum">    1355 </span>            :         .priority = 0,
+<span class="lineNum">    1356 </span>            :         .on_rx_request = history_on_rx_msg,
+<span class="lineNum">    1357 </span>            :         .on_rx_response = history_on_rx_msg,
+<span class="lineNum">    1358 </span>            :         .on_tx_request = history_on_tx_msg,
+<span class="lineNum">    1359 </span>            :         .on_tx_response = history_on_tx_msg,
+<span class="lineNum">    1360 </span>            : };
+<span class="lineNum">    1361 </span>            : 
+<span class="lineNum">    1362 </span>            : static struct ast_cli_entry cli_pjsip[] = {
+<span class="lineNum">    1363 </span>            :         AST_CLI_DEFINE(pjsip_set_history, &quot;Enable/Disable PJSIP History&quot;),
+<span class="lineNum">    1364 </span>            :         AST_CLI_DEFINE(pjsip_show_history, &quot;Display PJSIP History&quot;),
+<a name="1365"><span class="lineNum">    1365 </span>            : };</a>
+<span class="lineNum">    1366 </span>            : 
+<span class="lineNum">    1367 </span><span class="lineCov">        852 : static int load_module(void)</span>
+<span class="lineNum">    1368 </span>            : {
+<span class="lineNum">    1369 </span><span class="lineCov">        852 :         log_level = ast_logger_register_level(&quot;PJSIP_HISTORY&quot;);</span>
+<span class="lineNum">    1370 </span><span class="lineCov">        852 :         if (log_level &lt; 0) {</span>
+<span class="lineNum">    1371 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to register history log level\n&quot;);</span>
+<span class="lineNum">    1372 </span>            :         }
+<span class="lineNum">    1373 </span>            : 
+<span class="lineNum">    1374 </span><span class="lineCov">        852 :         ast_pjproject_caching_pool_init(&amp;cachingpool, &amp;pj_pool_factory_default_policy, 0);</span>
+<span class="lineNum">    1375 </span>            : 
+<span class="lineNum">    1376 </span><span class="lineCov">        852 :         AST_VECTOR_INIT(&amp;vector_history, HISTORY_INITIAL_SIZE);</span>
+<span class="lineNum">    1377 </span>            : 
+<span class="lineNum">    1378 </span><span class="lineCov">        852 :         ast_sip_register_service(&amp;logging_module);</span>
+<span class="lineNum">    1379 </span><span class="lineCov">        852 :         ast_cli_register_multiple(cli_pjsip, ARRAY_LEN(cli_pjsip));</span>
+<span class="lineNum">    1380 </span>            : 
+<span class="lineNum">    1381 </span><span class="lineCov">        852 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="1382"><span class="lineNum">    1382 </span>            : }</a>
+<span class="lineNum">    1383 </span>            : 
+<span class="lineNum">    1384 </span><span class="lineCov">        851 : static int unload_module(void)</span>
+<span class="lineNum">    1385 </span>            : {
+<span class="lineNum">    1386 </span><span class="lineCov">        851 :         ast_cli_unregister_multiple(cli_pjsip, ARRAY_LEN(cli_pjsip));</span>
+<span class="lineNum">    1387 </span><span class="lineCov">        851 :         ast_sip_unregister_service(&amp;logging_module);</span>
+<span class="lineNum">    1388 </span>            : 
+<span class="lineNum">    1389 </span><span class="lineCov">        851 :         ast_sip_push_task_wait_servant(NULL, clear_history_entries, NULL);</span>
+<span class="lineNum">    1390 </span><span class="lineCov">        851 :         AST_VECTOR_FREE(&amp;vector_history);</span>
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span><span class="lineCov">        851 :         ast_pjproject_caching_pool_destroy(&amp;cachingpool);</span>
+<span class="lineNum">    1393 </span>            : 
+<span class="lineNum">    1394 </span><span class="lineCov">        851 :         if (log_level != -1) {</span>
+<span class="lineNum">    1395 </span><span class="lineCov">        851 :                 ast_logger_unregister_level(&quot;PJSIP_HISTORY&quot;);</span>
+<span class="lineNum">    1396 </span>            :         }
+<span class="lineNum">    1397 </span>            : 
+<span class="lineNum">    1398 </span><span class="lineCov">        851 :         return 0;</span>
+<a name="1399"><span class="lineNum">    1399 </span>            : }</a>
+<span class="lineNum">    1400 </span>            : 
+<span class="lineNum">    1401 </span><span class="lineCov">       2556 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;PJSIP History&quot;,</span>
+<span class="lineNum">    1402 </span>            :                 .support_level = AST_MODULE_SUPPORT_EXTENDED,
+<span class="lineNum">    1403 </span>            :                 .load = load_module,
+<span class="lineNum">    1404 </span>            :                 .unload = unload_module,
+<span class="lineNum">    1405 </span>            :                 .load_pri = AST_MODPRI_APP_DEPEND,
+<span class="lineNum">    1406 </span>            :                 .requires = &quot;res_pjsip&quot;,
+<span class="lineNum">    1407 </span>            :         );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

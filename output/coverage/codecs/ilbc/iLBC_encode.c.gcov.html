@@ -1,0 +1,626 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - codecs/ilbc/iLBC_encode.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">codecs/ilbc</a> - iLBC_encode.c<span style="font-size: 80%;"> (source / <a href="iLBC_encode.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">192</td>
+            <td class="headerCovTableEntry">218</td>
+            <td class="headerCovTableEntryMed">88.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : </a>
+<span class="lineNum">       2 </span>            :    /******************************************************************
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :        iLBC Speech Coder ANSI-C Source Code
+<span class="lineNum">       5 </span>            : 
+<span class="lineNum">       6 </span>            :        iLBC_encode.c
+<span class="lineNum">       7 </span>            : 
+<span class="lineNum">       8 </span>            :        Copyright (C) The Internet Society (2004).
+<span class="lineNum">       9 </span>            :        All Rights Reserved.
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :    ******************************************************************/
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            :    #include &lt;math.h&gt;
+<span class="lineNum">      14 </span>            :    #include &lt;stdlib.h&gt;
+<span class="lineNum">      15 </span>            :    #include &lt;string.h&gt;
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            :    #include &quot;iLBC_define.h&quot;
+<span class="lineNum">      18 </span>            :    #include &quot;LPCencode.h&quot;
+<span class="lineNum">      19 </span>            :    #include &quot;FrameClassify.h&quot;
+<span class="lineNum">      20 </span>            :    #include &quot;StateSearchW.h&quot;
+<span class="lineNum">      21 </span>            :    #include &quot;StateConstructW.h&quot;
+<span class="lineNum">      22 </span>            :    #include &quot;helpfun.h&quot;
+<span class="lineNum">      23 </span>            :    #include &quot;constants.h&quot;
+<span class="lineNum">      24 </span>            :    #include &quot;packing.h&quot;
+<span class="lineNum">      25 </span>            :    #include &quot;iCBSearch.h&quot;
+<span class="lineNum">      26 </span>            :    #include &quot;iCBConstruct.h&quot;
+<span class="lineNum">      27 </span>            :    #include &quot;hpInput.h&quot;
+<span class="lineNum">      28 </span>            :    #include &quot;anaFilter.h&quot;
+<span class="lineNum">      29 </span>            :    #include &quot;syntFilter.h&quot;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            :    /*----------------------------------------------------------------*
+<span class="lineNum">      32 </span>            :     *  Initiation of encoder instance.
+<a name="33"><span class="lineNum">      33 </span>            :     *---------------------------------------------------------------*/</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span><span class="lineCov">       1117 :    short initEncode(                   /* (o) Number of bytes</span>
+<span class="lineNum">      36 </span>            :                                               encoded */
+<span class="lineNum">      37 </span>            :        iLBC_Enc_Inst_t *iLBCenc_inst,  /* (i/o) Encoder instance */
+<span class="lineNum">      38 </span>            :        int mode                    /* (i) frame size mode */
+<span class="lineNum">      39 </span>            :    ){
+<span class="lineNum">      40 </span><span class="lineCov">       1117 :        iLBCenc_inst-&gt;mode = mode;</span>
+<span class="lineNum">      41 </span><span class="lineCov">       1117 :        if (mode==30) {</span>
+<span class="lineNum">      42 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;blockl = BLOCKL_30MS;</span>
+<span class="lineNum">      43 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;nsub = NSUB_30MS;</span>
+<span class="lineNum">      44 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;nasub = NASUB_30MS;</span>
+<span class="lineNum">      45 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;lpc_n = LPC_N_30MS;</span>
+<span class="lineNum">      46 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;no_of_bytes = NO_OF_BYTES_30MS;</span>
+<span class="lineNum">      47 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;no_of_words = NO_OF_WORDS_30MS;</span>
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;state_short_len=STATE_SHORT_LEN_30MS;</span>
+<span class="lineNum">      54 </span>            :            /* ULP init */
+<span class="lineNum">      55 </span><span class="lineCov">       1117 :            iLBCenc_inst-&gt;ULP_inst=&amp;ULP_30msTbl;</span>
+<span class="lineNum">      56 </span>            :        }
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :        else if (mode==20) {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;blockl = BLOCKL_20MS;</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;nsub = NSUB_20MS;</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;nasub = NASUB_20MS;</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;lpc_n = LPC_N_20MS;</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;no_of_bytes = NO_OF_BYTES_20MS;</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;no_of_words = NO_OF_WORDS_20MS;</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;state_short_len=STATE_SHORT_LEN_20MS;</span>
+<span class="lineNum">      65 </span>            :            /* ULP init */
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :            iLBCenc_inst-&gt;ULP_inst=&amp;ULP_20msTbl;</span>
+<span class="lineNum">      67 </span>            :        }
+<span class="lineNum">      68 </span>            :        else {
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :            exit(2);</span>
+<span class="lineNum">      70 </span>            :        }
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineCov">       1117 :        memset((*iLBCenc_inst).anaMem, 0,</span>
+<span class="lineNum">      73 </span>            :            LPC_FILTERORDER*sizeof(float));
+<span class="lineNum">      74 </span><span class="lineCov">       1117 :        memcpy((*iLBCenc_inst).lsfold, lsfmeanTbl,</span>
+<span class="lineNum">      75 </span>            :            LPC_FILTERORDER*sizeof(float));
+<span class="lineNum">      76 </span><span class="lineCov">       1117 :        memcpy((*iLBCenc_inst).lsfdeqold, lsfmeanTbl,</span>
+<span class="lineNum">      77 </span>            :            LPC_FILTERORDER*sizeof(float));
+<span class="lineNum">      78 </span><span class="lineCov">       1117 :        memset((*iLBCenc_inst).lpc_buffer, 0,</span>
+<span class="lineNum">      79 </span>            :            (LPC_LOOKBACK+BLOCKL_MAX)*sizeof(float));
+<span class="lineNum">      80 </span><span class="lineCov">       1117 :        memset((*iLBCenc_inst).hpimem, 0, 4*sizeof(float));</span>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">       1117 :        return (iLBCenc_inst-&gt;no_of_bytes);</span>
+<span class="lineNum">      83 </span>            :    }
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            :    /*----------------------------------------------------------------*
+<span class="lineNum">      86 </span>            :     *  main encoder function
+<a name="87"><span class="lineNum">      87 </span>            :     *---------------------------------------------------------------*/</a>
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span><span class="lineCov">      37978 :    void iLBC_encode(</span>
+<span class="lineNum">      90 </span>            :        unsigned char *bytes,           /* (o) encoded data bits iLBC */
+<span class="lineNum">      91 </span>            :        float *block,                   /* (o) speech vector to
+<span class="lineNum">      92 </span>            :                                               encode */
+<span class="lineNum">      93 </span>            :        iLBC_Enc_Inst_t *iLBCenc_inst   /* (i/o) the general encoder
+<span class="lineNum">      94 </span>            :                                               state */
+<span class="lineNum">      95 </span>            :    ){
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span>            :        float data[BLOCKL_MAX];
+<span class="lineNum">      98 </span>            :        float residual[BLOCKL_MAX], reverseResidual[BLOCKL_MAX];
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :        int start, idxForMax, idxVec[STATE_LEN];
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            :        float reverseDecresidual[BLOCKL_MAX], mem[CB_MEML];
+<span class="lineNum">     107 </span>            :        int n, k, meml_gotten, Nfor, Nback, i, pos;
+<span class="lineNum">     108 </span>            :        int gain_index[CB_NSTAGES*NASUB_MAX],
+<span class="lineNum">     109 </span>            :            extra_gain_index[CB_NSTAGES];
+<span class="lineNum">     110 </span>            :        int cb_index[CB_NSTAGES*NASUB_MAX],extra_cb_index[CB_NSTAGES];
+<span class="lineNum">     111 </span>            :        int lsf_i[LSF_NSPLIT*LPC_N_MAX];
+<span class="lineNum">     112 </span>            :        unsigned char *pbytes;
+<span class="lineNum">     113 </span>            :        int diff, start_pos, state_first;
+<span class="lineNum">     114 </span>            :        float en1, en2;
+<span class="lineNum">     115 </span>            :        int index, ulp, firstpart;
+<span class="lineNum">     116 </span>            :        int subcount, subframe;
+<span class="lineNum">     117 </span>            :        float weightState[LPC_FILTERORDER];
+<span class="lineNum">     118 </span>            :        float syntdenum[NSUB_MAX*(LPC_FILTERORDER+1)];
+<span class="lineNum">     119 </span>            :        float weightdenum[NSUB_MAX*(LPC_FILTERORDER+1)];
+<span class="lineNum">     120 </span>            :        float decresidual[BLOCKL_MAX];
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span>            :        /* high pass filtering of input signal if such is not done
+<span class="lineNum">     123 </span>            :               prior to calling this function */
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">      37978 :        hpInput(block, iLBCenc_inst-&gt;blockl,</span>
+<span class="lineNum">     126 </span><span class="lineCov">      37978 :                    data, (*iLBCenc_inst).hpimem);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            :        /* otherwise simply copy */
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            :        /*memcpy(data,block,iLBCenc_inst-&gt;blockl*sizeof(float));*/
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            :        /* LPC of hp filtered input data */
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">      37978 :        LPCencode(syntdenum, weightdenum, lsf_i, data, iLBCenc_inst);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span>            :        /* inverse filter to get residual */
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">     265846 :        for (n=0; n&lt;iLBCenc_inst-&gt;nsub; n++) {</span>
+<span class="lineNum">     140 </span><span class="lineCov">     227868 :            anaFilter(&amp;data[n*SUBL], &amp;syntdenum[n*(LPC_FILTERORDER+1)],</span>
+<span class="lineNum">     141 </span><span class="lineCov">     227868 :                SUBL, &amp;residual[n*SUBL], iLBCenc_inst-&gt;anaMem);</span>
+<span class="lineNum">     142 </span>            :        }
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            :        /* find state location */
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">      37978 :        start = FrameClassify(iLBCenc_inst, residual);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span>            :        /* check if state should be in first or last part of the
+<span class="lineNum">     149 </span>            :        two subframes */
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">      37978 :        diff = STATE_LEN - iLBCenc_inst-&gt;state_short_len;</span>
+<span class="lineNum">     152 </span><span class="lineCov">      37978 :        en1 = 0;</span>
+<span class="lineNum">     153 </span><span class="lineCov">      37978 :        index = (start-1)*SUBL;</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">    2240702 :        for (i = 0; i &lt; iLBCenc_inst-&gt;state_short_len; i++) {</span>
+<span class="lineNum">     160 </span><span class="lineCov">    2202724 :            en1 += residual[index+i]*residual[index+i];</span>
+<span class="lineNum">     161 </span>            :        }
+<span class="lineNum">     162 </span><span class="lineCov">      37978 :        en2 = 0;</span>
+<span class="lineNum">     163 </span><span class="lineCov">      37978 :        index = (start-1)*SUBL+diff;</span>
+<span class="lineNum">     164 </span><span class="lineCov">    2240702 :        for (i = 0; i &lt; iLBCenc_inst-&gt;state_short_len; i++) {</span>
+<span class="lineNum">     165 </span><span class="lineCov">    2202724 :            en2 += residual[index+i]*residual[index+i];</span>
+<span class="lineNum">     166 </span>            :        }
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineCov">      37978 :        if (en1 &gt; en2) {</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :            state_first = 1;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :            start_pos = (start-1)*SUBL;</span>
+<span class="lineNum">     172 </span>            :        } else {
+<span class="lineNum">     173 </span><span class="lineCov">      37978 :            state_first = 0;</span>
+<span class="lineNum">     174 </span><span class="lineCov">      37978 :            start_pos = (start-1)*SUBL + diff;</span>
+<span class="lineNum">     175 </span>            :        }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :        /* scalar quantization of state */
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">     113934 :        StateSearchW(iLBCenc_inst, &amp;residual[start_pos],</span>
+<span class="lineNum">     180 </span><span class="lineCov">      37978 :            &amp;syntdenum[(start-1)*(LPC_FILTERORDER+1)],</span>
+<span class="lineNum">     181 </span><span class="lineCov">      37978 :            &amp;weightdenum[(start-1)*(LPC_FILTERORDER+1)], &amp;idxForMax,</span>
+<span class="lineNum">     182 </span>            :            idxVec, iLBCenc_inst-&gt;state_short_len, state_first);
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineCov">      75956 :        StateConstructW(idxForMax, idxVec,</span>
+<span class="lineNum">     185 </span><span class="lineCov">      37978 :            &amp;syntdenum[(start-1)*(LPC_FILTERORDER+1)],</span>
+<span class="lineNum">     186 </span>            :            &amp;decresidual[start_pos], iLBCenc_inst-&gt;state_short_len);
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :        /* predictive quantization in state */
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">      37978 :        if (state_first) { /* put adaptive part in the end */</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :            /* setup memory */
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :            memset(mem, 0,</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                (CB_MEML-iLBCenc_inst-&gt;state_short_len)*sizeof(float));</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :            memcpy(mem+CB_MEML-iLBCenc_inst-&gt;state_short_len,</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                decresidual+start_pos,</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                iLBCenc_inst-&gt;state_short_len*sizeof(float));</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :            memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :            /* encode sub-frames */
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :            iCBSearch(iLBCenc_inst, extra_cb_index, extra_gain_index,</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                &amp;residual[start_pos+iLBCenc_inst-&gt;state_short_len],</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                mem+CB_MEML-stMemLTbl,</span>
+<span class="lineNum">     206 </span>            :                stMemLTbl, diff, CB_NSTAGES,
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                &amp;weightdenum[start*(LPC_FILTERORDER+1)],</span>
+<span class="lineNum">     213 </span>            :                weightState, 0);
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :            /* construct decoded vector */
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :            iCBConstruct(</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                &amp;decresidual[start_pos+iLBCenc_inst-&gt;state_short_len],</span>
+<span class="lineNum">     219 </span>            :                extra_cb_index, extra_gain_index,
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                mem+CB_MEML-stMemLTbl,</span>
+<span class="lineNum">     221 </span>            :                stMemLTbl, diff, CB_NSTAGES);
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            :        }
+<span class="lineNum">     224 </span>            :        else { /* put adaptive part in the beginning */
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            :            /* create reversed vectors for prediction */
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">     873494 :            for (k=0; k&lt;diff; k++) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">    1671032 :                reverseResidual[k] = residual[(start+1)*SUBL-1</span>
+<span class="lineNum">     230 </span><span class="lineCov">     835516 :                    -(k+iLBCenc_inst-&gt;state_short_len)];</span>
+<span class="lineNum">     231 </span>            :            }
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :            /* setup memory */
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">      37978 :            meml_gotten = iLBCenc_inst-&gt;state_short_len;</span>
+<span class="lineNum">     236 </span><span class="lineCov">    2240702 :            for (k=0; k&lt;meml_gotten; k++) {</span>
+<span class="lineNum">     237 </span><span class="lineCov">    2202724 :                mem[CB_MEML-1-k] = decresidual[start_pos + k];</span>
+<span class="lineNum">     238 </span>            :            }
+<span class="lineNum">     239 </span><span class="lineCov">      37978 :            memset(mem, 0, (CB_MEML-k)*sizeof(float));</span>
+<span class="lineNum">     240 </span><span class="lineCov">      37978 :            memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span>            :            /* encode sub-frames */
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">      75956 :            iCBSearch(iLBCenc_inst, extra_cb_index, extra_gain_index,</span>
+<span class="lineNum">     245 </span><span class="lineCov">      37978 :                reverseResidual, mem+CB_MEML-stMemLTbl, stMemLTbl,</span>
+<span class="lineNum">     246 </span>            :                diff, CB_NSTAGES,
+<span class="lineNum">     247 </span><span class="lineCov">      37978 :                &amp;weightdenum[(start-1)*(LPC_FILTERORDER+1)],</span>
+<span class="lineNum">     248 </span>            :                weightState, 0);
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span>            :            /* construct decoded vector */
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">      75956 :            iCBConstruct(reverseDecresidual, extra_cb_index,</span>
+<span class="lineNum">     253 </span><span class="lineCov">      37978 :                extra_gain_index, mem+CB_MEML-stMemLTbl, stMemLTbl,</span>
+<span class="lineNum">     254 </span>            :                diff, CB_NSTAGES);
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span>            :            /* get decoded residual from reversed vector */
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">     873494 :            for (k=0; k&lt;diff; k++) {</span>
+<span class="lineNum">     259 </span><span class="lineCov">     835516 :                decresidual[start_pos-1-k] = reverseDecresidual[k];</span>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            :            }
+<span class="lineNum">     266 </span>            :        }
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span>            :        /* counter for predicted sub-frames */
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">      37978 :        subcount=0;</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span>            :        /* forward prediction of sub-frames */
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">      37978 :        Nfor = iLBCenc_inst-&gt;nsub-start-1;</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">      37978 :        if ( Nfor &gt; 0 ) {</span>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :            /* setup memory */
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">      37978 :            memset(mem, 0, (CB_MEML-STATE_LEN)*sizeof(float));</span>
+<span class="lineNum">     282 </span><span class="lineCov">      37978 :            memcpy(mem+CB_MEML-STATE_LEN, decresidual+(start-1)*SUBL,</span>
+<span class="lineNum">     283 </span>            :                STATE_LEN*sizeof(float));
+<span class="lineNum">     284 </span><span class="lineCov">      37978 :            memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span>            :            /* loop over sub-frames to encode */
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">      75956 :            for (subframe=0; subframe&lt;Nfor; subframe++) {</span>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span>            :                /* encode sub-frame */
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">     189890 :                iCBSearch(iLBCenc_inst, cb_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     293 </span><span class="lineCov">      37978 :                    gain_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     294 </span><span class="lineCov">      37978 :                    &amp;residual[(start+1+subframe)*SUBL],</span>
+<span class="lineNum">     295 </span><span class="lineCov">      37978 :                    mem+CB_MEML-memLfTbl[subcount],</span>
+<span class="lineNum">     296 </span>            :                    memLfTbl[subcount], SUBL, CB_NSTAGES,
+<span class="lineNum">     297 </span><span class="lineCov">      37978 :                    &amp;weightdenum[(start+1+subframe)*</span>
+<span class="lineNum">     298 </span>            :                                (LPC_FILTERORDER+1)],
+<span class="lineNum">     299 </span>            :                    weightState, subcount+1);
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span>            :                /* construct decoded vector */
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">     151912 :                iCBConstruct(&amp;decresidual[(start+1+subframe)*SUBL],</span>
+<span class="lineNum">     304 </span><span class="lineCov">      37978 :                    cb_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     305 </span><span class="lineCov">      37978 :                    gain_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     306 </span><span class="lineCov">      37978 :                    mem+CB_MEML-memLfTbl[subcount],</span>
+<span class="lineNum">     307 </span>            :                    memLfTbl[subcount], SUBL, CB_NSTAGES);
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            :                /* update memory */
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineCov">      37978 :                memmove(mem, mem+SUBL, (CB_MEML-SUBL)*sizeof(float));</span>
+<span class="lineNum">     312 </span><span class="lineCov">      37978 :                memcpy(mem+CB_MEML-SUBL,</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">      37978 :                    &amp;decresidual[(start+1+subframe)*SUBL],</span>
+<span class="lineNum">     319 </span>            :                    SUBL*sizeof(float));
+<span class="lineNum">     320 </span><span class="lineCov">      37978 :                memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">      37978 :                subcount++;</span>
+<span class="lineNum">     323 </span>            :            }
+<span class="lineNum">     324 </span>            :        }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span>            :        /* backward prediction of sub-frames */
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">      37978 :        Nback = start-1;</span>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">      37978 :        if ( Nback &gt; 0 ) {</span>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span>            :            /* create reverse order vectors */
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">     151912 :            for (n=0; n&lt;Nback; n++) {</span>
+<span class="lineNum">     337 </span><span class="lineCov">    4671294 :                for (k=0; k&lt;SUBL; k++) {</span>
+<span class="lineNum">     338 </span><span class="lineCov">    9114720 :                    reverseResidual[n*SUBL+k] =</span>
+<span class="lineNum">     339 </span><span class="lineCov">    9114720 :                        residual[(start-1)*SUBL-1-n*SUBL-k];</span>
+<span class="lineNum">     340 </span><span class="lineCov">    9114720 :                    reverseDecresidual[n*SUBL+k] =</span>
+<span class="lineNum">     341 </span><span class="lineCov">    4557360 :                        decresidual[(start-1)*SUBL-1-n*SUBL-k];</span>
+<span class="lineNum">     342 </span>            :                }
+<span class="lineNum">     343 </span>            :            }
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span>            :            /* setup memory */
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">      37978 :            meml_gotten = SUBL*(iLBCenc_inst-&gt;nsub+1-start);</span>
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineCov">      37978 :            if ( meml_gotten &gt; CB_MEML ) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                meml_gotten=CB_MEML;</span>
+<span class="lineNum">     352 </span>            :            }
+<span class="lineNum">     353 </span><span class="lineCov">    4595338 :            for (k=0; k&lt;meml_gotten; k++) {</span>
+<span class="lineNum">     354 </span><span class="lineCov">    4557360 :                mem[CB_MEML-1-k] = decresidual[(start-1)*SUBL + k];</span>
+<span class="lineNum">     355 </span>            :            }
+<span class="lineNum">     356 </span><span class="lineCov">      37978 :            memset(mem, 0, (CB_MEML-k)*sizeof(float));</span>
+<span class="lineNum">     357 </span><span class="lineCov">      37978 :            memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span>            :            /* loop over sub-frames to encode */
+<span class="lineNum">     360 </span>            : 
+<span class="lineNum">     361 </span><span class="lineCov">     151912 :            for (subframe=0; subframe&lt;Nback; subframe++) {</span>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :                /* encode sub-frame */
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">     569670 :                iCBSearch(iLBCenc_inst, cb_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span>            : 
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineCov">     113934 :                    gain_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     372 </span><span class="lineCov">     113934 :                    &amp;reverseResidual[subframe*SUBL],</span>
+<span class="lineNum">     373 </span><span class="lineCov">     113934 :                    mem+CB_MEML-memLfTbl[subcount],</span>
+<span class="lineNum">     374 </span>            :                    memLfTbl[subcount], SUBL, CB_NSTAGES,
+<span class="lineNum">     375 </span><span class="lineCov">     113934 :                    &amp;weightdenum[(start-2-subframe)*</span>
+<span class="lineNum">     376 </span>            :                                (LPC_FILTERORDER+1)],
+<span class="lineNum">     377 </span>            :                    weightState, subcount+1);
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span>            :                /* construct decoded vector */
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineCov">     455736 :                iCBConstruct(&amp;reverseDecresidual[subframe*SUBL],</span>
+<span class="lineNum">     382 </span><span class="lineCov">     113934 :                    cb_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     383 </span><span class="lineCov">     113934 :                    gain_index+subcount*CB_NSTAGES,</span>
+<span class="lineNum">     384 </span><span class="lineCov">     113934 :                    mem+CB_MEML-memLfTbl[subcount],</span>
+<span class="lineNum">     385 </span>            :                    memLfTbl[subcount], SUBL, CB_NSTAGES);
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span>            :                /* update memory */
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">     113934 :                memmove(mem, mem+SUBL, (CB_MEML-SUBL)*sizeof(float));</span>
+<span class="lineNum">     390 </span><span class="lineCov">     113934 :                memcpy(mem+CB_MEML-SUBL,</span>
+<span class="lineNum">     391 </span><span class="lineCov">     113934 :                    &amp;reverseDecresidual[subframe*SUBL],</span>
+<span class="lineNum">     392 </span>            :                    SUBL*sizeof(float));
+<span class="lineNum">     393 </span><span class="lineCov">     113934 :                memset(weightState, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineCov">     113934 :                subcount++;</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span>            :            }
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span>            :            /* get decoded residual from reversed vector */
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span><span class="lineCov">    4595338 :            for (i=0; i&lt;SUBL*Nback; i++) {</span>
+<span class="lineNum">     402 </span><span class="lineCov">    9114720 :                decresidual[SUBL*Nback - i - 1] =</span>
+<span class="lineNum">     403 </span><span class="lineCov">    4557360 :                    reverseDecresidual[i];</span>
+<span class="lineNum">     404 </span>            :            }
+<span class="lineNum">     405 </span>            :        }
+<span class="lineNum">     406 </span>            :        /* end encoding part */
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span>            :        /* adjust index */
+<span class="lineNum">     409 </span><span class="lineCov">      37978 :        index_conv_enc(cb_index);</span>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span>            :        /* pack bytes */
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineCov">      37978 :        pbytes=bytes;</span>
+<span class="lineNum">     414 </span><span class="lineCov">      37978 :        pos=0;</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            :        /* loop over the 3 ULP classes */
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineCov">     151912 :        for (ulp=0; ulp&lt;3; ulp++) {</span>
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span>            :            /* LSF */
+<span class="lineNum">     426 </span><span class="lineCov">     797538 :            for (k=0; k&lt;LSF_NSPLIT*iLBCenc_inst-&gt;lpc_n; k++) {</span>
+<span class="lineNum">     427 </span><span class="lineCov">    1367208 :                packsplit(&amp;lsf_i[k], &amp;firstpart, &amp;lsf_i[k],</span>
+<span class="lineNum">     428 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;lsf_bits[k][ulp],</span>
+<span class="lineNum">     429 </span><span class="lineCov">    1367208 :                    iLBCenc_inst-&gt;ULP_inst-&gt;lsf_bits[k][ulp]+</span>
+<span class="lineNum">     430 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;lsf_bits[k][ulp+1]+</span>
+<span class="lineNum">     431 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;lsf_bits[k][ulp+2]);</span>
+<span class="lineNum">     432 </span><span class="lineCov">     683604 :                dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     433 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;lsf_bits[k][ulp], &amp;pos);</span>
+<span class="lineNum">     434 </span>            :            }
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span>            :            /* Start block info */
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineCov">     227868 :            packsplit(&amp;start, &amp;firstpart, &amp;start,</span>
+<span class="lineNum">     439 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;start_bits[ulp],</span>
+<span class="lineNum">     440 </span><span class="lineCov">     227868 :                iLBCenc_inst-&gt;ULP_inst-&gt;start_bits[ulp]+</span>
+<span class="lineNum">     441 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;start_bits[ulp+1]+</span>
+<span class="lineNum">     442 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;start_bits[ulp+2]);</span>
+<span class="lineNum">     443 </span><span class="lineCov">     113934 :            dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     444 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;start_bits[ulp], &amp;pos);</span>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineCov">     227868 :            packsplit(&amp;state_first, &amp;firstpart, &amp;state_first,</span>
+<span class="lineNum">     447 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;startfirst_bits[ulp],</span>
+<span class="lineNum">     448 </span><span class="lineCov">     227868 :                iLBCenc_inst-&gt;ULP_inst-&gt;startfirst_bits[ulp]+</span>
+<span class="lineNum">     449 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;startfirst_bits[ulp+1]+</span>
+<span class="lineNum">     450 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;startfirst_bits[ulp+2]);</span>
+<span class="lineNum">     451 </span><span class="lineCov">     113934 :            dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     452 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;startfirst_bits[ulp], &amp;pos);</span>
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">     227868 :            packsplit(&amp;idxForMax, &amp;firstpart, &amp;idxForMax,</span>
+<span class="lineNum">     455 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;scale_bits[ulp],</span>
+<span class="lineNum">     456 </span><span class="lineCov">     227868 :                iLBCenc_inst-&gt;ULP_inst-&gt;scale_bits[ulp]+</span>
+<span class="lineNum">     457 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;scale_bits[ulp+1]+</span>
+<span class="lineNum">     458 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;scale_bits[ulp+2]);</span>
+<span class="lineNum">     459 </span><span class="lineCov">     113934 :            dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     460 </span><span class="lineCov">     113934 :                iLBCenc_inst-&gt;ULP_inst-&gt;scale_bits[ulp], &amp;pos);</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span><span class="lineCov">    6722106 :            for (k=0; k&lt;iLBCenc_inst-&gt;state_short_len; k++) {</span>
+<span class="lineNum">     463 </span><span class="lineCov">   13216344 :                packsplit(idxVec+k, &amp;firstpart, idxVec+k,</span>
+<span class="lineNum">     464 </span><span class="lineCov">    6608172 :                    iLBCenc_inst-&gt;ULP_inst-&gt;state_bits[ulp],</span>
+<span class="lineNum">     465 </span><span class="lineCov">   13216344 :                    iLBCenc_inst-&gt;ULP_inst-&gt;state_bits[ulp]+</span>
+<span class="lineNum">     466 </span><span class="lineCov">    6608172 :                    iLBCenc_inst-&gt;ULP_inst-&gt;state_bits[ulp+1]+</span>
+<span class="lineNum">     467 </span><span class="lineCov">    6608172 :                    iLBCenc_inst-&gt;ULP_inst-&gt;state_bits[ulp+2]);</span>
+<span class="lineNum">     468 </span><span class="lineCov">    6608172 :                dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     469 </span><span class="lineCov">    6608172 :                    iLBCenc_inst-&gt;ULP_inst-&gt;state_bits[ulp], &amp;pos);</span>
+<span class="lineNum">     470 </span>            :            }
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span>            :            /* 23/22 (20ms/30ms) sample block */
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineCov">     455736 :            for (k=0;k&lt;CB_NSTAGES;k++) {</span>
+<span class="lineNum">     480 </span><span class="lineCov">    1025406 :                packsplit(extra_cb_index+k, &amp;firstpart,</span>
+<span class="lineNum">     481 </span><span class="lineCov">     341802 :                    extra_cb_index+k,</span>
+<span class="lineNum">     482 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_index[k][ulp],</span>
+<span class="lineNum">     483 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_index[k][ulp]+</span>
+<span class="lineNum">     484 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_index[k][ulp+1]+</span>
+<span class="lineNum">     485 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_index[k][ulp+2]);</span>
+<span class="lineNum">     486 </span><span class="lineCov">     341802 :                dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     487 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_index[k][ulp],</span>
+<span class="lineNum">     488 </span>            :                    &amp;pos);
+<span class="lineNum">     489 </span>            :            }
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">     455736 :            for (k=0;k&lt;CB_NSTAGES;k++) {</span>
+<span class="lineNum">     492 </span><span class="lineCov">    1025406 :                packsplit(extra_gain_index+k, &amp;firstpart,</span>
+<span class="lineNum">     493 </span><span class="lineCov">     341802 :                    extra_gain_index+k,</span>
+<span class="lineNum">     494 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_gain[k][ulp],</span>
+<span class="lineNum">     495 </span><span class="lineCov">     683604 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_gain[k][ulp]+</span>
+<span class="lineNum">     496 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_gain[k][ulp+1]+</span>
+<span class="lineNum">     497 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_gain[k][ulp+2]);</span>
+<span class="lineNum">     498 </span><span class="lineCov">     341802 :                dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     499 </span><span class="lineCov">     341802 :                    iLBCenc_inst-&gt;ULP_inst-&gt;extra_cb_gain[k][ulp],</span>
+<span class="lineNum">     500 </span>            :                    &amp;pos);
+<span class="lineNum">     501 </span>            :            }
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span>            :            /* The two/four (20ms/30ms) 40 sample sub-blocks */
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span><span class="lineCov">     569670 :            for (i=0; i&lt;iLBCenc_inst-&gt;nasub; i++) {</span>
+<span class="lineNum">     506 </span><span class="lineCov">    1822944 :                for (k=0; k&lt;CB_NSTAGES; k++) {</span>
+<span class="lineNum">     507 </span><span class="lineCov">    4101624 :                    packsplit(cb_index+i*CB_NSTAGES+k, &amp;firstpart,</span>
+<span class="lineNum">     508 </span><span class="lineCov">    1367208 :                        cb_index+i*CB_NSTAGES+k,</span>
+<span class="lineNum">     509 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_index[i][k][ulp],</span>
+<span class="lineNum">     510 </span><span class="lineCov">    2734416 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_index[i][k][ulp]+</span>
+<span class="lineNum">     511 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_index[i][k][ulp+1]+</span>
+<span class="lineNum">     512 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_index[i][k][ulp+2]);</span>
+<span class="lineNum">     513 </span><span class="lineCov">    1367208 :                    dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     514 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_index[i][k][ulp],</span>
+<span class="lineNum">     515 </span>            :                        &amp;pos);
+<span class="lineNum">     516 </span>            :                }
+<span class="lineNum">     517 </span>            :            }
+<span class="lineNum">     518 </span>            : 
+<span class="lineNum">     519 </span><span class="lineCov">     569670 :            for (i=0; i&lt;iLBCenc_inst-&gt;nasub; i++) {</span>
+<span class="lineNum">     520 </span><span class="lineCov">    1822944 :                for (k=0; k&lt;CB_NSTAGES; k++) {</span>
+<span class="lineNum">     521 </span><span class="lineCov">    4101624 :                    packsplit(gain_index+i*CB_NSTAGES+k, &amp;firstpart,</span>
+<span class="lineNum">     522 </span><span class="lineCov">    1367208 :                        gain_index+i*CB_NSTAGES+k,</span>
+<span class="lineNum">     523 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_gain[i][k][ulp],</span>
+<span class="lineNum">     524 </span><span class="lineCov">    2734416 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_gain[i][k][ulp]+</span>
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_gain[i][k][ulp+1]+</span>
+<span class="lineNum">     531 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_gain[i][k][ulp+2]);</span>
+<span class="lineNum">     532 </span><span class="lineCov">    1367208 :                    dopack( &amp;pbytes, firstpart,</span>
+<span class="lineNum">     533 </span><span class="lineCov">    1367208 :                        iLBCenc_inst-&gt;ULP_inst-&gt;cb_gain[i][k][ulp],</span>
+<span class="lineNum">     534 </span>            :                        &amp;pos);
+<span class="lineNum">     535 </span>            :                }
+<span class="lineNum">     536 </span>            :            }
+<span class="lineNum">     537 </span>            :        }
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span>            :        /* set the last bit to zero (otherwise the decoder
+<span class="lineNum">     540 </span>            :           will treat it as a lost frame) */
+<span class="lineNum">     541 </span><span class="lineCov">      37978 :        dopack( &amp;pbytes, 0, 1, &amp;pos);</span>
+<span class="lineNum">     542 </span><span class="lineCov">      37978 :    }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

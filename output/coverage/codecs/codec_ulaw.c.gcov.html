@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - codecs/codec_ulaw.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">codecs</a> - codec_ulaw.c<span style="font-size: 80%;"> (source / <a href="codec_ulaw.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">34</td>
+            <td class="headerCovTableEntryHi">94.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief codec_ulaw.c - translate between signed linear and ulaw
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \ingroup codecs
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/ulaw.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #define BUFFER_SAMPLES   8096   /* size for the translation buffers */
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : /* Sample frame data */
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/slin.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;ex_ulaw.h&quot;
+<a name="43"><span class="lineNum">      43 </span>            : </a>
+<span class="lineNum">      44 </span>            : /*! \brief convert and store samples in outbuf */
+<span class="lineNum">      45 </span><span class="lineCov">     337983 : static int ulawtolin_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">      46 </span>            : {
+<span class="lineNum">      47 </span><span class="lineCov">     337983 :         int i = f-&gt;samples;</span>
+<span class="lineNum">      48 </span><span class="lineCov">     337983 :         unsigned char *src = f-&gt;data.ptr;</span>
+<span class="lineNum">      49 </span><span class="lineCov">     337983 :         int16_t *dst = pvt-&gt;outbuf.i16 + pvt-&gt;samples;</span>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineCov">     337983 :         pvt-&gt;samples += i;</span>
+<span class="lineNum">      52 </span><span class="lineCov">     337983 :         pvt-&gt;datalen += i * 2;       /* 2 bytes/sample */</span>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            :         /* convert and copy in outbuf */
+<span class="lineNum">      55 </span><span class="lineCov">   36531804 :         while (i--)</span>
+<span class="lineNum">      56 </span><span class="lineCov">   36193821 :                 *dst++ = AST_MULAW(*src++);</span>
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span><span class="lineCov">     337983 :         return 0;</span>
+<span class="lineNum">      59 </span>            : }
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<span class="lineNum">      61 </span>            : /*! \brief convert and store samples in outbuf */
+<span class="lineNum">      62 </span><span class="lineCov">     477819 : static int lintoulaw_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span><span class="lineCov">     477819 :         int i = f-&gt;samples;</span>
+<span class="lineNum">      65 </span><span class="lineCov">     477819 :         char *dst = pvt-&gt;outbuf.c + pvt-&gt;samples;</span>
+<span class="lineNum">      66 </span><span class="lineCov">     477819 :         int16_t *src = f-&gt;data.ptr;</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineCov">     477819 :         pvt-&gt;samples += i;</span>
+<span class="lineNum">      69 </span><span class="lineCov">     477819 :         pvt-&gt;datalen += i;   /* 1 byte/sample */</span>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineCov">   59055039 :         while (i--)</span>
+<span class="lineNum">      72 </span><span class="lineCov">   58577220 :                 *dst++ = AST_LIN2MU(*src++);</span>
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span><span class="lineCov">     477819 :         return 0;</span>
+<span class="lineNum">      75 </span>            : }
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : /*!
+<span class="lineNum">      78 </span>            :  * \brief The complete translator for ulawToLin.
+<span class="lineNum">      79 </span>            :  */
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : static struct ast_translator ulawtolin = {
+<span class="lineNum">      82 </span>            :         .name = &quot;ulawtolin&quot;,
+<span class="lineNum">      83 </span>            :         .src_codec = {
+<span class="lineNum">      84 </span>            :                 .name = &quot;ulaw&quot;,
+<span class="lineNum">      85 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">      86 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">      87 </span>            :         },
+<span class="lineNum">      88 </span>            :         .dst_codec = {
+<span class="lineNum">      89 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">      90 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">      91 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">      92 </span>            :         },
+<span class="lineNum">      93 </span>            :         .format = &quot;slin&quot;,
+<span class="lineNum">      94 </span>            :         .framein = ulawtolin_framein,
+<span class="lineNum">      95 </span>            :         .sample = ulaw_sample,
+<span class="lineNum">      96 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">      97 </span>            :         .buf_size = BUFFER_SAMPLES * 2,
+<span class="lineNum">      98 </span>            : };
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            : static struct ast_translator testlawtolin = {
+<span class="lineNum">     101 </span>            :         .name = &quot;testlawtolin&quot;,
+<span class="lineNum">     102 </span>            :         .src_codec = {
+<span class="lineNum">     103 </span>            :                 .name = &quot;testlaw&quot;,
+<span class="lineNum">     104 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     105 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     106 </span>            :         },
+<span class="lineNum">     107 </span>            :         .dst_codec = {
+<span class="lineNum">     108 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     109 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     110 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     111 </span>            :         },
+<span class="lineNum">     112 </span>            :         .format = &quot;slin&quot;,
+<span class="lineNum">     113 </span>            :         .framein = ulawtolin_framein,
+<span class="lineNum">     114 </span>            :         .sample = ulaw_sample,
+<span class="lineNum">     115 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     116 </span>            :         .buf_size = BUFFER_SAMPLES * 2,
+<span class="lineNum">     117 </span>            : };
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span>            : /*!
+<span class="lineNum">     120 </span>            :  * \brief The complete translator for LinToulaw.
+<span class="lineNum">     121 </span>            :  */
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            : static struct ast_translator lintoulaw = {
+<span class="lineNum">     124 </span>            :         .name = &quot;lintoulaw&quot;,
+<span class="lineNum">     125 </span>            :         .src_codec = {
+<span class="lineNum">     126 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     127 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     128 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     129 </span>            :         },
+<span class="lineNum">     130 </span>            :         .dst_codec = {
+<span class="lineNum">     131 </span>            :                 .name = &quot;ulaw&quot;,
+<span class="lineNum">     132 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     133 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     134 </span>            :         },
+<span class="lineNum">     135 </span>            :         .format = &quot;ulaw&quot;,
+<span class="lineNum">     136 </span>            :         .framein = lintoulaw_framein,
+<span class="lineNum">     137 </span>            :         .sample = slin8_sample,
+<span class="lineNum">     138 </span>            :         .buf_size = BUFFER_SAMPLES,
+<span class="lineNum">     139 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     140 </span>            : };
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span>            : static struct ast_translator lintotestlaw = {
+<span class="lineNum">     143 </span>            :         .name = &quot;lintotestlaw&quot;,
+<span class="lineNum">     144 </span>            :         .src_codec = {
+<span class="lineNum">     145 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     146 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     147 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     148 </span>            :         },
+<span class="lineNum">     149 </span>            :         .dst_codec = {
+<span class="lineNum">     150 </span>            :                 .name = &quot;testlaw&quot;,
+<span class="lineNum">     151 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     152 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     153 </span>            :         },
+<span class="lineNum">     154 </span>            :         .format = &quot;testlaw&quot;,
+<span class="lineNum">     155 </span>            :         .framein = lintoulaw_framein,
+<span class="lineNum">     156 </span>            :         .sample = slin8_sample,
+<span class="lineNum">     157 </span>            :         .buf_size = BUFFER_SAMPLES,
+<span class="lineNum">     158 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<a name="159"><span class="lineNum">     159 </span>            : };</a>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     162 </span>            : {
+<span class="lineNum">     163 </span>            :         int res;
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineCov">       1115 :         res = ast_unregister_translator(&amp;lintoulaw);</span>
+<span class="lineNum">     166 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;ulawtolin);</span>
+<span class="lineNum">     167 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;testlawtolin);</span>
+<span class="lineNum">     168 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;lintotestlaw);</span>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="171"><span class="lineNum">     171 </span>            : }</a>
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span>            :         int res;
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineCov">       1117 :         res = ast_register_translator(&amp;ulawtolin);</span>
+<span class="lineNum">     178 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;lintoulaw);</span>
+<span class="lineNum">     179 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;lintotestlaw);</span>
+<span class="lineNum">     180 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;testlawtolin);</span>
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span><span class="lineCov">       1117 :         if (res) {</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     185 </span>            :         }
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="188"><span class="lineNum">     188 </span>            : }</a>
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">       6702 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_DEFAULT, &quot;mu-Law Coder/Decoder&quot;,</span>
+<span class="lineNum">     191 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     192 </span>            :         .load = load_module,
+<span class="lineNum">     193 </span>            :         .unload = unload_module,
+<span class="lineNum">     194 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

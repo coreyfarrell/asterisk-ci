@@ -1,0 +1,601 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_pjsip_transport_websocket.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_pjsip_transport_websocket.c<span style="font-size: 80%;"> (source / <a href="res_pjsip_transport_websocket.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntry">201</td>
+            <td class="headerCovTableEntryLo">11.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">16</td>
+            <td class="headerCovTableEntryLo">37.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Jason Parker &lt;jparker@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \brief WebSocket transport module
+<span class="lineNum">      21 </span>            :  */
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : /*** MODULEINFO
+<span class="lineNum">      24 </span>            :         &lt;depend&gt;pjproject&lt;/depend&gt;
+<span class="lineNum">      25 </span>            :         &lt;depend&gt;res_pjsip&lt;/depend&gt;
+<span class="lineNum">      26 </span>            :         &lt;depend&gt;res_http_websocket&lt;/depend&gt;
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      33 </span>            : #include &lt;pjsip_ua.h&gt;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/http_websocket.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/res_pjsip_session.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : static int transport_type_wss;
+<span class="lineNum">      42 </span>            : static int transport_type_wss_ipv6;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : /*!
+<span class="lineNum">      45 </span>            :  * \brief Wrapper for pjsip_transport, for storing the WebSocket session
+<span class="lineNum">      46 </span>            :  */
+<span class="lineNum">      47 </span>            : struct ws_transport {
+<span class="lineNum">      48 </span>            :         pjsip_transport transport;
+<span class="lineNum">      49 </span>            :         pjsip_rx_data rdata;
+<span class="lineNum">      50 </span>            :         struct ast_websocket *ws_session;
+<span class="lineNum">      51 </span>            : };
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : /*!
+<span class="lineNum">      54 </span>            :  * \brief Send a message over the WebSocket connection.
+<span class="lineNum">      55 </span>            :  *
+<a name="56"><span class="lineNum">      56 </span>            :  * Called by pjsip transport manager.</a>
+<span class="lineNum">      57 </span>            :  */
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 : static pj_status_t ws_send_msg(pjsip_transport *transport,</span>
+<span class="lineNum">      59 </span>            :                             pjsip_tx_data *tdata,
+<span class="lineNum">      60 </span>            :                             const pj_sockaddr_t *rem_addr,
+<span class="lineNum">      61 </span>            :                             int addr_len,
+<span class="lineNum">      62 </span>            :                             void *token,
+<span class="lineNum">      63 </span>            :                             pjsip_transport_callback callback)
+<span class="lineNum">      64 </span>            : {
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :         struct ws_transport *wstransport = (struct ws_transport *)transport;</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         uint64_t len = tdata-&gt;buf.cur - tdata-&gt;buf.start;</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         if (ast_websocket_write(wstransport-&gt;ws_session, AST_WEBSOCKET_OPCODE_TEXT, tdata-&gt;buf.start, len)) {</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 return PJ_EUNKNOWN;</span>
+<span class="lineNum">      70 </span>            :         }
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         return PJ_SUCCESS;</span>
+<span class="lineNum">      73 </span>            : }
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span>            : /*!
+<span class="lineNum">      76 </span>            :  * \brief Destroy the pjsip transport.
+<span class="lineNum">      77 </span>            :  *
+<a name="78"><span class="lineNum">      78 </span>            :  * Called by pjsip transport manager.</a>
+<span class="lineNum">      79 </span>            :  */
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : static pj_status_t ws_destroy(pjsip_transport *transport)</span>
+<span class="lineNum">      81 </span>            : {
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         struct ws_transport *wstransport = (struct ws_transport *)transport;</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         int fd = ast_websocket_fd(wstransport-&gt;ws_session);</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :         if (fd &gt; 0) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 ast_websocket_close(wstransport-&gt;ws_session, 1000);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 shutdown(fd, SHUT_RDWR);</span>
+<span class="lineNum">      88 </span>            :         }
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         ao2_ref(wstransport, -1);</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         return PJ_SUCCESS;</span>
+<a name="93"><span class="lineNum">      93 </span>            : }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 : static void transport_dtor(void *arg)</span>
+<span class="lineNum">      96 </span>            : {
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :         struct ws_transport *wstransport = arg;</span>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         if (wstransport-&gt;ws_session) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 ast_websocket_unref(wstransport-&gt;ws_session);</span>
+<span class="lineNum">     101 </span>            :         }
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         if (wstransport-&gt;transport.ref_cnt) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 pj_atomic_destroy(wstransport-&gt;transport.ref_cnt);</span>
+<span class="lineNum">     105 </span>            :         }
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         if (wstransport-&gt;transport.lock) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 pj_lock_destroy(wstransport-&gt;transport.lock);</span>
+<span class="lineNum">     109 </span>            :         }
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :         if (wstransport-&gt;transport.endpt &amp;&amp; wstransport-&gt;transport.pool) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 pjsip_endpt_release_pool(wstransport-&gt;transport.endpt, wstransport-&gt;transport.pool);</span>
+<span class="lineNum">     113 </span>            :         }
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         if (wstransport-&gt;rdata.tp_info.pool) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                 pjsip_endpt_release_pool(wstransport-&gt;transport.endpt, wstransport-&gt;rdata.tp_info.pool);</span>
+<span class="lineNum">     117 </span>            :         }
+<a name="118"><span class="lineNum">     118 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 : static int transport_shutdown(void *data)</span>
+<span class="lineNum">     121 </span>            : {
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         struct ws_transport *wstransport = data;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         if (!wstransport-&gt;transport.is_shutdown &amp;&amp; !wstransport-&gt;transport.is_destroying) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 pjsip_transport_shutdown(&amp;wstransport-&gt;transport);</span>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            :         /* Note that the destructor calls PJSIP functions,
+<span class="lineNum">     129 </span>            :          * therefore it must be called in a PJSIP thread.
+<span class="lineNum">     130 </span>            :          */
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         ao2_ref(wstransport, -1);</span>
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     134 </span>            : }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : struct transport_create_data {
+<span class="lineNum">     137 </span>            :         struct ws_transport *transport;
+<span class="lineNum">     138 </span>            :         struct ast_websocket *ws_session;
+<span class="lineNum">     139 </span>            : };
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            : /*!
+<a name="142"><span class="lineNum">     142 </span>            :  * \brief Create a pjsip transport.</a>
+<span class="lineNum">     143 </span>            :  */
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 : static int transport_create(void *data)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         struct transport_create_data *create_data = data;</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         struct ws_transport *newtransport = NULL;</span>
+<span class="lineNum">     148 </span>            :         pjsip_tp_state_callback state_cb;
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         pjsip_endpoint *endpt = ast_sip_get_pjsip_endpoint();</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         struct pjsip_tpmgr *tpmgr = pjsip_endpt_get_tpmgr(endpt);</span>
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            :         char *ws_addr_str;
+<span class="lineNum">     154 </span>            :         pj_pool_t *pool;
+<span class="lineNum">     155 </span>            :         pj_str_t buf;
+<span class="lineNum">     156 </span>            :         pj_status_t status;
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         newtransport = ao2_t_alloc_options(sizeof(*newtransport), transport_dtor,</span>
+<span class="lineNum">     159 </span>            :                         AO2_ALLOC_OPT_LOCK_NOLOCK, &quot;pjsip websocket transport&quot;);
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         if (!newtransport) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to allocate WebSocket transport.\n&quot;);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     163 </span>            :         }
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span>            :         /* Give websocket transport a unique name for its lifetime */
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         snprintf(newtransport-&gt;transport.obj_name, PJ_MAX_OBJ_NAME, &quot;ws%p&quot;,</span>
+<span class="lineNum">     167 </span>            :                 &amp;newtransport-&gt;transport);
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.endpt = endpt;</span>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         if (!(pool = pjsip_endpt_create_pool(endpt, &quot;ws&quot;, 512, 512))) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to allocate WebSocket endpoint pool.\n&quot;);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     174 </span>            :         }
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.pool = pool;</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :         newtransport-&gt;ws_session = create_data-&gt;ws_session;</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            :         /* Keep the session until transport dies */
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         ast_websocket_ref(newtransport-&gt;ws_session);</span>
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         status = pj_atomic_create(pool, 0, &amp;newtransport-&gt;transport.ref_cnt);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         if (status != PJ_SUCCESS) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     185 </span>            :         }
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         status = pj_lock_create_recursive_mutex(pool, pool-&gt;obj_name, &amp;newtransport-&gt;transport.lock);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         if (status != PJ_SUCCESS) {</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :         /*
+<span class="lineNum">     193 </span>            :          * The type_name here is mostly used by log messages eihter in
+<span class="lineNum">     194 </span>            :          * pjproject or Asterisk.  Other places are reconstituting subscriptions
+<span class="lineNum">     195 </span>            :          * after a restart (which could never work for a websocket connection anyway),
+<span class="lineNum">     196 </span>            :          * received MESSAGE requests to set PJSIP_TRANSPORT, and most importantly
+<span class="lineNum">     197 </span>            :          * by pjproject when generating the Via header.
+<span class="lineNum">     198 </span>            :          */
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.type_name = ast_websocket_is_secure(newtransport-&gt;ws_session)</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 ? &quot;WSS&quot; : &quot;WS&quot;;</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         ws_addr_str = ast_sockaddr_stringify(ast_websocket_remote_address(newtransport-&gt;ws_session));</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :         ast_debug(4, &quot;Creating websocket transport for %s:%s\n&quot;,</span>
+<span class="lineNum">     204 </span>            :                 newtransport-&gt;transport.type_name, ws_addr_str);
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.info = (char *) pj_pool_alloc(newtransport-&gt;transport.pool,</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 strlen(newtransport-&gt;transport.type_name) + strlen(ws_addr_str) + sizeof(&quot; to &quot;));</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         sprintf(newtransport-&gt;transport.info, &quot;%s to %s&quot;, newtransport-&gt;transport.type_name, ws_addr_str);</span>
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :         pj_sockaddr_parse(pj_AF_UNSPEC(), 0, pj_cstr(&amp;buf, ws_addr_str), &amp;newtransport-&gt;transport.key.rem_addr);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         if (newtransport-&gt;transport.key.rem_addr.addr.sa_family == pj_AF_INET6()) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 newtransport-&gt;transport.key.type = transport_type_wss_ipv6;</span>
+<span class="lineNum">     213 </span>            :         } else {
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 newtransport-&gt;transport.key.type = transport_type_wss;</span>
+<span class="lineNum">     215 </span>            :         }
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.addr_len = pj_sockaddr_get_len(&amp;newtransport-&gt;transport.key.rem_addr);</span>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         ws_addr_str = ast_sockaddr_stringify(ast_websocket_local_address(newtransport-&gt;ws_session));</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :         pj_sockaddr_parse(pj_AF_UNSPEC(), 0, pj_cstr(&amp;buf, ws_addr_str), &amp;newtransport-&gt;transport.local_addr);</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :         pj_strdup2(pool, &amp;newtransport-&gt;transport.local_name.host, ast_sockaddr_stringify_host(ast_websocket_local_address(newtransport-&gt;ws_session)));</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.local_name.port = ast_sockaddr_port(ast_websocket_local_address(newtransport-&gt;ws_session));</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.flag = pjsip_transport_get_flag_from_type((pjsip_transport_type_e)newtransport-&gt;transport.key.type);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.dir = PJSIP_TP_DIR_INCOMING;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.tpmgr = tpmgr;</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.send_msg = &amp;ws_send_msg;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         newtransport-&gt;transport.destroy = &amp;ws_destroy;</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         status = pjsip_transport_register(newtransport-&gt;transport.tpmgr,</span>
+<span class="lineNum">     231 </span>            :                         (pjsip_transport *)newtransport);
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         if (status != PJ_SUCCESS) {</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     234 </span>            :         }
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span>            :         /* Add a reference for pjsip transport manager */
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :         ao2_ref(newtransport, +1);</span>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         newtransport-&gt;rdata.tp_info.transport = &amp;newtransport-&gt;transport;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         newtransport-&gt;rdata.tp_info.pool = pjsip_endpt_create_pool(endpt, &quot;rtd%p&quot;,</span>
+<span class="lineNum">     241 </span>            :                 PJSIP_POOL_RDATA_LEN, PJSIP_POOL_RDATA_INC);
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :         if (!newtransport-&gt;rdata.tp_info.pool) {</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to allocate WebSocket rdata.\n&quot;);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 pjsip_transport_destroy((pjsip_transport *)newtransport);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 goto on_error;</span>
+<span class="lineNum">     246 </span>            :         }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         create_data-&gt;transport = newtransport;</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span>            :         /* Notify application of transport state */
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         state_cb = pjsip_tpmgr_get_state_cb(newtransport-&gt;transport.tpmgr);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         if (state_cb) {</span>
+<span class="lineNum">     253 </span>            :                 pjsip_transport_state_info state_info;
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 memset(&amp;state_info, 0, sizeof(state_info));</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 state_cb(&amp;newtransport-&gt;transport, PJSIP_TP_STATE_CONNECTED, &amp;state_info);</span>
+<span class="lineNum">     257 </span>            :         }
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 : on_error:</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         ao2_cleanup(newtransport);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     264 </span>            : }
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span>            : struct transport_read_data {
+<span class="lineNum">     267 </span>            :         struct ws_transport *transport;
+<span class="lineNum">     268 </span>            :         char *payload;
+<span class="lineNum">     269 </span>            :         uint64_t payload_len;
+<span class="lineNum">     270 </span>            : };
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span>            : /*!
+<a name="273"><span class="lineNum">     273 </span>            :  * \brief Pass WebSocket data into pjsip transport manager.</a>
+<span class="lineNum">     274 </span>            :  */
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 : static int transport_read(void *data)</span>
+<span class="lineNum">     276 </span>            : {
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :         struct transport_read_data *read_data = data;</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         struct ws_transport *newtransport = read_data-&gt;transport;</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         struct ast_websocket *session = newtransport-&gt;ws_session;</span>
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :         pjsip_rx_data *rdata = &amp;newtransport-&gt;rdata;</span>
+<span class="lineNum">     282 </span>            :         int recvd;
+<span class="lineNum">     283 </span>            :         pj_str_t buf;
+<span class="lineNum">     284 </span>            :         int pjsip_pkt_len;
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         pj_gettimeofday(&amp;rdata-&gt;pkt_info.timestamp);</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         pjsip_pkt_len = PJSIP_MAX_PKT_LEN &lt; read_data-&gt;payload_len ? PJSIP_MAX_PKT_LEN : read_data-&gt;payload_len;</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :         pj_memcpy(rdata-&gt;pkt_info.packet, read_data-&gt;payload, pjsip_pkt_len);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         rdata-&gt;pkt_info.len = pjsip_pkt_len;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         rdata-&gt;pkt_info.zero = 0;</span>
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :         pj_sockaddr_parse(pj_AF_UNSPEC(), 0, pj_cstr(&amp;buf, ast_sockaddr_stringify(ast_websocket_remote_address(session))), &amp;rdata-&gt;pkt_info.src_addr);</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         rdata-&gt;pkt_info.src_addr_len = sizeof(rdata-&gt;pkt_info.src_addr);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         pj_ansi_strcpy(rdata-&gt;pkt_info.src_name, ast_sockaddr_stringify_host(ast_websocket_remote_address(session)));</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         rdata-&gt;pkt_info.src_port = ast_sockaddr_port(ast_websocket_remote_address(session));</span>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         recvd = pjsip_tpmgr_receive_packet(rdata-&gt;tp_info.transport-&gt;tpmgr, rdata);</span>
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :         pj_pool_reset(rdata-&gt;tp_info.pool);</span>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         return (read_data-&gt;payload_len == recvd) ? 0 : -1;</span>
+<a name="304"><span class="lineNum">     304 </span>            : }</a>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 : static int get_write_timeout(void)</span>
+<span class="lineNum">     307 </span>            : {
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         int write_timeout = -1;</span>
+<span class="lineNum">     309 </span>            :         struct ao2_container *transport_states;
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         transport_states = ast_sip_get_transport_states();</span>
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :         if (transport_states) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 struct ao2_iterator it_transport_states = ao2_iterator_init(transport_states, 0);</span>
+<span class="lineNum">     315 </span>            :                 struct ast_sip_transport_state *transport_state;
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 for (; (transport_state = ao2_iterator_next(&amp;it_transport_states)); ao2_cleanup(transport_state)) {</span>
+<span class="lineNum">     318 </span>            :                         struct ast_sip_transport *transport;
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                         if (transport_state-&gt;type != AST_TRANSPORT_WS &amp;&amp; transport_state-&gt;type != AST_TRANSPORT_WSS) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     322 </span>            :                         }
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         transport = ast_sorcery_retrieve_by_id(ast_sip_get_sorcery(), &quot;transport&quot;, transport_state-&gt;id);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                         if (!transport) {</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     326 </span>            :                         }
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                         ast_debug(5, &quot;Found %s transport with write timeout: %d\n&quot;,</span>
+<span class="lineNum">     328 </span>            :                                 transport-&gt;type == AST_TRANSPORT_WS ? &quot;WS&quot; : &quot;WSS&quot;,
+<span class="lineNum">     329 </span>            :                                 transport-&gt;write_timeout);
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                         write_timeout = MAX(write_timeout, transport-&gt;write_timeout);</span>
+<span class="lineNum">     331 </span>            :                 }
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                 ao2_iterator_destroy(&amp;it_transport_states);</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 ao2_cleanup(transport_states);</span>
+<span class="lineNum">     334 </span>            :         }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         if (write_timeout &lt; 0) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 write_timeout = AST_DEFAULT_WEBSOCKET_WRITE_TIMEOUT;</span>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         ast_debug(1, &quot;Write timeout for WS/WSS transports: %d\n&quot;, write_timeout);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :         return write_timeout;</span>
+<a name="342"><span class="lineNum">     342 </span>            : }</a>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : static struct ast_taskprocessor *create_websocket_serializer(void)</span>
+<span class="lineNum">     345 </span>            : {
+<span class="lineNum">     346 </span>            :         char tps_name[AST_TASKPROCESSOR_MAX_NAME + 1];
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span>            :         /* Create name with seq number appended. */
+<span class="lineNum">     349 </span><span class="lineNoCov">          0 :         ast_taskprocessor_build_name(tps_name, sizeof(tps_name), &quot;pjsip/websocket&quot;);</span>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :         return ast_sip_create_serializer(tps_name);</span>
+<span class="lineNum">     352 </span>            : }
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<span class="lineNum">     354 </span>            : /*! \brief WebSocket connection handler. */
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 : static void websocket_cb(struct ast_websocket *session, struct ast_variable *parameters, struct ast_variable *headers)</span>
+<span class="lineNum">     356 </span>            : {
+<span class="lineNum">     357 </span>            :         struct ast_taskprocessor *serializer;
+<span class="lineNum">     358 </span>            :         struct transport_create_data create_data;
+<span class="lineNum">     359 </span>            :         struct ws_transport *transport;
+<span class="lineNum">     360 </span>            :         struct transport_read_data read_data;
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         if (ast_websocket_set_nonblock(session)) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                 ast_websocket_unref(session);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     365 </span>            :         }
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         if (ast_websocket_set_timeout(session, get_write_timeout())) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 ast_websocket_unref(session);</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     370 </span>            :         }
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         serializer = create_websocket_serializer();</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         if (!serializer) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 ast_websocket_unref(session);</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     376 </span>            :         }
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         create_data.ws_session = session;</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         if (ast_sip_push_task_wait_serializer(serializer, transport_create, &amp;create_data)) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not create WebSocket transport.\n&quot;);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 ast_taskprocessor_unreference(serializer);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 ast_websocket_unref(session);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     385 </span>            :         }
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         transport = create_data.transport;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :         read_data.transport = transport;</span>
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         while (ast_wait_for_input(ast_websocket_fd(session), -1) &gt; 0) {</span>
+<span class="lineNum">     391 </span>            :                 enum ast_websocket_opcode opcode;
+<span class="lineNum">     392 </span>            :                 int fragmented;
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 if (ast_websocket_read(session, &amp;read_data.payload, &amp;read_data.payload_len, &amp;opcode, &amp;fragmented)) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     396 </span>            :                 }
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                 if (opcode == AST_WEBSOCKET_OPCODE_TEXT || opcode == AST_WEBSOCKET_OPCODE_BINARY) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                         ast_sip_push_task_wait_serializer(serializer, transport_read, &amp;read_data);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 } else if (opcode == AST_WEBSOCKET_OPCODE_CLOSE) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     402 </span>            :                 }
+<span class="lineNum">     403 </span>            :         }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :         ast_sip_push_task_wait_serializer(serializer, transport_shutdown, transport);</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         ast_taskprocessor_unreference(serializer);</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :         ast_websocket_unref(session);</span>
+<span class="lineNum">     409 </span>            : }
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span>            : /*!
+<a name="412"><span class="lineNum">     412 </span>            :  * \brief Store the transport a message came in on, so it can be used for outbound messages to that contact.</a>
+<span class="lineNum">     413 </span>            :  */
+<span class="lineNum">     414 </span><span class="lineCov">       5358 : static pj_bool_t websocket_on_rx_msg(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     415 </span>            : {
+<span class="lineNum">     416 </span>            :         static const pj_str_t STR_WS = { &quot;ws&quot;, 2 };
+<span class="lineNum">     417 </span>            :         pjsip_contact_hdr *contact;
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">       5358 :         long type = rdata-&gt;tp_info.transport-&gt;key.type;</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">       5358 :         if (type != (long) transport_type_wss &amp;&amp; type != (long) transport_type_wss_ipv6) {</span>
+<span class="lineNum">     422 </span><span class="lineCov">       5358 :                 return PJ_FALSE;</span>
+<span class="lineNum">     423 </span>            :         }
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :         contact = pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_CONTACT, NULL);</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         if (contact</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 &amp;&amp; !contact-&gt;star</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 &amp;&amp; (PJSIP_URI_SCHEME_IS_SIP(contact-&gt;uri) || PJSIP_URI_SCHEME_IS_SIPS(contact-&gt;uri))) {</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 pjsip_sip_uri *uri = pjsip_uri_get_uri(contact-&gt;uri);</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 const pj_str_t *txp_str = &amp;STR_WS;</span>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 ast_debug(4, &quot;%s re-writing Contact URI from %.*s:%d%s%.*s to %s:%d;transport=%s\n&quot;,</span>
+<span class="lineNum">     433 </span>            :                         pjsip_rx_data_get_info(rdata),
+<span class="lineNum">     434 </span>            :                         (int)pj_strlen(&amp;uri-&gt;host), pj_strbuf(&amp;uri-&gt;host), uri-&gt;port,
+<span class="lineNum">     435 </span>            :                         pj_strlen(&amp;uri-&gt;transport_param) ? &quot;;transport=&quot; : &quot;&quot;,
+<span class="lineNum">     436 </span>            :                         (int)pj_strlen(&amp;uri-&gt;transport_param), pj_strbuf(&amp;uri-&gt;transport_param),
+<span class="lineNum">     437 </span>            :                         rdata-&gt;pkt_info.src_name ?: &quot;&quot;, rdata-&gt;pkt_info.src_port, pj_strbuf(txp_str));
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 pj_cstr(&amp;uri-&gt;host, rdata-&gt;pkt_info.src_name);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 uri-&gt;port = rdata-&gt;pkt_info.src_port;</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 pj_strdup(rdata-&gt;tp_info.pool, &amp;uri-&gt;transport_param, txp_str);</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         rdata-&gt;msg_info.via-&gt;rport_param = 0;</span>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :         return PJ_FALSE;</span>
+<span class="lineNum">     447 </span>            : }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span>            : static pjsip_module websocket_module = {
+<span class="lineNum">     450 </span>            :         .name = { &quot;WebSocket Transport Module&quot;, 26 },
+<span class="lineNum">     451 </span>            :         .id = -1,
+<span class="lineNum">     452 </span>            :         .priority = PJSIP_MOD_PRIORITY_TRANSPORT_LAYER,
+<span class="lineNum">     453 </span>            :         .on_rx_request = websocket_on_rx_msg,
+<span class="lineNum">     454 </span>            :         .on_rx_response = websocket_on_rx_msg,
+<span class="lineNum">     455 </span>            : };
+<a name="456"><span class="lineNum">     456 </span>            : </a>
+<span class="lineNum">     457 </span>            : /*! \brief Function called when an INVITE goes out */
+<span class="lineNum">     458 </span><span class="lineCov">        446 : static void websocket_outgoing_invite_request(struct ast_sip_session *session, struct pjsip_tx_data *tdata)</span>
+<span class="lineNum">     459 </span>            : {
+<span class="lineNum">     460 </span><span class="lineCov">        446 :         if (session-&gt;inv_session-&gt;state == PJSIP_INV_STATE_NULL) {</span>
+<span class="lineNum">     461 </span><span class="lineCov">        362 :                 pjsip_dlg_add_usage(session-&gt;inv_session-&gt;dlg, &amp;websocket_module, NULL);</span>
+<span class="lineNum">     462 </span>            :         }
+<span class="lineNum">     463 </span><span class="lineCov">        446 : }</span>
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span>            : /*! \brief Supplement for adding Websocket functionality to dialog */
+<span class="lineNum">     466 </span>            : static struct ast_sip_session_supplement websocket_supplement = {
+<span class="lineNum">     467 </span>            :         .method = &quot;INVITE&quot;,
+<span class="lineNum">     468 </span>            :         .priority = AST_SIP_SUPPLEMENT_PRIORITY_FIRST + 1,
+<span class="lineNum">     469 </span>            :         .outgoing_request = websocket_outgoing_invite_request,
+<a name="470"><span class="lineNum">     470 </span>            : };</a>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">        852 : static int load_module(void)</span>
+<span class="lineNum">     473 </span>            : {
+<span class="lineNum">     474 </span>            :         /*
+<span class="lineNum">     475 </span>            :          * We only need one transport type name (ws) defined.  Firefox
+<span class="lineNum">     476 </span>            :          * and Chrome do not support anything other than secure websockets
+<span class="lineNum">     477 </span>            :          * anymore.
+<span class="lineNum">     478 </span>            :          *
+<span class="lineNum">     479 </span>            :          * Also we really cannot have two transports with the same name
+<span class="lineNum">     480 </span>            :          * and address family because it would be ambiguous.  Outgoing
+<span class="lineNum">     481 </span>            :          * requests may try to find the transport by name and pjproject
+<span class="lineNum">     482 </span>            :          * only finds the first one registered.
+<span class="lineNum">     483 </span>            :          */
+<span class="lineNum">     484 </span><span class="lineCov">        852 :         pjsip_transport_register_type(PJSIP_TRANSPORT_RELIABLE | PJSIP_TRANSPORT_SECURE, &quot;ws&quot;, 5060, &amp;transport_type_wss);</span>
+<span class="lineNum">     485 </span><span class="lineCov">        852 :         pjsip_transport_register_type(PJSIP_TRANSPORT_RELIABLE | PJSIP_TRANSPORT_SECURE | PJSIP_TRANSPORT_IPV6, &quot;ws&quot;, 5060, &amp;transport_type_wss_ipv6);</span>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">        852 :         if (ast_sip_register_service(&amp;websocket_module) != PJ_SUCCESS) {</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     489 </span>            :         }
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">        852 :         ast_sip_session_register_supplement(&amp;websocket_supplement);</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineCov">        852 :         if (ast_websocket_add_protocol(&quot;sip&quot;, websocket_cb)) {</span>
+<span class="lineNum">     494 </span><span class="lineCov">        295 :                 ast_sip_session_unregister_supplement(&amp;websocket_supplement);</span>
+<span class="lineNum">     495 </span><span class="lineCov">        295 :                 ast_sip_unregister_service(&amp;websocket_module);</span>
+<span class="lineNum">     496 </span><span class="lineCov">        295 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     497 </span>            :         }
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineCov">        557 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="500"><span class="lineNum">     500 </span>            : }</a>
+<span class="lineNum">     501 </span>            : 
+<span class="lineNum">     502 </span><span class="lineCov">        557 : static int unload_module(void)</span>
+<span class="lineNum">     503 </span>            : {
+<span class="lineNum">     504 </span><span class="lineCov">        557 :         ast_sip_unregister_service(&amp;websocket_module);</span>
+<span class="lineNum">     505 </span><span class="lineCov">        557 :         ast_sip_session_unregister_supplement(&amp;websocket_supplement);</span>
+<span class="lineNum">     506 </span><span class="lineCov">        557 :         ast_websocket_remove_protocol(&quot;sip&quot;, websocket_cb);</span>
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineCov">        557 :         return 0;</span>
+<a name="509"><span class="lineNum">     509 </span>            : }</a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">       1704 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;PJSIP WebSocket Transport Support&quot;,</span>
+<span class="lineNum">     512 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     513 </span>            :         .load = load_module,
+<span class="lineNum">     514 </span>            :         .unload = unload_module,
+<span class="lineNum">     515 </span>            :         .load_pri = AST_MODPRI_APP_DEPEND,
+<span class="lineNum">     516 </span>            :         .requires = &quot;res_pjsip,res_http_websocket&quot;,
+<span class="lineNum">     517 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/uuid.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - uuid.c<span style="font-size: 80%;"> (source / <a href="uuid.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">43</td>
+            <td class="headerCovTableEntry">52</td>
+            <td class="headerCovTableEntryMed">82.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2012, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Michelson &lt;mmmichelson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  * \brief Universally unique identifier support
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \extref Depends on libuuid, a component of the e2fsprogs package - http://e2fsprogs.sourceforge.net/
+<span class="lineNum">      23 </span>            :  */
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      26 </span>            : #include &lt;uuid/uuid.h&gt;
+<span class="lineNum">      27 </span>            : #include &lt;fcntl.h&gt;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/uuid.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/strings.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : AST_MUTEX_DEFINE_STATIC(uuid_lock);
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : static int has_dev_urandom;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : struct ast_uuid {
+<span class="lineNum">      40 </span>            :         uuid_t uu;
+<span class="lineNum">      41 </span>            : };
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*!
+<span class="lineNum">      44 </span>            :  * \internal
+<span class="lineNum">      45 </span>            :  * \brief Generate a UUID.
+<span class="lineNum">      46 </span>            :  * \since 12.0.0
+<span class="lineNum">      47 </span>            :  *
+<span class="lineNum">      48 </span>            :  * \param uuid Fill this with a generated UUID.
+<span class="lineNum">      49 </span>            :  *
+<a name="50"><span class="lineNum">      50 </span>            :  * \return Nothing</a>
+<span class="lineNum">      51 </span>            :  */
+<span class="lineNum">      52 </span><span class="lineCov">      88077 : static void generate_uuid(struct ast_uuid *uuid)</span>
+<span class="lineNum">      53 </span>            : {
+<span class="lineNum">      54 </span>            :         /* libuuid provides three methods of generating uuids,
+<span class="lineNum">      55 </span>            :          * uuid_generate(), uuid_generate_random(), and uuid_generate_time().
+<span class="lineNum">      56 </span>            :          *
+<span class="lineNum">      57 </span>            :          * uuid_generate_random() creates a UUID based on random numbers. The method
+<span class="lineNum">      58 </span>            :          * attempts to use either /dev/urandom or /dev/random to generate random values.
+<span class="lineNum">      59 </span>            :          * If these resources are unavailable, then random numbers will be generated
+<span class="lineNum">      60 </span>            :          * using C library calls to generate pseudorandom numbers.
+<span class="lineNum">      61 </span>            :          * This method of generating UUIDs corresponds to section 4.4 of RFC 4122.
+<span class="lineNum">      62 </span>            :          *
+<span class="lineNum">      63 </span>            :          * uuid_generate_time() creates a UUID based on the current time plus
+<span class="lineNum">      64 </span>            :          * a system identifier (MAC address of the ethernet interface). This
+<span class="lineNum">      65 </span>            :          * method of generating UUIDs corresponds to section 4.2 of RFC 4122.
+<span class="lineNum">      66 </span>            :          *
+<span class="lineNum">      67 </span>            :          * uuid_generate() will check if /dev/urandom or /dev/random is available to
+<span class="lineNum">      68 </span>            :          * use. If so, it will use uuid_generate_random(). Otherwise, it will use
+<span class="lineNum">      69 </span>            :          * uuid_generate_time(). The idea is that it avoids using pseudorandom
+<span class="lineNum">      70 </span>            :          * numbers if necessary.
+<span class="lineNum">      71 </span>            :          *
+<span class="lineNum">      72 </span>            :          * For our purposes, we do not use the time-based UUID at all. There are
+<span class="lineNum">      73 </span>            :          * several reasons for this:
+<span class="lineNum">      74 </span>            :          *
+<span class="lineNum">      75 </span>            :          * 1) The time-based algorithm makes use of a daemon process (uuidd) in order
+<span class="lineNum">      76 </span>            :          * to ensure that any concurrent requests for UUIDs result in unique results.
+<span class="lineNum">      77 </span>            :          * Use of this daemon is a bit dodgy for a few reasons
+<span class="lineNum">      78 </span>            :          *
+<span class="lineNum">      79 </span>            :          *     a) libuuid assumes a hardcoded location for the .pid file of the daemon.
+<span class="lineNum">      80 </span>            :          *     However, the daemon could already be running on the system in a different
+<span class="lineNum">      81 </span>            :          *     location than expected. If this is the case, then attempting to connect
+<span class="lineNum">      82 </span>            :          *     to the daemon will fail, and attempting to launch another instance in
+<span class="lineNum">      83 </span>            :          *     the expected location will also fail.
+<span class="lineNum">      84 </span>            :          *
+<span class="lineNum">      85 </span>            :          *     b) If the daemon is not running, then the first attempt to create a
+<span class="lineNum">      86 </span>            :          *     time-based UUID will result in launching the daemon. Because of the hard-
+<span class="lineNum">      87 </span>            :          *     coded locations that libuuid assumes for the daemon, Asterisk must be
+<span class="lineNum">      88 </span>            :          *     run with permissions that will allow for the daemon to be launched in
+<span class="lineNum">      89 </span>            :          *     the expected directories.
+<span class="lineNum">      90 </span>            :          *
+<span class="lineNum">      91 </span>            :          *     c) Once the daemon is running, concurrent requests for UUIDs are thread-safe.
+<span class="lineNum">      92 </span>            :          *     However, the actual launching of the daemon is not thread-safe since libuuid
+<span class="lineNum">      93 </span>            :          *     uses no synchronization primitives to ensure that only one thread (or process)
+<span class="lineNum">      94 </span>            :          *     launches the daemon.
+<span class="lineNum">      95 </span>            :          *
+<span class="lineNum">      96 </span>            :          *     d) When libuuid launches the daemon, it sets an inactivity timer.
+<span class="lineNum">      97 </span>            :          *     If no UUID generation requests are issued in that time period,
+<span class="lineNum">      98 </span>            :          *     then the daemon will exit. If a new request should occur after the daemon
+<span class="lineNum">      99 </span>            :          *     exits, then the daemon will be relaunched. Given point c), we cannot
+<span class="lineNum">     100 </span>            :          *     necessarily guarantee the thread-safety of time-based UUID generation since
+<span class="lineNum">     101 </span>            :          *     we cannot necessarily guarantee the daemon is running as we expect.
+<span class="lineNum">     102 </span>            :          *     We could set up a watchdog thread to generate UUIDs at regular intervals to
+<span class="lineNum">     103 </span>            :          *     prevent the daemon from exiting, but frankly, that sucks.
+<span class="lineNum">     104 </span>            :          *
+<span class="lineNum">     105 </span>            :          * 2) Since the MAC address of the Ethernet interface is part of the UUID when
+<span class="lineNum">     106 </span>            :          * using the time-based method, there is information leaked.
+<span class="lineNum">     107 </span>            :          *
+<span class="lineNum">     108 </span>            :          * Given these drawbacks, we stick to only using random UUIDs. The chance of /dev/random
+<span class="lineNum">     109 </span>            :          * or /dev/urandom not existing on systems in this age is next to none.
+<span class="lineNum">     110 </span>            :          */
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span>            :         /* XXX Currently, we only protect this call if the user has no /dev/urandom on their system.
+<span class="lineNum">     113 </span>            :          * If it turns out that there are issues with UUID generation despite the presence of
+<span class="lineNum">     114 </span>            :          * /dev/urandom, then we may need to make the locking/unlocking unconditional.
+<span class="lineNum">     115 </span>            :          */
+<span class="lineNum">     116 </span><span class="lineCov">      88077 :         if (!has_dev_urandom) {</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 ast_mutex_lock(&amp;uuid_lock);</span>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span><span class="lineCov">      88077 :         uuid_generate_random(uuid-&gt;uu);</span>
+<span class="lineNum">     120 </span><span class="lineCov">      88077 :         if (!has_dev_urandom) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;uuid_lock);</span>
+<span class="lineNum">     122 </span>            :         }
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">      88077 : }</span></a>
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">          1 : struct ast_uuid *ast_uuid_generate(void)</span>
+<span class="lineNum">     126 </span>            : {
+<span class="lineNum">     127 </span><span class="lineCov">          1 :         struct ast_uuid *uuid = ast_malloc(sizeof(*uuid));</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">          1 :         if (!uuid) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     131 </span>            :         }
+<span class="lineNum">     132 </span><span class="lineCov">          1 :         generate_uuid(uuid);</span>
+<span class="lineNum">     133 </span><span class="lineCov">          1 :         return uuid;</span>
+<a name="134"><span class="lineNum">     134 </span>            : }</a>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">      88077 : char *ast_uuid_to_str(struct ast_uuid *uuid, char *buf, size_t size)</span>
+<span class="lineNum">     137 </span>            : {
+<span class="lineNum">     138 </span><span class="lineCov">      88077 :         ast_assert(size &gt;= AST_UUID_STR_LEN);</span>
+<span class="lineNum">     139 </span><span class="lineCov">      88077 :         uuid_unparse(uuid-&gt;uu, buf);</span>
+<span class="lineNum">     140 </span><span class="lineCov">      88077 :         return ast_str_to_lower(buf);</span>
+<a name="141"><span class="lineNum">     141 </span>            : }</a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">      88076 : char *ast_uuid_generate_str(char *buf, size_t size)</span>
+<span class="lineNum">     144 </span>            : {
+<span class="lineNum">     145 </span>            :         struct ast_uuid uuid;
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">      88076 :         generate_uuid(&amp;uuid);</span>
+<span class="lineNum">     148 </span><span class="lineCov">      88076 :         return ast_uuid_to_str(&amp;uuid, buf, size);</span>
+<a name="149"><span class="lineNum">     149 </span>            : }</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">          2 : struct ast_uuid *ast_str_to_uuid(char *str)</span>
+<span class="lineNum">     152 </span>            : {
+<span class="lineNum">     153 </span><span class="lineCov">          2 :         struct ast_uuid *uuid = ast_malloc(sizeof(*uuid));</span>
+<span class="lineNum">     154 </span>            :         int res;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">          2 :         if (!uuid) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     158 </span>            :         }
+<span class="lineNum">     159 </span><span class="lineCov">          2 :         res = uuid_parse(str, uuid-&gt;uu);</span>
+<span class="lineNum">     160 </span><span class="lineCov">          2 :         if (res) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to convert string %s into a UUID\n&quot;, str);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 ast_free(uuid);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     164 </span>            :         }
+<span class="lineNum">     165 </span><span class="lineCov">          2 :         return uuid;</span>
+<a name="166"><span class="lineNum">     166 </span>            : }</a>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">          1 : struct ast_uuid *ast_uuid_copy(struct ast_uuid *src)</span>
+<span class="lineNum">     169 </span>            : {
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         struct ast_uuid *dst = ast_malloc(sizeof(*dst));</span>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">          1 :         if (!dst) {</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     174 </span>            :         }
+<span class="lineNum">     175 </span><span class="lineCov">          1 :         uuid_copy(dst-&gt;uu, src-&gt;uu);</span>
+<span class="lineNum">     176 </span><span class="lineCov">          1 :         return dst;</span>
+<a name="177"><span class="lineNum">     177 </span>            : }</a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">          3 : int ast_uuid_compare(struct ast_uuid *left, struct ast_uuid *right)</span>
+<span class="lineNum">     180 </span>            : {
+<span class="lineNum">     181 </span><span class="lineCov">          3 :         return uuid_compare(left-&gt;uu, right-&gt;uu);</span>
+<a name="182"><span class="lineNum">     182 </span>            : }</a>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineCov">          1 : void ast_uuid_clear(struct ast_uuid *uuid)</span>
+<span class="lineNum">     185 </span>            : {
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         uuid_clear(uuid-&gt;uu);</span>
+<a name="187"><span class="lineNum">     187 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">          2 : int ast_uuid_is_nil(struct ast_uuid *uuid)</span>
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span><span class="lineCov">          2 :         return uuid_is_null(uuid-&gt;uu);</span>
+<a name="192"><span class="lineNum">     192 </span>            : }</a>
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineCov">       1124 : void ast_uuid_init(void)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span>            :         /* This requires some explanation.
+<span class="lineNum">     197 </span>            :          *
+<span class="lineNum">     198 </span>            :          * libuuid generates UUIDs based on random number generation. This involves
+<span class="lineNum">     199 </span>            :          * opening a handle to /dev/urandom or /dev/random in order to get random
+<span class="lineNum">     200 </span>            :          * data for the UUIDs.
+<span class="lineNum">     201 </span>            :          *
+<span class="lineNum">     202 </span>            :          * This is thread-safe, to a point. The problem is that the first attempt
+<span class="lineNum">     203 </span>            :          * to generate a UUID will result in opening the random number handle. Once
+<span class="lineNum">     204 </span>            :          * the handle is opened, all further generation is thread safe. This
+<span class="lineNum">     205 </span>            :          * first generation can be potentially risky if multiple threads attempt
+<span class="lineNum">     206 </span>            :          * to generate a UUID at the same time, though, since there is no thread
+<span class="lineNum">     207 </span>            :          * synchronization used within libuuid. To get around this potential
+<span class="lineNum">     208 </span>            :          * issue, we go ahead and generate a UUID up front so that the underlying
+<span class="lineNum">     209 </span>            :          * work is done before we start requesting UUIDs for real.
+<span class="lineNum">     210 </span>            :          *
+<span class="lineNum">     211 </span>            :          * Think of this along the same lines as initializing a singleton.
+<span class="lineNum">     212 </span>            :          */
+<span class="lineNum">     213 </span>            :         uuid_t uu;
+<span class="lineNum">     214 </span>            :         int dev_urandom_fd;
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">       1124 :         dev_urandom_fd = open(&quot;/dev/urandom&quot;, O_RDONLY);</span>
+<span class="lineNum">     217 </span><span class="lineCov">       1124 :         if (dev_urandom_fd &lt; 0) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;It appears your system does not have /dev/urandom on it. This\n&quot;</span>
+<span class="lineNum">     219 </span>            :                                 &quot;means that UUID generation will use a pseudorandom number generator. Since\n&quot;
+<span class="lineNum">     220 </span>            :                                 &quot;the thread-safety of your system's random number generator cannot\n&quot;
+<span class="lineNum">     221 </span>            :                                 &quot;be guaranteed, we have to synchronize UUID generation. This may result\n&quot;
+<span class="lineNum">     222 </span>            :                                 &quot;in decreased performance. It is highly recommended that you set up your\n&quot;
+<span class="lineNum">     223 </span>            :                                 &quot;system to have /dev/urandom\n&quot;);
+<span class="lineNum">     224 </span>            :         } else {
+<span class="lineNum">     225 </span><span class="lineCov">       1124 :                 has_dev_urandom = 1;</span>
+<span class="lineNum">     226 </span><span class="lineCov">       1124 :                 close(dev_urandom_fd);</span>
+<span class="lineNum">     227 </span>            :         }
+<span class="lineNum">     228 </span><span class="lineCov">       1124 :         uuid_generate_random(uu);</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineCov">       1124 :         ast_debug(1, &quot;UUID system initiated\n&quot;);</span>
+<span class="lineNum">     231 </span><span class="lineCov">       1124 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

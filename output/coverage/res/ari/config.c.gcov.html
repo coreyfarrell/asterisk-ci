@@ -1,0 +1,471 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/ari/config.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/ari</a> - config.c<span style="font-size: 80%;"> (source / <a href="config.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">126</td>
+            <td class="headerCovTableEntry">156</td>
+            <td class="headerCovTableEntryMed">80.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntryHi">95.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Config framework stuffz for ARI.
+<span class="lineNum">      22 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      23 </span>            :  */
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/config_options.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/http_websocket.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;internal.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : /*! \brief Locking container for safe configuration access. */
+<span class="lineNum">      34 </span>            : static AO2_GLOBAL_OBJ_STATIC(confs);
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : /*! \brief Mapping of the ARI conf struct's globals to the
+<span class="lineNum">      37 </span>            :  *         general context in the config file. */
+<span class="lineNum">      38 </span>            : static struct aco_type general_option = {
+<span class="lineNum">      39 </span>            :         .type = ACO_GLOBAL,
+<span class="lineNum">      40 </span>            :         .name = &quot;general&quot;,
+<span class="lineNum">      41 </span>            :         .item_offset = offsetof(struct ast_ari_conf, general),
+<span class="lineNum">      42 </span>            :         .category = &quot;general&quot;,
+<span class="lineNum">      43 </span>            :         .category_match = ACO_WHITELIST_EXACT,
+<span class="lineNum">      44 </span>            : };
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : static struct aco_type *general_options[] = ACO_TYPES(&amp;general_option);
+<a name="47"><span class="lineNum">      47 </span>            : </a>
+<span class="lineNum">      48 </span>            : /*! \brief Encoding format handler converts from boolean to enum. */
+<span class="lineNum">      49 </span><span class="lineCov">       3348 : static int encoding_format_handler(const struct aco_option *opt,</span>
+<span class="lineNum">      50 </span>            :         struct ast_variable *var, void *obj)
+<span class="lineNum">      51 </span>            : {
+<span class="lineNum">      52 </span><span class="lineCov">       3348 :         struct ast_ari_conf_general *general = obj;</span>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineCov">       3348 :         if (!strcasecmp(var-&gt;name, &quot;pretty&quot;)) {</span>
+<span class="lineNum">      55 </span><span class="lineCov">       6696 :                 general-&gt;format = ast_true(var-&gt;value) ?</span>
+<span class="lineNum">      56 </span><span class="lineCov">       3348 :                         AST_JSON_PRETTY : AST_JSON_COMPACT;</span>
+<span class="lineNum">      57 </span>            :         } else {
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      59 </span>            :         }
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span><span class="lineCov">       3348 :         return 0;</span>
+<span class="lineNum">      62 </span>            : }
+<a name="63"><span class="lineNum">      63 </span>            : </a>
+<span class="lineNum">      64 </span>            : /*! \brief Parses the ast_ari_password_format enum from a config file */
+<span class="lineNum">      65 </span><span class="lineCov">       1120 : static int password_format_handler(const struct aco_option *opt,</span>
+<span class="lineNum">      66 </span>            :         struct ast_variable *var, void *obj)
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span><span class="lineCov">       1120 :         struct ast_ari_conf_user *user = obj;</span>
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span><span class="lineCov">       1120 :         if (strcasecmp(var-&gt;value, &quot;plain&quot;) == 0) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">       1119 :                 user-&gt;password_format = ARI_PASSWORD_FORMAT_PLAIN;</span>
+<span class="lineNum">      72 </span><span class="lineCov">          1 :         } else if (strcasecmp(var-&gt;value, &quot;crypt&quot;) == 0) {</span>
+<span class="lineNum">      73 </span><span class="lineCov">          1 :                 user-&gt;password_format = ARI_PASSWORD_FORMAT_CRYPT;</span>
+<span class="lineNum">      74 </span>            :         } else {
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      76 </span>            :         }
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">       1120 :         return 0;</span>
+<span class="lineNum">      79 </span>            : }
+<a name="80"><span class="lineNum">      80 </span>            : </a>
+<span class="lineNum">      81 </span>            : /*! \brief Destructor for \ref ast_ari_conf_user */
+<span class="lineNum">      82 </span><span class="lineCov">       1116 : static void user_dtor(void *obj)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span><span class="lineCov">       1116 :         struct ast_ari_conf_user *user = obj;</span>
+<span class="lineNum">      85 </span><span class="lineCov">       1116 :         ast_debug(3, &quot;Disposing of user %s\n&quot;, user-&gt;username);</span>
+<span class="lineNum">      86 </span><span class="lineCov">       1116 :         ast_free(user-&gt;username);</span>
+<span class="lineNum">      87 </span><span class="lineCov">       1116 : }</span>
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<span class="lineNum">      89 </span>            : /*! \brief Allocate an \ref ast_ari_conf_user for config parsing */
+<a name="90"><span class="lineNum">      90 </span><span class="lineCov">       1119 : static void *user_alloc(const char *cat)</span></a>
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span><span class="lineCov">       2238 :         RAII_VAR(struct ast_ari_conf_user *, user, NULL, ao2_cleanup);</span>
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">       1119 :         if (!cat) {</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      96 </span>            :         }
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineCov">       1119 :         ast_debug(3, &quot;Allocating user %s\n&quot;, cat);</span>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">       1119 :         user = ao2_alloc_options(sizeof(*user), user_dtor,</span>
+<span class="lineNum">     101 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     102 </span><span class="lineCov">       1119 :         if (!user) {</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     104 </span>            :         }
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">       1119 :         user-&gt;username = ast_strdup(cat);</span>
+<span class="lineNum">     107 </span><span class="lineCov">       1119 :         if (!user-&gt;username) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     109 </span>            :         }
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">       1119 :         ao2_ref(user, +1);</span>
+<span class="lineNum">     112 </span><span class="lineCov">       1119 :         return user;</span>
+<span class="lineNum">     113 </span>            : }
+<a name="114"><span class="lineNum">     114 </span>            : </a>
+<span class="lineNum">     115 </span>            : /*! \brief Sorting function for use with red/black tree */
+<span class="lineNum">     116 </span><span class="lineCov">       1173 : static int user_sort_cmp(const void *obj_left, const void *obj_right, int flags)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span><span class="lineCov">       1173 :         const struct ast_ari_conf_user *user_left = obj_left;</span>
+<span class="lineNum">     119 </span><span class="lineCov">       1173 :         const struct ast_ari_conf_user *user_right = obj_right;</span>
+<span class="lineNum">     120 </span><span class="lineCov">       1173 :         const char *key_right = obj_right;</span>
+<span class="lineNum">     121 </span>            :         int cmp;
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineCov">       1173 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     124 </span><span class="lineCov">          2 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     125 </span><span class="lineCov">          2 :                 key_right = user_right-&gt;username;</span>
+<span class="lineNum">     126 </span>            :                 /* Fall through */
+<span class="lineNum">     127 </span><span class="lineCov">       1173 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     128 </span><span class="lineCov">       1173 :                 cmp = strcasecmp(user_left-&gt;username, key_right);</span>
+<span class="lineNum">     129 </span><span class="lineCov">       1173 :                 break;</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     131 </span>            :                 /*
+<span class="lineNum">     132 </span>            :                  * We could also use a partial key struct containing a length
+<span class="lineNum">     133 </span>            :                  * so strlen() does not get called for every comparison instead.
+<span class="lineNum">     134 </span>            :                  */
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 cmp = strncasecmp(user_left-&gt;username, key_right, strlen(key_right));</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     138 </span>            :                 /* Sort can only work on something with a full or partial key. */
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     142 </span>            :         }
+<span class="lineNum">     143 </span><span class="lineCov">       1173 :         return cmp;</span>
+<span class="lineNum">     144 </span>            : }
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span>            : /*! \brief \ref aco_type item_find function */
+<span class="lineNum">     147 </span><span class="lineCov">       1119 : static void *user_find(struct ao2_container *tmp_container, const char *cat)</span>
+<span class="lineNum">     148 </span>            : {
+<span class="lineNum">     149 </span><span class="lineCov">       1119 :         if (!cat) {</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     151 </span>            :         }
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span><span class="lineCov">       1119 :         return ao2_find(tmp_container, cat, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     154 </span>            : }
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            : static struct aco_type user_option = {
+<span class="lineNum">     157 </span>            :         .type = ACO_ITEM,
+<span class="lineNum">     158 </span>            :         .name = &quot;user&quot;,
+<span class="lineNum">     159 </span>            :         .category_match = ACO_BLACKLIST_EXACT,
+<span class="lineNum">     160 </span>            :         .category = &quot;general&quot;,
+<span class="lineNum">     161 </span>            :         .matchfield = &quot;type&quot;,
+<span class="lineNum">     162 </span>            :         .matchvalue = &quot;user&quot;,
+<span class="lineNum">     163 </span>            :         .item_alloc = user_alloc,
+<span class="lineNum">     164 </span>            :         .item_find = user_find,
+<span class="lineNum">     165 </span>            :         .item_offset = offsetof(struct ast_ari_conf, users),
+<span class="lineNum">     166 </span>            : };
+<span class="lineNum">     167 </span>            : 
+<a name="168"><span class="lineNum">     168 </span>            : static struct aco_type *user[] = ACO_TYPES(&amp;user_option);</a>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">       1114 : static void conf_general_dtor(void *obj)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span><span class="lineCov">       1114 :         struct ast_ari_conf_general *general = obj;</span>
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span><span class="lineCov">       1114 :         ast_string_field_free_memory(general);</span>
+<span class="lineNum">     175 </span><span class="lineCov">       1114 : }</span>
+<a name="176"><span class="lineNum">     176 </span>            : </a>
+<span class="lineNum">     177 </span>            : /*! \brief \ref ast_ari_conf destructor. */
+<span class="lineNum">     178 </span><span class="lineCov">       1114 : static void conf_destructor(void *obj)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span><span class="lineCov">       1114 :         struct ast_ari_conf *cfg = obj;</span>
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span><span class="lineCov">       1114 :         ao2_cleanup(cfg-&gt;general);</span>
+<span class="lineNum">     183 </span><span class="lineCov">       1114 :         ao2_cleanup(cfg-&gt;users);</span>
+<span class="lineNum">     184 </span><span class="lineCov">       1114 : }</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span>            : /*! \brief Allocate an \ref ast_ari_conf for config parsing */
+<span class="lineNum">     187 </span><span class="lineCov">       1118 : static void *conf_alloc(void)</span>
+<span class="lineNum">     188 </span>            : {
+<span class="lineNum">     189 </span>            :         struct ast_ari_conf *cfg;
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">       1118 :         cfg = ao2_alloc_options(sizeof(*cfg), conf_destructor,</span>
+<span class="lineNum">     192 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     193 </span><span class="lineCov">       1118 :         if (!cfg) {</span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     195 </span>            :         }
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span><span class="lineCov">       1118 :         cfg-&gt;general = ao2_alloc_options(sizeof(*cfg-&gt;general), conf_general_dtor,</span>
+<span class="lineNum">     198 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineCov">       1118 :         cfg-&gt;users = ao2_container_alloc_rbtree(AO2_ALLOC_OPT_LOCK_NOLOCK,</span>
+<span class="lineNum">     201 </span>            :                 AO2_CONTAINER_ALLOC_OPT_DUPS_REPLACE, user_sort_cmp, NULL);
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">       1118 :         if (!cfg-&gt;users</span>
+<span class="lineNum">     204 </span><span class="lineCov">       1118 :                 || !cfg-&gt;general</span>
+<span class="lineNum">     205 </span><span class="lineCov">       1118 :                 || ast_string_field_init(cfg-&gt;general, 64)</span>
+<span class="lineNum">     206 </span><span class="lineCov">       1118 :                 || aco_set_defaults(&amp;general_option, &quot;general&quot;, cfg-&gt;general)) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 ao2_ref(cfg, -1);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     209 </span>            :         }
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">       1118 :         return cfg;</span>
+<span class="lineNum">     212 </span>            : }
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span>            : #define CONF_FILENAME &quot;ari.conf&quot;
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            : /*! \brief The conf file that's processed for the module. */
+<span class="lineNum">     217 </span>            : static struct aco_file conf_file = {
+<span class="lineNum">     218 </span>            :         /*! The config file name. */
+<span class="lineNum">     219 </span>            :         .filename = CONF_FILENAME,
+<span class="lineNum">     220 </span>            :         /*! The mapping object types to be processed. */
+<span class="lineNum">     221 </span>            :         .types = ACO_TYPES(&amp;general_option, &amp;user_option),
+<span class="lineNum">     222 </span>            : };
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            : CONFIG_INFO_STANDARD(cfg_info, confs, conf_alloc,
+<a name="225"><span class="lineNum">     225 </span>            :                      .files = ACO_FILES(&amp;conf_file));</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">       8886 : struct ast_ari_conf *ast_ari_config_get(void)</span>
+<span class="lineNum">     228 </span>            : {
+<span class="lineNum">     229 </span><span class="lineCov">       8886 :         struct ast_ari_conf *res = ao2_global_obj_ref(confs);</span>
+<span class="lineNum">     230 </span><span class="lineCov">       8886 :         if (!res) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR,</span>
+<span class="lineNum">     232 </span>            :                         &quot;Error obtaining config from &quot; CONF_FILENAME &quot;\n&quot;);
+<span class="lineNum">     233 </span>            :         }
+<span class="lineNum">     234 </span><span class="lineCov">       8886 :         return res;</span>
+<a name="235"><span class="lineNum">     235 </span>            : }</a>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineCov">       1151 : struct ast_ari_conf_user *ast_ari_config_validate_user(const char *username,</span>
+<a name="238"><span class="lineNum">     238 </span>            :         const char *password)</a>
+<a name="239"><span class="lineNum">     239 </span>            : {</a>
+<span class="lineNum">     240 </span><span class="lineCov">       2302 :         RAII_VAR(struct ast_ari_conf *, conf, NULL, ao2_cleanup);</span>
+<span class="lineNum">     241 </span><span class="lineCov">       2302 :         RAII_VAR(struct ast_ari_conf_user *, user, NULL, ao2_cleanup);</span>
+<span class="lineNum">     242 </span><span class="lineCov">       1151 :         int is_valid = 0;</span>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">       1151 :         conf = ast_ari_config_get();</span>
+<span class="lineNum">     245 </span><span class="lineCov">       1151 :         if (!conf) {</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     247 </span>            :         }
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span><span class="lineCov">       1151 :         user = ao2_find(conf-&gt;users, username, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     250 </span><span class="lineCov">       1151 :         if (!user) {</span>
+<span class="lineNum">     251 </span><span class="lineCov">          2 :                 return NULL;</span>
+<span class="lineNum">     252 </span>            :         }
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span><span class="lineCov">       1149 :         if (ast_strlen_zero(user-&gt;password)) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">     256 </span>            :                         &quot;User '%s' missing password; authentication failed\n&quot;,
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                         user-&gt;username);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     259 </span>            :         }
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">       1149 :         switch (user-&gt;password_format) {</span>
+<span class="lineNum">     262 </span><span class="lineCov">       1145 :         case ARI_PASSWORD_FORMAT_PLAIN:</span>
+<span class="lineNum">     263 </span><span class="lineCov">       1145 :                 is_valid = strcmp(password, user-&gt;password) == 0;</span>
+<span class="lineNum">     264 </span><span class="lineCov">       1145 :                 break;</span>
+<span class="lineNum">     265 </span><span class="lineCov">          4 :         case ARI_PASSWORD_FORMAT_CRYPT:</span>
+<span class="lineNum">     266 </span><span class="lineCov">          4 :                 is_valid = ast_crypt_validate(password, user-&gt;password);</span>
+<span class="lineNum">     267 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">     268 </span>            :         }
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">       1149 :         if (!is_valid) {</span>
+<span class="lineNum">     271 </span><span class="lineCov">          4 :                 return NULL;</span>
+<span class="lineNum">     272 </span>            :         }
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">       1145 :         ao2_ref(user, +1);</span>
+<span class="lineNum">     275 </span><span class="lineCov">       1145 :         return user;</span>
+<span class="lineNum">     276 </span>            : }
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<span class="lineNum">     278 </span>            : /*! \brief Callback to validate a user object */
+<span class="lineNum">     279 </span><span class="lineCov">       1119 : static int validate_user_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     280 </span>            : {
+<span class="lineNum">     281 </span><span class="lineCov">       1119 :         struct ast_ari_conf_user *user = obj;</span>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">       1119 :         if (ast_strlen_zero(user-&gt;password)) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;User '%s' missing password\n&quot;,</span>
+<span class="lineNum">     285 </span>            :                         user-&gt;username);
+<span class="lineNum">     286 </span>            :         }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">       1119 :         return 0;</span>
+<span class="lineNum">     289 </span>            : }
+<a name="290"><span class="lineNum">     290 </span>            : </a>
+<span class="lineNum">     291 </span>            : /*! \brief Load (or reload) configuration. */
+<a name="292"><span class="lineNum">     292 </span><span class="lineCov">       1118 : static int process_config(int reload)</span></a>
+<span class="lineNum">     293 </span>            : {
+<span class="lineNum">     294 </span><span class="lineCov">       2236 :         RAII_VAR(struct ast_ari_conf *, conf, NULL, ao2_cleanup);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">       1118 :         switch (aco_process_config(&amp;cfg_info, reload)) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         case ACO_PROCESS_ERROR:</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     299 </span><span class="lineCov">       1118 :         case ACO_PROCESS_OK:</span>
+<span class="lineNum">     300 </span>            :         case ACO_PROCESS_UNCHANGED:
+<span class="lineNum">     301 </span><span class="lineCov">       1118 :                 break;</span>
+<span class="lineNum">     302 </span>            :         }
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">       1118 :         conf = ast_ari_config_get();</span>
+<span class="lineNum">     305 </span><span class="lineCov">       1118 :         if (!conf) {</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 ast_assert(0); /* We just configured; it should be there */</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineCov">       1118 :         if (conf-&gt;general-&gt;enabled) {</span>
+<span class="lineNum">     311 </span><span class="lineCov">       1118 :                 if (ao2_container_count(conf-&gt;users) == 0) {</span>
+<span class="lineNum">     312 </span><span class="lineCov">          1 :                         ast_log(LOG_ERROR, &quot;No configured users for ARI\n&quot;);</span>
+<span class="lineNum">     313 </span>            :                 } else {
+<span class="lineNum">     314 </span><span class="lineCov">       1117 :                         ao2_callback(conf-&gt;users, OBJ_NODATA, validate_user_cb, NULL);</span>
+<span class="lineNum">     315 </span>            :                 }
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">       1118 :         return 0;</span>
+<span class="lineNum">     319 </span>            : }
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span>            : #define MAX_VARS 128</a>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineCov">          1 : static int channelvars_handler(const struct aco_option *opt, struct ast_variable *var, void *obj)</span>
+<span class="lineNum">     324 </span>            : {
+<span class="lineNum">     325 </span><span class="lineCov">          1 :         char *parse = NULL;</span>
+<span class="lineNum">     326 </span><span class="lineCov">          1 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     327 </span>            :                 AST_APP_ARG(vars)[MAX_VARS];
+<span class="lineNum">     328 </span>            :         );
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">          1 :         parse = ast_strdupa(var-&gt;value);</span>
+<span class="lineNum">     331 </span><span class="lineCov">          1 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">     332 </span>            : 
+<span class="lineNum">     333 </span><span class="lineCov">          1 :         ast_channel_set_ari_vars(args.argc, args.vars);</span>
+<span class="lineNum">     334 </span><span class="lineCov">          1 :         return 0;</span>
+<a name="335"><span class="lineNum">     335 </span>            : }</a>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineCov">       1118 : int ast_ari_config_init(void)</span>
+<span class="lineNum">     338 </span>            : {
+<span class="lineNum">     339 </span><span class="lineCov">       1118 :         if (aco_info_init(&amp;cfg_info)) {</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                 aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     342 </span>            :         }
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            :         /* ARI general category options */
+<span class="lineNum">     345 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;enabled&quot;, ACO_EXACT, general_options,</span>
+<span class="lineNum">     346 </span>            :                 &quot;yes&quot;, OPT_BOOL_T, 1,
+<span class="lineNum">     347 </span>            :                 FLDSET(struct ast_ari_conf_general, enabled));
+<span class="lineNum">     348 </span><span class="lineCov">       1118 :         aco_option_register_custom(&amp;cfg_info, &quot;pretty&quot;, ACO_EXACT,</span>
+<span class="lineNum">     349 </span>            :                 general_options, &quot;no&quot;,  encoding_format_handler, 0);
+<span class="lineNum">     350 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;auth_realm&quot;, ACO_EXACT, general_options,</span>
+<span class="lineNum">     351 </span>            :                 &quot;Asterisk REST Interface&quot;, OPT_CHAR_ARRAY_T, 0,
+<span class="lineNum">     352 </span>            :                 FLDSET(struct ast_ari_conf_general, auth_realm),
+<span class="lineNum">     353 </span>            :                 ARI_AUTH_REALM_LEN);
+<span class="lineNum">     354 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;allowed_origins&quot;, ACO_EXACT, general_options,</span>
+<span class="lineNum">     355 </span>            :                 &quot;&quot;, OPT_STRINGFIELD_T, 0,
+<span class="lineNum">     356 </span>            :                 STRFLDSET(struct ast_ari_conf_general, allowed_origins));
+<span class="lineNum">     357 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;websocket_write_timeout&quot;, ACO_EXACT, general_options,</span>
+<span class="lineNum">     358 </span>            :                 AST_DEFAULT_WEBSOCKET_WRITE_TIMEOUT_STR, OPT_INT_T, PARSE_IN_RANGE,
+<span class="lineNum">     359 </span>            :                 FLDSET(struct ast_ari_conf_general, write_timeout), 1, INT_MAX);
+<span class="lineNum">     360 </span><span class="lineCov">       1118 :         aco_option_register_custom(&amp;cfg_info, &quot;channelvars&quot;, ACO_EXACT, general_options,</span>
+<span class="lineNum">     361 </span>            :                 &quot;&quot;, channelvars_handler, 0);
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :         /* ARI type=user category options */
+<span class="lineNum">     364 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;type&quot;, ACO_EXACT, user, NULL,</span>
+<span class="lineNum">     365 </span>            :                 OPT_NOOP_T, 0, 0);
+<span class="lineNum">     366 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;read_only&quot;, ACO_EXACT, user,</span>
+<span class="lineNum">     367 </span>            :                 &quot;no&quot;, OPT_BOOL_T, 1,
+<span class="lineNum">     368 </span>            :                 FLDSET(struct ast_ari_conf_user, read_only));
+<span class="lineNum">     369 </span><span class="lineCov">       1118 :         aco_option_register(&amp;cfg_info, &quot;password&quot;, ACO_EXACT, user,</span>
+<span class="lineNum">     370 </span>            :                 &quot;&quot;, OPT_CHAR_ARRAY_T, 0,
+<span class="lineNum">     371 </span>            :                 FLDSET(struct ast_ari_conf_user, password), ARI_PASSWORD_LEN);
+<span class="lineNum">     372 </span><span class="lineCov">       1118 :         aco_option_register_custom(&amp;cfg_info, &quot;password_format&quot;, ACO_EXACT,</span>
+<span class="lineNum">     373 </span>            :                 user, &quot;plain&quot;,  password_format_handler, 0);
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineCov">       1118 :         return process_config(0);</span>
+<a name="376"><span class="lineNum">     376 </span>            : }</a>
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 : int ast_ari_config_reload(void)</span>
+<span class="lineNum">     379 </span>            : {
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         return process_config(1);</span>
+<a name="381"><span class="lineNum">     381 </span>            : }</a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">       1116 : void ast_ari_config_destroy(void)</span>
+<span class="lineNum">     384 </span>            : {
+<span class="lineNum">     385 </span><span class="lineCov">       1116 :         aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     386 </span><span class="lineCov">       1116 :         ao2_global_obj_release(confs);</span>
+<span class="lineNum">     387 </span><span class="lineCov">       1116 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/sounds.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - sounds.c<span style="font-size: 80%;"> (source / <a href="sounds.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">78</td>
+            <td class="headerCovTableEntry">153</td>
+            <td class="headerCovTableEntryLo">51.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntryMed">76.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Kinsey Moore &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  * \brief Sound file format and description index.
+<span class="lineNum">      21 </span>            :  */
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &lt;dirent.h&gt;
+<span class="lineNum">      26 </span>            : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/format.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/format_cap.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/paths.h&quot;   /* use ast_config_AST_DATA_DIR */
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/media_index.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/sounds_index.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/stasis_message_router.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/stasis_system.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : /*** MODULEINFO
+<span class="lineNum">      42 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      43 </span>            :  ***/
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*! \brief The number of buckets to be used for storing language-keyed objects */
+<span class="lineNum">      46 </span>            : #define LANGUAGE_BUCKETS 7
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : static struct ast_media_index *sounds_index;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : static struct stasis_message_router *sounds_system_router;
+<a name="51"><span class="lineNum">      51 </span>            : </a>
+<span class="lineNum">      52 </span>            : /*! \brief Get the languages in which sound files are available */
+<a name="53"><span class="lineNum">      53 </span><span class="lineCov">       1124 : static struct ao2_container *get_languages(void)</span></a>
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span><span class="lineCov">       2248 :         RAII_VAR(struct ao2_container *, lang_dirs, NULL, ao2_cleanup);</span>
+<a name="56"><span class="lineNum">      56 </span>            :         struct dirent* dent;</a>
+<a name="57"><span class="lineNum">      57 </span>            :         DIR* srcdir;</a>
+<span class="lineNum">      58 </span><span class="lineCov">       3372 :         RAII_VAR(struct ast_str *, media_dir, ast_str_create(64), ast_free);</span>
+<span class="lineNum">      59 </span><span class="lineCov">       3372 :         RAII_VAR(struct ast_str *, variant_dir, ast_str_create(64), ast_free);</span>
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span><span class="lineCov">       1124 :         lang_dirs = ast_str_container_alloc(LANGUAGE_BUCKETS);</span>
+<span class="lineNum">      62 </span><span class="lineCov">       1124 :         if (!media_dir || !lang_dirs) {</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      64 </span>            :         }
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span><span class="lineCov">       1124 :         ast_str_set(&amp;media_dir, 0, &quot;%s/sounds&quot;, ast_config_AST_DATA_DIR);</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineCov">       1124 :         srcdir = opendir(ast_str_buffer(media_dir));</span>
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span><span class="lineCov">       1124 :         if (srcdir == NULL) {</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to open %s\n&quot;, ast_str_buffer(media_dir));</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      73 </span>            :         }
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">       4496 :         while((dent = readdir(srcdir)) != NULL) {</span>
+<span class="lineNum">      76 </span>            :                 struct stat st;
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">       3372 :                 if(!strcmp(dent-&gt;d_name, &quot;.&quot;) || !strcmp(dent-&gt;d_name, &quot;..&quot;)) {</span>
+<span class="lineNum">      79 </span><span class="lineCov">       2248 :                         continue;</span>
+<span class="lineNum">      80 </span>            :                 }
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">       1124 :                 ast_str_reset(variant_dir);</span>
+<span class="lineNum">      83 </span><span class="lineCov">       1124 :                 ast_str_set(&amp;variant_dir, 0, &quot;%s/%s&quot;, ast_str_buffer(media_dir), dent-&gt;d_name);</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineCov">       1124 :                 if (stat(ast_str_buffer(variant_dir), &amp;st) &lt; 0) {</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to stat %s\n&quot;, ast_str_buffer(variant_dir));</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">      88 </span>            :                 }
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineCov">       1124 :                 if (S_ISDIR(st.st_mode)) {</span>
+<span class="lineNum">      91 </span><span class="lineCov">       1124 :                         ast_str_container_add(lang_dirs, dent-&gt;d_name);</span>
+<span class="lineNum">      92 </span>            :                 }
+<span class="lineNum">      93 </span>            :         }
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineCov">       1124 :         closedir(srcdir);</span>
+<span class="lineNum">      96 </span><span class="lineCov">       1124 :         ao2_ref(lang_dirs, +1);</span>
+<span class="lineNum">      97 </span><span class="lineCov">       1124 :         return lang_dirs;</span>
+<span class="lineNum">      98 </span>            : }
+<a name="99"><span class="lineNum">      99 </span>            : </a>
+<span class="lineNum">     100 </span>            : /*! \brief Callback to process an individual language directory or subdirectory */
+<span class="lineNum">     101 </span><span class="lineCov">       1124 : static int update_index_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span><span class="lineCov">       1124 :         char *lang = obj;</span>
+<span class="lineNum">     104 </span><span class="lineCov">       1124 :         struct ast_media_index *index = arg;</span>
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">       1124 :         if (ast_media_index_update(index, lang)) {</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                 return CMP_MATCH;</span>
+<span class="lineNum">     108 </span>            :         }
+<span class="lineNum">     109 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">     110 </span>            : }
+<span class="lineNum">     111 </span>            : 
+<a name="112"><span class="lineNum">     112 </span>            : AST_MUTEX_DEFINE_STATIC(reload_lock);</a>
+<span class="lineNum">     113 </span>            : 
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">       1124 : static int reload_module(void)</span></a>
+<a name="115"><span class="lineNum">     115 </span>            : {</a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineCov">       2248 :         RAII_VAR(struct ast_str *, sounds_dir, NULL, ast_free);</span></a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">       2248 :         RAII_VAR(struct ao2_container *, languages, NULL, ao2_cleanup);</span></a>
+<span class="lineNum">     118 </span><span class="lineCov">       2248 :         RAII_VAR(char *, failed_index, NULL, ao2_cleanup);</span>
+<span class="lineNum">     119 </span><span class="lineCov">       2248 :         RAII_VAR(struct ast_media_index *, new_index, NULL, ao2_cleanup);</span>
+<a name="120"><span class="lineNum">     120 </span>            :         struct ast_media_index *old_index;</a>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">       3372 :         SCOPED_MUTEX(lock, &amp;reload_lock);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">       1124 :         old_index = sounds_index;</span>
+<span class="lineNum">     125 </span><span class="lineCov">       1124 :         languages = get_languages();</span>
+<span class="lineNum">     126 </span><span class="lineCov">       1124 :         sounds_dir = ast_str_create(64);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">       1124 :         if (!languages || !sounds_dir) {</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     130 </span>            :         }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">       1124 :         ast_str_set(&amp;sounds_dir, 0, &quot;%s/sounds&quot;, ast_config_AST_DATA_DIR);</span>
+<span class="lineNum">     133 </span><span class="lineCov">       1124 :         new_index = ast_media_index_create(ast_str_buffer(sounds_dir));</span>
+<span class="lineNum">     134 </span><span class="lineCov">       1124 :         if (!new_index) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     136 </span>            :         }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">       1124 :         failed_index = ao2_callback(languages, 0, update_index_cb, new_index);</span>
+<span class="lineNum">     139 </span><span class="lineCov">       1124 :         if (failed_index) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     141 </span>            :         }
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">       1124 :         ao2_ref(new_index, +1);</span>
+<span class="lineNum">     144 </span><span class="lineCov">       1124 :         sounds_index = new_index;</span>
+<span class="lineNum">     145 </span><span class="lineCov">       1124 :         ao2_cleanup(old_index);</span>
+<span class="lineNum">     146 </span><span class="lineCov">       1124 :         return 0;</span>
+<a name="147"><span class="lineNum">     147 </span>            : }</a>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 : static int show_sounds_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     150 </span>            : {
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         char *name = obj;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         struct ast_cli_args *a = arg;</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%s\n&quot;, name);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="155"><span class="lineNum">     155 </span>            : }</a>
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 : static int show_sound_info_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         char *language = obj;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         struct ast_cli_args *a = arg;</span>
+<a name="161"><span class="lineNum">     161 </span>            :         struct ast_format *format;</a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         int formats_shown = 0;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         RAII_VAR(struct ast_media_index *, local_index, ast_sounds_get_index(), ao2_cleanup);</span>
+<span class="lineNum">     164 </span>            :         struct ast_format_cap *cap;
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :         const char *description = ast_media_get_description(local_index, a-&gt;argv[3], language);</span>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;  Language %s:\n&quot;, language);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(description)) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;    Description: %s\n&quot;, description);</span>
+<span class="lineNum">     170 </span>            :         }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         cap = ast_media_get_format_cap(local_index, a-&gt;argv[3], language);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :         if (cap) {</span>
+<span class="lineNum">     174 </span>            :                 int x;
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; ast_format_cap_count(cap); x++) {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                         format = ast_format_cap_get_format(cap, x);</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;    Format: %s\n&quot;, ast_format_get_name(format));</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                         ao2_ref(format, -1);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                         formats_shown = 1;</span>
+<span class="lineNum">     180 </span>            :                 }
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 ao2_ref(cap, -1);</span>
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         if (!formats_shown) {</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;    No Formats Available\n&quot;);</span>
+<span class="lineNum">     186 </span>            :         }
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     189 </span>            : }
+<a name="190"><span class="lineNum">     190 </span>            : </a>
+<span class="lineNum">     191 </span>            : /*! \brief Show a list of sounds available on the system */
+<span class="lineNum">     192 </span><span class="lineCov">       1124 : static char *handle_cli_sounds_show(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     193 </span>            : {
+<span class="lineNum">     194 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     195 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     196 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show sounds&quot;;</span>
+<span class="lineNum">     197 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     198 </span>            :                         &quot;Usage: core show sounds\n&quot;
+<span class="lineNum">     199 </span>            :                         &quot;       Shows a listing of sound files available on the system.\n&quot;;
+<span class="lineNum">     200 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     203 </span>            :         }
+<a name="204"><span class="lineNum">     204 </span>            : </a>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :         if (a-&gt;argc == 3) {</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                 RAII_VAR(struct ao2_container *, sound_files, ast_media_get_media(sounds_index), ao2_cleanup);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 if (!sound_files) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                         return CLI_FAILURE;</span>
+<span class="lineNum">     209 </span>            :                 }
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Available audio files:\n&quot;);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 ao2_callback(sound_files, OBJ_MULTIPLE | OBJ_NODATA, show_sounds_cb, a);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 return CLI_SUCCESS;</span>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     217 </span>            : }
+<a name="218"><span class="lineNum">     218 </span>            : </a>
+<span class="lineNum">     219 </span>            : /*! \brief Show details about a sound available in the system */
+<span class="lineNum">     220 </span><span class="lineCov">       1124 : static char *handle_cli_sound_show(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     221 </span>            : {
+<span class="lineNum">     222 </span>            :         int length;
+<span class="lineNum">     223 </span>            :         struct ao2_iterator it_sounds;
+<span class="lineNum">     224 </span>            :         char *filename;
+<span class="lineNum">     225 </span>            :         struct ao2_container *sound_files;
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     228 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     229 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show sound&quot;;</span>
+<span class="lineNum">     230 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     231 </span>            :                         &quot;Usage: core show sound [soundid]\n&quot;
+<span class="lineNum">     232 </span>            :                         &quot;       Shows information about the specified sound.\n&quot;;
+<span class="lineNum">     233 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 if (a-&gt;pos != 3) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     237 </span>            :                 }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 sound_files = ast_media_get_media(sounds_index);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 if (!sound_files) {</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     242 </span>            :                 }
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 length = strlen(a-&gt;word);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 it_sounds = ao2_iterator_init(sound_files, 0);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 while ((filename = ao2_iterator_next(&amp;it_sounds))) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                         if (!strncasecmp(a-&gt;word, filename, length)) {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                                 if (ast_cli_completion_add(ast_strdup(filename))) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                                         ao2_ref(filename, -1);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     251 </span>            :                                 }
+<span class="lineNum">     252 </span>            :                         }
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ao2_ref(filename, -1);</span>
+<span class="lineNum">     254 </span>            :                 }
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 ao2_iterator_destroy(&amp;it_sounds);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 ao2_ref(sound_files, -1);</span>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     259 </span>            :         }
+<a name="260"><span class="lineNum">     260 </span>            : </a>
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :         if (a-&gt;argc == 4) {</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 RAII_VAR(struct ao2_container *, variants, ast_media_get_variants(sounds_index, a-&gt;argv[3]), ao2_cleanup);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                 if (!variants || !ao2_container_count(variants)) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;ERROR: File %s not found in index\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         return CLI_FAILURE;</span>
+<span class="lineNum">     266 </span>            :                 }
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Indexed Information for %s:\n&quot;, a-&gt;argv[3]);</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 ao2_callback(variants, OBJ_MULTIPLE | OBJ_NODATA, show_sound_info_cb, a);</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 return CLI_SUCCESS;</span>
+<span class="lineNum">     271 </span>            :         }
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :         return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     274 </span>            : }
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : /*! \brief Struct for registering CLI commands */
+<span class="lineNum">     277 </span>            : static struct ast_cli_entry cli_sounds[] = {
+<span class="lineNum">     278 </span>            :         AST_CLI_DEFINE(handle_cli_sounds_show, &quot;Shows available sounds&quot;),
+<span class="lineNum">     279 </span>            :         AST_CLI_DEFINE(handle_cli_sound_show, &quot;Shows details about a specific sound&quot;),
+<a name="280"><span class="lineNum">     280 </span>            : };</a>
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">       1122 : static int unload_module(void)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineCov">       1122 :         stasis_message_router_unsubscribe_and_join(sounds_system_router);</span>
+<span class="lineNum">     285 </span><span class="lineCov">       1122 :         sounds_system_router = NULL;</span>
+<span class="lineNum">     286 </span><span class="lineCov">       1122 :         ast_cli_unregister_multiple(cli_sounds, ARRAY_LEN(cli_sounds));</span>
+<span class="lineNum">     287 </span><span class="lineCov">       1122 :         ao2_cleanup(sounds_index);</span>
+<span class="lineNum">     288 </span><span class="lineCov">       1122 :         sounds_index = NULL;</span>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">       1122 :         return 0;</span>
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineCov">      39235 : static void format_update_cb(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     294 </span>            :         struct stasis_message *message)
+<span class="lineNum">     295 </span>            : {
+<span class="lineNum">     296 </span>            :         /* Reindexing during shutdown is pointless. */
+<span class="lineNum">     297 </span><span class="lineCov">      39235 :         if (!ast_shutting_down()) {</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 reload_module();</span>
+<span class="lineNum">     299 </span>            :         }
+<a name="300"><span class="lineNum">     300 </span><span class="lineCov">      39235 : }</span></a>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">       1124 : static int load_module(void)</span>
+<span class="lineNum">     303 </span>            : {
+<span class="lineNum">     304 </span><span class="lineCov">       1124 :         int res = 0;</span>
+<span class="lineNum">     305 </span><span class="lineCov">       1124 :         if (reload_module()) {</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span><span class="lineCov">       1124 :         res |= ast_cli_register_multiple(cli_sounds, ARRAY_LEN(cli_sounds));</span>
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineCov">       1124 :         sounds_system_router = stasis_message_router_create(ast_system_topic());</span>
+<span class="lineNum">     311 </span><span class="lineCov">       1124 :         if (!sounds_system_router) {</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">     313 </span>            :         }
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineCov">       1124 :         if (ast_format_register_type()) {</span>
+<span class="lineNum">     316 </span><span class="lineCov">       1124 :                 res |= stasis_message_router_add(</span>
+<span class="lineNum">     317 </span>            :                         sounds_system_router,
+<span class="lineNum">     318 </span>            :                         ast_format_register_type(),
+<span class="lineNum">     319 </span>            :                         format_update_cb,
+<span class="lineNum">     320 </span>            :                         NULL);
+<span class="lineNum">     321 </span>            :         }
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineCov">       1124 :         if (ast_format_unregister_type()) {</span>
+<span class="lineNum">     324 </span><span class="lineCov">       1124 :                 res |= stasis_message_router_add(</span>
+<span class="lineNum">     325 </span>            :                         sounds_system_router,
+<span class="lineNum">     326 </span>            :                         ast_format_unregister_type(),
+<span class="lineNum">     327 </span>            :                         format_update_cb,
+<span class="lineNum">     328 </span>            :                         NULL);
+<span class="lineNum">     329 </span>            :         }
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">       1124 :         return res ? AST_MODULE_LOAD_FAILURE : AST_MODULE_LOAD_SUCCESS;</span>
+<a name="332"><span class="lineNum">     332 </span>            : }</a>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 : struct ast_media_index *ast_sounds_get_index(void)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         return ao2_bump(sounds_index);</span>
+<a name="337"><span class="lineNum">     337 </span>            : }</a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineCov">      10276 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS | AST_MODFLAG_LOAD_ORDER, &quot;Sounds Index&quot;,</span>
+<span class="lineNum">     340 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     341 </span>            :         .load = load_module,
+<span class="lineNum">     342 </span>            :         .unload = unload_module,
+<span class="lineNum">     343 </span>            :         .reload = reload_module,
+<span class="lineNum">     344 </span>            :         /* Load after the format modules to reduce processing during startup. */
+<span class="lineNum">     345 </span>            :         .load_pri = AST_MODPRI_APP_DEPEND + 1,
+<span class="lineNum">     346 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

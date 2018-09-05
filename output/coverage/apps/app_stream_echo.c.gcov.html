@@ -1,0 +1,429 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - apps/app_stream_echo.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_stream_echo.c<span style="font-size: 80%;"> (source / <a href="app_stream_echo.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">61</td>
+            <td class="headerCovTableEntry">108</td>
+            <td class="headerCovTableEntryLo">56.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryMed">80.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2017, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Kevin Harwell &lt;kharwell@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stream echo application
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Kevin Harwell &lt;kharwell@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/conversions.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/stream.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      40 </span>            :         &lt;application name=&quot;StreamEcho&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      41 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      42 </span>            :                         Echo media, up to 'N' streams of a type, and DTMF back to the calling party
+<span class="lineNum">      43 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      44 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      45 </span>            :                 &lt;parameter name=&quot;num&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      46 </span>            :                         &lt;para&gt;The number of streams of a type to echo back. If '0' is specified then
+<span class="lineNum">      47 </span>            :                         all streams of a type are removed.&lt;/para&gt;
+<span class="lineNum">      48 </span>            :                 &lt;/parameter&gt;
+<span class="lineNum">      49 </span>            :                 &lt;parameter name=&quot;type&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      50 </span>            :                         &lt;para&gt;The media type of the stream(s) to add or remove (in the case of &quot;num&quot;
+<span class="lineNum">      51 </span>            :                         being '0'). This can be set to either &quot;audio&quot; or &quot;video&quot; (default). If &quot;num&quot;
+<span class="lineNum">      52 </span>            :                         is empty (i.e. not specified) then this parameter is ignored.&lt;/para&gt;
+<span class="lineNum">      53 </span>            :                 &lt;/parameter&gt;
+<span class="lineNum">      54 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      55 </span>            :                 &lt;description&gt;
+<span class="lineNum">      56 </span>            :                         &lt;para&gt;If a &quot;num&quot; (the number of streams) is not given then this simply echos
+<span class="lineNum">      57 </span>            :                         back any media or DTMF frames (note, however if '#' is detected then the
+<span class="lineNum">      58 </span>            :                         application exits) read from the calling channel back to itself. This means
+<span class="lineNum">      59 </span>            :                         for any relevant frame read from a particular stream it is written back out
+<span class="lineNum">      60 </span>            :                         to the associated write stream in a one to one fashion.
+<span class="lineNum">      61 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      62 </span>            :                         &lt;para&gt;However if a &quot;num&quot; is specified, and if the calling channel allows it
+<span class="lineNum">      63 </span>            :                         (a new offer is made requesting the allowance of additional streams) then any
+<span class="lineNum">      64 </span>            :                         any media received, like before, is echoed back onto each stream. However, in
+<span class="lineNum">      65 </span>            :                         this case a relevant frame received on a stream of the given &quot;type&quot; is also
+<span class="lineNum">      66 </span>            :                         echoed back out to the other streams of that same type. It should be noted that
+<span class="lineNum">      67 </span>            :                         when operating in this mode only the first stream found of the given &quot;type&quot; is
+<span class="lineNum">      68 </span>            :                         allowed from the original offer. And this first stream found is also the only
+<span class="lineNum">      69 </span>            :                         stream of that &quot;type&quot; granted read (send/receive) capabilities in the new offer
+<span class="lineNum">      70 </span>            :                         whereas the additional ones are set to receive only.&lt;/para&gt;
+<span class="lineNum">      71 </span>            :                         &lt;note&gt;&lt;para&gt;This does not echo CONTROL, MODEM, or NULL frames.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">      72 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      73 </span>            :         &lt;/application&gt;
+<span class="lineNum">      74 </span>            :  ***/
+<span class="lineNum">      75 </span>            : 
+<a name="76"><span class="lineNum">      76 </span>            : static const char app[] = &quot;StreamEcho&quot;;</a>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 : static int stream_echo_write_error(struct ast_channel *chan, struct ast_frame *frame, int pos)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span>            :         char frame_type[32];
+<span class="lineNum">      81 </span>            :         const char *media_type;
+<span class="lineNum">      82 </span>            :         struct ast_stream *stream;
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         ast_frame_type2str(frame-&gt;frametype, frame_type, sizeof(frame_type));</span>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         stream = pos &lt; 0 ?</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 ast_channel_get_default_stream(chan, ast_format_get_type(frame-&gt;subclass.format)) :</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 ast_stream_topology_get_stream(ast_channel_get_stream_topology(chan), pos);</span>
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         media_type = ast_codec_media_type2str(ast_stream_get_type(stream));</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         ast_log(LOG_ERROR, &quot;%s - unable to write frame type '%s' to stream type '%s' at &quot;</span>
+<span class="lineNum">      93 </span>            :                 &quot;position '%d'\n&quot;, ast_channel_name(chan), frame_type, media_type,
+<span class="lineNum">      94 </span>            :                 ast_stream_get_position(stream));
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="97"><span class="lineNum">      97 </span>            : }</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 : static int stream_echo_write(struct ast_channel *chan, struct ast_frame *frame,</span>
+<span class="lineNum">     100 </span>            :         enum ast_media_type type, int one_to_one)
+<span class="lineNum">     101 </span>            : {
+<span class="lineNum">     102 </span>            :         int i;
+<span class="lineNum">     103 </span>            :         int num;
+<span class="lineNum">     104 </span>            :         struct ast_stream_topology *topology;
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            :         /*
+<span class="lineNum">     107 </span>            :          * Since this is an echo application if we get a frame in on a stream
+<span class="lineNum">     108 </span>            :          * we simply want to echo it back out onto the same stream number.
+<span class="lineNum">     109 </span>            :          */
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         num = ast_channel_is_multistream(chan) ? frame-&gt;stream_num : -1;</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :         if (ast_write_stream(chan, num, frame)) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 return stream_echo_write_error(chan, frame, num);</span>
+<span class="lineNum">     113 </span>            :         }
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            :         /*
+<span class="lineNum">     116 </span>            :          * If the frame's type and given type don't match, or we are operating in
+<span class="lineNum">     117 </span>            :          * a one to one stream echo mode then there is nothing left to do.
+<span class="lineNum">     118 </span>            :          *
+<span class="lineNum">     119 </span>            :          * Note, if the channel is not multi-stream capable then one_to_one will
+<span class="lineNum">     120 </span>            :          * always be true, so it is safe to also not check for that here too.
+<span class="lineNum">     121 </span>            :          */
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         if (one_to_one || !frame-&gt;subclass.format ||</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :             ast_format_get_type(frame-&gt;subclass.format) != type) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     125 </span>            :         }
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            :         /*
+<span class="lineNum">     128 </span>            :          * However, if we are operating in a single stream echoed to many stream
+<span class="lineNum">     129 </span>            :          * mode, and the frame's type matches the given type then we also need to
+<span class="lineNum">     130 </span>            :          * find the other streams of the same type and write out to those streams
+<span class="lineNum">     131 </span>            :          * as well.
+<span class="lineNum">     132 </span>            :          *
+<span class="lineNum">     133 </span>            :          * If we are here, then it's accepted that whatever stream number the frame
+<span class="lineNum">     134 </span>            :          * was read from for the given type is the only one set to send/receive,
+<span class="lineNum">     135 </span>            :          * while the others of the same type are set to receive only. Since we
+<span class="lineNum">     136 </span>            :          * shouldn't assume any order to the streams, we'll loop back through all
+<span class="lineNum">     137 </span>            :          * streams in the channel's topology writing only to those of the same type.
+<span class="lineNum">     138 </span>            :          * And, of course also not the stream which has already been written to.
+<span class="lineNum">     139 </span>            :          */
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         topology = ast_channel_get_stream_topology(chan);</span>
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; ast_stream_topology_get_count(topology); ++i) {</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 struct ast_stream *stream = ast_stream_topology_get_stream(topology, i);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 if (num != i &amp;&amp; ast_stream_get_type(stream) == type) {</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :                         if (ast_write_stream(chan, i, frame)) {</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                                 return stream_echo_write_error(chan, frame, i);</span>
+<span class="lineNum">     147 </span>            :                         }
+<span class="lineNum">     148 </span>            :                 }
+<span class="lineNum">     149 </span>            :         }
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="152"><span class="lineNum">     152 </span>            : }</a>
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">          4 : static int stream_echo_perform(struct ast_channel *chan,</span>
+<span class="lineNum">     155 </span>            :         struct ast_stream_topology *topology, enum ast_media_type type)
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span><span class="lineCov">          4 :         int update_sent = 0;</span>
+<span class="lineNum">     158 </span><span class="lineCov">          4 :         int request_change = topology != NULL;</span>
+<span class="lineNum">     159 </span><span class="lineCov">          4 :         int one_to_one = 1;</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">         28 :         while (ast_waitfor(chan, -1) &gt; -1) {</span>
+<span class="lineNum">     162 </span>            :                 struct ast_frame *f;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">         28 :                 if (request_change) {</span>
+<span class="lineNum">     165 </span>            :                         /* Request a change to the new topology */
+<span class="lineNum">     166 </span><span class="lineCov">          4 :                         if (ast_channel_request_stream_topology_change(chan, topology, NULL)) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Request stream topology change not supported &quot;</span>
+<span class="lineNum">     168 </span>            :                                         &quot;by channel '%s'\n&quot;, ast_channel_name(chan));
+<span class="lineNum">     169 </span>            :                         }
+<span class="lineNum">     170 </span><span class="lineCov">          4 :                         request_change = 0;</span>
+<span class="lineNum">     171 </span>            :                 }
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span><span class="lineCov">         28 :                 f = ast_read_stream(chan);</span>
+<span class="lineNum">     174 </span><span class="lineCov">         28 :                 if (!f) {</span>
+<span class="lineNum">     175 </span><span class="lineCov">          4 :                         return -1;</span>
+<span class="lineNum">     176 </span>            :                 }
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">         24 :                 if ((f-&gt;frametype == AST_FRAME_DTMF) &amp;&amp; (f-&gt;subclass.integer == '#')) {</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                         ast_frfree(f);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     181 </span>            :                 }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">         24 :                 f-&gt;delivery.tv_sec = 0;</span>
+<span class="lineNum">     184 </span><span class="lineCov">         24 :                 f-&gt;delivery.tv_usec = 0;</span>
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">         24 :                 if (f-&gt;frametype == AST_FRAME_CONTROL) {</span>
+<span class="lineNum">     187 </span><span class="lineCov">         16 :                         if (f-&gt;subclass.integer == AST_CONTROL_VIDUPDATE &amp;&amp; !update_sent) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                                 if (stream_echo_write(chan, f, type, one_to_one)) {</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                                         ast_frfree(f);</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     191 </span>            :                                 }
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                                 update_sent = 1;</span>
+<span class="lineNum">     193 </span><span class="lineCov">         16 :                         } else if (f-&gt;subclass.integer == AST_CONTROL_SRCCHANGE) {</span>
+<span class="lineNum">     194 </span><span class="lineCov">          4 :                                 update_sent = 0;</span>
+<span class="lineNum">     195 </span><span class="lineCov">         12 :                         } else if (f-&gt;subclass.integer == AST_CONTROL_STREAM_TOPOLOGY_CHANGED) {</span>
+<span class="lineNum">     196 </span><span class="lineCov">          4 :                                 update_sent = 0;</span>
+<span class="lineNum">     197 </span><span class="lineCov">          4 :                                 one_to_one = 0; /* Switch writing to one to many */</span>
+<span class="lineNum">     198 </span>            :                         }
+<span class="lineNum">     199 </span><span class="lineCov">          8 :                 } else if (f-&gt;frametype == AST_FRAME_VIDEO &amp;&amp; !update_sent){</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                         struct ast_frame frame = {</span>
+<span class="lineNum">     201 </span>            :                                 .frametype = AST_FRAME_CONTROL,
+<span class="lineNum">     202 </span>            :                                 .subclass.integer = AST_CONTROL_VIDUPDATE,
+<span class="lineNum">     203 </span>            :                         };
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         stream_echo_write(chan, &amp;frame, type, one_to_one);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                         update_sent = 1;</span>
+<span class="lineNum">     206 </span>            :                 }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">         24 :                 if (f-&gt;frametype != AST_FRAME_CONTROL &amp;&amp;</span>
+<span class="lineNum">     209 </span><span class="lineCov">          8 :                     f-&gt;frametype != AST_FRAME_MODEM &amp;&amp;</span>
+<span class="lineNum">     210 </span><span class="lineCov">          8 :                     f-&gt;frametype != AST_FRAME_NULL &amp;&amp;</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                     stream_echo_write(chan, f, type, one_to_one)) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                         ast_frfree(f);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     214 </span>            :                 }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">         24 :                 ast_frfree(f);</span>
+<span class="lineNum">     217 </span>            :         }
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span><span class="lineCov">          4 : static struct ast_stream_topology *stream_echo_topology_alloc(</span>
+<span class="lineNum">     223 </span>            :         struct ast_stream_topology *original, unsigned int num, enum ast_media_type type)
+<span class="lineNum">     224 </span>            : {
+<span class="lineNum">     225 </span><span class="lineCov">          4 :         int i, n = num;</span>
+<span class="lineNum">     226 </span><span class="lineCov">          4 :         struct ast_stream_topology *res = ast_stream_topology_alloc();</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">          4 :         if (!res) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            :         /*
+<span class="lineNum">     233 </span>            :          * Clone every stream of a type not matching the given one. If the type
+<span class="lineNum">     234 </span>            :          * matches clone only the first stream found for the given type. Then for
+<span class="lineNum">     235 </span>            :          * that stream clone it again up to num - 1 times. Ignore any other streams
+<span class="lineNum">     236 </span>            :          * of the same matched type in the original topology.
+<span class="lineNum">     237 </span>            :          *
+<span class="lineNum">     238 </span>            :          * So for instance if the original stream contains 1 audio stream and 2 video
+<span class="lineNum">     239 </span>            :          * streams (video stream 'A' and video stream 'B'), num is '3', and the given
+<span class="lineNum">     240 </span>            :          * type is 'video' then the resulting topology will contain a clone of the
+<span class="lineNum">     241 </span>            :          * audio stream along with 3 clones of video stream 'A'. Video stream 'B' is
+<span class="lineNum">     242 </span>            :          * not copied over.
+<span class="lineNum">     243 </span>            :          */
+<span class="lineNum">     244 </span><span class="lineCov">         12 :         for (i = 0; i &lt; ast_stream_topology_get_count(original); ++i) {</span>
+<span class="lineNum">     245 </span><span class="lineCov">          8 :                 struct ast_stream *stream = ast_stream_topology_get_stream(original, i);</span>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">          8 :                 if (!n &amp;&amp; ast_stream_get_type(stream) == type) {</span>
+<span class="lineNum">     248 </span>            :                         /* Don't copy any[more] of the given type */
+<span class="lineNum">     249 </span><span class="lineCov">          4 :                         continue;</span>
+<span class="lineNum">     250 </span>            :                 }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">          4 :                 if (ast_stream_get_state(stream) == AST_STREAM_STATE_REMOVED) {</span>
+<span class="lineNum">     253 </span>            :                         /* Don't copy removed/declined streams */
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     255 </span>            :                 }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span>            :                 do {
+<span class="lineNum">     258 </span><span class="lineCov">          8 :                         stream = ast_stream_clone(stream, NULL);</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">          8 :                         if (!stream || ast_stream_topology_append_stream(res, stream) &lt; 0) {</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :                                 ast_stream_free(stream);</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                                 ast_stream_topology_free(res);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">     264 </span>            :                         }
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">          8 :                         if (ast_stream_get_type(stream) != type) {</span>
+<span class="lineNum">     267 </span>            :                                 /* Do not multiply non matching streams */
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     269 </span>            :                         }
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            :                         /*
+<span class="lineNum">     272 </span>            :                          * Since num is not zero yet (i.e. this is first stream found to
+<span class="lineNum">     273 </span>            :                          * match on the type) and the types match then loop num - 1 times
+<span class="lineNum">     274 </span>            :                          * cloning the same stream.
+<span class="lineNum">     275 </span>            :                          */
+<span class="lineNum">     276 </span><span class="lineCov">          8 :                         ast_stream_set_state(stream, n == num ?</span>
+<span class="lineNum">     277 </span>            :                              AST_STREAM_STATE_SENDRECV : AST_STREAM_STATE_RECVONLY);
+<span class="lineNum">     278 </span><span class="lineCov">          8 :                 } while (--n);</span>
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">          4 :         return res;</span>
+<a name="282"><span class="lineNum">     282 </span>            : }</a>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineCov">          4 : static int stream_echo_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     285 </span>            : {
+<span class="lineNum">     286 </span>            :         int res;
+<span class="lineNum">     287 </span><span class="lineCov">          4 :         unsigned int num = 0;</span>
+<span class="lineNum">     288 </span>            :         enum ast_media_type type;
+<span class="lineNum">     289 </span>            :         char *parse;
+<span class="lineNum">     290 </span>            :         struct ast_stream_topology *topology;
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          4 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     293 </span>            :                 AST_APP_ARG(num);
+<span class="lineNum">     294 </span>            :                 AST_APP_ARG(type);
+<span class="lineNum">     295 </span>            :         );
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">          4 :         parse = ast_strdupa(data);</span>
+<span class="lineNum">     298 </span><span class="lineCov">          4 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">          4 :         if (ast_strlen_zero(args.num)) {</span>
+<span class="lineNum">     301 </span>            :                 /*
+<span class="lineNum">     302 </span>            :                  * If a number is not given then no topology is to be created
+<span class="lineNum">     303 </span>            :                  * and renegotiated. The app will just echo back each stream
+<span class="lineNum">     304 </span>            :                  * received to itself.
+<span class="lineNum">     305 </span>            :                  */
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 return stream_echo_perform(chan, NULL, AST_MEDIA_TYPE_UNKNOWN);</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">          4 :         if (ast_str_to_uint(args.num, &amp;num)) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to parse the first parameter '%s' into a&quot;</span>
+<span class="lineNum">     311 </span>            :                         &quot; greater than or equal to zero\n&quot;, args.num);
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     313 </span>            :         }
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineCov">          4 :         type = ast_strlen_zero(args.type) ? AST_MEDIA_TYPE_VIDEO :</span>
+<span class="lineNum">     316 </span><span class="lineCov">          4 :                 ast_media_type_from_str(args.type);</span>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">          4 :         topology = stream_echo_topology_alloc(</span>
+<span class="lineNum">     319 </span>            :                 ast_channel_get_stream_topology(chan), num, type);
+<span class="lineNum">     320 </span><span class="lineCov">          4 :         if (!topology) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to create '%u' streams of type '%s' to&quot;</span>
+<span class="lineNum">     322 </span>            :                         &quot; the topology\n&quot;, num, ast_codec_media_type2str(type));
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineCov">          4 :         res = stream_echo_perform(chan, topology, type);</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineCov">          4 :         if (ast_channel_get_stream_topology(chan) != topology) {</span>
+<span class="lineNum">     329 </span><span class="lineCov">          4 :                 ast_stream_topology_free(topology);</span>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">          4 :         return res;</span>
+<a name="333"><span class="lineNum">     333 </span>            : }</a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     336 </span>            : {
+<span class="lineNum">     337 </span><span class="lineCov">       1115 :         return ast_unregister_application(app);</span>
+<a name="338"><span class="lineNum">     338 </span>            : }</a>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     341 </span>            : {
+<span class="lineNum">     342 </span><span class="lineCov">       1117 :         return ast_register_application_xml(app, stream_echo_exec);</span>
+<a name="343"><span class="lineNum">     343 </span>            : }</a>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Stream Echo Application&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

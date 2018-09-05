@@ -1,0 +1,418 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - apps/app_originate.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_originate.c<span style="font-size: 80%;"> (source / <a href="app_originate.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">62</td>
+            <td class="headerCovTableEntry">105</td>
+            <td class="headerCovTableEntryLo">59.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2008, Roberto Casas.
+<span class="lineNum">       5 </span>            :  * Copyright (C) 2008, Digium, Inc.
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * Roberto Casas &lt;roberto.casas@diaple.com&gt;
+<span class="lineNum">       8 </span>            :  * Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">       9 </span>            :  *
+<span class="lineNum">      10 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      11 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      12 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      13 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      14 </span>            :  * channels for your use.
+<span class="lineNum">      15 </span>            :  *
+<span class="lineNum">      16 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      17 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      18 </span>            :  * at the top of the source tree.
+<span class="lineNum">      19 </span>            :  */
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : /*!
+<span class="lineNum">      22 </span>            :  * \file
+<span class="lineNum">      23 </span>            :  * \brief Originate application
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \author Roberto Casas &lt;roberto.casas@diaple.com&gt;
+<span class="lineNum">      26 </span>            :  * \author Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">      27 </span>            :  *
+<span class="lineNum">      28 </span>            :  * \ingroup applications
+<span class="lineNum">      29 </span>            :  *
+<span class="lineNum">      30 </span>            :  * \todo Make a way to be able to set variables (and functions) on the outbound
+<span class="lineNum">      31 </span>            :  *       channel, similar to the Variable headers for the AMI Originate, and the
+<span class="lineNum">      32 </span>            :  *       Set options for call files.
+<span class="lineNum">      33 </span>            :  */
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : /*** MODULEINFO
+<span class="lineNum">      36 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      37 </span>            :  ***/
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : static const char app_originate[] = &quot;Originate&quot;;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      51 </span>            :         &lt;application name=&quot;Originate&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      52 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      53 </span>            :                         Originate a call.
+<span class="lineNum">      54 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      55 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      56 </span>            :                         &lt;parameter name=&quot;tech_data&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      57 </span>            :                                 &lt;para&gt;Channel technology and data for creating the outbound channel.
+<span class="lineNum">      58 </span>            :                       For example, SIP/1234.&lt;/para&gt;
+<span class="lineNum">      59 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      60 </span>            :                         &lt;parameter name=&quot;type&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      61 </span>            :                                 &lt;para&gt;This should be &lt;literal&gt;app&lt;/literal&gt; or &lt;literal&gt;exten&lt;/literal&gt;, depending on whether the outbound channel should be connected to an application or extension.&lt;/para&gt;
+<span class="lineNum">      62 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      63 </span>            :                         &lt;parameter name=&quot;arg1&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      64 </span>            :                                 &lt;para&gt;If the type is &lt;literal&gt;app&lt;/literal&gt;, then this is the application name.  If the type is &lt;literal&gt;exten&lt;/literal&gt;, then this is the context that the channel will be sent to.&lt;/para&gt;
+<span class="lineNum">      65 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      66 </span>            :                         &lt;parameter name=&quot;arg2&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      67 </span>            :                                 &lt;para&gt;If the type is &lt;literal&gt;app&lt;/literal&gt;, then this is the data passed as arguments to the application.  If the type is &lt;literal&gt;exten&lt;/literal&gt;, then this is the extension that the channel will be sent to.&lt;/para&gt;
+<span class="lineNum">      68 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      69 </span>            :                         &lt;parameter name=&quot;arg3&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      70 </span>            :                                 &lt;para&gt;If the type is &lt;literal&gt;exten&lt;/literal&gt;, then this is the priority that the channel is sent to.  If the type is &lt;literal&gt;app&lt;/literal&gt;, then this parameter is ignored.&lt;/para&gt;
+<span class="lineNum">      71 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      72 </span>            :                         &lt;parameter name=&quot;timeout&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;para&gt;Timeout in seconds. Default is 30 seconds.&lt;/para&gt;
+<span class="lineNum">      74 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      75 </span>            :                         &lt;parameter name=&quot;options&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">      76 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      77 </span>            :                                 &lt;option name=&quot;a&quot;&gt;
+<span class="lineNum">      78 </span>            :                                         &lt;para&gt;Originate asynchronously.  In other words, continue in the dialplan
+<span class="lineNum">      79 </span>            :                                         without waiting for the originated channel to answer.&lt;/para&gt;
+<span class="lineNum">      80 </span>            :                                 &lt;/option&gt;
+<span class="lineNum">      81 </span>            :                                 &lt;option name=&quot;b&quot; argsep=&quot;^&quot;&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;para&gt;Before originating the outgoing call, Gosub to the specified
+<span class="lineNum">      83 </span>            :                                         location using the newly created channel.&lt;/para&gt;
+<span class="lineNum">      84 </span>            :                                         &lt;argument name=&quot;context&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      85 </span>            :                                         &lt;argument name=&quot;exten&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      86 </span>            :                                         &lt;argument name=&quot;priority&quot; required=&quot;true&quot; hasparams=&quot;optional&quot; argsep=&quot;^&quot;&gt;
+<span class="lineNum">      87 </span>            :                                                 &lt;argument name=&quot;arg1&quot; multiple=&quot;true&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      88 </span>            :                                                 &lt;argument name=&quot;argN&quot; /&gt;
+<span class="lineNum">      89 </span>            :                                         &lt;/argument&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;/option&gt;
+<span class="lineNum">      91 </span>            :                                 &lt;option name=&quot;B&quot; argsep=&quot;^&quot;&gt;
+<span class="lineNum">      92 </span>            :                                         &lt;para&gt;Before originating the outgoing call, Gosub to the specified
+<span class="lineNum">      93 </span>            :                                         location using the current channel.&lt;/para&gt;
+<span class="lineNum">      94 </span>            :                                         &lt;argument name=&quot;context&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      95 </span>            :                                         &lt;argument name=&quot;exten&quot; required=&quot;false&quot; /&gt;
+<span class="lineNum">      96 </span>            :                                         &lt;argument name=&quot;priority&quot; required=&quot;true&quot; hasparams=&quot;optional&quot; argsep=&quot;^&quot;&gt;
+<span class="lineNum">      97 </span>            :                                                 &lt;argument name=&quot;arg1&quot; multiple=&quot;true&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      98 </span>            :                                                 &lt;argument name=&quot;argN&quot; /&gt;
+<span class="lineNum">      99 </span>            :                                         &lt;/argument&gt;
+<span class="lineNum">     100 </span>            :                                 &lt;/option&gt;
+<span class="lineNum">     101 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">     102 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     103 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     104 </span>            :                 &lt;description&gt;
+<span class="lineNum">     105 </span>            :                 &lt;para&gt;This application originates an outbound call and connects it to a specified extension or application.  This application will block until the outgoing call fails or gets answered.  At that point, this application will exit with the status variable set and dialplan processing will continue.&lt;/para&gt;
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            :                 &lt;para&gt;This application sets the following channel variable before exiting:&lt;/para&gt;
+<span class="lineNum">     108 </span>            :                 &lt;variablelist&gt;
+<span class="lineNum">     109 </span>            :                         &lt;variable name=&quot;ORIGINATE_STATUS&quot;&gt;
+<span class="lineNum">     110 </span>            :                                 &lt;para&gt;This indicates the result of the call origination.&lt;/para&gt;
+<span class="lineNum">     111 </span>            :                                 &lt;value name=&quot;FAILED&quot;/&gt;
+<span class="lineNum">     112 </span>            :                                 &lt;value name=&quot;SUCCESS&quot;/&gt;
+<span class="lineNum">     113 </span>            :                                 &lt;value name=&quot;BUSY&quot;/&gt;
+<span class="lineNum">     114 </span>            :                                 &lt;value name=&quot;CONGESTION&quot;/&gt;
+<span class="lineNum">     115 </span>            :                                 &lt;value name=&quot;HANGUP&quot;/&gt;
+<span class="lineNum">     116 </span>            :                                 &lt;value name=&quot;RINGING&quot;/&gt;
+<span class="lineNum">     117 </span>            :                                 &lt;value name=&quot;UNKNOWN&quot;&gt;
+<span class="lineNum">     118 </span>            :                                 In practice, you should never see this value.  Please report it to the issue tracker if you ever see it.
+<span class="lineNum">     119 </span>            :                                 &lt;/value&gt;
+<span class="lineNum">     120 </span>            :                         &lt;/variable&gt;
+<span class="lineNum">     121 </span>            :                 &lt;/variablelist&gt;
+<span class="lineNum">     122 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     123 </span>            :         &lt;/application&gt;
+<span class="lineNum">     124 </span>            :  ***/
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : enum {
+<span class="lineNum">     128 </span>            :         OPT_PREDIAL_CALLEE =    (1 &lt;&lt; 0),
+<span class="lineNum">     129 </span>            :         OPT_PREDIAL_CALLER =    (1 &lt;&lt; 1),
+<span class="lineNum">     130 </span>            :         OPT_ASYNC =             (1 &lt;&lt; 2),
+<span class="lineNum">     131 </span>            : };
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            : enum {
+<span class="lineNum">     134 </span>            :         OPT_ARG_PREDIAL_CALLEE,
+<span class="lineNum">     135 </span>            :         OPT_ARG_PREDIAL_CALLER,
+<span class="lineNum">     136 </span>            :         /* note: this entry _MUST_ be the last one in the enum */
+<span class="lineNum">     137 </span>            :         OPT_ARG_ARRAY_SIZE,
+<span class="lineNum">     138 </span>            : };
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            : AST_APP_OPTIONS(originate_exec_options, BEGIN_OPTIONS
+<span class="lineNum">     141 </span>            :         AST_APP_OPTION('a', OPT_ASYNC),
+<span class="lineNum">     142 </span>            :         AST_APP_OPTION_ARG('b', OPT_PREDIAL_CALLEE, OPT_ARG_PREDIAL_CALLEE),
+<span class="lineNum">     143 </span>            :         AST_APP_OPTION_ARG('B', OPT_PREDIAL_CALLER, OPT_ARG_PREDIAL_CALLER),
+<span class="lineNum">     144 </span>            : END_OPTIONS );
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">          2 : static int originate_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     148 </span>            : {
+<span class="lineNum">     149 </span><span class="lineCov">          2 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     150 </span>            :                 AST_APP_ARG(tech_data);
+<span class="lineNum">     151 </span>            :                 AST_APP_ARG(type);
+<span class="lineNum">     152 </span>            :                 AST_APP_ARG(arg1);
+<span class="lineNum">     153 </span>            :                 AST_APP_ARG(arg2);
+<span class="lineNum">     154 </span>            :                 AST_APP_ARG(arg3);
+<span class="lineNum">     155 </span>            :                 AST_APP_ARG(timeout);
+<span class="lineNum">     156 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     157 </span>            :         );
+<span class="lineNum">     158 </span><span class="lineCov">          2 :         struct ast_flags64 opts = { 0, };</span>
+<span class="lineNum">     159 </span>            :         char *opt_args[OPT_ARG_ARRAY_SIZE];
+<span class="lineNum">     160 </span><span class="lineCov">          2 :         char *predial_callee = NULL;</span>
+<span class="lineNum">     161 </span>            :         char *parse;
+<span class="lineNum">     162 </span>            :         char *chantech, *chandata;
+<span class="lineNum">     163 </span><span class="lineCov">          2 :         int res = -1;</span>
+<span class="lineNum">     164 </span><span class="lineCov">          2 :         int continue_in_dialplan = 0;</span>
+<span class="lineNum">     165 </span><span class="lineCov">          2 :         int outgoing_status = 0;</span>
+<span class="lineNum">     166 </span><span class="lineCov">          2 :         unsigned int timeout = 30;</span>
+<span class="lineNum">     167 </span>            :         static const char default_exten[] = &quot;s&quot;;
+<span class="lineNum">     168 </span><span class="lineCov">          2 :         struct ast_format_cap *cap_slin = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">          2 :         ast_autoservice_start(chan);</span>
+<span class="lineNum">     171 </span><span class="lineCov">          2 :         if (!cap_slin) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin, 0);</span>
+<span class="lineNum">     176 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin12, 0);</span>
+<span class="lineNum">     177 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin16, 0);</span>
+<span class="lineNum">     178 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin24, 0);</span>
+<span class="lineNum">     179 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin32, 0);</span>
+<span class="lineNum">     180 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin44, 0);</span>
+<span class="lineNum">     181 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin48, 0);</span>
+<span class="lineNum">     182 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin96, 0);</span>
+<span class="lineNum">     183 </span><span class="lineCov">          2 :         ast_format_cap_append(cap_slin, ast_format_slin192, 0);</span>
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineCov">          2 :         if (ast_strlen_zero(data)) {</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Originate() requires arguments\n&quot;);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     188 </span>            :         }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">          2 :         parse = ast_strdupa(data);</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">          2 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineCov">          2 :         if (args.argc &lt; 3) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Incorrect number of arguments\n&quot;);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">          2 :         if (!ast_strlen_zero(args.timeout)) {</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 if(sscanf(args.timeout, &quot;%u&quot;, &amp;timeout) != 1) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;Invalid timeout: '%s'. Setting timeout to 30 seconds\n&quot;, args.timeout);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                         timeout = 30;</span>
+<span class="lineNum">     203 </span>            :                 }
+<span class="lineNum">     204 </span>            :         }
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">          2 :         chandata = ast_strdupa(args.tech_data);</span>
+<span class="lineNum">     207 </span><span class="lineCov">          2 :         chantech = strsep(&amp;chandata, &quot;/&quot;);</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">          2 :         if (ast_strlen_zero(chandata) || ast_strlen_zero(chantech)) {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Channel Tech/Data invalid: '%s'\n&quot;, args.tech_data);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     212 </span>            :         }
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineCov">          2 :         if (!ast_strlen_zero(args.options) &amp;&amp;</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 ast_app_parse_options64(originate_exec_options, &amp;opts, opt_args, args.options)) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid options: '%s'\n&quot;, args.options);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     218 </span>            :         }
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            :         /* PREDIAL: Run gosub on the caller's channel */
+<span class="lineNum">     221 </span><span class="lineCov">          2 :         if (ast_test_flag64(&amp;opts, OPT_PREDIAL_CALLER)</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 &amp;&amp; !ast_strlen_zero(opt_args[OPT_ARG_PREDIAL_CALLER])) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 ast_replace_subargument_delimiter(opt_args[OPT_ARG_PREDIAL_CALLER]);</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 ast_app_exec_sub(NULL, chan, opt_args[OPT_ARG_PREDIAL_CALLER], 0);</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">          2 :         if (ast_test_flag64(&amp;opts, OPT_PREDIAL_CALLEE)</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                 &amp;&amp; !ast_strlen_zero(opt_args[OPT_ARG_PREDIAL_CALLEE])) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 ast_replace_subargument_delimiter(opt_args[OPT_ARG_PREDIAL_CALLEE]);</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 predial_callee = opt_args[OPT_ARG_PREDIAL_CALLEE];</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">          2 :         if (strcasecmp(args.type, &quot;exten&quot;) &amp;&amp; strcasecmp(args.type, &quot;app&quot;)) {</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Incorrect type, it should be 'exten' or 'app': %s\n&quot;,</span>
+<span class="lineNum">     235 </span>            :                                 args.type);
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     237 </span>            :         }
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">          2 :         if (!strcasecmp(args.type, &quot;exten&quot;)) {</span>
+<span class="lineNum">     240 </span><span class="lineCov">          1 :                 int priority = 1; /* Initialized in case priority not specified */</span>
+<span class="lineNum">     241 </span><span class="lineCov">          1 :                 const char *exten = args.arg2;</span>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">          1 :                 if (args.argc == 5) {</span>
+<span class="lineNum">     244 </span>            :                         /* Context/Exten/Priority all specified */
+<span class="lineNum">     245 </span><span class="lineCov">          1 :                         if (sscanf(args.arg3, &quot;%30d&quot;, &amp;priority) != 1) {</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Invalid priority: '%s'\n&quot;, args.arg3);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                                 goto return_cleanup;</span>
+<span class="lineNum">     248 </span>            :                         }
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 } else if (args.argc == 3) {</span>
+<span class="lineNum">     250 </span>            :                         /* Exten not specified */
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                         exten = default_exten;</span>
+<span class="lineNum">     252 </span>            :                 }
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span><span class="lineCov">          1 :                 ast_debug(1, &quot;Originating call to '%s/%s' and connecting them to extension %s,%s,%d\n&quot;,</span>
+<span class="lineNum">     255 </span>            :                                 chantech, chandata, args.arg1, exten, priority);
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">          2 :                 res = ast_pbx_outgoing_exten_predial(chantech, cap_slin, chandata,</span>
+<span class="lineNum">     258 </span><span class="lineCov">          1 :                                 timeout * 1000, args.arg1, exten, priority, &amp;outgoing_status,</span>
+<span class="lineNum">     259 </span><span class="lineCov">          1 :                                 ast_test_flag64(&amp;opts, OPT_ASYNC) ? AST_OUTGOING_NO_WAIT : AST_OUTGOING_WAIT,</span>
+<span class="lineNum">     260 </span>            :                                 NULL, NULL, NULL, NULL, NULL, 0, NULL,
+<span class="lineNum">     261 </span>            :                                 predial_callee);
+<span class="lineNum">     262 </span>            :         } else {
+<span class="lineNum">     263 </span><span class="lineCov">          1 :                 ast_debug(1, &quot;Originating call to '%s/%s' and connecting them to %s(%s)\n&quot;,</span>
+<span class="lineNum">     264 </span>            :                                 chantech, chandata, args.arg1, S_OR(args.arg2, &quot;&quot;));
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">          2 :                 res = ast_pbx_outgoing_app_predial(chantech, cap_slin, chandata,</span>
+<span class="lineNum">     267 </span><span class="lineCov">          1 :                                 timeout * 1000, args.arg1, args.arg2, &amp;outgoing_status,</span>
+<span class="lineNum">     268 </span><span class="lineCov">          1 :                                 ast_test_flag64(&amp;opts, OPT_ASYNC) ? AST_OUTGOING_NO_WAIT : AST_OUTGOING_WAIT,</span>
+<span class="lineNum">     269 </span>            :                                 NULL, NULL, NULL, NULL, NULL, NULL,
+<span class="lineNum">     270 </span>            :                                 predial_callee);
+<span class="lineNum">     271 </span>            :         }
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span>            :         /*
+<span class="lineNum">     274 </span>            :          * Getting here means that we have passed the various validation checks and
+<span class="lineNum">     275 </span>            :          * have at least attempted the dial. If we have a reason (outgoing_status),
+<span class="lineNum">     276 </span>            :          * we clear our error indicator so that we ultimately report the right thing
+<span class="lineNum">     277 </span>            :          * to the caller.
+<span class="lineNum">     278 </span>            :          */
+<span class="lineNum">     279 </span><span class="lineCov">          2 :         if (res &amp;&amp; outgoing_status) {</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                 res = 0;</span>
+<span class="lineNum">     281 </span>            :         }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            :         /* We need to exit cleanly if we've gotten this far */
+<span class="lineNum">     284 </span><span class="lineCov">          2 :         continue_in_dialplan = 1;</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">          2 : return_cleanup:</span>
+<span class="lineNum">     287 </span><span class="lineCov">          2 :         if (res) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;FAILED&quot;);</span>
+<span class="lineNum">     289 </span>            :         } else {
+<span class="lineNum">     290 </span><span class="lineCov">          2 :                 switch (outgoing_status) {</span>
+<span class="lineNum">     291 </span><span class="lineCov">          2 :                 case 0:</span>
+<span class="lineNum">     292 </span>            :                 case AST_CONTROL_ANSWER:
+<span class="lineNum">     293 </span><span class="lineCov">          2 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;SUCCESS&quot;);</span>
+<span class="lineNum">     294 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_BUSY:</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;BUSY&quot;);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_CONGESTION:</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;CONGESTION&quot;);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_HANGUP:</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;HANGUP&quot;);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_RINGING:</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;RINGING&quot;);</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unknown originate status result of '%d'\n&quot;,</span>
+<span class="lineNum">     309 </span>            :                                         outgoing_status);
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;ORIGINATE_STATUS&quot;, &quot;UNKNOWN&quot;);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     312 </span>            :                 }
+<span class="lineNum">     313 </span>            :         }
+<span class="lineNum">     314 </span><span class="lineCov">          2 :         ao2_cleanup(cap_slin);</span>
+<span class="lineNum">     315 </span><span class="lineCov">          2 :         ast_autoservice_stop(chan);</span>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineCov">          2 :         return continue_in_dialplan ? 0 : -1;</span>
+<a name="318"><span class="lineNum">     318 </span>            : }</a>
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     321 </span>            : {
+<span class="lineNum">     322 </span><span class="lineCov">       1115 :         return ast_unregister_application(app_originate);</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span>            :         int res;
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">       1117 :         res = ast_register_application_xml(app_originate, originate_exec);</span>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">       1117 :         return res ? AST_MODULE_LOAD_DECLINE : AST_MODULE_LOAD_SUCCESS;</span>
+<a name="332"><span class="lineNum">     332 </span>            : }</a>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Originate call&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

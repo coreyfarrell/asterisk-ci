@@ -1,0 +1,630 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/stasis/messaging.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/stasis</a> - messaging.c<span style="font-size: 80%;"> (source / <a href="messaging.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">163</td>
+            <td class="headerCovTableEntry">241</td>
+            <td class="headerCovTableEntryLo">67.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntryHi">90.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2014, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \brief Stasis out-of-call text message support
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \author Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/message.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/endpoints.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/test.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;messaging.h&quot;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : /*!
+<span class="lineNum">      39 </span>            :  * \brief Subscription to all technologies
+<span class="lineNum">      40 </span>            :  */
+<span class="lineNum">      41 </span>            : #define TECH_WILDCARD &quot;__AST_ALL_TECH&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*!
+<span class="lineNum">      44 </span>            :  * \brief Number of buckets for the \ref endpoint_subscriptions container
+<span class="lineNum">      45 </span>            :  */
+<span class="lineNum">      46 </span>            : #define ENDPOINTS_NUM_BUCKETS 127
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : /*! \brief Storage object for an application */
+<span class="lineNum">      49 </span>            : struct application_tuple {
+<span class="lineNum">      50 </span>            :         /*! ao2 ref counted private object to pass to the callback */
+<span class="lineNum">      51 </span>            :         void *pvt;
+<span class="lineNum">      52 </span>            :         /*! The callback to call when this application has a message */
+<span class="lineNum">      53 </span>            :         message_received_cb callback;
+<span class="lineNum">      54 </span>            :         /*! The name (key) of the application */
+<span class="lineNum">      55 </span>            :         char app_name[];
+<span class="lineNum">      56 </span>            : };
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /*! \brief A subscription to some endpoint or technology */
+<span class="lineNum">      59 </span>            : struct message_subscription {
+<span class="lineNum">      60 </span>            :         /*! The applications that have subscribed to this endpoint or tech */
+<span class="lineNum">      61 </span>            :         AST_VECTOR(, struct application_tuple *) applications;
+<span class="lineNum">      62 </span>            :         /*! The name of this endpoint or tech */
+<span class="lineNum">      63 </span>            :         char token[];
+<span class="lineNum">      64 </span>            : };
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : /*! \brief The subscriptions to endpoints */
+<span class="lineNum">      67 </span>            : static struct ao2_container *endpoint_subscriptions;
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : /*!
+<span class="lineNum">      70 </span>            :  * \brief The subscriptions to technologies
+<span class="lineNum">      71 </span>            :  *
+<span class="lineNum">      72 </span>            :  * \note These are stored separately from standard endpoints, given how
+<span class="lineNum">      73 </span>            :  * relatively few of them there are.
+<span class="lineNum">      74 </span>            :  */
+<span class="lineNum">      75 </span>            : static AST_VECTOR(,struct message_subscription *) tech_subscriptions;
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : /*! \brief RWLock for \c tech_subscriptions */
+<span class="lineNum">      78 </span>            : static ast_rwlock_t tech_subscriptions_lock;
+<a name="79"><span class="lineNum">      79 </span>            : </a>
+<span class="lineNum">      80 </span>            : /*! \internal \brief Destructor for \c application_tuple */
+<span class="lineNum">      81 </span><span class="lineCov">          4 : static void application_tuple_dtor(void *obj)</span>
+<span class="lineNum">      82 </span>            : {
+<span class="lineNum">      83 </span><span class="lineCov">          4 :         struct application_tuple *tuple = obj;</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineCov">          4 :         ao2_cleanup(tuple-&gt;pvt);</span>
+<span class="lineNum">      86 </span><span class="lineCov">          4 : }</span>
+<a name="87"><span class="lineNum">      87 </span>            : </a>
+<span class="lineNum">      88 </span>            : /*! \internal \brief Constructor for \c application_tuple */
+<span class="lineNum">      89 </span><span class="lineCov">          8 : static struct application_tuple *application_tuple_alloc(const char *app_name, message_received_cb callback, void *pvt)</span>
+<span class="lineNum">      90 </span>            : {
+<span class="lineNum">      91 </span>            :         struct application_tuple *tuple;
+<span class="lineNum">      92 </span><span class="lineCov">          8 :         size_t size = sizeof(*tuple) + strlen(app_name) + 1;</span>
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">          8 :         ast_assert(callback != NULL);</span>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineCov">          8 :         tuple = ao2_alloc_options(size, application_tuple_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);</span>
+<span class="lineNum">      97 </span><span class="lineCov">          8 :         if (!tuple) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      99 </span>            :         }
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span><span class="lineCov">          8 :         strcpy(tuple-&gt;app_name, app_name); /* Safe */</span>
+<span class="lineNum">     102 </span><span class="lineCov">          8 :         tuple-&gt;pvt = ao2_bump(pvt);</span>
+<span class="lineNum">     103 </span><span class="lineCov">          8 :         tuple-&gt;callback = callback;</span>
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span><span class="lineCov">          8 :         return tuple;</span>
+<span class="lineNum">     106 </span>            : }
+<a name="107"><span class="lineNum">     107 </span>            : </a>
+<span class="lineNum">     108 </span>            : /*! \internal \brief Destructor for \ref message_subscription */
+<span class="lineNum">     109 </span><span class="lineCov">          4 : static void message_subscription_dtor(void *obj)</span>
+<span class="lineNum">     110 </span>            : {
+<span class="lineNum">     111 </span><span class="lineCov">          4 :         struct message_subscription *sub = obj;</span>
+<span class="lineNum">     112 </span>            :         int i;
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span><span class="lineCov">          8 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;sub-&gt;applications); i++) {</span>
+<span class="lineNum">     115 </span><span class="lineCov">          4 :                 struct application_tuple *tuple = AST_VECTOR_GET(&amp;sub-&gt;applications, i);</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">          4 :                 ao2_cleanup(tuple);</span>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span><span class="lineCov">          4 :         AST_VECTOR_FREE(&amp;sub-&gt;applications);</span>
+<span class="lineNum">     120 </span><span class="lineCov">          4 : }</span>
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<span class="lineNum">     122 </span>            : /*! \internal \brief Constructor for \ref message_subscription */
+<span class="lineNum">     123 </span><span class="lineCov">          8 : static struct message_subscription *message_subscription_alloc(const char *token)</span>
+<span class="lineNum">     124 </span>            : {
+<span class="lineNum">     125 </span>            :         struct message_subscription *sub;
+<span class="lineNum">     126 </span><span class="lineCov">          8 :         size_t size = sizeof(*sub) + strlen(token) + 1;</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">          8 :         sub = ao2_alloc_options(size, message_subscription_dtor, AO2_ALLOC_OPT_LOCK_RWLOCK);</span>
+<span class="lineNum">     129 </span><span class="lineCov">          8 :         if (!sub) {</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     131 </span>            :         }
+<span class="lineNum">     132 </span><span class="lineCov">          8 :         strcpy(sub-&gt;token, token); /* Safe */</span>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">          8 :         return sub;</span>
+<span class="lineNum">     135 </span>            : }
+<a name="136"><span class="lineNum">     136 </span>            : </a>
+<span class="lineNum">     137 </span>            : /*! AO2 hash function for \ref message_subscription */
+<span class="lineNum">     138 </span><span class="lineCov">         35 : static int message_subscription_hash_cb(const void *obj, const int flags)</span>
+<span class="lineNum">     139 </span>            : {
+<span class="lineNum">     140 </span>            :         const struct message_subscription *sub;
+<span class="lineNum">     141 </span>            :         const char *key;
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">         35 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     144 </span><span class="lineCov">         31 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     145 </span><span class="lineCov">         31 :                 key = obj;</span>
+<span class="lineNum">     146 </span><span class="lineCov">         31 :                 break;</span>
+<span class="lineNum">     147 </span><span class="lineCov">          4 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     148 </span><span class="lineCov">          4 :                 sub = obj;</span>
+<span class="lineNum">     149 </span><span class="lineCov">          4 :                 key = sub-&gt;token;</span>
+<span class="lineNum">     150 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     152 </span>            :                 /* Hash can only work on something with a full key. */
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     155 </span>            :         }
+<span class="lineNum">     156 </span><span class="lineCov">         35 :         return ast_str_hash(key);</span>
+<span class="lineNum">     157 </span>            : }
+<a name="158"><span class="lineNum">     158 </span>            : </a>
+<span class="lineNum">     159 </span>            : /*! AO2 comparison function for \ref message_subscription */
+<span class="lineNum">     160 </span><span class="lineCov">          3 : static int message_subscription_compare_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     161 </span>            : {
+<span class="lineNum">     162 </span><span class="lineCov">          3 :         const struct message_subscription *object_left = obj;</span>
+<span class="lineNum">     163 </span><span class="lineCov">          3 :         const struct message_subscription *object_right = arg;</span>
+<span class="lineNum">     164 </span><span class="lineCov">          3 :         const char *right_key = arg;</span>
+<span class="lineNum">     165 </span>            :         int cmp;
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">          3 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 right_key = object_right-&gt;token;</span>
+<span class="lineNum">     170 </span>            :                 /* Fall through */
+<span class="lineNum">     171 </span><span class="lineCov">          3 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     172 </span><span class="lineCov">          3 :                 cmp = strcmp(object_left-&gt;token, right_key);</span>
+<span class="lineNum">     173 </span><span class="lineCov">          3 :                 break;</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     175 </span>            :                 /*
+<span class="lineNum">     176 </span>            :                  * We could also use a partial key struct containing a length
+<span class="lineNum">     177 </span>            :                  * so strlen() does not get called for every comparison instead.
+<span class="lineNum">     178 </span>            :                  */
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 cmp = strncmp(object_left-&gt;token, right_key, strlen(right_key));</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     182 </span>            :                 /*
+<span class="lineNum">     183 </span>            :                  * What arg points to is specific to this traversal callback
+<span class="lineNum">     184 </span>            :                  * and has no special meaning to astobj2.
+<span class="lineNum">     185 </span>            :                  */
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     188 </span>            :         }
+<span class="lineNum">     189 </span><span class="lineCov">          3 :         if (cmp) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     191 </span>            :         }
+<span class="lineNum">     192 </span>            :         /*
+<span class="lineNum">     193 </span>            :          * At this point the traversal callback is identical to a sorted
+<span class="lineNum">     194 </span>            :          * container.
+<span class="lineNum">     195 </span>            :          */
+<span class="lineNum">     196 </span><span class="lineCov">          3 :         return CMP_MATCH;</span>
+<span class="lineNum">     197 </span>            : }
+<a name="198"><span class="lineNum">     198 </span>            : </a>
+<span class="lineNum">     199 </span>            : /*! \internal \brief Convert a \c ast_msg To/From URI to a Stasis endpoint name */
+<span class="lineNum">     200 </span><span class="lineCov">         30 : static void msg_to_endpoint(const struct ast_msg *msg, char *buf, size_t len)</span>
+<span class="lineNum">     201 </span>            : {
+<span class="lineNum">     202 </span><span class="lineCov">         30 :         const char *endpoint = ast_msg_get_endpoint(msg);</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">         30 :         snprintf(buf, len, &quot;%s%s%s&quot;, ast_msg_get_tech(msg),</span>
+<span class="lineNum">     205 </span><span class="lineCov">         30 :                 ast_strlen_zero(endpoint) ? &quot;&quot; : &quot;/&quot;,</span>
+<span class="lineNum">     206 </span><span class="lineCov">         30 :                 S_OR(endpoint, &quot;&quot;));</span>
+<span class="lineNum">     207 </span><span class="lineCov">         30 : }</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            : /*! \internal
+<span class="lineNum">     210 </span>            :  * \brief Callback from the \c message API that determines if we can handle
+<a name="211"><span class="lineNum">     211 </span>            :  * this message</a>
+<span class="lineNum">     212 </span>            :  */
+<span class="lineNum">     213 </span><span class="lineCov">         28 : static int has_destination_cb(const struct ast_msg *msg)</span>
+<span class="lineNum">     214 </span>            : {
+<span class="lineNum">     215 </span>            :         struct message_subscription *sub;
+<span class="lineNum">     216 </span>            :         int i;
+<span class="lineNum">     217 </span>            :         char buf[256];
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">         28 :         msg_to_endpoint(msg, buf, sizeof(buf));</span>
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">         28 :         ast_rwlock_rdlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     222 </span><span class="lineCov">         28 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;tech_subscriptions); i++) {</span>
+<span class="lineNum">     223 </span><span class="lineCov">          2 :                 sub = AST_VECTOR_GET(&amp;tech_subscriptions, i);</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">          2 :                 if (!sub) {</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     227 </span>            :                 }
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">          2 :                 if (!strcmp(sub-&gt;token, TECH_WILDCARD)</span>
+<span class="lineNum">     230 </span><span class="lineCov">          2 :                     || !strncasecmp(sub-&gt;token, buf, strlen(sub-&gt;token))</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                     || !strncasecmp(sub-&gt;token, buf, strlen(sub-&gt;token))) {</span>
+<span class="lineNum">     232 </span><span class="lineCov">          2 :                         ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     233 </span><span class="lineCov">          2 :                         goto match;</span>
+<span class="lineNum">     234 </span>            :                 }
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span>            :         }
+<span class="lineNum">     237 </span><span class="lineCov">         26 :         ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">         26 :         sub = ao2_find(endpoint_subscriptions, buf, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     240 </span><span class="lineCov">         26 :         if (sub) {</span>
+<span class="lineNum">     241 </span><span class="lineCov">          2 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     242 </span><span class="lineCov">          2 :                 goto match;</span>
+<span class="lineNum">     243 </span>            :         }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">         24 :         ast_debug(1, &quot;No subscription found for %s\n&quot;, buf);</span>
+<span class="lineNum">     246 </span><span class="lineCov">         24 :         return 0;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">          4 : match:</span>
+<span class="lineNum">     249 </span><span class="lineCov">          4 :         return 1;</span>
+<a name="250"><span class="lineNum">     250 </span>            : }</a>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">          2 : static struct ast_json *msg_to_json(struct ast_msg *msg)</span>
+<span class="lineNum">     253 </span>            : {
+<span class="lineNum">     254 </span>            :         struct ast_json *json_obj;
+<span class="lineNum">     255 </span>            :         struct ast_json *json_vars;
+<span class="lineNum">     256 </span>            :         struct ast_msg_var_iterator *it_vars;
+<span class="lineNum">     257 </span>            :         const char *name;
+<span class="lineNum">     258 </span>            :         const char *value;
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">          2 :         it_vars = ast_msg_var_iterator_init(msg);</span>
+<span class="lineNum">     261 </span><span class="lineCov">          2 :         if (!it_vars) {</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">          2 :         json_vars = ast_json_array_create();</span>
+<span class="lineNum">     266 </span><span class="lineCov">          2 :         if (!json_vars) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                 ast_msg_var_iterator_destroy(it_vars);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     269 </span>            :         }
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineCov">          2 :         while (ast_msg_var_iterator_next(msg, it_vars, &amp;name, &amp;value)) {</span>
+<span class="lineNum">     272 </span>            :                 struct ast_json *json_tuple;
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 json_tuple = ast_json_pack(&quot;{s: s}&quot;, name, value);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 if (!json_tuple) {</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         ast_json_unref(json_vars);</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         ast_msg_var_iterator_destroy(it_vars);</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     279 </span>            :                 }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 ast_json_array_append(json_vars, json_tuple);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 ast_msg_var_unref_current(it_vars);</span>
+<span class="lineNum">     283 </span>            :         }
+<span class="lineNum">     284 </span><span class="lineCov">          2 :         ast_msg_var_iterator_destroy(it_vars);</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">          2 :         json_obj = ast_json_pack(&quot;{s: s, s: s, s: s, s: o}&quot;,</span>
+<span class="lineNum">     287 </span>            :                 &quot;from&quot;, ast_msg_get_from(msg),
+<span class="lineNum">     288 </span>            :                 &quot;to&quot;, ast_msg_get_to(msg),
+<span class="lineNum">     289 </span>            :                 &quot;body&quot;, ast_msg_get_body(msg),
+<span class="lineNum">     290 </span>            :                 &quot;variables&quot;, json_vars);
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          2 :         return json_obj;</span>
+<a name="293"><span class="lineNum">     293 </span>            : }</a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineCov">          2 : static int handle_msg_cb(struct ast_msg *msg)</span>
+<span class="lineNum">     296 </span>            : {
+<span class="lineNum">     297 </span>            :         struct message_subscription *sub;
+<span class="lineNum">     298 </span>            :         int i;
+<span class="lineNum">     299 </span>            :         char buf[256];
+<span class="lineNum">     300 </span>            :         const char *endpoint_name;
+<span class="lineNum">     301 </span>            :         struct ast_json *json_msg;
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">          2 :         msg_to_endpoint(msg, buf, sizeof(buf));</span>
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span><span class="lineCov">          2 :         ast_rwlock_rdlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     306 </span><span class="lineCov">          2 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;tech_subscriptions); i++) {</span>
+<span class="lineNum">     307 </span><span class="lineCov">          1 :                 sub = AST_VECTOR_GET(&amp;tech_subscriptions, i);</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">          1 :                 if (!sub) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     311 </span>            :                 }
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span><span class="lineCov">          1 :                 if (!strcmp(sub-&gt;token, TECH_WILDCARD)</span>
+<span class="lineNum">     314 </span><span class="lineCov">          1 :                     || !strncasecmp(sub-&gt;token, buf, strlen(sub-&gt;token))) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">          1 :                         ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     316 </span><span class="lineCov">          1 :                         ao2_bump(sub);</span>
+<span class="lineNum">     317 </span><span class="lineCov">          1 :                         endpoint_name = buf;</span>
+<span class="lineNum">     318 </span><span class="lineCov">          1 :                         goto match;</span>
+<span class="lineNum">     319 </span>            :                 }
+<span class="lineNum">     320 </span>            :         }
+<span class="lineNum">     321 </span><span class="lineCov">          1 :         ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineCov">          1 :         sub = ao2_find(endpoint_subscriptions, buf, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     324 </span><span class="lineCov">          1 :         if (sub) {</span>
+<span class="lineNum">     325 </span><span class="lineCov">          1 :                 endpoint_name = buf;</span>
+<span class="lineNum">     326 </span><span class="lineCov">          1 :                 goto match;</span>
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">          2 : match:</span>
+<span class="lineNum">     332 </span><span class="lineCov">          2 :         ast_debug(3, &quot;Dispatching message for %s\n&quot;, endpoint_name);</span>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">          2 :         json_msg = msg_to_json(msg);</span>
+<span class="lineNum">     335 </span><span class="lineCov">          2 :         if (!json_msg) {</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">          4 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;sub-&gt;applications); i++) {</span>
+<span class="lineNum">     341 </span><span class="lineCov">          2 :                 struct application_tuple *tuple = AST_VECTOR_GET(&amp;sub-&gt;applications, i);</span>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">          2 :                 tuple-&gt;callback(endpoint_name, json_msg, tuple-&gt;pvt);</span>
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineCov">          2 :         ast_json_unref(json_msg);</span>
+<span class="lineNum">     347 </span><span class="lineCov">          2 :         ao2_ref(sub, -1);</span>
+<span class="lineNum">     348 </span><span class="lineCov">          2 :         return 0;</span>
+<span class="lineNum">     349 </span>            : }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span>            : struct ast_msg_handler ari_msg_handler = {
+<span class="lineNum">     352 </span>            :         .name = &quot;ari&quot;,
+<span class="lineNum">     353 </span>            :         .handle_msg = handle_msg_cb,
+<span class="lineNum">     354 </span>            :         .has_destination = has_destination_cb,
+<a name="355"><span class="lineNum">     355 </span>            : };</a>
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 : static int messaging_subscription_cmp(struct message_subscription *sub, const char *key)</span>
+<span class="lineNum">     358 </span>            : {
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         return !strcmp(sub-&gt;token, key) ? 1 : 0;</span>
+<a name="360"><span class="lineNum">     360 </span>            : }</a>
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 : static int application_tuple_cmp(struct application_tuple *item, const char *key)</span>
+<span class="lineNum">     363 </span>            : {
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         return !strcmp(item-&gt;app_name, key) ? 1 : 0;</span>
+<a name="365"><span class="lineNum">     365 </span>            : }</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineCov">          8 : static int is_app_subscribed(struct message_subscription *sub, const char *app_name)</span>
+<span class="lineNum">     368 </span>            : {
+<span class="lineNum">     369 </span>            :         int i;
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineCov">          8 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;sub-&gt;applications); i++) {</span>
+<span class="lineNum">     372 </span>            :                 struct application_tuple *tuple;
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 tuple = AST_VECTOR_GET(&amp;sub-&gt;applications, i);</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 if (tuple &amp;&amp; !strcmp(tuple-&gt;app_name, app_name)) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">     377 </span>            :                 }
+<span class="lineNum">     378 </span>            :         }
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">          8 :         return 0;</span>
+<a name="381"><span class="lineNum">     381 </span>            : }</a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">         12 : static struct message_subscription *get_subscription(struct ast_endpoint *endpoint)</span>
+<span class="lineNum">     384 </span>            : {
+<span class="lineNum">     385 </span><span class="lineCov">         12 :         struct message_subscription *sub = NULL;</span>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineCov">         12 :         if (endpoint &amp;&amp; !ast_strlen_zero(ast_endpoint_get_resource(endpoint))) {</span>
+<span class="lineNum">     388 </span><span class="lineCov">          4 :                 sub = ao2_find(endpoint_subscriptions, endpoint, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     389 </span>            :         } else {
+<span class="lineNum">     390 </span>            :                 int i;
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">          8 :                 ast_rwlock_rdlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     393 </span><span class="lineCov">          8 :                 for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;tech_subscriptions); i++) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                         sub = AST_VECTOR_GET(&amp;tech_subscriptions, i);</span>
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         if (sub &amp;&amp; !strcmp(sub-&gt;token, endpoint ? ast_endpoint_get_tech(endpoint) : TECH_WILDCARD)) {</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                                 ao2_bump(sub);</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     399 </span>            :                         }
+<span class="lineNum">     400 </span>            :                 }
+<span class="lineNum">     401 </span><span class="lineCov">          8 :                 ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">         12 :         return sub;</span>
+<a name="405"><span class="lineNum">     405 </span>            : }</a>
+<span class="lineNum">     406 </span>            : 
+<a name="407"><span class="lineNum">     407 </span><span class="lineCov">          4 : void messaging_app_unsubscribe_endpoint(const char *app_name, const char *endpoint_id)</span></a>
+<a name="408"><span class="lineNum">     408 </span>            : {</a>
+<span class="lineNum">     409 </span><span class="lineCov">          8 :         RAII_VAR(struct message_subscription *, sub, NULL, ao2_cleanup);</span>
+<span class="lineNum">     410 </span><span class="lineCov">          8 :         RAII_VAR(struct ast_endpoint *, endpoint, NULL, ao2_cleanup);</span>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">          4 :         endpoint = ast_endpoint_find_by_id(endpoint_id);</span>
+<span class="lineNum">     413 </span><span class="lineCov">          4 :         sub = get_subscription(endpoint);</span>
+<span class="lineNum">     414 </span><span class="lineCov">          4 :         if (!sub) {</span>
+<span class="lineNum">     415 </span><span class="lineCov">          4 :                 return;</span>
+<span class="lineNum">     416 </span>            :         }
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         ao2_lock(sub);</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         if (!is_app_subscribed(sub, app_name)) {</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     422 </span>            :         }
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         AST_VECTOR_REMOVE_CMP_UNORDERED(&amp;sub-&gt;applications, app_name, application_tuple_cmp, ao2_cleanup);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :         if (AST_VECTOR_SIZE(&amp;sub-&gt;applications) == 0) {</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 if (endpoint &amp;&amp; !ast_strlen_zero(ast_endpoint_get_resource(endpoint))) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                         ao2_unlink(endpoint_subscriptions, sub);</span>
+<span class="lineNum">     428 </span>            :                 } else {
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                         ast_rwlock_wrlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                         AST_VECTOR_REMOVE_CMP_UNORDERED(&amp;tech_subscriptions, endpoint ? ast_endpoint_get_id(endpoint) : TECH_WILDCARD,</span>
+<span class="lineNum">     431 </span>            :                                 messaging_subscription_cmp, AST_VECTOR_ELEM_CLEANUP_NOOP);
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                         ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     433 </span>            :                 }
+<span class="lineNum">     434 </span>            :         }
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         ao2_unlock(sub);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         ao2_ref(sub, -1);</span>
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :         ast_debug(3, &quot;App '%s' unsubscribed to messages from endpoint '%s'\n&quot;, app_name, endpoint ? ast_endpoint_get_id(endpoint) : &quot;-- ALL --&quot;);</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :         ast_test_suite_event_notify(&quot;StasisMessagingSubscription&quot;, &quot;SubState: Unsubscribed\r\nAppName: %s\r\nToken: %s\r\n&quot;,</span>
+<span class="lineNum">     440 </span>            :                 app_name, endpoint ? ast_endpoint_get_id(endpoint) : &quot;ALL&quot;);
+<a name="441"><span class="lineNum">     441 </span>            : }</a>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">          8 : static struct message_subscription *get_or_create_subscription(struct ast_endpoint *endpoint)</span>
+<span class="lineNum">     444 </span>            : {
+<span class="lineNum">     445 </span><span class="lineCov">          8 :         struct message_subscription *sub = get_subscription(endpoint);</span>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineCov">          8 :         if (sub) {</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 return sub;</span>
+<span class="lineNum">     449 </span>            :         }
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span><span class="lineCov">          8 :         sub = message_subscription_alloc(endpoint ? ast_endpoint_get_id(endpoint) : TECH_WILDCARD);</span>
+<span class="lineNum">     452 </span><span class="lineCov">          8 :         if (!sub) {</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     454 </span>            :         }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">          8 :         if (endpoint &amp;&amp; !ast_strlen_zero(ast_endpoint_get_resource(endpoint))) {</span>
+<span class="lineNum">     457 </span><span class="lineCov">          4 :                 ao2_link(endpoint_subscriptions, sub);</span>
+<span class="lineNum">     458 </span>            :         } else {
+<span class="lineNum">     459 </span><span class="lineCov">          4 :                 ast_rwlock_wrlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     460 </span><span class="lineCov">          4 :                 ao2_ref(sub, +1);</span>
+<span class="lineNum">     461 </span><span class="lineCov">          4 :                 if (AST_VECTOR_APPEND(&amp;tech_subscriptions, sub)) {</span>
+<span class="lineNum">     462 </span>            :                         /* Release the refs that were for the vector and the allocation. */
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                         ao2_ref(sub, -2);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                         sub = NULL;</span>
+<span class="lineNum">     465 </span>            :                 }
+<span class="lineNum">     466 </span><span class="lineCov">          4 :                 ast_rwlock_unlock(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">          8 :         return sub;</span>
+<a name="470"><span class="lineNum">     470 </span>            : }</a>
+<span class="lineNum">     471 </span>            : 
+<a name="472"><span class="lineNum">     472 </span><span class="lineCov">          8 : int messaging_app_subscribe_endpoint(const char *app_name, struct ast_endpoint *endpoint, message_received_cb callback, void *pvt)</span></a>
+<span class="lineNum">     473 </span>            : {
+<span class="lineNum">     474 </span><span class="lineCov">         16 :         RAII_VAR(struct message_subscription *, sub, NULL, ao2_cleanup);</span>
+<span class="lineNum">     475 </span>            :         struct application_tuple *tuple;
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span><span class="lineCov">          8 :         sub = get_or_create_subscription(endpoint);</span>
+<span class="lineNum">     478 </span><span class="lineCov">          8 :         if (!sub) {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     480 </span>            :         }
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span><span class="lineCov">          8 :         ao2_lock(sub);</span>
+<span class="lineNum">     483 </span><span class="lineCov">          8 :         if (is_app_subscribed(sub, app_name)) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     486 </span>            :         }
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineCov">          8 :         tuple = application_tuple_alloc(app_name, callback, pvt);</span>
+<span class="lineNum">     489 </span><span class="lineCov">          8 :         if (!tuple) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     492 </span>            :         }
+<span class="lineNum">     493 </span><span class="lineCov">          8 :         if (AST_VECTOR_APPEND(&amp;sub-&gt;applications, tuple)) {</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                 ao2_ref(tuple, -1);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                 ao2_unlock(sub);</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     497 </span>            :         }
+<span class="lineNum">     498 </span><span class="lineCov">          8 :         ao2_unlock(sub);</span>
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">          8 :         ast_debug(3, &quot;App '%s' subscribed to messages from endpoint '%s'\n&quot;, app_name, endpoint ? ast_endpoint_get_id(endpoint) : &quot;-- ALL --&quot;);</span>
+<span class="lineNum">     501 </span><span class="lineCov">          8 :         ast_test_suite_event_notify(&quot;StasisMessagingSubscription&quot;, &quot;SubState: Subscribed\r\nAppName: %s\r\nToken: %s\r\n&quot;,</span>
+<span class="lineNum">     502 </span>            :                 app_name, endpoint ? ast_endpoint_get_id(endpoint) : &quot;ALL&quot;);
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">          8 :         return 0;</span>
+<span class="lineNum">     505 </span>            : }
+<a name="506"><span class="lineNum">     506 </span>            : </a>
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineCov">       1116 : int messaging_cleanup(void)</span>
+<span class="lineNum">     509 </span>            : {
+<span class="lineNum">     510 </span><span class="lineCov">       1116 :         ast_msg_handler_unregister(&amp;ari_msg_handler);</span>
+<span class="lineNum">     511 </span><span class="lineCov">       1116 :         ao2_ref(endpoint_subscriptions, -1);</span>
+<span class="lineNum">     512 </span><span class="lineCov">       1116 :         AST_VECTOR_FREE(&amp;tech_subscriptions);</span>
+<span class="lineNum">     513 </span><span class="lineCov">       1116 :         ast_rwlock_destroy(&amp;tech_subscriptions_lock);\</span>
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span><span class="lineCov">       1116 :         return 0;</span>
+<a name="516"><span class="lineNum">     516 </span>            : }</a>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span><span class="lineCov">       1118 : int messaging_init(void)</span>
+<span class="lineNum">     519 </span>            : {
+<span class="lineNum">     520 </span><span class="lineCov">       1118 :         endpoint_subscriptions = ao2_t_container_alloc_hash(AO2_ALLOC_OPT_LOCK_RWLOCK, 0,</span>
+<span class="lineNum">     521 </span>            :                 ENDPOINTS_NUM_BUCKETS, message_subscription_hash_cb, NULL,
+<span class="lineNum">     522 </span>            :                 message_subscription_compare_cb, &quot;Endpoint messaging subscription container creation&quot;);
+<span class="lineNum">     523 </span><span class="lineCov">       1118 :         if (!endpoint_subscriptions) {</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     525 </span>            :         }
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineCov">       1118 :         if (AST_VECTOR_INIT(&amp;tech_subscriptions, 4)) {</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 ao2_ref(endpoint_subscriptions, -1);</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     530 </span>            :         }
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">       1118 :         if (ast_rwlock_init(&amp;tech_subscriptions_lock)) {</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 ao2_ref(endpoint_subscriptions, -1);</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 AST_VECTOR_FREE(&amp;tech_subscriptions);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     536 </span>            :         }
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">       1118 :         if (ast_msg_handler_register(&amp;ari_msg_handler)) {</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                 ao2_ref(endpoint_subscriptions, -1);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 AST_VECTOR_FREE(&amp;tech_subscriptions);</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :                 ast_rwlock_destroy(&amp;tech_subscriptions_lock);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     543 </span>            :         }
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineCov">       1118 :         return 0;</span>
+<span class="lineNum">     546 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

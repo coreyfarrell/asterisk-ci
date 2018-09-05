@@ -1,0 +1,605 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/event.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - event.c<span style="font-size: 80%;"> (source / <a href="event.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">102</td>
+            <td class="headerCovTableEntry">159</td>
+            <td class="headerCovTableEntryLo">64.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntryLo">70.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2007 - 2008, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Internal generic event system
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/event.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/dlinkedlists.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/unaligned.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*!
+<span class="lineNum">      46 </span>            :  * \brief An event information element
+<span class="lineNum">      47 </span>            :  *
+<span class="lineNum">      48 </span>            :  * \note The format of this structure is important.  Since these events may
+<span class="lineNum">      49 </span>            :  *       be sent directly over a network, changing this structure will break
+<span class="lineNum">      50 </span>            :  *       compatibility with older versions.  However, at this point, this code
+<span class="lineNum">      51 </span>            :  *       has not made it into a release, so it is still fair game for change.
+<span class="lineNum">      52 </span>            :  */
+<span class="lineNum">      53 </span>            : struct ast_event_ie {
+<span class="lineNum">      54 </span>            :         enum ast_event_ie_type ie_type:16;
+<span class="lineNum">      55 </span>            :         /*! Total length of the IE payload */
+<span class="lineNum">      56 </span>            :         uint16_t ie_payload_len;
+<span class="lineNum">      57 </span>            :         unsigned char ie_payload[0];
+<span class="lineNum">      58 </span>            : } __attribute__((packed));
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : /*!
+<span class="lineNum">      61 </span>            :  * \brief The payload for a string information element
+<span class="lineNum">      62 </span>            :  */
+<span class="lineNum">      63 </span>            : struct ast_event_ie_str_payload {
+<span class="lineNum">      64 </span>            :         /*! \brief A hash calculated with ast_str_hash(), to speed up comparisons */
+<span class="lineNum">      65 </span>            :         uint32_t hash;
+<span class="lineNum">      66 </span>            :         /*! \brief The actual string, null terminated */
+<span class="lineNum">      67 </span>            :         char str[1];
+<span class="lineNum">      68 </span>            : } __attribute__((packed));
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            : /*!
+<span class="lineNum">      71 </span>            :  * \brief An event
+<span class="lineNum">      72 </span>            :  *
+<span class="lineNum">      73 </span>            :  * An ast_event consists of an event header (this structure), and zero or
+<span class="lineNum">      74 </span>            :  * more information elements defined by ast_event_ie.
+<span class="lineNum">      75 </span>            :  *
+<span class="lineNum">      76 </span>            :  * \note The format of this structure is important.  Since these events may
+<span class="lineNum">      77 </span>            :  *       be sent directly over a network, changing this structure will break
+<span class="lineNum">      78 </span>            :  *       compatibility with older versions.  However, at this point, this code
+<span class="lineNum">      79 </span>            :  *       has not made it into a release, so it is still fair game for change.
+<span class="lineNum">      80 </span>            :  */
+<span class="lineNum">      81 </span>            : struct ast_event {
+<span class="lineNum">      82 </span>            :         /*! Event type */
+<span class="lineNum">      83 </span>            :         enum ast_event_type type:16;
+<span class="lineNum">      84 </span>            :         /*! Total length of the event */
+<span class="lineNum">      85 </span>            :         uint16_t event_len:16;
+<span class="lineNum">      86 </span>            :         /*! The data payload of the event, made up of information elements */
+<span class="lineNum">      87 </span>            :         unsigned char payload[0];
+<span class="lineNum">      88 </span>            : } __attribute__((packed));
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span>            : struct ast_event_ie_val {
+<span class="lineNum">      92 </span>            :         AST_LIST_ENTRY(ast_event_ie_val) entry;
+<span class="lineNum">      93 </span>            :         enum ast_event_ie_type ie_type;
+<span class="lineNum">      94 </span>            :         enum ast_event_ie_pltype ie_pltype;
+<span class="lineNum">      95 </span>            :         union {
+<span class="lineNum">      96 </span>            :                 uint32_t uint;
+<span class="lineNum">      97 </span>            :                 struct {
+<span class="lineNum">      98 </span>            :                         uint32_t hash;
+<span class="lineNum">      99 </span>            :                         const char *str;
+<span class="lineNum">     100 </span>            :                 };
+<span class="lineNum">     101 </span>            :                 void *raw;
+<span class="lineNum">     102 </span>            :         } payload;
+<span class="lineNum">     103 </span>            :         size_t raw_datalen;
+<span class="lineNum">     104 </span>            : };
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            : /*!
+<span class="lineNum">     107 </span>            :  * \brief Event Names
+<span class="lineNum">     108 </span>            :  */
+<span class="lineNum">     109 </span>            : static const char * const event_names[AST_EVENT_TOTAL] = {
+<span class="lineNum">     110 </span>            :         [AST_EVENT_ALL]                 = &quot;All&quot;,
+<span class="lineNum">     111 </span>            :         [AST_EVENT_CUSTOM]              = &quot;Custom&quot;,
+<span class="lineNum">     112 </span>            :         [AST_EVENT_MWI]                 = &quot;MWI&quot;,
+<span class="lineNum">     113 </span>            :         [AST_EVENT_SUB]                 = &quot;Subscription&quot;,
+<span class="lineNum">     114 </span>            :         [AST_EVENT_UNSUB]               = &quot;Unsubscription&quot;,
+<span class="lineNum">     115 </span>            :         [AST_EVENT_DEVICE_STATE]        = &quot;DeviceState&quot;,
+<span class="lineNum">     116 </span>            :         [AST_EVENT_DEVICE_STATE_CHANGE] = &quot;DeviceStateChange&quot;,
+<span class="lineNum">     117 </span>            :         [AST_EVENT_CEL]                 = &quot;CEL&quot;,
+<span class="lineNum">     118 </span>            :         [AST_EVENT_SECURITY]            = &quot;Security&quot;,
+<span class="lineNum">     119 </span>            :         [AST_EVENT_NETWORK_CHANGE]      = &quot;NetworkChange&quot;,
+<span class="lineNum">     120 </span>            :         [AST_EVENT_PRESENCE_STATE]      = &quot;PresenceState&quot;,
+<span class="lineNum">     121 </span>            :         [AST_EVENT_ACL_CHANGE]          = &quot;ACLChange&quot;,
+<span class="lineNum">     122 </span>            :         [AST_EVENT_PING]                = &quot;Ping&quot;,
+<span class="lineNum">     123 </span>            : };
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            : /*!
+<span class="lineNum">     126 </span>            :  * \brief IE payload types and names
+<span class="lineNum">     127 </span>            :  */
+<span class="lineNum">     128 </span>            : static const struct ie_map {
+<span class="lineNum">     129 </span>            :         enum ast_event_ie_pltype ie_pltype;
+<span class="lineNum">     130 </span>            :         const char *name;
+<span class="lineNum">     131 </span>            : } ie_maps[AST_EVENT_IE_TOTAL] = {
+<span class="lineNum">     132 </span>            :         [AST_EVENT_IE_NEWMSGS]             = { AST_EVENT_IE_PLTYPE_UINT, &quot;NewMessages&quot; },
+<span class="lineNum">     133 </span>            :         [AST_EVENT_IE_OLDMSGS]             = { AST_EVENT_IE_PLTYPE_UINT, &quot;OldMessages&quot; },
+<span class="lineNum">     134 </span>            :         [AST_EVENT_IE_MAILBOX]             = { AST_EVENT_IE_PLTYPE_STR,  &quot;Mailbox&quot; },
+<span class="lineNum">     135 </span>            :         [AST_EVENT_IE_UNIQUEID]            = { AST_EVENT_IE_PLTYPE_UINT, &quot;UniqueID&quot; },
+<span class="lineNum">     136 </span>            :         [AST_EVENT_IE_EVENTTYPE]           = { AST_EVENT_IE_PLTYPE_UINT, &quot;EventType&quot; },
+<span class="lineNum">     137 </span>            :         [AST_EVENT_IE_EXISTS]              = { AST_EVENT_IE_PLTYPE_UINT, &quot;Exists&quot; },
+<span class="lineNum">     138 </span>            :         [AST_EVENT_IE_DEVICE]              = { AST_EVENT_IE_PLTYPE_STR,  &quot;Device&quot; },
+<span class="lineNum">     139 </span>            :         [AST_EVENT_IE_STATE]               = { AST_EVENT_IE_PLTYPE_UINT, &quot;State&quot; },
+<span class="lineNum">     140 </span>            :         [AST_EVENT_IE_CONTEXT]             = { AST_EVENT_IE_PLTYPE_STR,  &quot;Context&quot; },
+<span class="lineNum">     141 </span>            :         [AST_EVENT_IE_EID]                 = { AST_EVENT_IE_PLTYPE_RAW,  &quot;EntityID&quot; },
+<span class="lineNum">     142 </span>            :         [AST_EVENT_IE_CEL_EVENT_TYPE]      = { AST_EVENT_IE_PLTYPE_UINT, &quot;CELEventType&quot; },
+<span class="lineNum">     143 </span>            :         [AST_EVENT_IE_CEL_EVENT_TIME]      = { AST_EVENT_IE_PLTYPE_UINT, &quot;CELEventTime&quot; },
+<span class="lineNum">     144 </span>            :         [AST_EVENT_IE_CEL_EVENT_TIME_USEC] = { AST_EVENT_IE_PLTYPE_UINT, &quot;CELEventTimeUSec&quot; },
+<span class="lineNum">     145 </span>            :         [AST_EVENT_IE_CEL_USEREVENT_NAME]  = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELUserEventName&quot; },
+<span class="lineNum">     146 </span>            :         [AST_EVENT_IE_CEL_CIDNAME]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELCIDName&quot; },
+<span class="lineNum">     147 </span>            :         [AST_EVENT_IE_CEL_CIDNUM]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELCIDNum&quot; },
+<span class="lineNum">     148 </span>            :         [AST_EVENT_IE_CEL_EXTEN]           = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELExten&quot; },
+<span class="lineNum">     149 </span>            :         [AST_EVENT_IE_CEL_CONTEXT]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELContext&quot; },
+<span class="lineNum">     150 </span>            :         [AST_EVENT_IE_CEL_CHANNAME]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELChanName&quot; },
+<span class="lineNum">     151 </span>            :         [AST_EVENT_IE_CEL_APPNAME]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELAppName&quot; },
+<span class="lineNum">     152 </span>            :         [AST_EVENT_IE_CEL_APPDATA]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELAppData&quot; },
+<span class="lineNum">     153 </span>            :         [AST_EVENT_IE_CEL_AMAFLAGS]        = { AST_EVENT_IE_PLTYPE_UINT, &quot;CELAMAFlags&quot; },
+<span class="lineNum">     154 </span>            :         [AST_EVENT_IE_CEL_ACCTCODE]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELAcctCode&quot; },
+<span class="lineNum">     155 </span>            :         [AST_EVENT_IE_CEL_UNIQUEID]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELUniqueID&quot; },
+<span class="lineNum">     156 </span>            :         [AST_EVENT_IE_CEL_USERFIELD]       = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELUserField&quot; },
+<span class="lineNum">     157 </span>            :         [AST_EVENT_IE_CEL_CIDANI]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELCIDani&quot; },
+<span class="lineNum">     158 </span>            :         [AST_EVENT_IE_CEL_CIDRDNIS]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELCIDrdnis&quot; },
+<span class="lineNum">     159 </span>            :         [AST_EVENT_IE_CEL_CIDDNID]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELCIDdnid&quot; },
+<span class="lineNum">     160 </span>            :         [AST_EVENT_IE_CEL_PEER]            = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELPeer&quot; },
+<span class="lineNum">     161 </span>            :         [AST_EVENT_IE_CEL_LINKEDID]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELLinkedID&quot; },
+<span class="lineNum">     162 </span>            :         [AST_EVENT_IE_CEL_PEERACCT]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELPeerAcct&quot; },
+<span class="lineNum">     163 </span>            :         [AST_EVENT_IE_CEL_EXTRA]           = { AST_EVENT_IE_PLTYPE_STR,  &quot;CELExtra&quot; },
+<span class="lineNum">     164 </span>            :         [AST_EVENT_IE_SECURITY_EVENT]      = { AST_EVENT_IE_PLTYPE_UINT, &quot;SecurityEvent&quot; },
+<span class="lineNum">     165 </span>            :         [AST_EVENT_IE_EVENT_VERSION]       = { AST_EVENT_IE_PLTYPE_UINT, &quot;EventVersion&quot; },
+<span class="lineNum">     166 </span>            :         [AST_EVENT_IE_SERVICE]             = { AST_EVENT_IE_PLTYPE_STR,  &quot;Service&quot; },
+<span class="lineNum">     167 </span>            :         [AST_EVENT_IE_MODULE]              = { AST_EVENT_IE_PLTYPE_STR,  &quot;Module&quot; },
+<span class="lineNum">     168 </span>            :         [AST_EVENT_IE_ACCOUNT_ID]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;AccountID&quot; },
+<span class="lineNum">     169 </span>            :         [AST_EVENT_IE_SESSION_ID]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;SessionID&quot; },
+<span class="lineNum">     170 </span>            :         [AST_EVENT_IE_SESSION_TV]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;SessionTV&quot; },
+<span class="lineNum">     171 </span>            :         [AST_EVENT_IE_ACL_NAME]            = { AST_EVENT_IE_PLTYPE_STR,  &quot;ACLName&quot; },
+<span class="lineNum">     172 </span>            :         [AST_EVENT_IE_LOCAL_ADDR]          = { AST_EVENT_IE_PLTYPE_STR,  &quot;LocalAddress&quot; },
+<span class="lineNum">     173 </span>            :         [AST_EVENT_IE_REMOTE_ADDR]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;RemoteAddress&quot; },
+<span class="lineNum">     174 </span>            :         [AST_EVENT_IE_EVENT_TV]            = { AST_EVENT_IE_PLTYPE_STR,  &quot;EventTV&quot; },
+<span class="lineNum">     175 </span>            :         [AST_EVENT_IE_REQUEST_TYPE]        = { AST_EVENT_IE_PLTYPE_STR,  &quot;RequestType&quot; },
+<span class="lineNum">     176 </span>            :         [AST_EVENT_IE_REQUEST_PARAMS]      = { AST_EVENT_IE_PLTYPE_STR,  &quot;RequestParams&quot; },
+<span class="lineNum">     177 </span>            :         [AST_EVENT_IE_AUTH_METHOD]         = { AST_EVENT_IE_PLTYPE_STR,  &quot;AuthMethod&quot; },
+<span class="lineNum">     178 </span>            :         [AST_EVENT_IE_SEVERITY]            = { AST_EVENT_IE_PLTYPE_STR,  &quot;Severity&quot; },
+<span class="lineNum">     179 </span>            :         [AST_EVENT_IE_EXPECTED_ADDR]       = { AST_EVENT_IE_PLTYPE_STR,  &quot;ExpectedAddress&quot; },
+<span class="lineNum">     180 </span>            :         [AST_EVENT_IE_CHALLENGE]           = { AST_EVENT_IE_PLTYPE_STR,  &quot;Challenge&quot; },
+<span class="lineNum">     181 </span>            :         [AST_EVENT_IE_RESPONSE]            = { AST_EVENT_IE_PLTYPE_STR,  &quot;Response&quot; },
+<span class="lineNum">     182 </span>            :         [AST_EVENT_IE_EXPECTED_RESPONSE]   = { AST_EVENT_IE_PLTYPE_STR,  &quot;ExpectedResponse&quot; },
+<span class="lineNum">     183 </span>            :         [AST_EVENT_IE_RECEIVED_CHALLENGE]  = { AST_EVENT_IE_PLTYPE_STR,  &quot;ReceivedChallenge&quot; },
+<span class="lineNum">     184 </span>            :         [AST_EVENT_IE_RECEIVED_HASH]       = { AST_EVENT_IE_PLTYPE_STR,  &quot;ReceivedHash&quot; },
+<span class="lineNum">     185 </span>            :         [AST_EVENT_IE_USING_PASSWORD]      = { AST_EVENT_IE_PLTYPE_UINT, &quot;UsingPassword&quot; },
+<span class="lineNum">     186 </span>            :         [AST_EVENT_IE_ATTEMPTED_TRANSPORT] = { AST_EVENT_IE_PLTYPE_STR,  &quot;AttemptedTransport&quot; },
+<span class="lineNum">     187 </span>            :         [AST_EVENT_IE_CACHABLE]            = { AST_EVENT_IE_PLTYPE_UINT, &quot;Cachable&quot; },
+<span class="lineNum">     188 </span>            :         [AST_EVENT_IE_PRESENCE_PROVIDER]   = { AST_EVENT_IE_PLTYPE_STR,  &quot;PresenceProvider&quot; },
+<span class="lineNum">     189 </span>            :         [AST_EVENT_IE_PRESENCE_STATE]      = { AST_EVENT_IE_PLTYPE_UINT, &quot;PresenceState&quot; },
+<span class="lineNum">     190 </span>            :         [AST_EVENT_IE_PRESENCE_SUBTYPE]    = { AST_EVENT_IE_PLTYPE_STR,  &quot;PresenceSubtype&quot; },
+<span class="lineNum">     191 </span>            :         [AST_EVENT_IE_PRESENCE_MESSAGE]    = { AST_EVENT_IE_PLTYPE_STR,  &quot;PresenceMessage&quot; },
+<a name="192"><span class="lineNum">     192 </span>            : };</a>
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 : const char *ast_event_get_type_name(const struct ast_event *event)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span>            :         enum ast_event_type type;
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         type = ast_event_get_type(event);</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :         if ((unsigned int)type &gt;= ARRAY_LEN(event_names)) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid event type - '%u'\n&quot;, type);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 return &quot;&quot;;</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :         return event_names[type];</span>
+<a name="206"><span class="lineNum">     206 </span>            : }</a>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">      65019 : const char *ast_event_get_ie_type_name(enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     209 </span>            : {
+<span class="lineNum">     210 </span><span class="lineCov">      65019 :         if (ie_type &lt;= 0 || ie_type &gt;= ARRAY_LEN(ie_maps)) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid IE type - '%d'\n&quot;, ie_type);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 return &quot;&quot;;</span>
+<span class="lineNum">     213 </span>            :         }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">      65019 :         return ie_maps[ie_type].name;</span>
+<a name="216"><span class="lineNum">     216 </span>            : }</a>
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineCov">       4531 : enum ast_event_ie_pltype ast_event_get_ie_pltype(enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     219 </span>            : {
+<span class="lineNum">     220 </span><span class="lineCov">       4531 :         if (ie_type &lt;= 0 || ie_type &gt;= ARRAY_LEN(ie_maps)) {</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid IE type - '%d'\n&quot;, ie_type);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 return AST_EVENT_IE_PLTYPE_UNKNOWN;</span>
+<span class="lineNum">     223 </span>            :         }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">       4531 :         return ie_maps[ie_type].ie_pltype;</span>
+<a name="226"><span class="lineNum">     226 </span>            : }</a>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">    1036088 : size_t ast_event_get_size(const struct ast_event *event)</span>
+<span class="lineNum">     229 </span>            : {
+<span class="lineNum">     230 </span>            :         size_t res;
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineCov">    1036088 :         res = ntohs(event-&gt;event_len);</span>
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineCov">    1036088 :         return res;</span>
+<span class="lineNum">     235 </span>            : }
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            : /*! \brief Subscription event check list. */
+<span class="lineNum">     238 </span>            : struct ast_ev_check_list {
+<span class="lineNum">     239 </span>            :         AST_LIST_HEAD_NOLOCK(, ast_event_ie_val) ie_vals;
+<a name="240"><span class="lineNum">     240 </span>            : };</a>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineCov">    1035692 : int ast_event_iterator_init(struct ast_event_iterator *iterator, const struct ast_event *event)</span>
+<span class="lineNum">     243 </span>            : {
+<span class="lineNum">     244 </span><span class="lineCov">    1035692 :         int res = 0;</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">    1035692 :         iterator-&gt;event_len = ast_event_get_size(event);</span>
+<span class="lineNum">     247 </span><span class="lineCov">    1035692 :         iterator-&gt;event = event;</span>
+<span class="lineNum">     248 </span><span class="lineCov">    1035692 :         if (iterator-&gt;event_len &gt;= sizeof(*event) + sizeof(struct ast_event_ie)) {</span>
+<span class="lineNum">     249 </span><span class="lineCov">    1035691 :                 iterator-&gt;ie = (struct ast_event_ie *) ( ((char *) event) + sizeof(*event) );</span>
+<span class="lineNum">     250 </span>            :         } else {
+<span class="lineNum">     251 </span><span class="lineCov">          1 :                 iterator-&gt;ie = NULL;</span>
+<span class="lineNum">     252 </span><span class="lineCov">          1 :                 res = -1;</span>
+<span class="lineNum">     253 </span>            :         }
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">    1035692 :         return res;</span>
+<a name="256"><span class="lineNum">     256 </span>            : }</a>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">   11521110 : int ast_event_iterator_next(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineCov">   11521110 :         iterator-&gt;ie = (struct ast_event_ie *) ( ((char *) iterator-&gt;ie) + sizeof(*iterator-&gt;ie) + ntohs(iterator-&gt;ie-&gt;ie_payload_len));</span>
+<span class="lineNum">     261 </span><span class="lineCov">   11521110 :         return ((iterator-&gt;event_len &lt;= (((char *) iterator-&gt;ie) - ((char *) iterator-&gt;event))) ? -1 : 0);</span>
+<a name="262"><span class="lineNum">     262 </span>            : }</a>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineCov">   12532382 : enum ast_event_ie_type ast_event_iterator_get_ie_type(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     265 </span>            : {
+<span class="lineNum">     266 </span><span class="lineCov">   12532382 :         return ntohs(iterator-&gt;ie-&gt;ie_type);</span>
+<a name="267"><span class="lineNum">     267 </span>            : }</a>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 : uint32_t ast_event_iterator_get_ie_uint(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     270 </span>            : {
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         return ntohl(get_unaligned_uint32(iterator-&gt;ie-&gt;ie_payload));</span>
+<a name="272"><span class="lineNum">     272 </span>            : }</a>
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 : const char *ast_event_iterator_get_ie_str(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     275 </span>            : {
+<span class="lineNum">     276 </span>            :         const struct ast_event_ie_str_payload *str_payload;
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         str_payload = (struct ast_event_ie_str_payload *) iterator-&gt;ie-&gt;ie_payload;</span>
+<span class="lineNum">     279 </span>            : 
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         return str_payload ? str_payload-&gt;str : NULL;</span>
+<a name="281"><span class="lineNum">     281 </span>            : }</a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">    1011272 : static void *event_iterator_get_ie_raw(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     284 </span>            : {
+<span class="lineNum">     285 </span><span class="lineCov">    1011272 :         return iterator-&gt;ie-&gt;ie_payload;</span>
+<a name="286"><span class="lineNum">     286 </span>            : }</a>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">        201 : enum ast_event_type ast_event_get_type(const struct ast_event *event)</span>
+<span class="lineNum">     289 </span>            : {
+<span class="lineNum">     290 </span><span class="lineCov">        201 :         return ntohs(event-&gt;type);</span>
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineCov">     191876 : uint32_t ast_event_get_ie_uint(const struct ast_event *event, enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     294 </span>            : {
+<span class="lineNum">     295 </span>            :         const uint32_t *ie_val;
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">     191876 :         ie_val = ast_event_get_ie_raw(event, ie_type);</span>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineCov">     191876 :         return ie_val ? ntohl(get_unaligned_uint32(ie_val)) : 0;</span>
+<a name="300"><span class="lineNum">     300 </span>            : }</a>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">     819400 : const char *ast_event_get_ie_str(const struct ast_event *event, enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     303 </span>            : {
+<span class="lineNum">     304 </span>            :         const struct ast_event_ie_str_payload *str_payload;
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">     819400 :         str_payload = ast_event_get_ie_raw(event, ie_type);</span>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">     819400 :         return str_payload ? str_payload-&gt;str : NULL;</span>
+<a name="309"><span class="lineNum">     309 </span>            : }</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineCov">    1035495 : const void *ast_event_get_ie_raw(const struct ast_event *event, enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     312 </span>            : {
+<span class="lineNum">     313 </span>            :         struct ast_event_iterator iterator;
+<span class="lineNum">     314 </span>            :         int res;
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineCov">   12552074 :         for (res = ast_event_iterator_init(&amp;iterator, event); !res; res = ast_event_iterator_next(&amp;iterator)) {</span>
+<span class="lineNum">     317 </span><span class="lineCov">   12527851 :                 if (ast_event_iterator_get_ie_type(&amp;iterator) == ie_type) {</span>
+<span class="lineNum">     318 </span><span class="lineCov">    1011272 :                         return event_iterator_get_ie_raw(&amp;iterator);</span>
+<span class="lineNum">     319 </span>            :                 }
+<span class="lineNum">     320 </span>            :         }
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">      24223 :         return NULL;</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 : static uint16_t event_iterator_get_ie_raw_payload_len(struct ast_event_iterator *iterator)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :         return ntohs(iterator-&gt;ie-&gt;ie_payload_len);</span>
+<a name="328"><span class="lineNum">     328 </span>            : }</a>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : uint16_t ast_event_get_ie_raw_payload_len(const struct ast_event *event, enum ast_event_ie_type ie_type)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         struct ast_event_iterator iterator;
+<span class="lineNum">     333 </span>            :         int res;
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         for (res = ast_event_iterator_init(&amp;iterator, event); !res; res = ast_event_iterator_next(&amp;iterator)) {</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 if (ast_event_iterator_get_ie_type(&amp;iterator) == ie_type) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                         return event_iterator_get_ie_raw_payload_len(&amp;iterator);</span>
+<span class="lineNum">     338 </span>            :                 }
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     342 </span>            : }
+<a name="343"><span class="lineNum">     343 </span>            : </a>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">     435908 : int ast_event_append_ie_str(struct ast_event **event, enum ast_event_ie_type ie_type,</span>
+<span class="lineNum">     346 </span>            :         const char *str)
+<span class="lineNum">     347 </span>            : {
+<span class="lineNum">     348 </span>            :         struct ast_event_ie_str_payload *str_payload;
+<span class="lineNum">     349 </span>            :         size_t payload_len;
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">     435908 :         payload_len = sizeof(*str_payload) + strlen(str);</span>
+<span class="lineNum">     352 </span><span class="lineCov">     435908 :         str_payload = ast_alloca(payload_len);</span>
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineCov">     435908 :         strcpy(str_payload-&gt;str, str);</span>
+<span class="lineNum">     355 </span><span class="lineCov">     435908 :         str_payload-&gt;hash = ast_str_hash(str);</span>
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">     435908 :         return ast_event_append_ie_raw(event, ie_type, str_payload, payload_len);</span>
+<a name="358"><span class="lineNum">     358 </span>            : }</a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">      96870 : int ast_event_append_ie_uint(struct ast_event **event, enum ast_event_ie_type ie_type,</span>
+<span class="lineNum">     361 </span>            :         uint32_t data)
+<span class="lineNum">     362 </span>            : {
+<span class="lineNum">     363 </span><span class="lineCov">      96870 :         data = htonl(data);</span>
+<span class="lineNum">     364 </span><span class="lineCov">      96870 :         return ast_event_append_ie_raw(event, ie_type, &amp;data, sizeof(data));</span>
+<a name="365"><span class="lineNum">     365 </span>            : }</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 : int ast_event_append_ie_bitflags(struct ast_event **event, enum ast_event_ie_type ie_type,</span>
+<span class="lineNum">     368 </span>            :         uint32_t flags)
+<span class="lineNum">     369 </span>            : {
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         flags = htonl(flags);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         return ast_event_append_ie_raw(event, ie_type, &amp;flags, sizeof(flags));</span>
+<a name="372"><span class="lineNum">     372 </span>            : }</a>
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">     556997 : int ast_event_append_ie_raw(struct ast_event **event, enum ast_event_ie_type ie_type,</span>
+<span class="lineNum">     375 </span>            :         const void *data, size_t data_len)
+<span class="lineNum">     376 </span>            : {
+<span class="lineNum">     377 </span>            :         struct ast_event_ie *ie;
+<span class="lineNum">     378 </span>            :         struct ast_event *old_event;
+<span class="lineNum">     379 </span>            :         unsigned int extra_len;
+<span class="lineNum">     380 </span>            :         uint16_t event_len;
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span><span class="lineCov">     556997 :         event_len = ntohs((*event)-&gt;event_len);</span>
+<span class="lineNum">     383 </span><span class="lineCov">     556997 :         extra_len = sizeof(*ie) + data_len;</span>
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">     556997 :         old_event = *event;</span>
+<span class="lineNum">     386 </span><span class="lineCov">     556997 :         *event = ast_realloc(*event, event_len + extra_len);</span>
+<span class="lineNum">     387 </span><span class="lineCov">     556997 :         if (!*event) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                 ast_free(old_event);</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     390 </span>            :         }
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">     556997 :         ie = (struct ast_event_ie *) ( ((char *) *event) + event_len );</span>
+<span class="lineNum">     393 </span><span class="lineCov">     556997 :         ie-&gt;ie_type = htons(ie_type);</span>
+<span class="lineNum">     394 </span><span class="lineCov">     556997 :         ie-&gt;ie_payload_len = htons(data_len);</span>
+<span class="lineNum">     395 </span><span class="lineCov">     556997 :         memcpy(ie-&gt;ie_payload, data, data_len);</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineCov">     556997 :         (*event)-&gt;event_len = htons(event_len + extra_len);</span>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineCov">     556997 :         return 0;</span>
+<a name="400"><span class="lineNum">     400 </span>            : }</a>
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineCov">      24219 : struct ast_event *ast_event_new(enum ast_event_type type, ...)</span>
+<span class="lineNum">     403 </span>            : {
+<span class="lineNum">     404 </span>            :         va_list ap;
+<span class="lineNum">     405 </span>            :         struct ast_event *event;
+<span class="lineNum">     406 </span>            :         enum ast_event_ie_type ie_type;
+<span class="lineNum">     407 </span>            :         struct ast_event_ie_val *ie_val;
+<span class="lineNum">     408 </span><span class="lineCov">      24219 :         AST_LIST_HEAD_NOLOCK_STATIC(ie_vals, ast_event_ie_val);</span>
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span>            :         /* Invalid type */
+<span class="lineNum">     411 </span><span class="lineCov">      24219 :         if (type &gt;= AST_EVENT_TOTAL) {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Someone tried to create an event of invalid &quot;</span>
+<span class="lineNum">     413 </span>            :                         &quot;type '%u'!\n&quot;, type);
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     415 </span>            :         }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">      24219 :         va_start(ap, type);</span>
+<span class="lineNum">     418 </span><span class="lineCov">     556995 :         for (ie_type = va_arg(ap, enum ast_event_ie_type);</span>
+<span class="lineNum">     419 </span>            :                 ie_type != AST_EVENT_IE_END;
+<span class="lineNum">     420 </span><span class="lineCov">     532776 :                 ie_type = va_arg(ap, enum ast_event_ie_type))</span>
+<span class="lineNum">     421 </span>            :         {
+<span class="lineNum">     422 </span><span class="lineCov">     532776 :                 struct ast_event_ie_val *ie_value = ast_alloca(sizeof(*ie_value));</span>
+<span class="lineNum">     423 </span><span class="lineCov">     532776 :                 int insert = 0;</span>
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineCov">     532776 :                 memset(ie_value, 0, sizeof(*ie_value));</span>
+<span class="lineNum">     426 </span><span class="lineCov">     532776 :                 ie_value-&gt;ie_type = ie_type;</span>
+<span class="lineNum">     427 </span><span class="lineCov">     532776 :                 ie_value-&gt;ie_pltype = va_arg(ap, enum ast_event_ie_pltype);</span>
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineCov">     532776 :                 switch (ie_value-&gt;ie_pltype) {</span>
+<span class="lineNum">     430 </span><span class="lineCov">      96869 :                 case AST_EVENT_IE_PLTYPE_UINT:</span>
+<span class="lineNum">     431 </span><span class="lineCov">      96869 :                         ie_value-&gt;payload.uint = va_arg(ap, uint32_t);</span>
+<span class="lineNum">     432 </span><span class="lineCov">      96869 :                         insert = 1;</span>
+<span class="lineNum">     433 </span><span class="lineCov">      96869 :                         break;</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_BITFLAGS:</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                         ie_value-&gt;payload.uint = va_arg(ap, uint32_t);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                         insert = 1;</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     438 </span><span class="lineCov">     435907 :                 case AST_EVENT_IE_PLTYPE_STR:</span>
+<span class="lineNum">     439 </span><span class="lineCov">     435907 :                         ie_value-&gt;payload.str = va_arg(ap, const char *);</span>
+<span class="lineNum">     440 </span><span class="lineCov">     435907 :                         insert = 1;</span>
+<span class="lineNum">     441 </span><span class="lineCov">     435907 :                         break;</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_RAW:</span>
+<span class="lineNum">     443 </span>            :                 {
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                         void *data = va_arg(ap, void *);</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :                         size_t datalen = va_arg(ap, size_t);</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                         ie_value-&gt;payload.raw = ast_alloca(datalen);</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                         memcpy(ie_value-&gt;payload.raw, data, datalen);</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                         ie_value-&gt;raw_datalen = datalen;</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :                         insert = 1;</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     451 </span>            :                 }
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_UNKNOWN:</span>
+<span class="lineNum">     453 </span>            :                 case AST_EVENT_IE_PLTYPE_EXISTS:
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     455 </span>            :                 }
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span><span class="lineCov">     532776 :                 if (insert) {</span>
+<span class="lineNum">     458 </span><span class="lineCov">     532776 :                         AST_LIST_INSERT_TAIL(&amp;ie_vals, ie_value, entry);</span>
+<span class="lineNum">     459 </span>            :                 } else {
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unsupported PLTYPE(%d)\n&quot;, ie_value-&gt;ie_pltype);</span>
+<span class="lineNum">     461 </span>            :                 }
+<span class="lineNum">     462 </span>            :         }
+<span class="lineNum">     463 </span><span class="lineCov">      24219 :         va_end(ap);</span>
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span><span class="lineCov">      24219 :         if (!(event = ast_calloc(1, sizeof(*event)))) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     467 </span>            :         }
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">      24219 :         event-&gt;type = htons(type);</span>
+<span class="lineNum">     470 </span><span class="lineCov">      24219 :         event-&gt;event_len = htons(sizeof(*event));</span>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">     556995 :         AST_LIST_TRAVERSE(&amp;ie_vals, ie_val, entry) {</span>
+<span class="lineNum">     473 </span><span class="lineCov">     532776 :                 switch (ie_val-&gt;ie_pltype) {</span>
+<span class="lineNum">     474 </span><span class="lineCov">     435907 :                 case AST_EVENT_IE_PLTYPE_STR:</span>
+<span class="lineNum">     475 </span><span class="lineCov">     435907 :                         ast_event_append_ie_str(&amp;event, ie_val-&gt;ie_type, ie_val-&gt;payload.str);</span>
+<span class="lineNum">     476 </span><span class="lineCov">     435907 :                         break;</span>
+<span class="lineNum">     477 </span><span class="lineCov">      96869 :                 case AST_EVENT_IE_PLTYPE_UINT:</span>
+<span class="lineNum">     478 </span><span class="lineCov">      96869 :                         ast_event_append_ie_uint(&amp;event, ie_val-&gt;ie_type, ie_val-&gt;payload.uint);</span>
+<span class="lineNum">     479 </span><span class="lineCov">      96869 :                         break;</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_BITFLAGS:</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :                         ast_event_append_ie_bitflags(&amp;event, ie_val-&gt;ie_type, ie_val-&gt;payload.uint);</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_RAW:</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                         ast_event_append_ie_raw(&amp;event, ie_val-&gt;ie_type,</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                                         ie_val-&gt;payload.raw, ie_val-&gt;raw_datalen);</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 case AST_EVENT_IE_PLTYPE_EXISTS:</span>
+<span class="lineNum">     488 </span>            :                 case AST_EVENT_IE_PLTYPE_UNKNOWN:
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     490 </span>            :                 }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span>            :                 /* realloc inside one of the append functions failed */
+<span class="lineNum">     493 </span><span class="lineCov">     532776 :                 if (!event) {</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     495 </span>            :                 }
+<span class="lineNum">     496 </span>            :         }
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">      24219 :         if (!ast_event_get_ie_raw(event, AST_EVENT_IE_EID)) {</span>
+<span class="lineNum">     499 </span>            :                 /* If the event is originating on this server, add the server's
+<span class="lineNum">     500 </span>            :                  * entity ID to the event. */
+<span class="lineNum">     501 </span><span class="lineCov">      24219 :                 ast_event_append_eid(&amp;event);</span>
+<span class="lineNum">     502 </span>            :         }
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">      24219 :         return event;</span>
+<a name="505"><span class="lineNum">     505 </span>            : }</a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineCov">      24219 : int ast_event_append_eid(struct ast_event **event)</span>
+<span class="lineNum">     508 </span>            : {
+<span class="lineNum">     509 </span><span class="lineCov">      24219 :         return ast_event_append_ie_raw(event, AST_EVENT_IE_EID,</span>
+<span class="lineNum">     510 </span>            :                         &amp;ast_eid_default, sizeof(ast_eid_default));
+<a name="511"><span class="lineNum">     511 </span>            : }</a>
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span><span class="lineCov">      24022 : void ast_event_destroy(struct ast_event *event)</span>
+<span class="lineNum">     514 </span>            : {
+<span class="lineNum">     515 </span><span class="lineCov">      24022 :         ast_free(event);</span>
+<a name="516"><span class="lineNum">     516 </span><span class="lineCov">      24022 : }</span></a>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 : size_t ast_event_minimum_length(void)</span>
+<span class="lineNum">     519 </span>            : {
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         return sizeof(struct ast_event);</span>
+<span class="lineNum">     521 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

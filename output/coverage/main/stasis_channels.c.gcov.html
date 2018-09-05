@@ -1,0 +1,1896 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/stasis_channels.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - stasis_channels.c<span style="font-size: 80%;"> (source / <a href="stasis_channels.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">650</td>
+            <td class="headerCovTableEntry">810</td>
+            <td class="headerCovTableEntryMed">80.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">88</td>
+            <td class="headerCovTableEntry">91</td>
+            <td class="headerCovTableEntryHi">96.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matt Jordan &lt;mjordan@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stasis Messages and Data Types for Channel Objects
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author \verbatim Matt Jordan &lt;mjordan@digium.com&gt; \endverbatim
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/json.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/stasis.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/stasis_cache_pattern.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/dial.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      45 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;VarSet&quot;&gt;
+<span class="lineNum">      46 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_DIALPLAN&quot;&gt;
+<span class="lineNum">      47 </span>            :                         &lt;synopsis&gt;Raised when a variable is set to a particular value.&lt;/synopsis&gt;
+<span class="lineNum">      48 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      49 </span>            :                                 &lt;channel_snapshot/&gt;
+<span class="lineNum">      50 </span>            :                                 &lt;parameter name=&quot;Variable&quot;&gt;
+<span class="lineNum">      51 </span>            :                                         &lt;para&gt;The variable being set.&lt;/para&gt;
+<span class="lineNum">      52 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      53 </span>            :                                 &lt;parameter name=&quot;Value&quot;&gt;
+<span class="lineNum">      54 </span>            :                                         &lt;para&gt;The new value of the variable.&lt;/para&gt;
+<span class="lineNum">      55 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      56 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      57 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      58 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">      59 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;AgentLogin&quot;&gt;
+<span class="lineNum">      60 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_AGENT&quot;&gt;
+<span class="lineNum">      61 </span>            :                         &lt;synopsis&gt;Raised when an Agent has logged in.&lt;/synopsis&gt;
+<span class="lineNum">      62 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      63 </span>            :                                 &lt;channel_snapshot/&gt;
+<span class="lineNum">      64 </span>            :                                 &lt;parameter name=&quot;Agent&quot;&gt;
+<span class="lineNum">      65 </span>            :                                         &lt;para&gt;Agent ID of the agent.&lt;/para&gt;
+<span class="lineNum">      66 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      67 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      68 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">      69 </span>            :                                 &lt;ref type=&quot;application&quot;&gt;AgentLogin&lt;/ref&gt;
+<span class="lineNum">      70 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;AgentLogoff&lt;/ref&gt;
+<span class="lineNum">      71 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">      72 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      73 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">      74 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;AgentLogoff&quot;&gt;
+<span class="lineNum">      75 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_AGENT&quot;&gt;
+<span class="lineNum">      76 </span>            :                         &lt;synopsis&gt;Raised when an Agent has logged off.&lt;/synopsis&gt;
+<span class="lineNum">      77 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      78 </span>            :                                 &lt;xi:include xpointer=&quot;xpointer(/docs/managerEvent[@name='AgentLogin']/managerEventInstance/syntax/parameter)&quot; /&gt;
+<span class="lineNum">      79 </span>            :                                 &lt;parameter name=&quot;Logintime&quot;&gt;
+<span class="lineNum">      80 </span>            :                                         &lt;para&gt;The number of seconds the agent was logged in.&lt;/para&gt;
+<span class="lineNum">      81 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      82 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      83 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">      84 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;AgentLogin&lt;/ref&gt;
+<span class="lineNum">      85 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">      86 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      87 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">      88 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;ChannelTalkingStart&quot;&gt;
+<span class="lineNum">      89 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_CLASS&quot;&gt;
+<span class="lineNum">      90 </span>            :                         &lt;synopsis&gt;Raised when talking is detected on a channel.&lt;/synopsis&gt;
+<span class="lineNum">      91 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      92 </span>            :                                 &lt;channel_snapshot/&gt;
+<span class="lineNum">      93 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      94 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">      95 </span>            :                                 &lt;ref type=&quot;function&quot;&gt;TALK_DETECT&lt;/ref&gt;
+<span class="lineNum">      96 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;ChannelTalkingStop&lt;/ref&gt;
+<span class="lineNum">      97 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">      98 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      99 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">     100 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;ChannelTalkingStop&quot;&gt;
+<span class="lineNum">     101 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_CLASS&quot;&gt;
+<span class="lineNum">     102 </span>            :                         &lt;synopsis&gt;Raised when talking is no longer detected on a channel.&lt;/synopsis&gt;
+<span class="lineNum">     103 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">     104 </span>            :                                 &lt;channel_snapshot/&gt;
+<span class="lineNum">     105 </span>            :                                 &lt;parameter name=&quot;Duration&quot;&gt;
+<span class="lineNum">     106 </span>            :                                         &lt;para&gt;The length in time, in milliseconds, that talking was
+<span class="lineNum">     107 </span>            :                                         detected on the channel.&lt;/para&gt;
+<span class="lineNum">     108 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">     109 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">     110 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">     111 </span>            :                                 &lt;ref type=&quot;function&quot;&gt;TALK_DETECT&lt;/ref&gt;
+<span class="lineNum">     112 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;ChannelTalkingStart&lt;/ref&gt;
+<span class="lineNum">     113 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">     114 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">     115 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">     116 </span>            : ***/
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            : #define NUM_MULTI_CHANNEL_BLOB_BUCKETS 7
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : static struct stasis_cp_all *channel_cache_all;
+<span class="lineNum">     121 </span>            : static struct stasis_cache *channel_cache_by_name;
+<a name="122"><span class="lineNum">     122 </span>            : static struct stasis_caching_topic *channel_by_name_topic;</a>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">      28449 : struct stasis_cp_all *ast_channel_cache_all(void)</span>
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span><span class="lineCov">      28449 :         return channel_cache_all;</span>
+<a name="127"><span class="lineNum">     127 </span>            : }</a>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">      55019 : struct stasis_cache *ast_channel_cache(void)</span>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span><span class="lineCov">      55019 :         return stasis_cp_all_cache(channel_cache_all);</span>
+<a name="132"><span class="lineNum">     132 </span>            : }</a>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">       3182 : struct stasis_topic *ast_channel_topic_all(void)</span>
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineCov">       3182 :         return stasis_cp_all_topic(channel_cache_all);</span>
+<a name="137"><span class="lineNum">     137 </span>            : }</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">       5620 : struct stasis_topic *ast_channel_topic_all_cached(void)</span>
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span><span class="lineCov">       5620 :         return stasis_cp_all_topic_cached(channel_cache_all);</span>
+<a name="142"><span class="lineNum">     142 </span>            : }</a>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">         22 : struct stasis_cache *ast_channel_cache_by_name(void)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span><span class="lineCov">         22 :         return channel_cache_by_name;</span>
+<a name="147"><span class="lineNum">     147 </span>            : }</a>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">     159358 : static const char *channel_snapshot_get_id(struct stasis_message *message)</span>
+<span class="lineNum">     150 </span>            : {
+<span class="lineNum">     151 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     152 </span><span class="lineCov">     159358 :         if (ast_channel_snapshot_type() != stasis_message_type(message)) {</span>
+<span class="lineNum">     153 </span><span class="lineCov">     106485 :                 return NULL;</span>
+<span class="lineNum">     154 </span>            :         }
+<span class="lineNum">     155 </span><span class="lineCov">      52873 :         snapshot = stasis_message_data(message);</span>
+<span class="lineNum">     156 </span><span class="lineCov">      52873 :         return snapshot-&gt;uniqueid;</span>
+<a name="157"><span class="lineNum">     157 </span>            : }</a>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">     110033 : static const char *channel_snapshot_get_name(struct stasis_message *message)</span>
+<span class="lineNum">     160 </span>            : {
+<span class="lineNum">     161 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     162 </span><span class="lineCov">     110033 :         if (ast_channel_snapshot_type() != stasis_message_type(message)) {</span>
+<span class="lineNum">     163 </span><span class="lineCov">      57160 :                 return NULL;</span>
+<span class="lineNum">     164 </span>            :         }
+<span class="lineNum">     165 </span><span class="lineCov">      52873 :         snapshot = stasis_message_data(message);</span>
+<span class="lineNum">     166 </span><span class="lineCov">      52873 :         return snapshot-&gt;name;</span>
+<span class="lineNum">     167 </span>            : }
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : /*!
+<span class="lineNum">     170 </span>            :  * \internal
+<a name="171"><span class="lineNum">     171 </span>            :  * \brief Hash function for \ref ast_channel_snapshot objects</a>
+<span class="lineNum">     172 </span>            :  */
+<span class="lineNum">     173 </span><span class="lineCov">          4 : static int channel_snapshot_hash_cb(const void *obj, const int flags)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span><span class="lineCov">          4 :         const struct ast_channel_snapshot *object = obj;</span>
+<span class="lineNum">     176 </span>            :         const char *key;
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">          4 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">          2 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     180 </span><span class="lineCov">          2 :                 key = obj;</span>
+<span class="lineNum">     181 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">     182 </span><span class="lineCov">          2 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     183 </span><span class="lineCov">          2 :                 key = object-&gt;name;</span>
+<span class="lineNum">     184 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     188 </span>            :         }
+<span class="lineNum">     189 </span><span class="lineCov">          4 :         return ast_str_case_hash(key);</span>
+<span class="lineNum">     190 </span>            : }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            : /*!
+<span class="lineNum">     193 </span>            :  * \internal
+<a name="194"><span class="lineNum">     194 </span>            :  * \brief Comparison function for \ref ast_channel_snapshot objects</a>
+<span class="lineNum">     195 </span>            :  */
+<span class="lineNum">     196 </span><span class="lineCov">          2 : static int channel_snapshot_cmp_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     197 </span>            : {
+<span class="lineNum">     198 </span><span class="lineCov">          2 :         const struct ast_channel_snapshot *object_left = obj;</span>
+<span class="lineNum">     199 </span><span class="lineCov">          2 :         const struct ast_channel_snapshot *object_right = arg;</span>
+<span class="lineNum">     200 </span><span class="lineCov">          2 :         const char *right_key = arg;</span>
+<span class="lineNum">     201 </span>            :         int cmp;
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">          2 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 right_key = object_right-&gt;name;</span>
+<span class="lineNum">     206 </span><span class="lineCov">          2 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     207 </span><span class="lineCov">          2 :                 cmp = strcasecmp(object_left-&gt;name, right_key);</span>
+<span class="lineNum">     208 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 cmp = strncasecmp(object_left-&gt;name, right_key, strlen(right_key));</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     215 </span>            :         }
+<span class="lineNum">     216 </span><span class="lineCov">          2 :         if (cmp) {</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     218 </span>            :         }
+<span class="lineNum">     219 </span><span class="lineCov">          2 :         return CMP_MATCH;</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span><span class="lineCov">      64194 : static void channel_snapshot_dtor(void *obj)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span><span class="lineCov">      64194 :         struct ast_channel_snapshot *snapshot = obj;</span>
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">      64194 :         ast_string_field_free_memory(snapshot);</span>
+<span class="lineNum">     227 </span><span class="lineCov">      64194 :         ao2_cleanup(snapshot-&gt;manager_vars);</span>
+<span class="lineNum">     228 </span><span class="lineCov">      64194 :         ao2_cleanup(snapshot-&gt;ari_vars);</span>
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">      64194 : }</span></a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">      88213 : struct ast_channel_snapshot *ast_channel_snapshot_create(struct ast_channel *chan)</span>
+<span class="lineNum">     232 </span>            : {
+<span class="lineNum">     233 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     234 </span>            :         struct ast_bridge *bridge;
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span>            :         /* no snapshots for dummy channels */
+<span class="lineNum">     237 </span><span class="lineCov">      88213 :         if (!ast_channel_tech(chan)) {</span>
+<span class="lineNum">     238 </span><span class="lineCov">      24016 :                 return NULL;</span>
+<span class="lineNum">     239 </span>            :         }
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineCov">      64197 :         snapshot = ao2_alloc_options(sizeof(*snapshot), channel_snapshot_dtor,</span>
+<span class="lineNum">     242 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     243 </span><span class="lineCov">      64197 :         if (!snapshot || ast_string_field_init(snapshot, 1024)) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 ao2_cleanup(snapshot);</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     246 </span>            :         }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, name, ast_channel_name(chan));</span>
+<span class="lineNum">     249 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, type, ast_channel_tech(chan)-&gt;type);</span>
+<span class="lineNum">     250 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, accountcode, ast_channel_accountcode(chan));</span>
+<span class="lineNum">     251 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, peeraccount, ast_channel_peeraccount(chan));</span>
+<span class="lineNum">     252 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, userfield, ast_channel_userfield(chan));</span>
+<span class="lineNum">     253 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, uniqueid, ast_channel_uniqueid(chan));</span>
+<span class="lineNum">     254 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, linkedid, ast_channel_linkedid(chan));</span>
+<span class="lineNum">     255 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, hangupsource, ast_channel_hangupsource(chan));</span>
+<span class="lineNum">     256 </span><span class="lineCov">      64197 :         if (ast_channel_appl(chan)) {</span>
+<span class="lineNum">     257 </span><span class="lineCov">      48015 :                 ast_string_field_set(snapshot, appl, ast_channel_appl(chan));</span>
+<span class="lineNum">     258 </span>            :         }
+<span class="lineNum">     259 </span><span class="lineCov">      64197 :         if (ast_channel_data(chan)) {</span>
+<span class="lineNum">     260 </span><span class="lineCov">      48015 :                 ast_string_field_set(snapshot, data, ast_channel_data(chan));</span>
+<span class="lineNum">     261 </span>            :         }
+<span class="lineNum">     262 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, context, ast_channel_context(chan));</span>
+<span class="lineNum">     263 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, exten, ast_channel_exten(chan));</span>
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_name,</span>
+<span class="lineNum">     266 </span>            :                 S_COR(ast_channel_caller(chan)-&gt;id.name.valid, ast_channel_caller(chan)-&gt;id.name.str, &quot;&quot;));
+<span class="lineNum">     267 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_number,</span>
+<span class="lineNum">     268 </span>            :                 S_COR(ast_channel_caller(chan)-&gt;id.number.valid, ast_channel_caller(chan)-&gt;id.number.str, &quot;&quot;));
+<span class="lineNum">     269 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_subaddr,</span>
+<span class="lineNum">     270 </span>            :                 S_COR(ast_channel_caller(chan)-&gt;id.subaddress.valid, ast_channel_caller(chan)-&gt;id.subaddress.str, &quot;&quot;));
+<span class="lineNum">     271 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_ani,</span>
+<span class="lineNum">     272 </span>            :                 S_COR(ast_channel_caller(chan)-&gt;ani.number.valid, ast_channel_caller(chan)-&gt;ani.number.str, &quot;&quot;));
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_rdnis,</span>
+<span class="lineNum">     275 </span>            :                 S_COR(ast_channel_redirecting(chan)-&gt;from.number.valid, ast_channel_redirecting(chan)-&gt;from.number.str, &quot;&quot;));
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, caller_dnid,</span>
+<span class="lineNum">     278 </span>            :                 S_OR(ast_channel_dialed(chan)-&gt;number.str, &quot;&quot;));
+<span class="lineNum">     279 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, dialed_subaddr,</span>
+<span class="lineNum">     280 </span>            :                 S_COR(ast_channel_dialed(chan)-&gt;subaddress.valid, ast_channel_dialed(chan)-&gt;subaddress.str, &quot;&quot;));
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, connected_name,</span>
+<span class="lineNum">     283 </span>            :                 S_COR(ast_channel_connected(chan)-&gt;id.name.valid, ast_channel_connected(chan)-&gt;id.name.str, &quot;&quot;));
+<span class="lineNum">     284 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, connected_number,</span>
+<span class="lineNum">     285 </span>            :                 S_COR(ast_channel_connected(chan)-&gt;id.number.valid, ast_channel_connected(chan)-&gt;id.number.str, &quot;&quot;));
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineCov">      64197 :         ast_string_field_set(snapshot, language, ast_channel_language(chan));</span>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineCov">      64197 :         if ((bridge = ast_channel_get_bridge(chan))) {</span>
+<span class="lineNum">     290 </span><span class="lineCov">       8507 :                 if (!ast_test_flag(&amp;bridge-&gt;feature_flags, AST_BRIDGE_FLAG_INVISIBLE)) {</span>
+<span class="lineNum">     291 </span><span class="lineCov">       8459 :                         ast_string_field_set(snapshot, bridgeid, bridge-&gt;uniqueid);</span>
+<span class="lineNum">     292 </span>            :                 }
+<span class="lineNum">     293 </span><span class="lineCov">       8507 :                 ao2_cleanup(bridge);</span>
+<span class="lineNum">     294 </span>            :         }
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">      64197 :         snapshot-&gt;creationtime = ast_channel_creationtime(chan);</span>
+<span class="lineNum">     297 </span><span class="lineCov">      64197 :         snapshot-&gt;state = ast_channel_state(chan);</span>
+<span class="lineNum">     298 </span><span class="lineCov">      64197 :         snapshot-&gt;priority = ast_channel_priority(chan);</span>
+<span class="lineNum">     299 </span><span class="lineCov">      64197 :         snapshot-&gt;amaflags = ast_channel_amaflags(chan);</span>
+<span class="lineNum">     300 </span><span class="lineCov">      64197 :         snapshot-&gt;hangupcause = ast_channel_hangupcause(chan);</span>
+<span class="lineNum">     301 </span><span class="lineCov">      64197 :         ast_copy_flags(&amp;snapshot-&gt;flags, ast_channel_flags(chan), 0xFFFFFFFF);</span>
+<span class="lineNum">     302 </span><span class="lineCov">      64197 :         snapshot-&gt;caller_pres = ast_party_id_presentation(&amp;ast_channel_caller(chan)-&gt;id);</span>
+<span class="lineNum">     303 </span><span class="lineCov">      64197 :         ast_set_flag(&amp;snapshot-&gt;softhangup_flags, ast_channel_softhangup_internal_flag(chan));</span>
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span><span class="lineCov">      64197 :         snapshot-&gt;manager_vars = ast_channel_get_manager_vars(chan);</span>
+<span class="lineNum">     306 </span><span class="lineCov">      64197 :         snapshot-&gt;ari_vars = ast_channel_get_ari_vars(chan);</span>
+<span class="lineNum">     307 </span><span class="lineCov">      64197 :         snapshot-&gt;tech_properties = ast_channel_tech(chan)-&gt;properties;</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">      64197 :         return snapshot;</span>
+<a name="310"><span class="lineNum">     310 </span>            : }</a>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">       4254 : static void publish_message_for_channel_topics(struct stasis_message *message, struct ast_channel *chan)</span>
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span><span class="lineCov">       4254 :         if (chan) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">       4254 :                 stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">     316 </span>            :         } else {
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 stasis_publish(ast_channel_topic_all(), message);</span>
+<span class="lineNum">     318 </span>            :         }
+<a name="319"><span class="lineNum">     319 </span><span class="lineCov">       4254 : }</span></a>
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">      43345 : static void channel_blob_dtor(void *obj)</span>
+<span class="lineNum">     322 </span>            : {
+<span class="lineNum">     323 </span><span class="lineCov">      43345 :         struct ast_channel_blob *event = obj;</span>
+<span class="lineNum">     324 </span><span class="lineCov">      43345 :         ao2_cleanup(event-&gt;snapshot);</span>
+<span class="lineNum">     325 </span><span class="lineCov">      43345 :         ast_json_unref(event-&gt;blob);</span>
+<a name="326"><span class="lineNum">     326 </span><span class="lineCov">      43345 : }</span></a>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineCov">       4254 : static void ast_channel_publish_dial_internal(struct ast_channel *caller,</span>
+<span class="lineNum">     329 </span>            :         struct ast_channel *peer, struct ast_channel *forwarded, const char *dialstring,
+<span class="lineNum">     330 </span>            :         const char *dialstatus, const char *forward)
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         struct ast_multi_channel_blob *payload;
+<span class="lineNum">     333 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     334 </span>            :         struct ast_json *blob;
+<span class="lineNum">     335 </span>            :         struct ast_channel_snapshot *peer_snapshot;
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineCov">       4254 :         if (!ast_channel_dial_type()) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">       4254 :         ast_assert(peer != NULL);</span>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">       4254 :         blob = ast_json_pack(&quot;{s: s, s: s, s: s}&quot;,</span>
+<span class="lineNum">     344 </span><span class="lineCov">       4254 :                 &quot;dialstatus&quot;, S_OR(dialstatus, &quot;&quot;),</span>
+<span class="lineNum">     345 </span><span class="lineCov">       4254 :                 &quot;forward&quot;, S_OR(forward, &quot;&quot;),</span>
+<span class="lineNum">     346 </span><span class="lineCov">       4254 :                 &quot;dialstring&quot;, S_OR(dialstring, &quot;&quot;));</span>
+<span class="lineNum">     347 </span><span class="lineCov">       4254 :         if (!blob) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span><span class="lineCov">       4254 :         payload = ast_multi_channel_blob_create(blob);</span>
+<span class="lineNum">     351 </span><span class="lineCov">       4254 :         ast_json_unref(blob);</span>
+<span class="lineNum">     352 </span><span class="lineCov">       4254 :         if (!payload) {</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     354 </span>            :         }
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineCov">       4254 :         if (caller) {</span>
+<span class="lineNum">     357 </span>            :                 struct ast_channel_snapshot *caller_snapshot;
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineCov">       2020 :                 ast_channel_lock(caller);</span>
+<span class="lineNum">     360 </span><span class="lineCov">       2020 :                 if (ast_strlen_zero(dialstatus)) {</span>
+<span class="lineNum">     361 </span><span class="lineCov">        880 :                         caller_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(caller));</span>
+<span class="lineNum">     362 </span>            :                 } else {
+<span class="lineNum">     363 </span><span class="lineCov">       1140 :                         caller_snapshot = ast_channel_snapshot_create(caller);</span>
+<span class="lineNum">     364 </span>            :                 }
+<span class="lineNum">     365 </span><span class="lineCov">       2020 :                 ast_channel_unlock(caller);</span>
+<span class="lineNum">     366 </span><span class="lineCov">       2020 :                 if (!caller_snapshot) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                         ao2_ref(payload, -1);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     369 </span>            :                 }
+<span class="lineNum">     370 </span><span class="lineCov">       2020 :                 ast_multi_channel_blob_add_channel(payload, &quot;caller&quot;, caller_snapshot);</span>
+<span class="lineNum">     371 </span><span class="lineCov">       2020 :                 ao2_ref(caller_snapshot, -1);</span>
+<span class="lineNum">     372 </span>            :         }
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">       4254 :         ast_channel_lock(peer);</span>
+<span class="lineNum">     375 </span><span class="lineCov">       4254 :         if (ast_strlen_zero(dialstatus)) {</span>
+<span class="lineNum">     376 </span><span class="lineCov">       1949 :                 peer_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(peer));</span>
+<span class="lineNum">     377 </span>            :         } else {
+<span class="lineNum">     378 </span><span class="lineCov">       2305 :                 peer_snapshot = ast_channel_snapshot_create(peer);</span>
+<span class="lineNum">     379 </span>            :         }
+<span class="lineNum">     380 </span><span class="lineCov">       4254 :         ast_channel_unlock(peer);</span>
+<span class="lineNum">     381 </span><span class="lineCov">       4254 :         if (!peer_snapshot) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 ao2_ref(payload, -1);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     384 </span>            :         }
+<span class="lineNum">     385 </span><span class="lineCov">       4254 :         ast_multi_channel_blob_add_channel(payload, &quot;peer&quot;, peer_snapshot);</span>
+<span class="lineNum">     386 </span><span class="lineCov">       4254 :         ao2_ref(peer_snapshot, -1);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">       4254 :         if (forwarded) {</span>
+<span class="lineNum">     389 </span>            :                 struct ast_channel_snapshot *forwarded_snapshot;
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">         32 :                 ast_channel_lock(forwarded);</span>
+<span class="lineNum">     392 </span><span class="lineCov">         32 :                 forwarded_snapshot = ast_channel_snapshot_create(forwarded);</span>
+<span class="lineNum">     393 </span><span class="lineCov">         32 :                 ast_channel_unlock(forwarded);</span>
+<span class="lineNum">     394 </span><span class="lineCov">         32 :                 if (!forwarded_snapshot) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         ao2_ref(payload, -1);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     397 </span>            :                 }
+<span class="lineNum">     398 </span><span class="lineCov">         32 :                 ast_multi_channel_blob_add_channel(payload, &quot;forwarded&quot;, forwarded_snapshot);</span>
+<span class="lineNum">     399 </span><span class="lineCov">         32 :                 ao2_ref(forwarded_snapshot, -1);</span>
+<span class="lineNum">     400 </span>            :         }
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineCov">       4254 :         msg = stasis_message_create(ast_channel_dial_type(), payload);</span>
+<span class="lineNum">     403 </span><span class="lineCov">       4254 :         ao2_ref(payload, -1);</span>
+<span class="lineNum">     404 </span><span class="lineCov">       4254 :         if (msg) {</span>
+<span class="lineNum">     405 </span><span class="lineCov">       4254 :                 publish_message_for_channel_topics(msg, caller ?: peer);</span>
+<span class="lineNum">     406 </span><span class="lineCov">       4254 :                 ao2_ref(msg, -1);</span>
+<span class="lineNum">     407 </span>            :         }
+<span class="lineNum">     408 </span>            : }
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span>            : static void remove_dial_masquerade(struct ast_channel *peer);
+<span class="lineNum">     411 </span>            : static void remove_dial_masquerade_caller(struct ast_channel *caller);
+<span class="lineNum">     412 </span>            : static int set_dial_masquerade(struct ast_channel *caller,
+<a name="413"><span class="lineNum">     413 </span>            :         struct ast_channel *peer, const char *dialstring);</a>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">       4248 : void ast_channel_publish_dial_forward(struct ast_channel *caller, struct ast_channel *peer,</span>
+<span class="lineNum">     416 </span>            :         struct ast_channel *forwarded, const char *dialstring, const char *dialstatus,
+<span class="lineNum">     417 </span>            :         const char *forward)
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span><span class="lineCov">       4248 :         ast_assert(peer != NULL);</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span>            :         /* XXX With an early bridge the below dial masquerade datastore code could, theoretically,
+<span class="lineNum">     422 </span>            :          * go away as the act of changing the channel during dialing would be done using the bridge
+<span class="lineNum">     423 </span>            :          * API itself and not a masquerade.
+<span class="lineNum">     424 </span>            :          */
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">       4248 :         if (caller) {</span>
+<span class="lineNum">     427 </span>            :                 /*
+<span class="lineNum">     428 </span>            :                  * Lock two or three channels.
+<span class="lineNum">     429 </span>            :                  *
+<span class="lineNum">     430 </span>            :                  * We need to hold the locks to hold off a potential masquerade
+<span class="lineNum">     431 </span>            :                  * messing up the stasis dial event ordering.
+<span class="lineNum">     432 </span>            :                  */
+<span class="lineNum">     433 </span><span class="lineCov">       6557 :                 for (;; ast_channel_unlock(caller), sched_yield()) {</span>
+<span class="lineNum">     434 </span><span class="lineCov">       8571 :                         ast_channel_lock(caller);</span>
+<span class="lineNum">     435 </span><span class="lineCov">       8571 :                         if (ast_channel_trylock(peer)) {</span>
+<span class="lineNum">     436 </span><span class="lineCov">       6557 :                                 continue;</span>
+<span class="lineNum">     437 </span>            :                         }
+<span class="lineNum">     438 </span><span class="lineCov">       2014 :                         if (forwarded &amp;&amp; ast_channel_trylock(forwarded)) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                                 ast_channel_unlock(peer);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     441 </span>            :                         }
+<span class="lineNum">     442 </span><span class="lineCov">       2014 :                         break;</span>
+<span class="lineNum">     443 </span>            :                 }
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineCov">       2014 :                 if (ast_strlen_zero(dialstatus)) {</span>
+<span class="lineNum">     446 </span><span class="lineCov">        877 :                         set_dial_masquerade(caller, peer, dialstring);</span>
+<span class="lineNum">     447 </span>            :                 } else {
+<span class="lineNum">     448 </span><span class="lineCov">       1137 :                         remove_dial_masquerade(peer);</span>
+<span class="lineNum">     449 </span>            :                 }
+<span class="lineNum">     450 </span>            :         }
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineCov">       4248 :         ast_channel_publish_dial_internal(caller, peer, forwarded, dialstring, dialstatus,</span>
+<span class="lineNum">     453 </span>            :                 forward);
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">       4248 :         if (caller) {</span>
+<span class="lineNum">     456 </span><span class="lineCov">       2014 :                 if (forwarded) {</span>
+<span class="lineNum">     457 </span><span class="lineCov">         21 :                         ast_channel_unlock(forwarded);</span>
+<span class="lineNum">     458 </span>            :                 }
+<span class="lineNum">     459 </span><span class="lineCov">       2014 :                 ast_channel_unlock(peer);</span>
+<span class="lineNum">     460 </span><span class="lineCov">       2014 :                 remove_dial_masquerade_caller(caller);</span>
+<span class="lineNum">     461 </span><span class="lineCov">       2014 :                 ast_channel_unlock(caller);</span>
+<span class="lineNum">     462 </span>            :         }
+<a name="463"><span class="lineNum">     463 </span><span class="lineCov">       4248 : }</span></a>
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span><span class="lineCov">       4216 : void ast_channel_publish_dial(struct ast_channel *caller, struct ast_channel *peer,</span>
+<span class="lineNum">     466 </span>            :         const char *dialstring, const char *dialstatus)
+<span class="lineNum">     467 </span>            : {
+<span class="lineNum">     468 </span><span class="lineCov">       4216 :         ast_channel_publish_dial_forward(caller, peer, NULL, dialstring, dialstatus, NULL);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">       4216 : }</span></a>
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineCov">      43345 : static struct stasis_message *create_channel_blob_message(struct ast_channel_snapshot *snapshot,</span>
+<span class="lineNum">     472 </span>            :                 struct stasis_message_type *type,
+<span class="lineNum">     473 </span>            :                 struct ast_json *blob)
+<span class="lineNum">     474 </span>            : {
+<span class="lineNum">     475 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     476 </span>            :         struct ast_channel_blob *obj;
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">      43345 :         obj = ao2_alloc(sizeof(*obj), channel_blob_dtor);</span>
+<span class="lineNum">     479 </span><span class="lineCov">      43345 :         if (!obj) {</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     481 </span>            :         }
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">      43345 :         if (snapshot) {</span>
+<span class="lineNum">     484 </span><span class="lineCov">      42362 :                 obj-&gt;snapshot = snapshot;</span>
+<span class="lineNum">     485 </span><span class="lineCov">      42362 :                 ao2_ref(obj-&gt;snapshot, +1);</span>
+<span class="lineNum">     486 </span>            :         }
+<span class="lineNum">     487 </span><span class="lineCov">      43345 :         if (!blob) {</span>
+<span class="lineNum">     488 </span><span class="lineCov">        188 :                 blob = ast_json_null();</span>
+<span class="lineNum">     489 </span>            :         }
+<span class="lineNum">     490 </span><span class="lineCov">      43345 :         obj-&gt;blob = ast_json_ref(blob);</span>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">      43345 :         msg = stasis_message_create(type, obj);</span>
+<span class="lineNum">     493 </span><span class="lineCov">      43345 :         ao2_cleanup(obj);</span>
+<span class="lineNum">     494 </span><span class="lineCov">      43345 :         return msg;</span>
+<a name="495"><span class="lineNum">     495 </span>            : }</a>
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span><span class="lineCov">      36650 : struct stasis_message *ast_channel_blob_create_from_cache(const char *channel_id,</span>
+<span class="lineNum">     498 </span>            :                                                struct stasis_message_type *type,
+<span class="lineNum">     499 </span>            :                                                struct ast_json *blob)
+<span class="lineNum">     500 </span>            : {
+<span class="lineNum">     501 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     502 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">      36650 :         if (!type) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     506 </span>            :         }
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineCov">      36650 :         snapshot = ast_channel_snapshot_get_latest(channel_id);</span>
+<span class="lineNum">     509 </span><span class="lineCov">      36650 :         msg = create_channel_blob_message(snapshot, type, blob);</span>
+<span class="lineNum">     510 </span><span class="lineCov">      36650 :         ao2_cleanup(snapshot);</span>
+<span class="lineNum">     511 </span><span class="lineCov">      36650 :         return msg;</span>
+<a name="512"><span class="lineNum">     512 </span>            : }</a>
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span><span class="lineCov">       6696 : struct stasis_message *ast_channel_blob_create(struct ast_channel *chan,</span>
+<span class="lineNum">     515 </span>            :         struct stasis_message_type *type, struct ast_json *blob)
+<span class="lineNum">     516 </span>            : {
+<span class="lineNum">     517 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     518 </span>            :         struct stasis_message *msg;
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineCov">       6696 :         if (!type) {</span>
+<span class="lineNum">     521 </span><span class="lineCov">          1 :                 return NULL;</span>
+<span class="lineNum">     522 </span>            :         }
+<span class="lineNum">     523 </span>            : 
+<span class="lineNum">     524 </span><span class="lineCov">       6695 :         snapshot = chan ? ast_channel_snapshot_create(chan) : NULL;</span>
+<span class="lineNum">     525 </span><span class="lineCov">       6695 :         msg = create_channel_blob_message(snapshot, type, blob);</span>
+<span class="lineNum">     526 </span><span class="lineCov">       6695 :         ao2_cleanup(snapshot);</span>
+<span class="lineNum">     527 </span><span class="lineCov">       6695 :         return msg;</span>
+<span class="lineNum">     528 </span>            : }
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span>            : /*! \brief A channel snapshot wrapper object used in \ref ast_multi_channel_blob objects */
+<span class="lineNum">     531 </span>            : struct channel_role_snapshot {
+<span class="lineNum">     532 </span>            :         struct ast_channel_snapshot *snapshot;  /*!&lt; A channel snapshot */
+<span class="lineNum">     533 </span>            :         char role[0];                                                   /*!&lt; The role assigned to the channel */
+<span class="lineNum">     534 </span>            : };
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span>            : /*! \brief A multi channel blob data structure for multi_channel_blob stasis messages */
+<span class="lineNum">     537 </span>            : struct ast_multi_channel_blob {
+<span class="lineNum">     538 </span>            :         struct ao2_container *channel_snapshots;        /*!&lt; A container holding the snapshots */
+<span class="lineNum">     539 </span>            :         struct ast_json *blob;                                          /*!&lt; A blob of JSON data */
+<span class="lineNum">     540 </span>            : };
+<span class="lineNum">     541 </span>            : 
+<span class="lineNum">     542 </span>            : /*!
+<span class="lineNum">     543 </span>            :  * \internal
+<a name="544"><span class="lineNum">     544 </span>            :  * \brief Comparison function for \ref channel_role_snapshot objects</a>
+<span class="lineNum">     545 </span>            :  */
+<span class="lineNum">     546 </span><span class="lineCov">      18932 : static int channel_role_cmp_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     547 </span>            : {
+<span class="lineNum">     548 </span><span class="lineCov">      18932 :         const struct channel_role_snapshot *object_left = obj;</span>
+<span class="lineNum">     549 </span><span class="lineCov">      18932 :         const struct channel_role_snapshot *object_right = arg;</span>
+<span class="lineNum">     550 </span><span class="lineCov">      18932 :         const char *right_key = arg;</span>
+<span class="lineNum">     551 </span>            :         int cmp;
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span><span class="lineCov">      18932 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :                 right_key = object_right-&gt;role;</span>
+<span class="lineNum">     556 </span><span class="lineCov">      18932 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     557 </span><span class="lineCov">      18932 :                 cmp = strcasecmp(object_left-&gt;role, right_key);</span>
+<span class="lineNum">     558 </span><span class="lineCov">      18932 :                 break;</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                 cmp = strncasecmp(object_left-&gt;role, right_key, strlen(right_key));</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     565 </span>            :         }
+<span class="lineNum">     566 </span><span class="lineCov">      18932 :         if (cmp) {</span>
+<span class="lineNum">     567 </span><span class="lineCov">         58 :                 return 0;</span>
+<span class="lineNum">     568 </span>            :         }
+<span class="lineNum">     569 </span><span class="lineCov">      18874 :         return CMP_MATCH;</span>
+<span class="lineNum">     570 </span>            : }
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span>            : /*!
+<span class="lineNum">     573 </span>            :  * \internal
+<a name="574"><span class="lineNum">     574 </span>            :  * \brief Hash function for \ref channel_role_snapshot objects</a>
+<span class="lineNum">     575 </span>            :  */
+<span class="lineNum">     576 </span><span class="lineCov">      36209 : static int channel_role_hash_cb(const void *obj, const int flags)</span>
+<span class="lineNum">     577 </span>            : {
+<span class="lineNum">     578 </span><span class="lineCov">      36209 :         const struct channel_role_snapshot *object = obj;</span>
+<span class="lineNum">     579 </span>            :         const char *key;
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span><span class="lineCov">      36209 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     582 </span><span class="lineCov">      26271 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     583 </span><span class="lineCov">      26271 :                 key = obj;</span>
+<span class="lineNum">     584 </span><span class="lineCov">      26271 :                 break;</span>
+<span class="lineNum">     585 </span><span class="lineCov">       9938 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     586 </span><span class="lineCov">       9938 :                 key = object-&gt;role;</span>
+<span class="lineNum">     587 </span><span class="lineCov">       9938 :                 break;</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     589 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     591 </span>            :         }
+<span class="lineNum">     592 </span><span class="lineCov">      36209 :         return ast_str_case_hash(key);</span>
+<span class="lineNum">     593 </span>            : }
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span>            : /*!
+<span class="lineNum">     596 </span>            :  * \internal
+<a name="597"><span class="lineNum">     597 </span>            :  * \brief Destructor for \ref ast_multi_channel_blob objects</a>
+<span class="lineNum">     598 </span>            :  */
+<span class="lineNum">     599 </span><span class="lineCov">       5969 : static void multi_channel_blob_dtor(void *obj)</span>
+<span class="lineNum">     600 </span>            : {
+<span class="lineNum">     601 </span><span class="lineCov">       5969 :         struct ast_multi_channel_blob *multi_blob = obj;</span>
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span><span class="lineCov">       5969 :         ao2_cleanup(multi_blob-&gt;channel_snapshots);</span>
+<span class="lineNum">     604 </span><span class="lineCov">       5969 :         ast_json_unref(multi_blob-&gt;blob);</span>
+<a name="605"><span class="lineNum">     605 </span><span class="lineCov">       5969 : }</span></a>
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineCov">       5969 : struct ast_multi_channel_blob *ast_multi_channel_blob_create(struct ast_json *blob)</span>
+<span class="lineNum">     608 </span>            : {
+<span class="lineNum">     609 </span>            :         struct ast_multi_channel_blob *obj;
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span><span class="lineCov">       5969 :         ast_assert(blob != NULL);</span>
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span><span class="lineCov">       5969 :         obj = ao2_alloc(sizeof(*obj), multi_channel_blob_dtor);</span>
+<span class="lineNum">     614 </span><span class="lineCov">       5969 :         if (!obj) {</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     616 </span>            :         }
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span><span class="lineCov">       5969 :         obj-&gt;channel_snapshots = ao2_container_alloc(NUM_MULTI_CHANNEL_BLOB_BUCKETS,</span>
+<span class="lineNum">     619 </span>            :                 channel_role_hash_cb, channel_role_cmp_cb);
+<span class="lineNum">     620 </span><span class="lineCov">       5969 :         if (!obj-&gt;channel_snapshots) {</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 ao2_ref(obj, -1);</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     623 </span>            :         }
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span><span class="lineCov">       5969 :         obj-&gt;blob = ast_json_ref(blob);</span>
+<span class="lineNum">     626 </span><span class="lineCov">       5969 :         return obj;</span>
+<a name="627"><span class="lineNum">     627 </span>            : }</a>
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span><span class="lineCov">      53238 : struct ast_channel_snapshot *ast_channel_snapshot_get_latest(const char *uniqueid)</span>
+<span class="lineNum">     630 </span>            : {
+<span class="lineNum">     631 </span>            :         struct stasis_message *message;
+<span class="lineNum">     632 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">      53238 :         ast_assert(!ast_strlen_zero(uniqueid));</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineCov">      53238 :         message = stasis_cache_get(ast_channel_cache(), ast_channel_snapshot_type(),</span>
+<span class="lineNum">     637 </span>            :                 uniqueid);
+<span class="lineNum">     638 </span><span class="lineCov">      53238 :         if (!message) {</span>
+<span class="lineNum">     639 </span><span class="lineCov">       1102 :                 return NULL;</span>
+<span class="lineNum">     640 </span>            :         }
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span><span class="lineCov">      52136 :         snapshot = ao2_bump(stasis_message_data(message));</span>
+<span class="lineNum">     643 </span><span class="lineCov">      52136 :         ao2_ref(message, -1);</span>
+<span class="lineNum">     644 </span><span class="lineCov">      52136 :         return snapshot;</span>
+<a name="645"><span class="lineNum">     645 </span>            : }</a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 : struct ast_channel_snapshot *ast_channel_snapshot_get_latest_by_name(const char *name)</span>
+<span class="lineNum">     648 </span>            : {
+<span class="lineNum">     649 </span>            :         struct stasis_message *message;
+<span class="lineNum">     650 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :         ast_assert(!ast_strlen_zero(name));</span>
+<span class="lineNum">     653 </span>            : 
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :         message = stasis_cache_get(ast_channel_cache_by_name(), ast_channel_snapshot_type(),</span>
+<span class="lineNum">     655 </span>            :                 name);
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :         if (!message) {</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     658 </span>            :         }
+<span class="lineNum">     659 </span>            : 
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :         snapshot = ao2_bump(stasis_message_data(message));</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         ao2_ref(message, -1);</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :         return snapshot;</span>
+<a name="663"><span class="lineNum">     663 </span>            : }</a>
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span><span class="lineCov">       9938 : static void channel_role_snapshot_dtor(void *obj)</span>
+<span class="lineNum">     666 </span>            : {
+<span class="lineNum">     667 </span><span class="lineCov">       9938 :         struct channel_role_snapshot *role_snapshot = obj;</span>
+<span class="lineNum">     668 </span>            : 
+<span class="lineNum">     669 </span><span class="lineCov">       9938 :         ao2_cleanup(role_snapshot-&gt;snapshot);</span>
+<a name="670"><span class="lineNum">     670 </span><span class="lineCov">       9938 : }</span></a>
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineCov">       9938 : void ast_multi_channel_blob_add_channel(struct ast_multi_channel_blob *obj, const char *role, struct ast_channel_snapshot *snapshot)</span>
+<span class="lineNum">     673 </span>            : {
+<span class="lineNum">     674 </span>            :         struct channel_role_snapshot *role_snapshot;
+<span class="lineNum">     675 </span><span class="lineCov">       9938 :         int role_len = strlen(role) + 1;</span>
+<span class="lineNum">     676 </span>            : 
+<span class="lineNum">     677 </span><span class="lineCov">       9938 :         if (!obj || ast_strlen_zero(role) || !snapshot) {</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     679 </span>            :         }
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span><span class="lineCov">       9938 :         role_snapshot = ao2_alloc_options(sizeof(*role_snapshot) + role_len,</span>
+<span class="lineNum">     682 </span>            :                 channel_role_snapshot_dtor, AO2_ALLOC_OPT_LOCK_NOLOCK);
+<span class="lineNum">     683 </span><span class="lineCov">       9938 :         if (!role_snapshot) {</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     685 </span>            :         }
+<span class="lineNum">     686 </span><span class="lineCov">       9938 :         ast_copy_string(role_snapshot-&gt;role, role, role_len);</span>
+<span class="lineNum">     687 </span><span class="lineCov">       9938 :         role_snapshot-&gt;snapshot = snapshot;</span>
+<span class="lineNum">     688 </span><span class="lineCov">       9938 :         ao2_ref(role_snapshot-&gt;snapshot, +1);</span>
+<span class="lineNum">     689 </span><span class="lineCov">       9938 :         ao2_link(obj-&gt;channel_snapshots, role_snapshot);</span>
+<span class="lineNum">     690 </span><span class="lineCov">       9938 :         ao2_ref(role_snapshot, -1);</span>
+<a name="691"><span class="lineNum">     691 </span>            : }</a>
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span><span class="lineCov">      26270 : struct ast_channel_snapshot *ast_multi_channel_blob_get_channel(struct ast_multi_channel_blob *obj, const char *role)</span>
+<span class="lineNum">     694 </span>            : {
+<span class="lineNum">     695 </span>            :         struct channel_role_snapshot *role_snapshot;
+<span class="lineNum">     696 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     697 </span>            : 
+<span class="lineNum">     698 </span><span class="lineCov">      26270 :         if (!obj || ast_strlen_zero(role)) {</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     700 </span>            :         }
+<span class="lineNum">     701 </span><span class="lineCov">      26270 :         role_snapshot = ao2_find(obj-&gt;channel_snapshots, role, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     702 </span>            :         /* Note that this function does not increase the ref count on snapshot */
+<span class="lineNum">     703 </span><span class="lineCov">      26270 :         if (!role_snapshot) {</span>
+<span class="lineNum">     704 </span><span class="lineCov">       7398 :                 return NULL;</span>
+<span class="lineNum">     705 </span>            :         }
+<span class="lineNum">     706 </span><span class="lineCov">      18872 :         snapshot = role_snapshot-&gt;snapshot;</span>
+<span class="lineNum">     707 </span><span class="lineCov">      18872 :         ao2_ref(role_snapshot, -1);</span>
+<span class="lineNum">     708 </span><span class="lineCov">      18872 :         return snapshot;</span>
+<a name="709"><span class="lineNum">     709 </span>            : }</a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineCov">          1 : struct ao2_container *ast_multi_channel_blob_get_channels(struct ast_multi_channel_blob *obj, const char *role)</span>
+<span class="lineNum">     712 </span>            : {
+<span class="lineNum">     713 </span>            :         struct ao2_container *ret_container;
+<span class="lineNum">     714 </span>            :         struct ao2_iterator *it_role_snapshots;
+<span class="lineNum">     715 </span>            :         struct channel_role_snapshot *role_snapshot;
+<span class="lineNum">     716 </span>            :         char *arg;
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">          1 :         if (!obj || ast_strlen_zero(role)) {</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     720 </span>            :         }
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineCov">          1 :         ret_container = ao2_container_alloc(NUM_MULTI_CHANNEL_BLOB_BUCKETS,</span>
+<span class="lineNum">     723 </span>            :                 channel_snapshot_hash_cb, channel_snapshot_cmp_cb);
+<span class="lineNum">     724 </span><span class="lineCov">          1 :         if (!ret_container) {</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     726 </span>            :         }
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span><span class="lineCov">          1 :         arg = ast_strdupa(role);</span>
+<span class="lineNum">     729 </span><span class="lineCov">          1 :         it_role_snapshots = ao2_callback(obj-&gt;channel_snapshots,</span>
+<span class="lineNum">     730 </span>            :                 OBJ_MULTIPLE | OBJ_SEARCH_KEY, channel_role_cmp_cb, arg);
+<span class="lineNum">     731 </span><span class="lineCov">          1 :         if (!it_role_snapshots) {</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :                 ao2_ref(ret_container, -1);</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     734 </span>            :         }
+<span class="lineNum">     735 </span>            : 
+<span class="lineNum">     736 </span><span class="lineCov">          3 :         while ((role_snapshot = ao2_iterator_next(it_role_snapshots))) {</span>
+<span class="lineNum">     737 </span><span class="lineCov">          2 :                 ao2_link(ret_container, role_snapshot-&gt;snapshot);</span>
+<span class="lineNum">     738 </span><span class="lineCov">          2 :                 ao2_ref(role_snapshot, -1);</span>
+<span class="lineNum">     739 </span>            :         }
+<span class="lineNum">     740 </span><span class="lineCov">          1 :         ao2_iterator_destroy(it_role_snapshots);</span>
+<span class="lineNum">     741 </span>            : 
+<span class="lineNum">     742 </span><span class="lineCov">          1 :         return ret_container;</span>
+<a name="743"><span class="lineNum">     743 </span>            : }</a>
+<span class="lineNum">     744 </span>            : 
+<span class="lineNum">     745 </span><span class="lineCov">      23818 : struct ast_json *ast_multi_channel_blob_get_json(struct ast_multi_channel_blob *obj)</span>
+<span class="lineNum">     746 </span>            : {
+<span class="lineNum">     747 </span><span class="lineCov">      23818 :         if (!obj) {</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     749 </span>            :         }
+<span class="lineNum">     750 </span><span class="lineCov">      23818 :         return obj-&gt;blob;</span>
+<a name="751"><span class="lineNum">     751 </span>            : }</a>
+<span class="lineNum">     752 </span>            : 
+<span class="lineNum">     753 </span><span class="lineCov">      17315 : void ast_channel_stage_snapshot(struct ast_channel *chan)</span>
+<span class="lineNum">     754 </span>            : {
+<span class="lineNum">     755 </span><span class="lineCov">      17315 :         ast_set_flag(ast_channel_flags(chan), AST_FLAG_SNAPSHOT_STAGE);</span>
+<a name="756"><span class="lineNum">     756 </span><span class="lineCov">      17315 : }</span></a>
+<span class="lineNum">     757 </span>            : 
+<span class="lineNum">     758 </span><span class="lineCov">      17315 : void ast_channel_stage_snapshot_done(struct ast_channel *chan)</span>
+<span class="lineNum">     759 </span>            : {
+<span class="lineNum">     760 </span><span class="lineCov">      17315 :         ast_clear_flag(ast_channel_flags(chan), AST_FLAG_SNAPSHOT_STAGE);</span>
+<span class="lineNum">     761 </span><span class="lineCov">      17315 :         ast_channel_publish_snapshot(chan);</span>
+<a name="762"><span class="lineNum">     762 </span><span class="lineCov">      17315 : }</span></a>
+<span class="lineNum">     763 </span>            : 
+<span class="lineNum">     764 </span><span class="lineCov">      73384 : void ast_channel_publish_snapshot(struct ast_channel *chan)</span>
+<span class="lineNum">     765 </span>            : {
+<span class="lineNum">     766 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     767 </span>            :         struct stasis_message *message;
+<span class="lineNum">     768 </span>            : 
+<span class="lineNum">     769 </span><span class="lineCov">      73384 :         if (!ast_channel_snapshot_type()) {</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     771 </span>            :         }
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span><span class="lineCov">      73384 :         if (ast_test_flag(ast_channel_flags(chan), AST_FLAG_SNAPSHOT_STAGE)) {</span>
+<span class="lineNum">     774 </span><span class="lineCov">       5265 :                 return;</span>
+<span class="lineNum">     775 </span>            :         }
+<span class="lineNum">     776 </span>            : 
+<span class="lineNum">     777 </span><span class="lineCov">      68119 :         snapshot = ast_channel_snapshot_create(chan);</span>
+<span class="lineNum">     778 </span><span class="lineCov">      68119 :         if (!snapshot) {</span>
+<span class="lineNum">     779 </span><span class="lineCov">      24016 :                 return;</span>
+<span class="lineNum">     780 </span>            :         }
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span><span class="lineCov">      44103 :         message = stasis_message_create(ast_channel_snapshot_type(), snapshot);</span>
+<span class="lineNum">     783 </span><span class="lineCov">      44103 :         ao2_ref(snapshot, -1);</span>
+<span class="lineNum">     784 </span><span class="lineCov">      44103 :         if (!message) {</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     786 </span>            :         }
+<span class="lineNum">     787 </span>            : 
+<span class="lineNum">     788 </span><span class="lineCov">      44103 :         ast_assert(ast_channel_topic(chan) != NULL);</span>
+<span class="lineNum">     789 </span><span class="lineCov">      44103 :         stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">     790 </span><span class="lineCov">      44103 :         ao2_ref(message, -1);</span>
+<a name="791"><span class="lineNum">     791 </span>            : }</a>
+<span class="lineNum">     792 </span>            : 
+<span class="lineNum">     793 </span><span class="lineCov">      35927 : void ast_channel_publish_cached_blob(struct ast_channel *chan, struct stasis_message_type *type, struct ast_json *blob)</span>
+<span class="lineNum">     794 </span>            : {
+<span class="lineNum">     795 </span>            :         struct stasis_message *message;
+<span class="lineNum">     796 </span>            : 
+<span class="lineNum">     797 </span><span class="lineCov">      35927 :         if (!blob) {</span>
+<span class="lineNum">     798 </span><span class="lineCov">        173 :                 blob = ast_json_null();</span>
+<span class="lineNum">     799 </span>            :         }
+<span class="lineNum">     800 </span>            : 
+<span class="lineNum">     801 </span><span class="lineCov">      35927 :         message = ast_channel_blob_create_from_cache(ast_channel_uniqueid(chan), type, blob);</span>
+<span class="lineNum">     802 </span><span class="lineCov">      35927 :         if (message) {</span>
+<span class="lineNum">     803 </span><span class="lineCov">      35927 :                 stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">     804 </span><span class="lineCov">      35927 :                 ao2_ref(message, -1);</span>
+<span class="lineNum">     805 </span>            :         }
+<a name="806"><span class="lineNum">     806 </span><span class="lineCov">      35927 : }</span></a>
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span><span class="lineCov">       6414 : void ast_channel_publish_blob(struct ast_channel *chan, struct stasis_message_type *type, struct ast_json *blob)</span>
+<span class="lineNum">     809 </span>            : {
+<span class="lineNum">     810 </span>            :         struct stasis_message *message;
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineCov">       6414 :         if (!blob) {</span>
+<span class="lineNum">     813 </span><span class="lineCov">        483 :                 blob = ast_json_null();</span>
+<span class="lineNum">     814 </span>            :         }
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span><span class="lineCov">       6414 :         message = ast_channel_blob_create(chan, type, blob);</span>
+<span class="lineNum">     817 </span><span class="lineCov">       6414 :         if (message) {</span>
+<span class="lineNum">     818 </span><span class="lineCov">       6414 :                 stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">     819 </span><span class="lineCov">       6414 :                 ao2_ref(message, -1);</span>
+<span class="lineNum">     820 </span>            :         }
+<a name="821"><span class="lineNum">     821 </span><span class="lineCov">       6414 : }</span></a>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineCov">      33129 : void ast_channel_publish_varset(struct ast_channel *chan, const char *name, const char *value)</span>
+<span class="lineNum">     824 </span>            : {
+<span class="lineNum">     825 </span>            :         struct ast_json *blob;
+<span class="lineNum">     826 </span>            : 
+<span class="lineNum">     827 </span><span class="lineCov">      33129 :         ast_assert(name != NULL);</span>
+<span class="lineNum">     828 </span><span class="lineCov">      33129 :         ast_assert(value != NULL);</span>
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span><span class="lineCov">      33129 :         blob = ast_json_pack(&quot;{s: s, s: s}&quot;,</span>
+<span class="lineNum">     831 </span>            :                              &quot;variable&quot;, name,
+<span class="lineNum">     832 </span>            :                              &quot;value&quot;, value);
+<span class="lineNum">     833 </span><span class="lineCov">      33129 :         if (!blob) {</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error creating message\n&quot;);</span>
+<span class="lineNum">     835 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     836 </span>            :         }
+<span class="lineNum">     837 </span>            : 
+<span class="lineNum">     838 </span>            :         /*! If there are manager variables, force a cache update */
+<span class="lineNum">     839 </span><span class="lineCov">      33129 :         if (chan &amp;&amp; ast_channel_has_manager_vars()) {</span>
+<span class="lineNum">     840 </span><span class="lineCov">         68 :                 ast_channel_publish_snapshot(chan);</span>
+<span class="lineNum">     841 </span>            :         }
+<span class="lineNum">     842 </span>            : 
+<span class="lineNum">     843 </span><span class="lineCov">      33129 :         if (chan) {</span>
+<span class="lineNum">     844 </span><span class="lineCov">      32202 :                 ast_channel_publish_cached_blob(chan, ast_channel_varset_type(), blob);</span>
+<span class="lineNum">     845 </span>            :         } else {
+<span class="lineNum">     846 </span>            :                 /* This function is NULL safe for global variables */
+<span class="lineNum">     847 </span><span class="lineCov">        927 :                 ast_channel_publish_blob(NULL, ast_channel_varset_type(), blob);</span>
+<span class="lineNum">     848 </span>            :         }
+<span class="lineNum">     849 </span>            : 
+<span class="lineNum">     850 </span><span class="lineCov">      33129 :         ast_json_unref(blob);</span>
+<a name="851"><span class="lineNum">     851 </span>            : }</a>
+<span class="lineNum">     852 </span>            : 
+<span class="lineNum">     853 </span><span class="lineCov">      33129 : static struct ast_manager_event_blob *varset_to_ami(struct stasis_message *msg)</span>
+<span class="lineNum">     854 </span>            : {
+<span class="lineNum">     855 </span>            :         struct ast_str *channel_event_string;
+<span class="lineNum">     856 </span><span class="lineCov">      33129 :         struct ast_channel_blob *obj = stasis_message_data(msg);</span>
+<span class="lineNum">     857 </span>            :         const char *variable =
+<span class="lineNum">     858 </span><span class="lineCov">      33129 :                 ast_json_string_get(ast_json_object_get(obj-&gt;blob, &quot;variable&quot;));</span>
+<span class="lineNum">     859 </span>            :         char *value;
+<span class="lineNum">     860 </span>            :         struct ast_manager_event_blob *ev;
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span><span class="lineCov">      33129 :         value = ast_escape_c_alloc(ast_json_string_get(ast_json_object_get(obj-&gt;blob,</span>
+<span class="lineNum">     863 </span>            :                 &quot;value&quot;)));
+<span class="lineNum">     864 </span><span class="lineCov">      33129 :         if (!value) {</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     866 </span>            :         }
+<span class="lineNum">     867 </span>            : 
+<span class="lineNum">     868 </span><span class="lineCov">      33129 :         if (obj-&gt;snapshot) {</span>
+<span class="lineNum">     869 </span><span class="lineCov">      32147 :                 channel_event_string = ast_manager_build_channel_state_string(obj-&gt;snapshot);</span>
+<span class="lineNum">     870 </span>            :         } else {
+<span class="lineNum">     871 </span><span class="lineCov">        982 :                 channel_event_string = ast_str_create(35);</span>
+<span class="lineNum">     872 </span><span class="lineCov">        982 :                 ast_str_set(&amp;channel_event_string, 0,</span>
+<span class="lineNum">     873 </span>            :                         &quot;Channel: none\r\n&quot;
+<span class="lineNum">     874 </span>            :                         &quot;Uniqueid: none\r\n&quot;);
+<span class="lineNum">     875 </span>            :         }
+<span class="lineNum">     876 </span><span class="lineCov">      33129 :         if (!channel_event_string) {</span>
+<span class="lineNum">     877 </span><span class="lineCov">        226 :                 ast_free(value);</span>
+<span class="lineNum">     878 </span><span class="lineCov">        226 :                 return NULL;</span>
+<span class="lineNum">     879 </span>            :         }
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span><span class="lineCov">      32903 :         ev = ast_manager_event_blob_create(EVENT_FLAG_DIALPLAN, &quot;VarSet&quot;,</span>
+<span class="lineNum">     882 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     883 </span>            :                 &quot;Variable: %s\r\n&quot;
+<span class="lineNum">     884 </span>            :                 &quot;Value: %s\r\n&quot;,
+<span class="lineNum">     885 </span>            :                 ast_str_buffer(channel_event_string), variable, value);
+<span class="lineNum">     886 </span><span class="lineCov">      32903 :         ast_free(channel_event_string);</span>
+<span class="lineNum">     887 </span><span class="lineCov">      32903 :         ast_free(value);</span>
+<span class="lineNum">     888 </span><span class="lineCov">      32903 :         return ev;</span>
+<a name="889"><span class="lineNum">     889 </span>            : }</a>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">          8 : static struct ast_manager_event_blob *agent_login_to_ami(struct stasis_message *msg)</span>
+<span class="lineNum">     892 </span>            : {
+<span class="lineNum">     893 </span>            :         struct ast_str *channel_string;
+<span class="lineNum">     894 </span><span class="lineCov">          8 :         struct ast_channel_blob *obj = stasis_message_data(msg);</span>
+<span class="lineNum">     895 </span><span class="lineCov">          8 :         const char *agent = ast_json_string_get(ast_json_object_get(obj-&gt;blob, &quot;agent&quot;));</span>
+<span class="lineNum">     896 </span>            :         struct ast_manager_event_blob *ev;
+<span class="lineNum">     897 </span>            : 
+<span class="lineNum">     898 </span><span class="lineCov">          8 :         channel_string = ast_manager_build_channel_state_string(obj-&gt;snapshot);</span>
+<span class="lineNum">     899 </span><span class="lineCov">          8 :         if (!channel_string) {</span>
+<span class="lineNum">     900 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     901 </span>            :         }
+<span class="lineNum">     902 </span>            : 
+<span class="lineNum">     903 </span><span class="lineCov">          8 :         ev = ast_manager_event_blob_create(EVENT_FLAG_AGENT, &quot;AgentLogin&quot;,</span>
+<span class="lineNum">     904 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     905 </span>            :                 &quot;Agent: %s\r\n&quot;,
+<span class="lineNum">     906 </span>            :                 ast_str_buffer(channel_string), agent);
+<span class="lineNum">     907 </span><span class="lineCov">          8 :         ast_free(channel_string);</span>
+<span class="lineNum">     908 </span><span class="lineCov">          8 :         return ev;</span>
+<a name="909"><span class="lineNum">     909 </span>            : }</a>
+<span class="lineNum">     910 </span>            : 
+<span class="lineNum">     911 </span><span class="lineCov">          8 : static struct ast_manager_event_blob *agent_logoff_to_ami(struct stasis_message *msg)</span>
+<span class="lineNum">     912 </span>            : {
+<span class="lineNum">     913 </span>            :         struct ast_str *channel_string;
+<span class="lineNum">     914 </span><span class="lineCov">          8 :         struct ast_channel_blob *obj = stasis_message_data(msg);</span>
+<span class="lineNum">     915 </span><span class="lineCov">          8 :         const char *agent = ast_json_string_get(ast_json_object_get(obj-&gt;blob, &quot;agent&quot;));</span>
+<span class="lineNum">     916 </span><span class="lineCov">          8 :         long logintime = ast_json_integer_get(ast_json_object_get(obj-&gt;blob, &quot;logintime&quot;));</span>
+<span class="lineNum">     917 </span>            :         struct ast_manager_event_blob *ev;
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineCov">          8 :         channel_string = ast_manager_build_channel_state_string(obj-&gt;snapshot);</span>
+<span class="lineNum">     920 </span><span class="lineCov">          8 :         if (!channel_string) {</span>
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     922 </span>            :         }
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span><span class="lineCov">          8 :         ev = ast_manager_event_blob_create(EVENT_FLAG_AGENT, &quot;AgentLogoff&quot;,</span>
+<span class="lineNum">     925 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     926 </span>            :                 &quot;Agent: %s\r\n&quot;
+<span class="lineNum">     927 </span>            :                 &quot;Logintime: %ld\r\n&quot;,
+<span class="lineNum">     928 </span>            :                 ast_str_buffer(channel_string), agent, logintime);
+<span class="lineNum">     929 </span><span class="lineCov">          8 :         ast_free(channel_string);</span>
+<span class="lineNum">     930 </span><span class="lineCov">          8 :         return ev;</span>
+<a name="931"><span class="lineNum">     931 </span>            : }</a>
+<span class="lineNum">     932 </span>            : 
+<span class="lineNum">     933 </span><span class="lineCov">       4366 : void ast_publish_channel_state(struct ast_channel *chan)</span>
+<span class="lineNum">     934 </span>            : {
+<span class="lineNum">     935 </span>            :         struct ast_channel_snapshot *snapshot;
+<span class="lineNum">     936 </span>            :         struct stasis_message *message;
+<span class="lineNum">     937 </span>            : 
+<span class="lineNum">     938 </span><span class="lineCov">       4366 :         if (!ast_channel_snapshot_type()) {</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     940 </span>            :         }
+<span class="lineNum">     941 </span>            : 
+<span class="lineNum">     942 </span><span class="lineCov">       4366 :         ast_assert(chan != NULL);</span>
+<span class="lineNum">     943 </span><span class="lineCov">       4366 :         if (!chan) {</span>
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     945 </span>            :         }
+<span class="lineNum">     946 </span>            : 
+<span class="lineNum">     947 </span><span class="lineCov">       4366 :         snapshot = ast_channel_snapshot_create(chan);</span>
+<span class="lineNum">     948 </span><span class="lineCov">       4366 :         if (!snapshot) {</span>
+<span class="lineNum">     949 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     950 </span>            :         }
+<span class="lineNum">     951 </span>            : 
+<span class="lineNum">     952 </span><span class="lineCov">       4366 :         message = stasis_message_create(ast_channel_snapshot_type(), snapshot);</span>
+<span class="lineNum">     953 </span><span class="lineCov">       4366 :         ao2_ref(snapshot, -1);</span>
+<span class="lineNum">     954 </span><span class="lineCov">       4366 :         if (!message) {</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     956 </span>            :         }
+<span class="lineNum">     957 </span>            : 
+<span class="lineNum">     958 </span><span class="lineCov">       4366 :         ast_assert(ast_channel_topic(chan) != NULL);</span>
+<span class="lineNum">     959 </span><span class="lineCov">       4366 :         stasis_publish(ast_channel_topic(chan), message);</span>
+<span class="lineNum">     960 </span><span class="lineCov">       4366 :         ao2_ref(message, -1);</span>
+<a name="961"><span class="lineNum">     961 </span>            : }</a>
+<span class="lineNum">     962 </span>            : 
+<span class="lineNum">     963 </span><span class="lineCov">       3613 : struct ast_json *ast_channel_snapshot_to_json(</span>
+<span class="lineNum">     964 </span>            :         const struct ast_channel_snapshot *snapshot,
+<span class="lineNum">     965 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">     966 </span>            : {
+<span class="lineNum">     967 </span>            :         struct ast_json *json_chan;
+<span class="lineNum">     968 </span>            : 
+<span class="lineNum">     969 </span><span class="lineCov">       3613 :         if (snapshot == NULL</span>
+<span class="lineNum">     970 </span><span class="lineCov">       3146 :                 || (sanitize</span>
+<span class="lineNum">     971 </span><span class="lineCov">       2654 :                         &amp;&amp; sanitize-&gt;channel_snapshot</span>
+<span class="lineNum">     972 </span><span class="lineCov">       2654 :                         &amp;&amp; sanitize-&gt;channel_snapshot(snapshot))) {</span>
+<span class="lineNum">     973 </span><span class="lineCov">        477 :                 return NULL;</span>
+<span class="lineNum">     974 </span>            :         }
+<span class="lineNum">     975 </span>            : 
+<span class="lineNum">     976 </span><span class="lineCov">       3136 :         json_chan = ast_json_pack(</span>
+<span class="lineNum">     977 </span>            :                 /* Broken up into groups of three for readability */
+<span class="lineNum">     978 </span>            :                 &quot;{ s: s, s: s, s: s,&quot;
+<span class="lineNum">     979 </span>            :                 &quot;  s: o, s: o, s: s,&quot;
+<span class="lineNum">     980 </span>            :                 &quot;  s: o, s: o, s: s }&quot;,
+<span class="lineNum">     981 </span>            :                 /* First line */
+<span class="lineNum">     982 </span>            :                 &quot;id&quot;, snapshot-&gt;uniqueid,
+<span class="lineNum">     983 </span>            :                 &quot;name&quot;, snapshot-&gt;name,
+<span class="lineNum">     984 </span>            :                 &quot;state&quot;, ast_state2str(snapshot-&gt;state),
+<span class="lineNum">     985 </span>            :                 /* Second line */
+<span class="lineNum">     986 </span>            :                 &quot;caller&quot;, ast_json_name_number(
+<span class="lineNum">     987 </span>            :                         snapshot-&gt;caller_name, snapshot-&gt;caller_number),
+<span class="lineNum">     988 </span>            :                 &quot;connected&quot;, ast_json_name_number(
+<span class="lineNum">     989 </span>            :                         snapshot-&gt;connected_name, snapshot-&gt;connected_number),
+<span class="lineNum">     990 </span>            :                 &quot;accountcode&quot;, snapshot-&gt;accountcode,
+<span class="lineNum">     991 </span>            :                 /* Third line */
+<span class="lineNum">     992 </span>            :                 &quot;dialplan&quot;, ast_json_dialplan_cep(
+<span class="lineNum">     993 </span>            :                         snapshot-&gt;context, snapshot-&gt;exten, snapshot-&gt;priority),
+<span class="lineNum">     994 </span>            :                 &quot;creationtime&quot;, ast_json_timeval(snapshot-&gt;creationtime, NULL),
+<span class="lineNum">     995 </span>            :                 &quot;language&quot;, snapshot-&gt;language);
+<span class="lineNum">     996 </span>            : 
+<span class="lineNum">     997 </span><span class="lineCov">       3136 :         if (snapshot-&gt;ari_vars &amp;&amp; !AST_LIST_EMPTY(snapshot-&gt;ari_vars)) {</span>
+<span class="lineNum">     998 </span><span class="lineCov">         19 :                 ast_json_object_set(json_chan, &quot;channelvars&quot;, ast_json_channel_vars(snapshot-&gt;ari_vars));</span>
+<span class="lineNum">     999 </span>            :         }
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span><span class="lineCov">       3136 :         return json_chan;</span>
+<a name="1002"><span class="lineNum">    1002 </span>            : }</a>
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineCov">      36718 : int ast_channel_snapshot_cep_equal(</span>
+<span class="lineNum">    1005 </span>            :         const struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">    1006 </span>            :         const struct ast_channel_snapshot *new_snapshot)
+<span class="lineNum">    1007 </span>            : {
+<span class="lineNum">    1008 </span><span class="lineCov">      36718 :         ast_assert(old_snapshot != NULL);</span>
+<span class="lineNum">    1009 </span><span class="lineCov">      36718 :         ast_assert(new_snapshot != NULL);</span>
+<span class="lineNum">    1010 </span>            : 
+<span class="lineNum">    1011 </span>            :         /* We actually get some snapshots with CEP set, but before the
+<span class="lineNum">    1012 </span>            :          * application is set. Since empty application is invalid, we treat
+<span class="lineNum">    1013 </span>            :          * setting the application from nothing as a CEP change.
+<span class="lineNum">    1014 </span>            :          */
+<span class="lineNum">    1015 </span><span class="lineCov">      41042 :         if (ast_strlen_zero(old_snapshot-&gt;appl) &amp;&amp;</span>
+<span class="lineNum">    1016 </span><span class="lineCov">       4324 :             !ast_strlen_zero(new_snapshot-&gt;appl)) {</span>
+<span class="lineNum">    1017 </span><span class="lineCov">       4324 :                 return 0;</span>
+<span class="lineNum">    1018 </span>            :         }
+<span class="lineNum">    1019 </span>            : 
+<span class="lineNum">    1020 </span><span class="lineCov">      50582 :         return old_snapshot-&gt;priority == new_snapshot-&gt;priority &amp;&amp;</span>
+<span class="lineNum">    1021 </span><span class="lineCov">      50158 :                 strcmp(old_snapshot-&gt;context, new_snapshot-&gt;context) == 0 &amp;&amp;</span>
+<span class="lineNum">    1022 </span><span class="lineCov">      17764 :                 strcmp(old_snapshot-&gt;exten, new_snapshot-&gt;exten) == 0;</span>
+<a name="1023"><span class="lineNum">    1023 </span>            : }</a>
+<span class="lineNum">    1024 </span>            : 
+<span class="lineNum">    1025 </span><span class="lineCov">      45585 : int ast_channel_snapshot_caller_id_equal(</span>
+<span class="lineNum">    1026 </span>            :         const struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">    1027 </span>            :         const struct ast_channel_snapshot *new_snapshot)
+<span class="lineNum">    1028 </span>            : {
+<span class="lineNum">    1029 </span><span class="lineCov">      45585 :         ast_assert(old_snapshot != NULL);</span>
+<span class="lineNum">    1030 </span><span class="lineCov">      45585 :         ast_assert(new_snapshot != NULL);</span>
+<span class="lineNum">    1031 </span><span class="lineCov">      90199 :         return strcmp(old_snapshot-&gt;caller_number, new_snapshot-&gt;caller_number) == 0 &amp;&amp;</span>
+<span class="lineNum">    1032 </span><span class="lineCov">      44614 :                 strcmp(old_snapshot-&gt;caller_name, new_snapshot-&gt;caller_name) == 0;</span>
+<a name="1033"><span class="lineNum">    1033 </span>            : }</a>
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span><span class="lineCov">      45585 : int ast_channel_snapshot_connected_line_equal(</span>
+<span class="lineNum">    1036 </span>            :         const struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">    1037 </span>            :         const struct ast_channel_snapshot *new_snapshot)
+<span class="lineNum">    1038 </span>            : {
+<span class="lineNum">    1039 </span><span class="lineCov">      45585 :         ast_assert(old_snapshot != NULL);</span>
+<span class="lineNum">    1040 </span><span class="lineCov">      45585 :         ast_assert(new_snapshot != NULL);</span>
+<span class="lineNum">    1041 </span><span class="lineCov">      90026 :         return strcmp(old_snapshot-&gt;connected_number, new_snapshot-&gt;connected_number) == 0 &amp;&amp;</span>
+<span class="lineNum">    1042 </span><span class="lineCov">      44441 :                 strcmp(old_snapshot-&gt;connected_name, new_snapshot-&gt;connected_name) == 0;</span>
+<a name="1043"><span class="lineNum">    1043 </span>            : }</a>
+<span class="lineNum">    1044 </span>            : 
+<span class="lineNum">    1045 </span><span class="lineCov">       1053 : static struct ast_json *channel_blob_to_json(</span>
+<span class="lineNum">    1046 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1047 </span>            :         const char *type,
+<span class="lineNum">    1048 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1049 </span>            : {
+<span class="lineNum">    1050 </span>            :         struct ast_json *to_json;
+<span class="lineNum">    1051 </span><span class="lineCov">       1053 :         struct ast_channel_blob *channel_blob = stasis_message_data(message);</span>
+<span class="lineNum">    1052 </span><span class="lineCov">       1053 :         struct ast_json *blob = channel_blob-&gt;blob;</span>
+<span class="lineNum">    1053 </span><span class="lineCov">       1053 :         struct ast_channel_snapshot *snapshot = channel_blob-&gt;snapshot;</span>
+<span class="lineNum">    1054 </span><span class="lineCov">       1053 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1055 </span><span class="lineCov">       1053 :         int res = 0;</span>
+<span class="lineNum">    1056 </span>            : 
+<span class="lineNum">    1057 </span><span class="lineCov">       1053 :         if (blob == NULL || ast_json_is_null(blob)) {</span>
+<span class="lineNum">    1058 </span><span class="lineCov">         18 :                 to_json = ast_json_object_create();</span>
+<span class="lineNum">    1059 </span>            :         } else {
+<span class="lineNum">    1060 </span>            :                 /* blobs are immutable, so shallow copies are fine */
+<span class="lineNum">    1061 </span><span class="lineCov">       1035 :                 to_json = ast_json_copy(blob);</span>
+<span class="lineNum">    1062 </span>            :         }
+<span class="lineNum">    1063 </span><span class="lineCov">       1053 :         if (!to_json) {</span>
+<span class="lineNum">    1064 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1065 </span>            :         }
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span><span class="lineCov">       1053 :         res |= ast_json_object_set(to_json, &quot;type&quot;, ast_json_string_create(type));</span>
+<span class="lineNum">    1068 </span><span class="lineCov">       1053 :         res |= ast_json_object_set(to_json, &quot;timestamp&quot;,</span>
+<span class="lineNum">    1069 </span>            :                 ast_json_timeval(*tv, NULL));
+<span class="lineNum">    1070 </span>            : 
+<span class="lineNum">    1071 </span>            :         /* For global channel messages, the snapshot is optional */
+<span class="lineNum">    1072 </span><span class="lineCov">       1053 :         if (snapshot) {</span>
+<span class="lineNum">    1073 </span>            :                 struct ast_json *json_channel;
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span><span class="lineCov">       1052 :                 json_channel = ast_channel_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1076 </span><span class="lineCov">       1052 :                 if (!json_channel) {</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                         ast_json_unref(to_json);</span>
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1079 </span>            :                 }
+<span class="lineNum">    1080 </span>            : 
+<span class="lineNum">    1081 </span><span class="lineCov">       1052 :                 res |= ast_json_object_set(to_json, &quot;channel&quot;, json_channel);</span>
+<span class="lineNum">    1082 </span>            :         }
+<span class="lineNum">    1083 </span>            : 
+<span class="lineNum">    1084 </span><span class="lineCov">       1053 :         if (res != 0) {</span>
+<span class="lineNum">    1085 </span><span class="lineNoCov">          0 :                 ast_json_unref(to_json);</span>
+<span class="lineNum">    1086 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1087 </span>            :         }
+<span class="lineNum">    1088 </span>            : 
+<span class="lineNum">    1089 </span><span class="lineCov">       1053 :         return to_json;</span>
+<a name="1090"><span class="lineNum">    1090 </span>            : }</a>
+<span class="lineNum">    1091 </span>            : 
+<span class="lineNum">    1092 </span><span class="lineNoCov">          0 : static struct ast_json *dtmf_end_to_json(</span>
+<span class="lineNum">    1093 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1094 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1095 </span>            : {
+<span class="lineNum">    1096 </span><span class="lineNoCov">          0 :         struct ast_channel_blob *channel_blob = stasis_message_data(message);</span>
+<span class="lineNum">    1097 </span><span class="lineNoCov">          0 :         struct ast_json *blob = channel_blob-&gt;blob;</span>
+<span class="lineNum">    1098 </span><span class="lineNoCov">          0 :         struct ast_channel_snapshot *snapshot = channel_blob-&gt;snapshot;</span>
+<span class="lineNum">    1099 </span>            :         const char *direction =
+<span class="lineNum">    1100 </span><span class="lineNoCov">          0 :                 ast_json_string_get(ast_json_object_get(blob, &quot;direction&quot;));</span>
+<span class="lineNum">    1101 </span>            :         const char *digit =
+<span class="lineNum">    1102 </span><span class="lineNoCov">          0 :                 ast_json_string_get(ast_json_object_get(blob, &quot;digit&quot;));</span>
+<span class="lineNum">    1103 </span>            :         long duration_ms =
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :                 ast_json_integer_get(ast_json_object_get(blob, &quot;duration_ms&quot;));</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">          0 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1106 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span>            :         /* Only present received DTMF end events as JSON */
+<span class="lineNum">    1109 </span><span class="lineNoCov">          0 :         if (strcasecmp(&quot;Received&quot;, direction) != 0) {</span>
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1111 </span>            :         }
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span><span class="lineNoCov">          0 :         json_channel = ast_channel_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">          0 :         if (!json_channel) {</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1116 </span>            :         }
+<span class="lineNum">    1117 </span>            : 
+<span class="lineNum">    1118 </span><span class="lineNoCov">          0 :         return ast_json_pack(&quot;{s: s, s: o, s: s, s: i, s: o}&quot;,</span>
+<span class="lineNum">    1119 </span>            :                 &quot;type&quot;, &quot;ChannelDtmfReceived&quot;,
+<span class="lineNum">    1120 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">    1121 </span>            :                 &quot;digit&quot;, digit,
+<span class="lineNum">    1122 </span>            :                 &quot;duration_ms&quot;, duration_ms,
+<span class="lineNum">    1123 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="1124"><span class="lineNum">    1124 </span>            : }</a>
+<span class="lineNum">    1125 </span>            : 
+<span class="lineNum">    1126 </span><span class="lineCov">        700 : static struct ast_json *varset_to_json(</span>
+<span class="lineNum">    1127 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1128 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1129 </span>            : {
+<span class="lineNum">    1130 </span><span class="lineCov">        700 :         return channel_blob_to_json(message, &quot;ChannelVarset&quot;, sanitize);</span>
+<a name="1131"><span class="lineNum">    1131 </span>            : }</a>
+<span class="lineNum">    1132 </span>            : 
+<span class="lineNum">    1133 </span><span class="lineCov">        341 : static struct ast_json *hangup_request_to_json(</span>
+<span class="lineNum">    1134 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1135 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1136 </span>            : {
+<span class="lineNum">    1137 </span><span class="lineCov">        341 :         return channel_blob_to_json(message, &quot;ChannelHangupRequest&quot;, sanitize);</span>
+<a name="1138"><span class="lineNum">    1138 </span>            : }</a>
+<span class="lineNum">    1139 </span>            : 
+<span class="lineNum">    1140 </span><span class="lineCov">        240 : static struct ast_json *dial_to_json(</span>
+<span class="lineNum">    1141 </span>            :         struct stasis_message *message,
+<span class="lineNum">    1142 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1143 </span>            : {
+<span class="lineNum">    1144 </span><span class="lineCov">        240 :         struct ast_multi_channel_blob *payload = stasis_message_data(message);</span>
+<span class="lineNum">    1145 </span><span class="lineCov">        240 :         struct ast_json *blob = ast_multi_channel_blob_get_json(payload);</span>
+<span class="lineNum">    1146 </span>            :         const char *dialstatus =
+<span class="lineNum">    1147 </span><span class="lineCov">        240 :                 ast_json_string_get(ast_json_object_get(blob, &quot;dialstatus&quot;));</span>
+<span class="lineNum">    1148 </span>            :         const char *forward =
+<span class="lineNum">    1149 </span><span class="lineCov">        240 :                 ast_json_string_get(ast_json_object_get(blob, &quot;forward&quot;));</span>
+<span class="lineNum">    1150 </span>            :         const char *dialstring =
+<span class="lineNum">    1151 </span><span class="lineCov">        240 :                 ast_json_string_get(ast_json_object_get(blob, &quot;dialstring&quot;));</span>
+<span class="lineNum">    1152 </span><span class="lineCov">        240 :         struct ast_json *caller_json = ast_channel_snapshot_to_json(ast_multi_channel_blob_get_channel(payload, &quot;caller&quot;), sanitize);</span>
+<span class="lineNum">    1153 </span><span class="lineCov">        240 :         struct ast_json *peer_json = ast_channel_snapshot_to_json(ast_multi_channel_blob_get_channel(payload, &quot;peer&quot;), sanitize);</span>
+<span class="lineNum">    1154 </span><span class="lineCov">        240 :         struct ast_json *forwarded_json = ast_channel_snapshot_to_json(ast_multi_channel_blob_get_channel(payload, &quot;forwarded&quot;), sanitize);</span>
+<span class="lineNum">    1155 </span>            :         struct ast_json *json;
+<span class="lineNum">    1156 </span><span class="lineCov">        240 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1157 </span><span class="lineCov">        240 :         int res = 0;</span>
+<span class="lineNum">    1158 </span>            : 
+<span class="lineNum">    1159 </span><span class="lineCov">        240 :         json = ast_json_pack(&quot;{s: s, s: o, s: s, s: s, s: s}&quot;,</span>
+<span class="lineNum">    1160 </span>            :                 &quot;type&quot;, &quot;Dial&quot;,
+<span class="lineNum">    1161 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">    1162 </span>            :                 &quot;dialstatus&quot;, dialstatus,
+<span class="lineNum">    1163 </span>            :                 &quot;forward&quot;, forward,
+<span class="lineNum">    1164 </span>            :                 &quot;dialstring&quot;, dialstring);
+<span class="lineNum">    1165 </span><span class="lineCov">        240 :         if (!json) {</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :                 ast_json_unref(caller_json);</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">          0 :                 ast_json_unref(peer_json);</span>
+<span class="lineNum">    1168 </span><span class="lineNoCov">          0 :                 ast_json_unref(forwarded_json);</span>
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1170 </span>            :         }
+<span class="lineNum">    1171 </span>            : 
+<span class="lineNum">    1172 </span><span class="lineCov">        240 :         if (caller_json) {</span>
+<span class="lineNum">    1173 </span><span class="lineCov">          4 :                 res |= ast_json_object_set(json, &quot;caller&quot;, caller_json);</span>
+<span class="lineNum">    1174 </span>            :         }
+<span class="lineNum">    1175 </span><span class="lineCov">        240 :         if (peer_json) {</span>
+<span class="lineNum">    1176 </span><span class="lineCov">        240 :                 res |= ast_json_object_set(json, &quot;peer&quot;, peer_json);</span>
+<span class="lineNum">    1177 </span>            :         }
+<span class="lineNum">    1178 </span><span class="lineCov">        240 :         if (forwarded_json) {</span>
+<span class="lineNum">    1179 </span><span class="lineCov">         10 :                 res |= ast_json_object_set(json, &quot;forwarded&quot;, forwarded_json);</span>
+<span class="lineNum">    1180 </span>            :         }
+<span class="lineNum">    1181 </span>            : 
+<span class="lineNum">    1182 </span><span class="lineCov">        240 :         if (res) {</span>
+<span class="lineNum">    1183 </span><span class="lineNoCov">          0 :                 ast_json_unref(json);</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1185 </span>            :         }
+<span class="lineNum">    1186 </span>            : 
+<span class="lineNum">    1187 </span><span class="lineCov">        240 :         return json;</span>
+<a name="1188"><span class="lineNum">    1188 </span>            : }</a>
+<span class="lineNum">    1189 </span>            : 
+<span class="lineNum">    1190 </span><span class="lineCov">          6 : static struct ast_manager_event_blob *talking_start_to_ami(struct stasis_message *msg)</span>
+<span class="lineNum">    1191 </span>            : {
+<span class="lineNum">    1192 </span>            :         struct ast_str *channel_string;
+<span class="lineNum">    1193 </span><span class="lineCov">          6 :         struct ast_channel_blob *obj = stasis_message_data(msg);</span>
+<span class="lineNum">    1194 </span>            :         struct ast_manager_event_blob *blob;
+<span class="lineNum">    1195 </span>            : 
+<span class="lineNum">    1196 </span><span class="lineCov">          6 :         channel_string = ast_manager_build_channel_state_string(obj-&gt;snapshot);</span>
+<span class="lineNum">    1197 </span><span class="lineCov">          6 :         if (!channel_string) {</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1199 </span>            :         }
+<span class="lineNum">    1200 </span>            : 
+<span class="lineNum">    1201 </span><span class="lineCov">          6 :         blob = ast_manager_event_blob_create(EVENT_FLAG_CALL, &quot;ChannelTalkingStart&quot;,</span>
+<span class="lineNum">    1202 </span>            :                                              &quot;%s&quot;, ast_str_buffer(channel_string));
+<span class="lineNum">    1203 </span><span class="lineCov">          6 :         ast_free(channel_string);</span>
+<span class="lineNum">    1204 </span>            : 
+<span class="lineNum">    1205 </span><span class="lineCov">          6 :         return blob;</span>
+<a name="1206"><span class="lineNum">    1206 </span>            : }</a>
+<span class="lineNum">    1207 </span>            : 
+<span class="lineNum">    1208 </span><span class="lineCov">          6 : static struct ast_json *talking_start_to_json(struct stasis_message *message,</span>
+<span class="lineNum">    1209 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1210 </span>            : {
+<span class="lineNum">    1211 </span><span class="lineCov">          6 :         return channel_blob_to_json(message, &quot;ChannelTalkingStarted&quot;, sanitize);</span>
+<a name="1212"><span class="lineNum">    1212 </span>            : }</a>
+<span class="lineNum">    1213 </span>            : 
+<span class="lineNum">    1214 </span><span class="lineCov">          6 : static struct ast_manager_event_blob *talking_stop_to_ami(struct stasis_message *msg)</span>
+<span class="lineNum">    1215 </span>            : {
+<span class="lineNum">    1216 </span>            :         struct ast_str *channel_string;
+<span class="lineNum">    1217 </span><span class="lineCov">          6 :         struct ast_channel_blob *obj = stasis_message_data(msg);</span>
+<span class="lineNum">    1218 </span><span class="lineCov">          6 :         int duration = ast_json_integer_get(ast_json_object_get(obj-&gt;blob, &quot;duration&quot;));</span>
+<span class="lineNum">    1219 </span>            :         struct ast_manager_event_blob *blob;
+<span class="lineNum">    1220 </span>            : 
+<span class="lineNum">    1221 </span><span class="lineCov">          6 :         channel_string = ast_manager_build_channel_state_string(obj-&gt;snapshot);</span>
+<span class="lineNum">    1222 </span><span class="lineCov">          6 :         if (!channel_string) {</span>
+<span class="lineNum">    1223 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1224 </span>            :         }
+<span class="lineNum">    1225 </span>            : 
+<span class="lineNum">    1226 </span><span class="lineCov">          6 :         blob = ast_manager_event_blob_create(EVENT_FLAG_CALL, &quot;ChannelTalkingStop&quot;,</span>
+<span class="lineNum">    1227 </span>            :                                              &quot;%s&quot;
+<span class="lineNum">    1228 </span>            :                                              &quot;Duration: %d\r\n&quot;,
+<span class="lineNum">    1229 </span>            :                                              ast_str_buffer(channel_string),
+<span class="lineNum">    1230 </span>            :                                              duration);
+<span class="lineNum">    1231 </span><span class="lineCov">          6 :         ast_free(channel_string);</span>
+<span class="lineNum">    1232 </span>            : 
+<span class="lineNum">    1233 </span><span class="lineCov">          6 :         return blob;</span>
+<a name="1234"><span class="lineNum">    1234 </span>            : }</a>
+<span class="lineNum">    1235 </span>            : 
+<span class="lineNum">    1236 </span><span class="lineCov">          6 : static struct ast_json *talking_stop_to_json(struct stasis_message *message,</span>
+<span class="lineNum">    1237 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1238 </span>            : {
+<span class="lineNum">    1239 </span><span class="lineCov">          6 :         return channel_blob_to_json(message, &quot;ChannelTalkingFinished&quot;, sanitize);</span>
+<a name="1240"><span class="lineNum">    1240 </span>            : }</a>
+<span class="lineNum">    1241 </span>            : 
+<span class="lineNum">    1242 </span><span class="lineCov">          1 : static struct ast_json *hold_to_json(struct stasis_message *message,</span>
+<span class="lineNum">    1243 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1244 </span>            : {
+<span class="lineNum">    1245 </span><span class="lineCov">          1 :         struct ast_channel_blob *channel_blob = stasis_message_data(message);</span>
+<span class="lineNum">    1246 </span><span class="lineCov">          1 :         struct ast_json *blob = channel_blob-&gt;blob;</span>
+<span class="lineNum">    1247 </span><span class="lineCov">          1 :         struct ast_channel_snapshot *snapshot = channel_blob-&gt;snapshot;</span>
+<span class="lineNum">    1248 </span><span class="lineCov">          1 :         const char *musicclass = ast_json_string_get(ast_json_object_get(blob, &quot;musicclass&quot;));</span>
+<span class="lineNum">    1249 </span><span class="lineCov">          1 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1250 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">    1251 </span>            : 
+<span class="lineNum">    1252 </span><span class="lineCov">          1 :         json_channel = ast_channel_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1253 </span><span class="lineCov">          1 :         if (!json_channel) {</span>
+<span class="lineNum">    1254 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1255 </span>            :         }
+<span class="lineNum">    1256 </span>            : 
+<span class="lineNum">    1257 </span><span class="lineCov">          1 :         return ast_json_pack(&quot;{s: s, s: o, s: s, s: o}&quot;,</span>
+<span class="lineNum">    1258 </span>            :                 &quot;type&quot;, &quot;ChannelHold&quot;,
+<span class="lineNum">    1259 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">    1260 </span><span class="lineCov">          1 :                 &quot;musicclass&quot;, S_OR(musicclass, &quot;N/A&quot;),</span>
+<span class="lineNum">    1261 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="1262"><span class="lineNum">    1262 </span>            : }</a>
+<span class="lineNum">    1263 </span>            : 
+<span class="lineNum">    1264 </span><span class="lineCov">         14 : static struct ast_json *unhold_to_json(struct stasis_message *message,</span>
+<span class="lineNum">    1265 </span>            :         const struct stasis_message_sanitizer *sanitize)
+<span class="lineNum">    1266 </span>            : {
+<span class="lineNum">    1267 </span><span class="lineCov">         14 :         struct ast_channel_blob *channel_blob = stasis_message_data(message);</span>
+<span class="lineNum">    1268 </span><span class="lineCov">         14 :         struct ast_channel_snapshot *snapshot = channel_blob-&gt;snapshot;</span>
+<span class="lineNum">    1269 </span><span class="lineCov">         14 :         const struct timeval *tv = stasis_message_timestamp(message);</span>
+<span class="lineNum">    1270 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">    1271 </span>            : 
+<span class="lineNum">    1272 </span><span class="lineCov">         14 :         json_channel = ast_channel_snapshot_to_json(snapshot, sanitize);</span>
+<span class="lineNum">    1273 </span><span class="lineCov">         14 :         if (!json_channel) {</span>
+<span class="lineNum">    1274 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1275 </span>            :         }
+<span class="lineNum">    1276 </span>            : 
+<span class="lineNum">    1277 </span><span class="lineCov">         14 :         return ast_json_pack(&quot;{s: s, s: o, s: o}&quot;,</span>
+<span class="lineNum">    1278 </span>            :                 &quot;type&quot;, &quot;ChannelUnhold&quot;,
+<span class="lineNum">    1279 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">    1280 </span>            :                 &quot;channel&quot;, json_channel);
+<span class="lineNum">    1281 </span>            : }
+<span class="lineNum">    1282 </span>            : 
+<span class="lineNum">    1283 </span>            : /*!
+<a name="1284"><span class="lineNum">    1284 </span>            :  * @{ \brief Define channel message types.</a>
+<a name="1285"><span class="lineNum">    1285 </span>            :  */</a>
+<span class="lineNum">    1286 </span><span class="lineCov">     686502 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_snapshot_type);</span>
+<span class="lineNum">    1287 </span><span class="lineCov">      17103 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_dial_type,</span>
+<a name="1288"><span class="lineNum">    1288 </span>            :         .to_json = dial_to_json,</a>
+<span class="lineNum">    1289 </span>            :         );
+<span class="lineNum">    1290 </span><span class="lineCov">      33129 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_varset_type,</span>
+<span class="lineNum">    1291 </span>            :         .to_ami = varset_to_ami,
+<a name="1292"><span class="lineNum">    1292 </span>            :         .to_json = varset_to_json,</a>
+<span class="lineNum">    1293 </span>            :         );
+<span class="lineNum">    1294 </span><span class="lineCov">       6344 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_hangup_request_type,</span>
+<a name="1295"><span class="lineNum">    1295 </span>            :         .to_json = hangup_request_to_json,</a>
+<a name="1296"><span class="lineNum">    1296 </span>            :         );</a>
+<span class="lineNum">    1297 </span><span class="lineCov">       2776 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_dtmf_begin_type);</span>
+<span class="lineNum">    1298 </span><span class="lineCov">       2860 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_dtmf_end_type,</span>
+<a name="1299"><span class="lineNum">    1299 </span>            :         .to_json = dtmf_end_to_json,</a>
+<span class="lineNum">    1300 </span>            :         );
+<span class="lineNum">    1301 </span><span class="lineCov">       1210 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_hold_type,</span>
+<a name="1302"><span class="lineNum">    1302 </span>            :         .to_json = hold_to_json,</a>
+<span class="lineNum">    1303 </span>            :         );
+<span class="lineNum">    1304 </span><span class="lineCov">       1237 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_unhold_type,</span>
+<a name="1305"><span class="lineNum">    1305 </span>            :         .to_json = unhold_to_json,</a>
+<a name="1306"><span class="lineNum">    1306 </span>            :         );</a>
+<a name="1307"><span class="lineNum">    1307 </span><span class="lineCov">       1131 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_chanspy_start_type);</span></a>
+<a name="1308"><span class="lineNum">    1308 </span><span class="lineCov">       1131 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_chanspy_stop_type);</span></a>
+<a name="1309"><span class="lineNum">    1309 </span><span class="lineCov">       1279 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_fax_type);</span></a>
+<a name="1310"><span class="lineNum">    1310 </span><span class="lineCov">       1398 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_hangup_handler_type);</span></a>
+<a name="1311"><span class="lineNum">    1311 </span><span class="lineCov">       1297 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_moh_start_type);</span></a>
+<a name="1312"><span class="lineNum">    1312 </span><span class="lineCov">       1297 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_moh_stop_type);</span></a>
+<a name="1313"><span class="lineNum">    1313 </span><span class="lineCov">       1128 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_monitor_start_type);</span></a>
+<span class="lineNum">    1314 </span><span class="lineCov">       1128 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_monitor_stop_type);</span>
+<span class="lineNum">    1315 </span><span class="lineCov">       2268 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_agent_login_type,</span>
+<a name="1316"><span class="lineNum">    1316 </span>            :         .to_ami = agent_login_to_ami,</a>
+<span class="lineNum">    1317 </span>            :         );
+<span class="lineNum">    1318 </span><span class="lineCov">       2260 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_agent_logoff_type,</span>
+<a name="1319"><span class="lineNum">    1319 </span>            :         .to_ami = agent_logoff_to_ami,</a>
+<span class="lineNum">    1320 </span>            :         );
+<span class="lineNum">    1321 </span><span class="lineCov">          6 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_talking_start,</span>
+<span class="lineNum">    1322 </span>            :         .to_ami = talking_start_to_ami,
+<a name="1323"><span class="lineNum">    1323 </span>            :         .to_json = talking_start_to_json,</a>
+<span class="lineNum">    1324 </span>            :         );
+<span class="lineNum">    1325 </span><span class="lineCov">          6 : STASIS_MESSAGE_TYPE_DEFN(ast_channel_talking_stop,</span>
+<span class="lineNum">    1326 </span>            :         .to_ami = talking_stop_to_ami,
+<span class="lineNum">    1327 </span>            :         .to_json = talking_stop_to_json,
+<span class="lineNum">    1328 </span>            :         );
+<span class="lineNum">    1329 </span>            : 
+<a name="1330"><span class="lineNum">    1330 </span>            : /*! @} */</a>
+<span class="lineNum">    1331 </span>            : 
+<span class="lineNum">    1332 </span><span class="lineCov">       1015 : static void stasis_channels_cleanup(void)</span>
+<span class="lineNum">    1333 </span>            : {
+<span class="lineNum">    1334 </span><span class="lineCov">       1015 :         stasis_caching_unsubscribe_and_join(channel_by_name_topic);</span>
+<span class="lineNum">    1335 </span><span class="lineCov">       1015 :         channel_by_name_topic = NULL;</span>
+<span class="lineNum">    1336 </span><span class="lineCov">       1015 :         ao2_cleanup(channel_cache_by_name);</span>
+<span class="lineNum">    1337 </span><span class="lineCov">       1015 :         channel_cache_by_name = NULL;</span>
+<span class="lineNum">    1338 </span><span class="lineCov">       1015 :         ao2_cleanup(channel_cache_all);</span>
+<span class="lineNum">    1339 </span><span class="lineCov">       1015 :         channel_cache_all = NULL;</span>
+<span class="lineNum">    1340 </span>            : 
+<span class="lineNum">    1341 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_snapshot_type);</span>
+<span class="lineNum">    1342 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_dial_type);</span>
+<span class="lineNum">    1343 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_varset_type);</span>
+<span class="lineNum">    1344 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_hangup_request_type);</span>
+<span class="lineNum">    1345 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_dtmf_begin_type);</span>
+<span class="lineNum">    1346 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_dtmf_end_type);</span>
+<span class="lineNum">    1347 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_hold_type);</span>
+<span class="lineNum">    1348 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_unhold_type);</span>
+<span class="lineNum">    1349 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_chanspy_start_type);</span>
+<span class="lineNum">    1350 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_chanspy_stop_type);</span>
+<span class="lineNum">    1351 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_fax_type);</span>
+<span class="lineNum">    1352 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_hangup_handler_type);</span>
+<span class="lineNum">    1353 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_moh_start_type);</span>
+<span class="lineNum">    1354 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_moh_stop_type);</span>
+<span class="lineNum">    1355 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_monitor_start_type);</span>
+<span class="lineNum">    1356 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_monitor_stop_type);</span>
+<span class="lineNum">    1357 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_agent_login_type);</span>
+<span class="lineNum">    1358 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_agent_logoff_type);</span>
+<span class="lineNum">    1359 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_talking_start);</span>
+<span class="lineNum">    1360 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_talking_stop);</span>
+<a name="1361"><span class="lineNum">    1361 </span><span class="lineCov">       1015 : }</span></a>
+<span class="lineNum">    1362 </span>            : 
+<span class="lineNum">    1363 </span><span class="lineCov">       1124 : int ast_stasis_channels_init(void)</span>
+<span class="lineNum">    1364 </span>            : {
+<span class="lineNum">    1365 </span><span class="lineCov">       1124 :         int res = 0;</span>
+<span class="lineNum">    1366 </span>            : 
+<span class="lineNum">    1367 </span><span class="lineCov">       1124 :         ast_register_cleanup(stasis_channels_cleanup);</span>
+<span class="lineNum">    1368 </span>            : 
+<span class="lineNum">    1369 </span><span class="lineCov">       1124 :         channel_cache_all = stasis_cp_all_create(&quot;ast_channel_topic_all&quot;,</span>
+<span class="lineNum">    1370 </span>            :                 channel_snapshot_get_id);
+<span class="lineNum">    1371 </span><span class="lineCov">       1124 :         if (!channel_cache_all) {</span>
+<span class="lineNum">    1372 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1373 </span>            :         }
+<span class="lineNum">    1374 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_agent_login_type);</span>
+<span class="lineNum">    1375 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_agent_logoff_type);</span>
+<span class="lineNum">    1376 </span>            : 
+<span class="lineNum">    1377 </span><span class="lineCov">       1124 :         channel_cache_by_name = stasis_cache_create(channel_snapshot_get_name);</span>
+<span class="lineNum">    1378 </span><span class="lineCov">       1124 :         if (!channel_cache_by_name) {</span>
+<span class="lineNum">    1379 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1380 </span>            :         }
+<span class="lineNum">    1381 </span>            : 
+<span class="lineNum">    1382 </span>            :         /* This should be initialized before the caching topic */
+<span class="lineNum">    1383 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_snapshot_type);</span>
+<span class="lineNum">    1384 </span>            : 
+<span class="lineNum">    1385 </span><span class="lineCov">       1124 :         channel_by_name_topic = stasis_caching_topic_create(</span>
+<span class="lineNum">    1386 </span>            :                 stasis_cp_all_topic(channel_cache_all),
+<span class="lineNum">    1387 </span>            :                 channel_cache_by_name);
+<span class="lineNum">    1388 </span><span class="lineCov">       1124 :         if (!channel_by_name_topic) {</span>
+<span class="lineNum">    1389 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1390 </span>            :         }
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_dial_type);</span>
+<span class="lineNum">    1393 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_varset_type);</span>
+<span class="lineNum">    1394 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_hangup_request_type);</span>
+<span class="lineNum">    1395 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_dtmf_begin_type);</span>
+<span class="lineNum">    1396 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_dtmf_end_type);</span>
+<span class="lineNum">    1397 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_hold_type);</span>
+<span class="lineNum">    1398 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_unhold_type);</span>
+<span class="lineNum">    1399 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_chanspy_start_type);</span>
+<span class="lineNum">    1400 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_chanspy_stop_type);</span>
+<span class="lineNum">    1401 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_fax_type);</span>
+<span class="lineNum">    1402 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_hangup_handler_type);</span>
+<span class="lineNum">    1403 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_moh_start_type);</span>
+<span class="lineNum">    1404 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_moh_stop_type);</span>
+<span class="lineNum">    1405 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_monitor_start_type);</span>
+<span class="lineNum">    1406 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_monitor_stop_type);</span>
+<span class="lineNum">    1407 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_talking_start);</span>
+<span class="lineNum">    1408 </span><span class="lineCov">       1124 :         res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_talking_stop);</span>
+<span class="lineNum">    1409 </span>            : 
+<span class="lineNum">    1410 </span><span class="lineCov">       1124 :         return res;</span>
+<span class="lineNum">    1411 </span>            : }
+<span class="lineNum">    1412 </span>            : 
+<span class="lineNum">    1413 </span>            : /*!
+<span class="lineNum">    1414 </span>            :  * \internal
+<span class="lineNum">    1415 </span>            :  * \brief A list element for the dial_masquerade_datastore -- stores data about a dialed peer
+<span class="lineNum">    1416 </span>            :  */
+<span class="lineNum">    1417 </span>            : struct dial_target {
+<span class="lineNum">    1418 </span>            :         /*! Called party channel. */
+<span class="lineNum">    1419 </span>            :         struct ast_channel *peer;
+<span class="lineNum">    1420 </span>            :         /*! Dialstring used to call the peer. */
+<span class="lineNum">    1421 </span>            :         char *dialstring;
+<span class="lineNum">    1422 </span>            :         /*! Next entry in the list. */
+<span class="lineNum">    1423 </span>            :         AST_LIST_ENTRY(dial_target) list;
+<a name="1424"><span class="lineNum">    1424 </span>            : };</a>
+<span class="lineNum">    1425 </span>            : 
+<span class="lineNum">    1426 </span><span class="lineCov">        877 : static void dial_target_free(struct dial_target *doomed)</span>
+<span class="lineNum">    1427 </span>            : {
+<span class="lineNum">    1428 </span><span class="lineCov">        877 :         if (!doomed) {</span>
+<span class="lineNum">    1429 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1430 </span>            :         }
+<span class="lineNum">    1431 </span><span class="lineCov">        877 :         ast_free(doomed-&gt;dialstring);</span>
+<span class="lineNum">    1432 </span><span class="lineCov">        877 :         ast_channel_cleanup(doomed-&gt;peer);</span>
+<span class="lineNum">    1433 </span><span class="lineCov">        877 :         ast_free(doomed);</span>
+<span class="lineNum">    1434 </span>            : }
+<span class="lineNum">    1435 </span>            : 
+<span class="lineNum">    1436 </span>            : /*!
+<span class="lineNum">    1437 </span>            :  * \internal
+<span class="lineNum">    1438 </span>            :  * \brief Datastore used for advancing dial state in the case of a masquerade
+<span class="lineNum">    1439 </span>            :  *        against a channel in the process of dialing.
+<span class="lineNum">    1440 </span>            :  */
+<span class="lineNum">    1441 </span>            : struct dial_masquerade_datastore {
+<span class="lineNum">    1442 </span>            :         /*! Calling party channel. */
+<span class="lineNum">    1443 </span>            :         struct ast_channel *caller;
+<span class="lineNum">    1444 </span>            :         /*! List of called peers. */
+<span class="lineNum">    1445 </span>            :         AST_LIST_HEAD_NOLOCK(, dial_target) dialed_peers;
+<a name="1446"><span class="lineNum">    1446 </span>            : };</a>
+<span class="lineNum">    1447 </span>            : 
+<span class="lineNum">    1448 </span><span class="lineCov">       2462 : static void dial_masquerade_datastore_cleanup(struct dial_masquerade_datastore *masq_data)</span>
+<span class="lineNum">    1449 </span>            : {
+<span class="lineNum">    1450 </span>            :         struct dial_target *cur;
+<span class="lineNum">    1451 </span>            : 
+<span class="lineNum">    1452 </span><span class="lineCov">       2463 :         while ((cur = AST_LIST_REMOVE_HEAD(&amp;masq_data-&gt;dialed_peers, list))) {</span>
+<span class="lineNum">    1453 </span><span class="lineCov">          1 :                 dial_target_free(cur);</span>
+<span class="lineNum">    1454 </span>            :         }
+<a name="1455"><span class="lineNum">    1455 </span><span class="lineCov">       2462 : }</span></a>
+<span class="lineNum">    1456 </span>            : 
+<span class="lineNum">    1457 </span><span class="lineCov">       2573 : static void dial_masquerade_datastore_remove_chan(struct dial_masquerade_datastore *masq_data, struct ast_channel *chan)</span>
+<span class="lineNum">    1458 </span>            : {
+<span class="lineNum">    1459 </span>            :         struct dial_target *cur;
+<span class="lineNum">    1460 </span>            : 
+<span class="lineNum">    1461 </span><span class="lineCov">       2573 :         ao2_lock(masq_data);</span>
+<span class="lineNum">    1462 </span><span class="lineCov">       2573 :         if (masq_data-&gt;caller == chan) {</span>
+<span class="lineNum">    1463 </span><span class="lineCov">        820 :                 dial_masquerade_datastore_cleanup(masq_data);</span>
+<span class="lineNum">    1464 </span>            :         } else {
+<span class="lineNum">    1465 </span><span class="lineCov">       1850 :                 AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;masq_data-&gt;dialed_peers, cur, list) {</span>
+<span class="lineNum">    1466 </span><span class="lineCov">        973 :                         if (cur-&gt;peer == chan) {</span>
+<span class="lineNum">    1467 </span><span class="lineCov">        876 :                                 AST_LIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">    1468 </span><span class="lineCov">        876 :                                 dial_target_free(cur);</span>
+<span class="lineNum">    1469 </span><span class="lineCov">        876 :                                 break;</span>
+<span class="lineNum">    1470 </span>            :                         }
+<span class="lineNum">    1471 </span>            :                 }
+<span class="lineNum">    1472 </span>            :                 AST_LIST_TRAVERSE_SAFE_END;
+<span class="lineNum">    1473 </span>            :         }
+<span class="lineNum">    1474 </span><span class="lineCov">       2573 :         ao2_unlock(masq_data);</span>
+<a name="1475"><span class="lineNum">    1475 </span><span class="lineCov">       2573 : }</span></a>
+<span class="lineNum">    1476 </span>            : 
+<span class="lineNum">    1477 </span><span class="lineCov">        821 : static void dial_masquerade_datastore_dtor(void *vdoomed)</span>
+<span class="lineNum">    1478 </span>            : {
+<span class="lineNum">    1479 </span><span class="lineCov">        821 :         dial_masquerade_datastore_cleanup(vdoomed);</span>
+<a name="1480"><span class="lineNum">    1480 </span><span class="lineCov">        821 : }</span></a>
+<span class="lineNum">    1481 </span>            : 
+<span class="lineNum">    1482 </span><span class="lineCov">        821 : static struct dial_masquerade_datastore *dial_masquerade_datastore_alloc(void)</span>
+<span class="lineNum">    1483 </span>            : {
+<span class="lineNum">    1484 </span>            :         struct dial_masquerade_datastore *masq_data;
+<span class="lineNum">    1485 </span>            : 
+<span class="lineNum">    1486 </span><span class="lineCov">        821 :         masq_data = ao2_alloc(sizeof(struct dial_masquerade_datastore),</span>
+<span class="lineNum">    1487 </span>            :                 dial_masquerade_datastore_dtor);
+<span class="lineNum">    1488 </span><span class="lineCov">        821 :         if (!masq_data) {</span>
+<span class="lineNum">    1489 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1490 </span>            :         }
+<span class="lineNum">    1491 </span><span class="lineCov">        821 :         AST_LIST_HEAD_INIT_NOLOCK(&amp;masq_data-&gt;dialed_peers);</span>
+<span class="lineNum">    1492 </span><span class="lineCov">        821 :         return masq_data;</span>
+<span class="lineNum">    1493 </span>            : }
+<span class="lineNum">    1494 </span>            : 
+<span class="lineNum">    1495 </span>            : /*!
+<span class="lineNum">    1496 </span>            :  * \internal
+<a name="1497"><span class="lineNum">    1497 </span>            :  * \brief Datastore destructor for dial_masquerade_datastore</a>
+<span class="lineNum">    1498 </span>            :  */
+<span class="lineNum">    1499 </span><span class="lineCov">        877 : static void dial_masquerade_datastore_destroy(void *data)</span>
+<span class="lineNum">    1500 </span>            : {
+<span class="lineNum">    1501 </span><span class="lineCov">        877 :         ao2_ref(data, -1);</span>
+<span class="lineNum">    1502 </span><span class="lineCov">        877 : }</span>
+<span class="lineNum">    1503 </span>            : 
+<span class="lineNum">    1504 </span>            : /*!
+<span class="lineNum">    1505 </span>            :  * \internal
+<a name="1506"><span class="lineNum">    1506 </span>            :  * \brief Datastore destructor for dial_masquerade_datastore</a>
+<span class="lineNum">    1507 </span>            :  */
+<span class="lineNum">    1508 </span><span class="lineCov">        821 : static void dial_masquerade_caller_datastore_destroy(void *data)</span>
+<span class="lineNum">    1509 </span>            : {
+<span class="lineNum">    1510 </span><span class="lineCov">        821 :         dial_masquerade_datastore_cleanup(data);</span>
+<span class="lineNum">    1511 </span><span class="lineCov">        821 :         ao2_ref(data, -1);</span>
+<span class="lineNum">    1512 </span><span class="lineCov">        821 : }</span>
+<span class="lineNum">    1513 </span>            : 
+<a name="1514"><span class="lineNum">    1514 </span>            : static struct ast_datastore *dial_masquerade_datastore_find(struct ast_channel *chan);</a>
+<span class="lineNum">    1515 </span>            : 
+<span class="lineNum">    1516 </span><span class="lineNoCov">          0 : static void dial_masquerade_fixup(void *data, struct ast_channel *old_chan, struct ast_channel *new_chan)</span>
+<span class="lineNum">    1517 </span>            : {
+<span class="lineNum">    1518 </span><span class="lineNoCov">          0 :         struct dial_masquerade_datastore *masq_data = data;</span>
+<span class="lineNum">    1519 </span>            :         struct dial_target *cur;
+<span class="lineNum">    1520 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1521 </span>            : 
+<span class="lineNum">    1522 </span><span class="lineNoCov">          0 :         ao2_lock(masq_data);</span>
+<span class="lineNum">    1523 </span><span class="lineNoCov">          0 :         if (!masq_data-&gt;caller) {</span>
+<span class="lineNum">    1524 </span>            :                 /* Nothing to do but remove the datastore */
+<span class="lineNum">    1525 </span><span class="lineNoCov">          0 :         } else if (masq_data-&gt;caller == old_chan) {</span>
+<span class="lineNum">    1526 </span>            :                 /* The caller channel is being masqueraded out. */
+<span class="lineNum">    1527 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;Caller channel %s being masqueraded out to %s (is_empty:%d)\n&quot;,</span>
+<span class="lineNum">    1528 </span>            :                         ast_channel_name(new_chan), ast_channel_name(old_chan),
+<span class="lineNum">    1529 </span>            :                         AST_LIST_EMPTY(&amp;masq_data-&gt;dialed_peers));
+<span class="lineNum">    1530 </span><span class="lineNoCov">          0 :                 AST_LIST_TRAVERSE(&amp;masq_data-&gt;dialed_peers, cur, list) {</span>
+<span class="lineNum">    1531 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial_internal(new_chan, cur-&gt;peer, NULL,</span>
+<span class="lineNum">    1532 </span><span class="lineNoCov">          0 :                                 cur-&gt;dialstring, &quot;NOANSWER&quot;, NULL);</span>
+<span class="lineNum">    1533 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial_internal(old_chan, cur-&gt;peer, NULL,</span>
+<span class="lineNum">    1534 </span><span class="lineNoCov">          0 :                                 cur-&gt;dialstring, NULL, NULL);</span>
+<span class="lineNum">    1535 </span>            :                 }
+<span class="lineNum">    1536 </span><span class="lineNoCov">          0 :                 dial_masquerade_datastore_cleanup(masq_data);</span>
+<span class="lineNum">    1537 </span>            :         } else {
+<span class="lineNum">    1538 </span>            :                 /* One of the peer channels is being masqueraded out. */
+<span class="lineNum">    1539 </span><span class="lineNoCov">          0 :                 AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;masq_data-&gt;dialed_peers, cur, list) {</span>
+<span class="lineNum">    1540 </span><span class="lineNoCov">          0 :                         if (cur-&gt;peer == old_chan) {</span>
+<span class="lineNum">    1541 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;Peer channel %s being masqueraded out to %s\n&quot;,</span>
+<span class="lineNum">    1542 </span>            :                                         ast_channel_name(new_chan), ast_channel_name(old_chan));
+<span class="lineNum">    1543 </span><span class="lineNoCov">          0 :                                 ast_channel_publish_dial_internal(masq_data-&gt;caller, new_chan, NULL,</span>
+<span class="lineNum">    1544 </span><span class="lineNoCov">          0 :                                         cur-&gt;dialstring, &quot;CANCEL&quot;, NULL);</span>
+<span class="lineNum">    1545 </span><span class="lineNoCov">          0 :                                 ast_channel_publish_dial_internal(masq_data-&gt;caller, old_chan, NULL,</span>
+<span class="lineNum">    1546 </span><span class="lineNoCov">          0 :                                         cur-&gt;dialstring, NULL, NULL);</span>
+<span class="lineNum">    1547 </span>            : 
+<span class="lineNum">    1548 </span><span class="lineNoCov">          0 :                                 AST_LIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">    1549 </span><span class="lineNoCov">          0 :                                 dial_target_free(cur);</span>
+<span class="lineNum">    1550 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1551 </span>            :                         }
+<span class="lineNum">    1552 </span>            :                 }
+<span class="lineNum">    1553 </span>            :                 AST_LIST_TRAVERSE_SAFE_END;
+<span class="lineNum">    1554 </span>            :         }
+<span class="lineNum">    1555 </span><span class="lineNoCov">          0 :         ao2_unlock(masq_data);</span>
+<span class="lineNum">    1556 </span>            : 
+<span class="lineNum">    1557 </span>            :         /* Remove the datastore from the channel. */
+<span class="lineNum">    1558 </span><span class="lineNoCov">          0 :         datastore = dial_masquerade_datastore_find(old_chan);</span>
+<span class="lineNum">    1559 </span><span class="lineNoCov">          0 :         if (!datastore) {</span>
+<span class="lineNum">    1560 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1561 </span>            :         }
+<span class="lineNum">    1562 </span><span class="lineNoCov">          0 :         ast_channel_datastore_remove(old_chan, datastore);</span>
+<span class="lineNum">    1563 </span><span class="lineNoCov">          0 :         ast_datastore_free(datastore);</span>
+<span class="lineNum">    1564 </span>            : }
+<span class="lineNum">    1565 </span>            : 
+<span class="lineNum">    1566 </span>            : /*!
+<span class="lineNum">    1567 </span>            :  * \internal
+<span class="lineNum">    1568 </span>            :  * \brief Primary purpose for dial_masquerade_datastore, publishes
+<span class="lineNum">    1569 </span>            :  *        the channel dial event needed to set the incoming channel into the
+<span class="lineNum">    1570 </span>            :  *        dial state during a masquerade.
+<span class="lineNum">    1571 </span>            :  * \param data pointer to the dial_masquerade_datastore
+<span class="lineNum">    1572 </span>            :  * \param old_chan Channel being replaced
+<a name="1573"><span class="lineNum">    1573 </span>            :  * \param new_chan Channel being pushed to dial mode</a>
+<span class="lineNum">    1574 </span>            :  */
+<span class="lineNum">    1575 </span><span class="lineCov">          3 : static void dial_masquerade_breakdown(void *data, struct ast_channel *old_chan, struct ast_channel *new_chan)</span>
+<span class="lineNum">    1576 </span>            : {
+<span class="lineNum">    1577 </span><span class="lineCov">          3 :         struct dial_masquerade_datastore *masq_data = data;</span>
+<span class="lineNum">    1578 </span>            :         struct dial_target *cur;
+<span class="lineNum">    1579 </span>            : 
+<span class="lineNum">    1580 </span><span class="lineCov">          3 :         ao2_lock(masq_data);</span>
+<span class="lineNum">    1581 </span>            : 
+<span class="lineNum">    1582 </span><span class="lineCov">          3 :         if (!masq_data-&gt;caller) {</span>
+<span class="lineNum">    1583 </span><span class="lineNoCov">          0 :                 ao2_unlock(masq_data);</span>
+<span class="lineNum">    1584 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1585 </span>            :         }
+<span class="lineNum">    1586 </span>            : 
+<span class="lineNum">    1587 </span><span class="lineCov">          3 :         if (masq_data-&gt;caller == new_chan) {</span>
+<span class="lineNum">    1588 </span>            :                 /*
+<span class="lineNum">    1589 </span>            :                  * The caller channel is being masqueraded into.
+<span class="lineNum">    1590 </span>            :                  * The masquerade is likely because of a blonde transfer.
+<span class="lineNum">    1591 </span>            :                  */
+<span class="lineNum">    1592 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;Caller channel %s being masqueraded into by %s (is_empty:%d)\n&quot;,</span>
+<span class="lineNum">    1593 </span>            :                         ast_channel_name(old_chan), ast_channel_name(new_chan),
+<span class="lineNum">    1594 </span>            :                         AST_LIST_EMPTY(&amp;masq_data-&gt;dialed_peers));
+<span class="lineNum">    1595 </span><span class="lineNoCov">          0 :                 AST_LIST_TRAVERSE(&amp;masq_data-&gt;dialed_peers, cur, list) {</span>
+<span class="lineNum">    1596 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial_internal(old_chan, cur-&gt;peer, NULL,</span>
+<span class="lineNum">    1597 </span><span class="lineNoCov">          0 :                                 cur-&gt;dialstring, &quot;NOANSWER&quot;, NULL);</span>
+<span class="lineNum">    1598 </span><span class="lineNoCov">          0 :                         ast_channel_publish_dial_internal(new_chan, cur-&gt;peer, NULL,</span>
+<span class="lineNum">    1599 </span><span class="lineNoCov">          0 :                                 cur-&gt;dialstring, NULL, NULL);</span>
+<span class="lineNum">    1600 </span>            :                 }
+<span class="lineNum">    1601 </span>            : 
+<span class="lineNum">    1602 </span><span class="lineNoCov">          0 :                 ao2_unlock(masq_data);</span>
+<span class="lineNum">    1603 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1604 </span>            :         }
+<span class="lineNum">    1605 </span>            : 
+<span class="lineNum">    1606 </span>            :         /*
+<span class="lineNum">    1607 </span>            :          * One of the peer channels is being masqueraded into.
+<span class="lineNum">    1608 </span>            :          * The masquerade is likely because of a call pickup.
+<span class="lineNum">    1609 </span>            :          */
+<span class="lineNum">    1610 </span><span class="lineCov">          3 :         AST_LIST_TRAVERSE(&amp;masq_data-&gt;dialed_peers, cur, list) {</span>
+<span class="lineNum">    1611 </span><span class="lineCov">          3 :                 if (cur-&gt;peer == new_chan) {</span>
+<span class="lineNum">    1612 </span><span class="lineCov">          3 :                         ast_debug(1, &quot;Peer channel %s being masqueraded into by %s\n&quot;,</span>
+<span class="lineNum">    1613 </span>            :                                 ast_channel_name(old_chan), ast_channel_name(new_chan));
+<span class="lineNum">    1614 </span><span class="lineCov">          3 :                         ast_channel_publish_dial_internal(masq_data-&gt;caller, old_chan, NULL,</span>
+<span class="lineNum">    1615 </span><span class="lineCov">          3 :                                 cur-&gt;dialstring, &quot;CANCEL&quot;, NULL);</span>
+<span class="lineNum">    1616 </span><span class="lineCov">          3 :                         ast_channel_publish_dial_internal(masq_data-&gt;caller, new_chan, NULL,</span>
+<span class="lineNum">    1617 </span><span class="lineCov">          3 :                                 cur-&gt;dialstring, NULL, NULL);</span>
+<span class="lineNum">    1618 </span><span class="lineCov">          3 :                         break;</span>
+<span class="lineNum">    1619 </span>            :                 }
+<span class="lineNum">    1620 </span>            :         }
+<span class="lineNum">    1621 </span>            : 
+<span class="lineNum">    1622 </span><span class="lineCov">          3 :         ao2_unlock(masq_data);</span>
+<span class="lineNum">    1623 </span>            : }
+<span class="lineNum">    1624 </span>            : 
+<span class="lineNum">    1625 </span>            : static const struct ast_datastore_info dial_masquerade_info = {
+<span class="lineNum">    1626 </span>            :         .type = &quot;stasis-chan-dial-masq&quot;,
+<span class="lineNum">    1627 </span>            :         .destroy = dial_masquerade_datastore_destroy,
+<span class="lineNum">    1628 </span>            :         .chan_fixup = dial_masquerade_fixup,
+<span class="lineNum">    1629 </span>            :         .chan_breakdown = dial_masquerade_breakdown,
+<span class="lineNum">    1630 </span>            : };
+<span class="lineNum">    1631 </span>            : 
+<span class="lineNum">    1632 </span>            : static const struct ast_datastore_info dial_masquerade_caller_info = {
+<span class="lineNum">    1633 </span>            :         .type = &quot;stasis-chan-dial-masq&quot;,
+<span class="lineNum">    1634 </span>            :         .destroy = dial_masquerade_caller_datastore_destroy,
+<span class="lineNum">    1635 </span>            :         .chan_fixup = dial_masquerade_fixup,
+<span class="lineNum">    1636 </span>            :         .chan_breakdown = dial_masquerade_breakdown,
+<span class="lineNum">    1637 </span>            : };
+<span class="lineNum">    1638 </span>            : 
+<span class="lineNum">    1639 </span>            : /*!
+<span class="lineNum">    1640 </span>            :  * \internal
+<span class="lineNum">    1641 </span>            :  * \brief Find the dial masquerade datastore on the given channel.
+<span class="lineNum">    1642 </span>            :  *
+<span class="lineNum">    1643 </span>            :  * \param chan Channel a datastore data is wanted from
+<span class="lineNum">    1644 </span>            :  *
+<a name="1645"><span class="lineNum">    1645 </span>            :  * \return A pointer to the datastore if it exists.</a>
+<span class="lineNum">    1646 </span>            :  */
+<span class="lineNum">    1647 </span><span class="lineCov">       4905 : static struct ast_datastore *dial_masquerade_datastore_find(struct ast_channel *chan)</span>
+<span class="lineNum">    1648 </span>            : {
+<span class="lineNum">    1649 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1650 </span>            : 
+<span class="lineNum">    1651 </span><span class="lineCov">       4905 :         datastore = ast_channel_datastore_find(chan, &amp;dial_masquerade_info, NULL);</span>
+<span class="lineNum">    1652 </span><span class="lineCov">       4905 :         if (!datastore) {</span>
+<span class="lineNum">    1653 </span><span class="lineCov">       4029 :                 datastore = ast_channel_datastore_find(chan, &amp;dial_masquerade_caller_info, NULL);</span>
+<span class="lineNum">    1654 </span>            :         }
+<span class="lineNum">    1655 </span>            : 
+<span class="lineNum">    1656 </span><span class="lineCov">       4905 :         return datastore;</span>
+<span class="lineNum">    1657 </span>            : }
+<span class="lineNum">    1658 </span>            : 
+<span class="lineNum">    1659 </span>            : /*!
+<span class="lineNum">    1660 </span>            :  * \internal
+<span class="lineNum">    1661 </span>            :  * \brief Add the dial masquerade datastore to a channel.
+<span class="lineNum">    1662 </span>            :  *
+<span class="lineNum">    1663 </span>            :  * \param chan Channel to setup dial masquerade datastore on.
+<span class="lineNum">    1664 </span>            :  * \param masq_data NULL to setup caller datastore otherwise steals the ref on success.
+<span class="lineNum">    1665 </span>            :  *
+<span class="lineNum">    1666 </span>            :  * \retval masq_data given or created on success.
+<span class="lineNum">    1667 </span>            :  *         (A ref is not returned but can be obtained before chan is unlocked.)
+<a name="1668"><span class="lineNum">    1668 </span>            :  * \retval NULL on error.  masq_data ref is not stolen.</a>
+<span class="lineNum">    1669 </span>            :  */
+<span class="lineNum">    1670 </span><span class="lineCov">       1698 : static struct dial_masquerade_datastore *dial_masquerade_datastore_add(</span>
+<span class="lineNum">    1671 </span>            :         struct ast_channel *chan, struct dial_masquerade_datastore *masq_data)
+<span class="lineNum">    1672 </span>            : {
+<span class="lineNum">    1673 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1674 </span>            : 
+<span class="lineNum">    1675 </span><span class="lineCov">       1698 :         datastore = ast_datastore_alloc(!masq_data ? &amp;dial_masquerade_caller_info : &amp;dial_masquerade_info, NULL);</span>
+<span class="lineNum">    1676 </span><span class="lineCov">       1698 :         if (!datastore) {</span>
+<span class="lineNum">    1677 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1678 </span>            :         }
+<span class="lineNum">    1679 </span>            : 
+<span class="lineNum">    1680 </span><span class="lineCov">       1698 :         if (!masq_data) {</span>
+<span class="lineNum">    1681 </span><span class="lineCov">        821 :                 masq_data = dial_masquerade_datastore_alloc();</span>
+<span class="lineNum">    1682 </span><span class="lineCov">        821 :                 if (!masq_data) {</span>
+<span class="lineNum">    1683 </span><span class="lineNoCov">          0 :                         ast_datastore_free(datastore);</span>
+<span class="lineNum">    1684 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1685 </span>            :                 }
+<span class="lineNum">    1686 </span><span class="lineCov">        821 :                 masq_data-&gt;caller = chan;</span>
+<span class="lineNum">    1687 </span>            :         }
+<span class="lineNum">    1688 </span>            : 
+<span class="lineNum">    1689 </span><span class="lineCov">       1698 :         datastore-&gt;data = masq_data;</span>
+<span class="lineNum">    1690 </span><span class="lineCov">       1698 :         ast_channel_datastore_add(chan, datastore);</span>
+<span class="lineNum">    1691 </span>            : 
+<span class="lineNum">    1692 </span><span class="lineCov">       1698 :         return masq_data;</span>
+<a name="1693"><span class="lineNum">    1693 </span>            : }</a>
+<span class="lineNum">    1694 </span>            : 
+<span class="lineNum">    1695 </span><span class="lineCov">        877 : static int set_dial_masquerade(struct ast_channel *caller, struct ast_channel *peer, const char *dialstring)</span>
+<span class="lineNum">    1696 </span>            : {
+<span class="lineNum">    1697 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1698 </span>            :         struct dial_masquerade_datastore *masq_data;
+<span class="lineNum">    1699 </span>            :         struct dial_target *target;
+<span class="lineNum">    1700 </span>            : 
+<span class="lineNum">    1701 </span>            :         /* Find or create caller datastore */
+<span class="lineNum">    1702 </span><span class="lineCov">        877 :         datastore = dial_masquerade_datastore_find(caller);</span>
+<span class="lineNum">    1703 </span><span class="lineCov">        877 :         if (!datastore) {</span>
+<span class="lineNum">    1704 </span><span class="lineCov">        821 :                 masq_data = dial_masquerade_datastore_add(caller, NULL);</span>
+<span class="lineNum">    1705 </span>            :         } else {
+<span class="lineNum">    1706 </span><span class="lineCov">         56 :                 masq_data = datastore-&gt;data;</span>
+<span class="lineNum">    1707 </span>            :         }
+<span class="lineNum">    1708 </span><span class="lineCov">        877 :         if (!masq_data) {</span>
+<span class="lineNum">    1709 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1710 </span>            :         }
+<span class="lineNum">    1711 </span><span class="lineCov">        877 :         ao2_ref(masq_data, +1);</span>
+<span class="lineNum">    1712 </span>            : 
+<span class="lineNum">    1713 </span>            :         /*
+<span class="lineNum">    1714 </span>            :          * Someone likely forgot to do an ast_channel_publish_dial()
+<span class="lineNum">    1715 </span>            :          * or ast_channel_publish_dial_forward() with a final dial
+<span class="lineNum">    1716 </span>            :          * status on the channel.
+<span class="lineNum">    1717 </span>            :          */
+<span class="lineNum">    1718 </span><span class="lineCov">        877 :         ast_assert(masq_data-&gt;caller == caller);</span>
+<span class="lineNum">    1719 </span>            : 
+<span class="lineNum">    1720 </span>            :         /* Create peer target to put into datastore */
+<span class="lineNum">    1721 </span><span class="lineCov">        877 :         target = ast_calloc(1, sizeof(*target));</span>
+<span class="lineNum">    1722 </span><span class="lineCov">        877 :         if (!target) {</span>
+<span class="lineNum">    1723 </span><span class="lineNoCov">          0 :                 ao2_ref(masq_data, -1);</span>
+<span class="lineNum">    1724 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1725 </span>            :         }
+<span class="lineNum">    1726 </span><span class="lineCov">        877 :         if (dialstring) {</span>
+<span class="lineNum">    1727 </span><span class="lineCov">        877 :                 target-&gt;dialstring = ast_strdup(dialstring);</span>
+<span class="lineNum">    1728 </span><span class="lineCov">        877 :                 if (!target-&gt;dialstring) {</span>
+<span class="lineNum">    1729 </span><span class="lineNoCov">          0 :                         ast_free(target);</span>
+<span class="lineNum">    1730 </span><span class="lineNoCov">          0 :                         ao2_ref(masq_data, -1);</span>
+<span class="lineNum">    1731 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1732 </span>            :                 }
+<span class="lineNum">    1733 </span>            :         }
+<span class="lineNum">    1734 </span><span class="lineCov">        877 :         target-&gt;peer = ast_channel_ref(peer);</span>
+<span class="lineNum">    1735 </span>            : 
+<span class="lineNum">    1736 </span>            :         /* Put peer target into datastore */
+<span class="lineNum">    1737 </span><span class="lineCov">        877 :         ao2_lock(masq_data);</span>
+<span class="lineNum">    1738 </span><span class="lineCov">        877 :         dial_masquerade_datastore_remove_chan(masq_data, peer);</span>
+<span class="lineNum">    1739 </span><span class="lineCov">        877 :         AST_LIST_INSERT_HEAD(&amp;masq_data-&gt;dialed_peers, target, list);</span>
+<span class="lineNum">    1740 </span><span class="lineCov">        877 :         ao2_unlock(masq_data);</span>
+<span class="lineNum">    1741 </span>            : 
+<span class="lineNum">    1742 </span><span class="lineCov">        877 :         datastore = dial_masquerade_datastore_find(peer);</span>
+<span class="lineNum">    1743 </span><span class="lineCov">        877 :         if (datastore) {</span>
+<span class="lineNum">    1744 </span><span class="lineNoCov">          0 :                 if (datastore-&gt;data == masq_data) {</span>
+<span class="lineNum">    1745 </span>            :                         /*
+<span class="lineNum">    1746 </span>            :                          * Peer already had the datastore for this dial masquerade.
+<span class="lineNum">    1747 </span>            :                          * This was a redundant peer dial masquerade setup.
+<span class="lineNum">    1748 </span>            :                          */
+<span class="lineNum">    1749 </span><span class="lineNoCov">          0 :                         ao2_ref(masq_data, -1);</span>
+<span class="lineNum">    1750 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">    1751 </span>            :                 }
+<span class="lineNum">    1752 </span>            : 
+<span class="lineNum">    1753 </span>            :                 /* Something is wrong.  Try to fix if the assert doesn't abort. */
+<span class="lineNum">    1754 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">    1755 </span>            : 
+<span class="lineNum">    1756 </span>            :                 /* Remove the stale dial masquerade datastore */
+<span class="lineNum">    1757 </span><span class="lineNoCov">          0 :                 dial_masquerade_datastore_remove_chan(datastore-&gt;data, peer);</span>
+<span class="lineNum">    1758 </span><span class="lineNoCov">          0 :                 ast_channel_datastore_remove(peer, datastore);</span>
+<span class="lineNum">    1759 </span><span class="lineNoCov">          0 :                 ast_datastore_free(datastore);</span>
+<span class="lineNum">    1760 </span>            :         }
+<span class="lineNum">    1761 </span>            : 
+<span class="lineNum">    1762 </span>            :         /* Create the peer dial masquerade datastore */
+<span class="lineNum">    1763 </span><span class="lineCov">        877 :         if (dial_masquerade_datastore_add(peer, masq_data)) {</span>
+<span class="lineNum">    1764 </span>            :                 /* Success */
+<span class="lineNum">    1765 </span><span class="lineCov">        877 :                 return 0;</span>
+<span class="lineNum">    1766 </span>            :         }
+<span class="lineNum">    1767 </span>            : 
+<span class="lineNum">    1768 </span>            :         /* Failed to create the peer datastore */
+<span class="lineNum">    1769 </span><span class="lineNoCov">          0 :         dial_masquerade_datastore_remove_chan(masq_data, peer);</span>
+<span class="lineNum">    1770 </span><span class="lineNoCov">          0 :         ao2_ref(masq_data, -1);</span>
+<span class="lineNum">    1771 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="1772"><span class="lineNum">    1772 </span>            : }</a>
+<span class="lineNum">    1773 </span>            : 
+<span class="lineNum">    1774 </span><span class="lineCov">       1137 : static void remove_dial_masquerade(struct ast_channel *peer)</span>
+<span class="lineNum">    1775 </span>            : {
+<span class="lineNum">    1776 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1777 </span>            :         struct dial_masquerade_datastore *masq_data;
+<span class="lineNum">    1778 </span>            : 
+<span class="lineNum">    1779 </span><span class="lineCov">       1137 :         datastore = dial_masquerade_datastore_find(peer);</span>
+<span class="lineNum">    1780 </span><span class="lineCov">       1137 :         if (!datastore) {</span>
+<span class="lineNum">    1781 </span><span class="lineCov">        261 :                 return;</span>
+<span class="lineNum">    1782 </span>            :         }
+<span class="lineNum">    1783 </span>            : 
+<span class="lineNum">    1784 </span><span class="lineCov">        876 :         masq_data = datastore-&gt;data;</span>
+<span class="lineNum">    1785 </span><span class="lineCov">        876 :         if (masq_data) {</span>
+<span class="lineNum">    1786 </span><span class="lineCov">        876 :                 dial_masquerade_datastore_remove_chan(masq_data, peer);</span>
+<span class="lineNum">    1787 </span>            :         }
+<span class="lineNum">    1788 </span>            : 
+<span class="lineNum">    1789 </span><span class="lineCov">        876 :         ast_channel_datastore_remove(peer, datastore);</span>
+<span class="lineNum">    1790 </span><span class="lineCov">        876 :         ast_datastore_free(datastore);</span>
+<a name="1791"><span class="lineNum">    1791 </span>            : }</a>
+<span class="lineNum">    1792 </span>            : 
+<span class="lineNum">    1793 </span><span class="lineCov">       2014 : static void remove_dial_masquerade_caller(struct ast_channel *caller)</span>
+<span class="lineNum">    1794 </span>            : {
+<span class="lineNum">    1795 </span>            :         struct ast_datastore *datastore;
+<span class="lineNum">    1796 </span>            :         struct dial_masquerade_datastore *masq_data;
+<span class="lineNum">    1797 </span>            : 
+<span class="lineNum">    1798 </span><span class="lineCov">       2014 :         datastore = dial_masquerade_datastore_find(caller);</span>
+<span class="lineNum">    1799 </span><span class="lineCov">       2014 :         if (!datastore) {</span>
+<span class="lineNum">    1800 </span><span class="lineCov">        251 :                 return;</span>
+<span class="lineNum">    1801 </span>            :         }
+<span class="lineNum">    1802 </span>            : 
+<span class="lineNum">    1803 </span><span class="lineCov">       1763 :         masq_data = datastore-&gt;data;</span>
+<span class="lineNum">    1804 </span><span class="lineCov">       1763 :         if (!masq_data || !AST_LIST_EMPTY(&amp;masq_data-&gt;dialed_peers)) {</span>
+<span class="lineNum">    1805 </span><span class="lineCov">        943 :                 return;</span>
+<span class="lineNum">    1806 </span>            :         }
+<span class="lineNum">    1807 </span>            : 
+<span class="lineNum">    1808 </span><span class="lineCov">        820 :         dial_masquerade_datastore_remove_chan(masq_data, caller);</span>
+<span class="lineNum">    1809 </span>            : 
+<span class="lineNum">    1810 </span><span class="lineCov">        820 :         ast_channel_datastore_remove(caller, datastore);</span>
+<span class="lineNum">    1811 </span><span class="lineCov">        820 :         ast_datastore_free(datastore);</span>
+<span class="lineNum">    1812 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

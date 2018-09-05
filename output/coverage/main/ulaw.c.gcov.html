@@ -1,0 +1,332 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/ulaw.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - ulaw.c<span style="font-size: 80%;"> (source / <a href="ulaw.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief u-Law to Signed linear conversion
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/ulaw.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #if 0
+<span class="lineNum">      36 </span>            : /* ZEROTRAP is the military recommendation to improve the encryption
+<span class="lineNum">      37 </span>            :  * of u-Law traffic. It is irrelevant with modern encryption systems
+<span class="lineNum">      38 </span>            :  * like AES, and will simply degrade the signal quality.
+<span class="lineNum">      39 </span>            :  * ZEROTRAP is not implemented in AST_LIN2MU and so the coding table
+<span class="lineNum">      40 </span>            :  * tests will fail if you use it */
+<span class="lineNum">      41 </span>            : #define ZEROTRAP    /*!&lt; turn on the trap as per the MIL-STD */
+<span class="lineNum">      42 </span>            : #endif
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #define BIAS 0x84   /*!&lt; define the add-in bias for 16 bit samples */
+<span class="lineNum">      45 </span>            : #define CLIP 32635
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : #ifndef G711_NEW_ALGORITHM
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : unsigned char __ast_lin2mu[16384];
+<a name="50"><span class="lineNum">      50 </span>            : short __ast_mulaw[256];</a>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">   73662464 : static unsigned char linear2ulaw(short sample)</span>
+<span class="lineNum">      53 </span>            : {
+<span class="lineNum">      54 </span>            :         static int exp_lut[256] = {
+<span class="lineNum">      55 </span>            :                 0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
+<span class="lineNum">      56 </span>            :                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+<span class="lineNum">      57 </span>            :                 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+<span class="lineNum">      58 </span>            :                 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+<span class="lineNum">      59 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">      60 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">      61 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">      62 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">      63 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      64 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      65 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      66 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      67 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      68 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      69 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">      70 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7 };
+<span class="lineNum">      71 </span>            :         int sign, exponent, mantissa;
+<span class="lineNum">      72 </span>            :         unsigned char ulawbyte;
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            :         /* Get the sample into sign-magnitude. */
+<span class="lineNum">      75 </span><span class="lineCov">   73662464 :         sign = (sample &gt;&gt; 8) &amp; 0x80;          /* set aside the sign */</span>
+<span class="lineNum">      76 </span><span class="lineCov">   73662464 :         if (sign != 0)</span>
+<span class="lineNum">      77 </span><span class="lineCov">   36831232 :                 sample = -sample;              /* get magnitude */</span>
+<span class="lineNum">      78 </span><span class="lineCov">   73662464 :         if (sample &gt; CLIP)</span>
+<span class="lineNum">      79 </span><span class="lineCov">     296736 :                 sample = CLIP;             /* clip the magnitude */</span>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            :         /* Convert from 16 bit linear to ulaw. */
+<span class="lineNum">      82 </span><span class="lineCov">   73662464 :         sample = sample + BIAS;</span>
+<span class="lineNum">      83 </span><span class="lineCov">   73662464 :         exponent = exp_lut[(sample &gt;&gt; 7) &amp; 0xFF];</span>
+<span class="lineNum">      84 </span><span class="lineCov">   73662464 :         mantissa = (sample &gt;&gt; (exponent + 3)) &amp; 0x0F;</span>
+<span class="lineNum">      85 </span><span class="lineCov">   73662464 :         ulawbyte = ~(sign | (exponent &lt;&lt; 4) | mantissa);</span>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : #ifdef ZEROTRAP
+<span class="lineNum">      88 </span>            :         if (ulawbyte == 0)
+<span class="lineNum">      89 </span>            :                 ulawbyte = 0x02;   /* optional CCITT trap */
+<span class="lineNum">      90 </span>            : #endif
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">   73662464 :         return ulawbyte;</span>
+<span class="lineNum">      93 </span>            : }
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span>            : #else
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span>            : unsigned char __ast_lin2mu[AST_ULAW_TAB_SIZE];
+<span class="lineNum">      98 </span>            : short __ast_mulaw[256];
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            : static unsigned char linear2ulaw(short sample, int full_coding)
+<span class="lineNum">     101 </span>            : {
+<span class="lineNum">     102 </span>            :         static const unsigned exp_lut[256] = {
+<span class="lineNum">     103 </span>            :                 0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
+<span class="lineNum">     104 </span>            :                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+<span class="lineNum">     105 </span>            :                 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+<span class="lineNum">     106 </span>            :                 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+<span class="lineNum">     107 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">     108 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">     109 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">     110 </span>            :                 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+<span class="lineNum">     111 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     112 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     113 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     114 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     115 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     116 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     117 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+<span class="lineNum">     118 </span>            :                 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7 };
+<span class="lineNum">     119 </span>            :         unsigned sign, exponent, mantissa, mag;
+<span class="lineNum">     120 </span>            :         unsigned char ulawbyte;
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span>            :         /* Get the sample into sign-magnitude. */
+<span class="lineNum">     123 </span>            :         ast_ulaw_get_sign_mag(sample, &amp;sign, &amp;mag);
+<span class="lineNum">     124 </span>            :         if (mag &gt; CLIP)
+<span class="lineNum">     125 </span>            :                 mag = CLIP;                /* clip the magnitude */
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            :         sign = (sample &gt;&gt; 8) &amp; 0x80;          /* set aside the sign */
+<span class="lineNum">     128 </span>            :         if (sign != 0)
+<span class="lineNum">     129 </span>            :                 sample = -sample;              /* get magnitude */
+<span class="lineNum">     130 </span>            :         if (sample &gt; CLIP)
+<span class="lineNum">     131 </span>            :                 sample = CLIP;             /* clip the magnitude */
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            :         /* Convert from 16 bit linear to ulaw. */
+<span class="lineNum">     134 </span>            :         mag += BIAS;
+<span class="lineNum">     135 </span>            :         exponent = exp_lut[(mag &gt;&gt; 7) &amp; 0xFF];
+<span class="lineNum">     136 </span>            :         mantissa = (mag &gt;&gt; (exponent + 3)) &amp; 0x0F;
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            :         if (full_coding) {
+<span class="lineNum">     139 </span>            :                 /* full encoding, with sign and xform */
+<span class="lineNum">     140 </span>            :                 ulawbyte = ~(sign | (exponent &lt;&lt; 4) | mantissa);
+<span class="lineNum">     141 </span>            : #ifdef ZEROTRAP
+<span class="lineNum">     142 </span>            :                 if (ulawbyte == 0)
+<span class="lineNum">     143 </span>            :                         ulawbyte = 0x02;   /* optional CCITT trap */
+<span class="lineNum">     144 </span>            : #endif
+<span class="lineNum">     145 </span>            :         } else {
+<span class="lineNum">     146 </span>            :                 /* half-cooked coding -- mantissa+exponent only (for lookup tab) */
+<span class="lineNum">     147 </span>            :                 ulawbyte = (exponent &lt;&lt; 4) | mantissa;
+<span class="lineNum">     148 </span>            :         }
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span>            :         return ulawbyte;
+<span class="lineNum">     151 </span>            : }
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            : static inline short ulaw2linear(unsigned char ulawbyte)
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span>            :         unsigned exponent, mantissa;
+<span class="lineNum">     156 </span>            :         short sample;
+<span class="lineNum">     157 </span>            :         static const short etab[]={0,132,396,924,1980,4092,8316,16764};
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span>            :         ulawbyte = ~ulawbyte;
+<span class="lineNum">     160 </span>            :         exponent = (ulawbyte &amp; 0x70) &gt;&gt; 4;
+<span class="lineNum">     161 </span>            :         mantissa = ulawbyte &amp; 0x0f;
+<span class="lineNum">     162 </span>            :         sample = mantissa &lt;&lt; (exponent + 3);
+<span class="lineNum">     163 </span>            :         sample += etab[exponent];
+<span class="lineNum">     164 </span>            :         if (ulawbyte &amp; 0x80)
+<span class="lineNum">     165 </span>            :                 sample = -sample;
+<span class="lineNum">     166 </span>            :         return sample;
+<span class="lineNum">     167 </span>            : }
+<span class="lineNum">     168 </span>            : #endif
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            : /*!
+<a name="171"><span class="lineNum">     171 </span>            :  * \brief  Set up mu-law conversion table</a>
+<span class="lineNum">     172 </span>            :  */
+<span class="lineNum">     173 </span><span class="lineCov">       1124 : void ast_ulaw_init(void)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span>            :         int i;
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :         /*
+<span class="lineNum">     178 </span>            :          *  Set up mu-law conversion table
+<span class="lineNum">     179 </span>            :          */
+<span class="lineNum">     180 </span>            : #ifndef G711_NEW_ALGORITHM
+<span class="lineNum">     181 </span><span class="lineCov">     288868 :         for (i = 0;i &lt; 256;i++) {</span>
+<span class="lineNum">     182 </span>            :                 short mu,e,f,y;
+<span class="lineNum">     183 </span>            :                 static const short etab[]={0,132,396,924,1980,4092,8316,16764};
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineCov">     287744 :                 mu = 255-i;</span>
+<span class="lineNum">     186 </span><span class="lineCov">     287744 :                 e = (mu &amp; 0x70)/16;</span>
+<span class="lineNum">     187 </span><span class="lineCov">     287744 :                 f = mu &amp; 0x0f;</span>
+<span class="lineNum">     188 </span><span class="lineCov">     287744 :                 y = f * (1 &lt;&lt; (e + 3));</span>
+<span class="lineNum">     189 </span><span class="lineCov">     287744 :                 y += etab[e];</span>
+<span class="lineNum">     190 </span><span class="lineCov">     287744 :                 if (mu &amp; 0x80) y = -y;</span>
+<span class="lineNum">     191 </span><span class="lineCov">     287744 :                 __ast_mulaw[i] = y;</span>
+<span class="lineNum">     192 </span>            :         }
+<span class="lineNum">     193 </span>            :         /* set up the reverse (mu-law) conversion table */
+<span class="lineNum">     194 </span><span class="lineCov">   73663588 :         for (i = -32768; i &lt; 32768; i++) {</span>
+<span class="lineNum">     195 </span><span class="lineCov">   73662464 :                 __ast_lin2mu[((unsigned short)i) &gt;&gt; 2] = linear2ulaw(i);</span>
+<span class="lineNum">     196 </span>            :         }
+<span class="lineNum">     197 </span>            : #else
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :         for (i = 0; i &lt; 256; i++) {
+<span class="lineNum">     200 </span>            :                 __ast_mulaw[i] = ulaw2linear(i);
+<span class="lineNum">     201 </span>            :         }
+<span class="lineNum">     202 </span>            :         /* set up the reverse (mu-law) conversion table */
+<span class="lineNum">     203 </span>            :         for (i = 0; i &lt;= 32768; i += AST_ULAW_STEP) {
+<span class="lineNum">     204 </span>            :                 AST_LIN2MU_LOOKUP(i) = linear2ulaw(i, 0 /* half-cooked */);
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : #endif
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            : #ifdef TEST_CODING_TABLES
+<span class="lineNum">     209 </span>            :         for (i = -32768; i &lt; 32768; ++i) {
+<span class="lineNum">     210 </span>            : #ifndef G711_NEW_ALGORITHM
+<span class="lineNum">     211 </span>            :                 unsigned char e1 = linear2ulaw(i);
+<span class="lineNum">     212 </span>            : #else
+<span class="lineNum">     213 </span>            :                 unsigned char e1 = linear2ulaw(i, 1);
+<span class="lineNum">     214 </span>            : #endif
+<span class="lineNum">     215 </span>            :                 short d1 = ulaw2linear(e1);
+<span class="lineNum">     216 </span>            :                 unsigned char e2 = AST_LIN2MU(i);
+<span class="lineNum">     217 </span>            :                 short d2 = ulaw2linear(e2);
+<span class="lineNum">     218 </span>            :                 short d3 = AST_MULAW(e1);
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            :                 if (e1 != e2 || d1 != d3 || d2 != d3) {
+<span class="lineNum">     221 </span>            :                         ast_log(LOG_WARNING, &quot;u-Law coding tables test failed on %d: e1=%u, e2=%u, d1=%d, d2=%d\n&quot;,
+<span class="lineNum">     222 </span>            :                                         i, (unsigned)e1, (unsigned)e2, (int)d1, (int)d2);
+<span class="lineNum">     223 </span>            :                 }
+<span class="lineNum">     224 </span>            :         }
+<span class="lineNum">     225 </span>            :         ast_log(LOG_NOTICE, &quot;u-Law coding table test complete.\n&quot;);
+<span class="lineNum">     226 </span>            : #endif /* TEST_CODING_TABLES */
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span>            : #ifdef TEST_TANDEM_TRANSCODING
+<span class="lineNum">     229 </span>            :         /* tandem transcoding test */
+<span class="lineNum">     230 </span>            :         for (i = -32768; i &lt; 32768; ++i) {
+<span class="lineNum">     231 </span>            :                 unsigned char e1 = AST_LIN2MU(i);
+<span class="lineNum">     232 </span>            :                 short d1 = AST_MULAW(e1);
+<span class="lineNum">     233 </span>            :                 unsigned char e2 = AST_LIN2MU(d1);
+<span class="lineNum">     234 </span>            :                 short d2 = AST_MULAW(e2);
+<span class="lineNum">     235 </span>            :                 unsigned char e3 = AST_LIN2MU(d2);
+<span class="lineNum">     236 </span>            :                 short d3 = AST_MULAW(e3);
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            :                 if (i &lt; 0 &amp;&amp; e1 == 0x7f &amp;&amp; e2 == 0xff &amp;&amp; e3 == 0xff)
+<span class="lineNum">     239 </span>            :                         continue; /* known and normal negative 0 case */
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :                 if (e1 != e2 || e2 != e3 || d1 != d2 || d2 != d3) {
+<span class="lineNum">     242 </span>            :                         ast_log(LOG_WARNING, &quot;u-Law tandem transcoding test failed on %d: e1=%u, e2=%u, d1=%d, d2=%d, d3=%d\n&quot;,
+<span class="lineNum">     243 </span>            :                                         i, (unsigned)e1, (unsigned)e2, (int)d1, (int)d2, (int)d3);
+<span class="lineNum">     244 </span>            :                 }
+<span class="lineNum">     245 </span>            :         }
+<span class="lineNum">     246 </span>            :         ast_log(LOG_NOTICE, &quot;u-Law tandem transcoding test complete.\n&quot;);
+<span class="lineNum">     247 </span>            : #endif /* TEST_TANDEM_TRANSCODING */
+<span class="lineNum">     248 </span><span class="lineCov">       1124 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

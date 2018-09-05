@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - codecs/ilbc/StateSearchW.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">codecs/ilbc</a> - StateSearchW.c<span style="font-size: 80%;"> (source / <a href="StateSearchW.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">49</td>
+            <td class="headerCovTableEntry">54</td>
+            <td class="headerCovTableEntryHi">90.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : </a>
+<span class="lineNum">       2 </span>            :    /******************************************************************
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :        iLBC Speech Coder ANSI-C Source Code
+<span class="lineNum">       5 </span>            : 
+<span class="lineNum">       6 </span>            :        StateSearchW.c
+<span class="lineNum">       7 </span>            : 
+<span class="lineNum">       8 </span>            :        Copyright (C) The Internet Society (2004).
+<span class="lineNum">       9 </span>            :        All Rights Reserved.
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :    ******************************************************************/
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            :    #include &lt;math.h&gt;
+<span class="lineNum">      14 </span>            :    #include &lt;string.h&gt;
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :    #include &quot;iLBC_define.h&quot;
+<span class="lineNum">      17 </span>            :    #include &quot;constants.h&quot;
+<span class="lineNum">      18 </span>            :    #include &quot;filter.h&quot;
+<span class="lineNum">      19 </span>            :    #include &quot;helpfun.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            :    /*----------------------------------------------------------------*
+<span class="lineNum">      22 </span>            :     *  predictive noise shaping encoding of scaled start state
+<span class="lineNum">      23 </span>            :     *  (subrutine for StateSearchW)
+<a name="24"><span class="lineNum">      24 </span>            :     *---------------------------------------------------------------*/</a>
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span><span class="lineCov">      37978 :    void AbsQuantW(</span>
+<span class="lineNum">      27 </span>            :        iLBC_Enc_Inst_t *iLBCenc_inst,
+<span class="lineNum">      28 </span>            :                            /* (i) Encoder instance */
+<span class="lineNum">      29 </span>            :        float *in,          /* (i) vector to encode */
+<span class="lineNum">      30 </span>            :        float *syntDenum,   /* (i) denominator of synthesis filter */
+<span class="lineNum">      31 </span>            :        float *weightDenum, /* (i) denominator of weighting filter */
+<span class="lineNum">      32 </span>            :        int *out,           /* (o) vector of quantizer indexes */
+<span class="lineNum">      33 </span>            :        int len,        /* (i) length of vector to encode and
+<span class="lineNum">      34 </span>            :                                   vector of quantizer indexes */
+<span class="lineNum">      35 </span>            :        int state_first     /* (i) position of start state in the
+<span class="lineNum">      36 </span>            :                                   80 vec */
+<span class="lineNum">      37 </span>            :    ){
+<span class="lineNum">      38 </span>            :        float *syntOut;
+<span class="lineNum">      39 </span>            :        float syntOutBuf[LPC_FILTERORDER+STATE_SHORT_LEN_30MS];
+<span class="lineNum">      40 </span>            :        float toQ, xq;
+<span class="lineNum">      41 </span>            :        int n;
+<span class="lineNum">      42 </span>            :        int index;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            :        /* initialization of buffer for filtering */
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span><span class="lineCov">      37978 :        memset(syntOutBuf, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            :        /* initialization of pointer for filtering */
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">      37978 :        syntOut = &amp;syntOutBuf[LPC_FILTERORDER];</span>
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            :        /* synthesis and weighting filters on input */
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">      37978 :        if (state_first) {</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :            AllPoleFilter (in, weightDenum, SUBL, LPC_FILTERORDER);</span>
+<span class="lineNum">      61 </span>            :        } else {
+<span class="lineNum">      62 </span><span class="lineCov">      37978 :            AllPoleFilter (in, weightDenum,</span>
+<span class="lineNum">      63 </span><span class="lineCov">      37978 :                iLBCenc_inst-&gt;state_short_len-SUBL,</span>
+<span class="lineNum">      64 </span>            :                LPC_FILTERORDER);
+<span class="lineNum">      65 </span>            :        }
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            :        /* encoding loop */
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span><span class="lineCov">    2240702 :        for (n=0; n&lt;len; n++) {</span>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            :            /* time update of filter coefficients */
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span><span class="lineCov">    2202724 :            if ((state_first)&amp;&amp;(n==SUBL)){</span>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                syntDenum += (LPC_FILTERORDER+1);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                weightDenum += (LPC_FILTERORDER+1);</span>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            :                /* synthesis and weighting filters on input */
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                AllPoleFilter (&amp;in[n], weightDenum, len-n,</span>
+<span class="lineNum">      79 </span>            :                    LPC_FILTERORDER);
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span><span class="lineCov">    2202724 :            } else if ((state_first==0)&amp;&amp;</span>
+<span class="lineNum">      82 </span><span class="lineCov">    2202724 :                (n==(iLBCenc_inst-&gt;state_short_len-SUBL))) {</span>
+<span class="lineNum">      83 </span><span class="lineCov">      37978 :                syntDenum += (LPC_FILTERORDER+1);</span>
+<span class="lineNum">      84 </span><span class="lineCov">      37978 :                weightDenum += (LPC_FILTERORDER+1);</span>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span>            :                /* synthesis and weighting filters on input */
+<span class="lineNum">      87 </span><span class="lineCov">      37978 :                AllPoleFilter (&amp;in[n], weightDenum, len-n,</span>
+<span class="lineNum">      88 </span>            :                    LPC_FILTERORDER);
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            :            }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :            /* prediction of synthesized and weighted input */
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">    2202724 :            syntOut[n] = 0.0;</span>
+<span class="lineNum">      95 </span><span class="lineCov">    2202724 :            AllPoleFilter (&amp;syntOut[n], weightDenum, 1,</span>
+<span class="lineNum">      96 </span>            :                LPC_FILTERORDER);
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            :            /* quantization */
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">    2202724 :            toQ = in[n]-syntOut[n];</span>
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">    2202724 :            sort_sq(&amp;xq, &amp;index, toQ, state_sq3Tbl, 8);</span>
+<span class="lineNum">     107 </span><span class="lineCov">    2202724 :            out[n]=index;</span>
+<span class="lineNum">     108 </span><span class="lineCov">    2202724 :            syntOut[n] = state_sq3Tbl[out[n]];</span>
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            :            /* update of the prediction filter */
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">    2202724 :            AllPoleFilter(&amp;syntOut[n], weightDenum, 1,</span>
+<span class="lineNum">     113 </span>            :                LPC_FILTERORDER);
+<span class="lineNum">     114 </span>            :        }
+<span class="lineNum">     115 </span><span class="lineCov">      37978 :    }</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span>            :    /*----------------------------------------------------------------*
+<span class="lineNum">     118 </span>            :     *  encoding of start state
+<a name="119"><span class="lineNum">     119 </span>            :     *---------------------------------------------------------------*/</a>
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">      37978 :    void StateSearchW(</span>
+<span class="lineNum">     122 </span>            :        iLBC_Enc_Inst_t *iLBCenc_inst,
+<span class="lineNum">     123 </span>            :                            /* (i) Encoder instance */
+<span class="lineNum">     124 </span>            :        float *residual,/* (i) target residual vector */
+<span class="lineNum">     125 </span>            :        float *syntDenum,   /* (i) lpc synthesis filter */
+<span class="lineNum">     126 </span>            :        float *weightDenum, /* (i) weighting filter denuminator */
+<span class="lineNum">     127 </span>            :        int *idxForMax,     /* (o) quantizer index for maximum
+<span class="lineNum">     128 </span>            :                                   amplitude */
+<span class="lineNum">     129 </span>            :        int *idxVec,    /* (o) vector of quantization indexes */
+<span class="lineNum">     130 </span>            :        int len,        /* (i) length of all vectors */
+<span class="lineNum">     131 </span>            :        int state_first     /* (i) position of start state in the
+<span class="lineNum">     132 </span>            :                                   80 vec */
+<span class="lineNum">     133 </span>            :    ){
+<span class="lineNum">     134 </span>            :        float dtmp, maxVal;
+<span class="lineNum">     135 </span>            :        float tmpbuf[LPC_FILTERORDER+2*STATE_SHORT_LEN_30MS];
+<span class="lineNum">     136 </span>            :        float *tmp, numerator[1+LPC_FILTERORDER];
+<span class="lineNum">     137 </span>            :        float foutbuf[LPC_FILTERORDER+2*STATE_SHORT_LEN_30MS], *fout;
+<span class="lineNum">     138 </span>            :        int k;
+<span class="lineNum">     139 </span>            :        float qmax, scal;
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :        /* initialization of buffers and filter coefficients */
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">      37978 :        memset(tmpbuf, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     144 </span><span class="lineCov">      37978 :        memset(foutbuf, 0, LPC_FILTERORDER*sizeof(float));</span>
+<span class="lineNum">     145 </span><span class="lineCov">     417758 :        for (k=0; k&lt;LPC_FILTERORDER; k++) {</span>
+<span class="lineNum">     146 </span><span class="lineCov">     379780 :            numerator[k]=syntDenum[LPC_FILTERORDER-k];</span>
+<span class="lineNum">     147 </span>            :        }
+<span class="lineNum">     148 </span><span class="lineCov">      37978 :        numerator[LPC_FILTERORDER]=syntDenum[0];</span>
+<span class="lineNum">     149 </span><span class="lineCov">      37978 :        tmp = &amp;tmpbuf[LPC_FILTERORDER];</span>
+<span class="lineNum">     150 </span><span class="lineCov">      37978 :        fout = &amp;foutbuf[LPC_FILTERORDER];</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :        /* circular convolution with the all-pass filter */
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">      37978 :        memcpy(tmp, residual, len*sizeof(float));</span>
+<span class="lineNum">     160 </span><span class="lineCov">      37978 :        memset(tmp+len, 0, len*sizeof(float));</span>
+<span class="lineNum">     161 </span><span class="lineCov">      37978 :        ZeroPoleFilter(tmp, numerator, syntDenum, 2*len,</span>
+<span class="lineNum">     162 </span>            :            LPC_FILTERORDER, fout);
+<span class="lineNum">     163 </span><span class="lineCov">    2240702 :        for (k=0; k&lt;len; k++) {</span>
+<span class="lineNum">     164 </span><span class="lineCov">    2202724 :            fout[k] += fout[k+len];</span>
+<span class="lineNum">     165 </span>            :        }
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span>            :        /* identification of the maximum amplitude value */
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineCov">      37978 :        maxVal = fout[0];</span>
+<span class="lineNum">     170 </span><span class="lineCov">    2202724 :        for (k=1; k&lt;len; k++) {</span>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">    2164746 :            if (fout[k]*fout[k] &gt; maxVal*maxVal){</span>
+<span class="lineNum">     173 </span><span class="lineCov">     115051 :                maxVal = fout[k];</span>
+<span class="lineNum">     174 </span>            :            }
+<span class="lineNum">     175 </span>            :        }
+<span class="lineNum">     176 </span><span class="lineCov">      37978 :        maxVal=(float)fabs(maxVal);</span>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span>            :        /* encoding of the maximum amplitude value */
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineCov">      37978 :        if (maxVal &lt; 10.0) {</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :            maxVal = 10.0;</span>
+<span class="lineNum">     182 </span>            :        }
+<span class="lineNum">     183 </span><span class="lineCov">      37978 :        maxVal = (float)log10(maxVal);</span>
+<span class="lineNum">     184 </span><span class="lineCov">      37978 :        sort_sq(&amp;dtmp, idxForMax, maxVal, state_frgqTbl, 64);</span>
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span>            :        /* decoding of the maximum amplitude representation value,
+<span class="lineNum">     187 </span>            :           and corresponding scaling of start state */
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">      37978 :        maxVal=state_frgqTbl[*idxForMax];</span>
+<span class="lineNum">     190 </span><span class="lineCov">      37978 :        qmax = (float)pow(10,maxVal);</span>
+<span class="lineNum">     191 </span><span class="lineCov">      37978 :        scal = (float)(4.5)/qmax;</span>
+<span class="lineNum">     192 </span><span class="lineCov">    2240702 :        for (k=0; k&lt;len; k++){</span>
+<span class="lineNum">     193 </span><span class="lineCov">    2202724 :            fout[k] *= scal;</span>
+<span class="lineNum">     194 </span>            :        }
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :        /* predictive noise shaping encoding of scaled start state */
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span><span class="lineCov">      37978 :        AbsQuantW(iLBCenc_inst, fout,syntDenum,</span>
+<span class="lineNum">     199 </span>            :            weightDenum,idxVec, len, state_first);
+<span class="lineNum">     200 </span><span class="lineCov">      37978 :    }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

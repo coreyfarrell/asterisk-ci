@@ -1,0 +1,501 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - pbx/pbx_realtime.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">pbx</a> - pbx_realtime.c<span style="font-size: 80%;"> (source / <a href="pbx_realtime.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">186</td>
+            <td class="headerCovTableEntryLo">9.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntryLo">25.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Realtime PBX Module
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \arg See also: \ref AstARA
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;extended&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/term.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/chanvars.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/sched.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/io.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/astdb.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      52 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      53 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : #define MODE_MATCH              0
+<span class="lineNum">      56 </span>            : #define MODE_MATCHMORE  1
+<span class="lineNum">      57 </span>            : #define MODE_CANMATCH   2
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : #define EXT_DATA_SIZE 256
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span>            : enum option_flags {
+<span class="lineNum">      62 </span>            :         OPTION_PATTERNS_DISABLED = (1 &lt;&lt; 0),
+<span class="lineNum">      63 </span>            : };
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : AST_APP_OPTIONS(switch_opts, {
+<span class="lineNum">      66 </span>            :         AST_APP_OPTION('p', OPTION_PATTERNS_DISABLED),
+<span class="lineNum">      67 </span>            : });
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : struct cache_entry {
+<span class="lineNum">      70 </span>            :         struct timeval when;
+<span class="lineNum">      71 </span>            :         struct ast_variable *var;
+<span class="lineNum">      72 </span>            :         int priority;
+<span class="lineNum">      73 </span>            :         char *context;
+<span class="lineNum">      74 </span>            :         char exten[2];
+<span class="lineNum">      75 </span>            : };
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : struct ao2_container *cache;
+<a name="78"><span class="lineNum">      78 </span>            : pthread_t cleanup_thread = 0;</a>
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : static int cache_hash(const void *obj, const int flags)</span>
+<span class="lineNum">      81 </span>            : {
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         const struct cache_entry *e = obj;</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         return ast_str_case_hash(e-&gt;exten) + e-&gt;priority;</span>
+<a name="84"><span class="lineNum">      84 </span>            : }</a>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 : static int cache_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">      87 </span>            : {
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         struct cache_entry *e = obj, *f = arg;</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :         return e-&gt;priority != f-&gt;priority ? 0 :</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 strcmp(e-&gt;exten, f-&gt;exten) ? 0 :</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 strcmp(e-&gt;context, f-&gt;context) ? 0 :</span>
+<span class="lineNum">      92 </span>            :                 CMP_MATCH;
+<a name="93"><span class="lineNum">      93 </span>            : }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 : static struct ast_variable *dup_vars(struct ast_variable *v)</span>
+<span class="lineNum">      96 </span>            : {
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :         struct ast_variable *new, *list = NULL;</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         for (; v; v = v-&gt;next) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 if (!(new = ast_variable_new(v-&gt;name, v-&gt;value, v-&gt;file))) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                         ast_variables_destroy(list);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     102 </span>            :                 }
+<span class="lineNum">     103 </span>            :                 /* Reversed list in cache, but when we duplicate out of the cache,
+<span class="lineNum">     104 </span>            :                  * it's back to correct order. */
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 new-&gt;next = list;</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 list = new;</span>
+<span class="lineNum">     107 </span>            :         }
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         return list;</span>
+<a name="109"><span class="lineNum">     109 </span>            : }</a>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 : static void free_entry(void *obj)</span>
+<span class="lineNum">     112 </span>            : {
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :         struct cache_entry *e = obj;</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         ast_variables_destroy(e-&gt;var);</span>
+<a name="115"><span class="lineNum">     115 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 : static int purge_old_fn(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         struct cache_entry *e = obj;</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         struct timeval *now = arg;</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :         return ast_tvdiff_ms(*now, e-&gt;when) &gt;= 1000 ? CMP_MATCH : 0;</span>
+<a name="122"><span class="lineNum">     122 </span>            : }</a>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">       1117 : static void *cleanup(void *unused)</span>
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span><span class="lineCov">       1117 :         struct timespec forever = { 999999999, 0 }, one_second = { 1, 0 };</span>
+<span class="lineNum">     127 </span>            :         struct timeval now;
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            :         for (;;) {
+<span class="lineNum">     130 </span><span class="lineCov">       1117 :                 pthread_testcancel();</span>
+<span class="lineNum">     131 </span><span class="lineCov">       1117 :                 if (ao2_container_count(cache) == 0) {</span>
+<span class="lineNum">     132 </span><span class="lineCov">       1117 :                         nanosleep(&amp;forever, NULL);</span>
+<span class="lineNum">     133 </span>            :                 }
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 pthread_testcancel();</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 now = ast_tvnow();</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 ao2_callback(cache, OBJ_MULTIPLE | OBJ_UNLINK | OBJ_NODATA, purge_old_fn, &amp;now);</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 pthread_testcancel();</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 nanosleep(&amp;one_second, NULL);</span>
+<span class="lineNum">     139 </span>            :         }
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :         return NULL;
+<a name="142"><span class="lineNum">     142 </span>            : }</a>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 : static int extension_length_comparator(struct ast_category *p, struct ast_category *q)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         const char *extenp = S_OR(ast_variable_find(p, &quot;exten&quot;), &quot;&quot;);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         const char *extenq = S_OR(ast_variable_find(q, &quot;exten&quot;), &quot;&quot;);</span>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :         return strlen(extenp) - strlen(extenq);</span>
+<span class="lineNum">     150 </span>            : }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : /* Realtime switch looks up extensions in the supplied realtime table.
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span>            :         [context@][realtimetable][/options]
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            :         If the realtimetable is omitted it is assumed to be &quot;extensions&quot;.  If no context is
+<span class="lineNum">     157 </span>            :         specified the context is assumed to be whatever is the container.
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span>            :         The realtime table should have entries for context,exten,priority,app,args
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span>            :         The realtime table currently does not support callerid fields.
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            : */
+<a name="164"><span class="lineNum">     164 </span>            : </a>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 : static struct ast_variable *realtime_switch_common(const char *table, const char *context, const char *exten, int priority, int mode, struct ast_flags flags)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span>            :         struct ast_variable *var;
+<span class="lineNum">     169 </span>            :         struct ast_config *cfg;
+<span class="lineNum">     170 </span>            :         char pri[20];
+<span class="lineNum">     171 </span>            :         char *ematch;
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         char rexten[AST_MAX_EXTENSION + 20]=&quot;&quot;;</span>
+<span class="lineNum">     173 </span>            :         int match;
+<span class="lineNum">     174 </span>            :         /* Optimization: since we don't support hints in realtime, it's silly to
+<span class="lineNum">     175 </span>            :          * query for a hint here, since we won't actually do anything with it.
+<span class="lineNum">     176 </span>            :          * This just wastes CPU time and resources. */
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :         if (priority &lt; 0) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     179 </span>            :         }
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         snprintf(pri, sizeof(pri), &quot;%d&quot;, priority);</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :         switch(mode) {</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         case MODE_MATCHMORE:</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 ematch = &quot;exten LIKE&quot;;</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 snprintf(rexten, sizeof(rexten), &quot;%s_%%&quot;, exten);</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :         case MODE_CANMATCH:</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 ematch = &quot;exten LIKE&quot;;</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 snprintf(rexten, sizeof(rexten), &quot;%s%%&quot;, exten);</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         case MODE_MATCH:</span>
+<span class="lineNum">     191 </span>            :         default:
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 ematch = &quot;exten&quot;;</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 ast_copy_string(rexten, exten, sizeof(rexten));</span>
+<span class="lineNum">     194 </span>            :         }
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         var = ast_load_realtime(table, ematch, rexten, &quot;context&quot;, context, &quot;priority&quot;, pri, SENTINEL);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         if (!var &amp;&amp; !ast_test_flag(&amp;flags, OPTION_PATTERNS_DISABLED)) {</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 cfg = ast_load_realtime_multientry(table, &quot;exten LIKE&quot;, &quot;\\_%&quot;, &quot;context&quot;, context, &quot;priority&quot;, pri, SENTINEL);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 if (cfg) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                         char *cat = NULL;</span>
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :                         /* Sort so that longer patterns are checked first */
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                         ast_config_sort_categories(cfg, 1, extension_length_comparator);</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         while ((cat = ast_category_browse(cfg, cat))) {</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                                 const char *realtime_exten = ast_variable_retrieve(cfg, cat, &quot;exten&quot;);</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                                 switch(mode) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                                 case MODE_MATCHMORE:</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                                         match = ast_extension_close(realtime_exten, exten, 1);</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                 case MODE_CANMATCH:</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                                         match = ast_extension_close(realtime_exten, exten, 0);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                                 case MODE_MATCH:</span>
+<span class="lineNum">     215 </span>            :                                 default:
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                                         match = ast_extension_match(realtime_exten, exten);</span>
+<span class="lineNum">     217 </span>            :                                 }
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                                 if (match) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                                         var = ast_category_detach_variables(ast_category_get(cfg, cat, NULL));</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     221 </span>            :                                 }
+<span class="lineNum">     222 </span>            :                         }
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                         ast_config_destroy(cfg);</span>
+<span class="lineNum">     224 </span>            :                 }
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         return var;</span>
+<a name="227"><span class="lineNum">     227 </span>            : }</a>
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 : static struct ast_variable *realtime_common(const char *context, const char *exten, int priority, const char *data, int mode)</span>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         const char *ctx = NULL;</span>
+<span class="lineNum">     232 </span>            :         char *table;
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :         struct ast_variable *var=NULL;</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         struct ast_flags flags = { 0, };</span>
+<span class="lineNum">     235 </span>            :         struct cache_entry *ce;
+<span class="lineNum">     236 </span>            :         struct {
+<span class="lineNum">     237 </span>            :                 struct cache_entry ce;
+<span class="lineNum">     238 </span>            :                 char exten[AST_MAX_EXTENSION];
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         } cache_search = { { .priority = priority, .context = (char *) context }, };</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         char *buf = ast_strdupa(data);</span>
+<span class="lineNum">     241 </span>            :         /* &quot;Realtime&quot; prefix is stripped off in the parent engine.  The
+<span class="lineNum">     242 </span>            :          * remaining string is: [[context@]table][/opts] */
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         char *opts = strchr(buf, '/');</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         if (opts)</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 *opts++ = '\0';</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         table = strchr(buf, '@');</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         if (table) {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                 *table++ = '\0';</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 ctx = buf;</span>
+<span class="lineNum">     250 </span>            :         }
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         ctx = S_OR(ctx, context);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         table = S_OR(table, &quot;extensions&quot;);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(opts)) {</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 ast_app_parse_options(switch_opts, &amp;flags, NULL, opts);</span>
+<span class="lineNum">     255 </span>            :         }
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         ast_copy_string(cache_search.exten, exten, sizeof(cache_search.exten));</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :         if (mode == MODE_MATCH &amp;&amp; (ce = ao2_find(cache, &amp;cache_search, OBJ_POINTER))) {</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 var = dup_vars(ce-&gt;var);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 ao2_ref(ce, -1);</span>
+<span class="lineNum">     260 </span>            :         } else {
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :                 var = realtime_switch_common(table, ctx, exten, priority, mode, flags);</span>
+<span class="lineNum">     262 </span>            :                 do {
+<span class="lineNum">     263 </span>            :                         struct ast_variable *new;
+<span class="lineNum">     264 </span>            :                         /* Only cache matches */
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         if (mode != MODE_MATCH) {</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     267 </span>            :                         }
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                         if (!(new = dup_vars(var))) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     270 </span>            :                         }
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                         if (!(ce = ao2_alloc(sizeof(*ce) + strlen(exten) + strlen(context), free_entry))) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                                 ast_variables_destroy(new);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     274 </span>            :                         }
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         ce-&gt;context = ce-&gt;exten + strlen(exten) + 1;</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         strcpy(ce-&gt;exten, exten); /* SAFE */</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         strcpy(ce-&gt;context, context); /* SAFE */</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         ce-&gt;priority = priority;</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                         ce-&gt;var = new;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                         ce-&gt;when = ast_tvnow();</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                         ao2_link(cache, ce);</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                         pthread_kill(cleanup_thread, SIGURG);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                         ao2_ref(ce, -1);</span>
+<span class="lineNum">     284 </span>            :                 } while (0);
+<span class="lineNum">     285 </span>            :         }
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         return var;</span>
+<a name="287"><span class="lineNum">     287 </span>            : }</a>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 : static int realtime_exists(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">     290 </span>            : {
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         struct ast_variable *var = realtime_common(context, exten, priority, data, MODE_MATCH);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         if (var) {</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :                 ast_variables_destroy(var);</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     295 </span>            :         }
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="297"><span class="lineNum">     297 </span>            : }</a>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 : static int realtime_canmatch(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">     300 </span>            : {
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :         struct ast_variable *var = realtime_common(context, exten, priority, data, MODE_CANMATCH);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         if (var) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 ast_variables_destroy(var);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     305 </span>            :         }
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="307"><span class="lineNum">     307 </span>            : }</a>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 : static int realtime_exec(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">     310 </span>            : {
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         int res = -1;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         struct ast_variable *var = realtime_common(context, exten, priority, data, MODE_MATCH);</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         if (var) {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 char *appdata_tmp = &quot;&quot;;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 char *app = NULL;</span>
+<span class="lineNum">     317 </span>            :                 struct ast_variable *v;
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 for (v = var; v ; v = v-&gt;next) {</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                         if (!strcasecmp(v-&gt;name, &quot;app&quot;))</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                                 app = ast_strdupa(v-&gt;value);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         else if (!strcasecmp(v-&gt;name, &quot;appdata&quot;)) {</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                                 appdata_tmp = ast_strdupa(v-&gt;value);</span>
+<span class="lineNum">     324 </span>            :                         }
+<span class="lineNum">     325 </span>            :                 }
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 ast_variables_destroy(var);</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 if (!ast_strlen_zero(app)) {</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                         struct ast_app *a = pbx_findapp(app);</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                         if (a) {</span>
+<span class="lineNum">     330 </span>            :                                 char appdata[512];
+<span class="lineNum">     331 </span>            :                                 char tmp1[80];
+<a name="332"><span class="lineNum">     332 </span>            :                                 char tmp2[80];</a>
+<a name="333"><span class="lineNum">     333 </span>            :                                 char tmp3[EXT_DATA_SIZE];</a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                                 RAII_VAR(struct ast_channel_snapshot *, snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                                 RAII_VAR(struct stasis_message *, msg, NULL, ao2_cleanup);</span>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                                 appdata[0] = 0; /* just in case the substitute var func isn't called */</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                                 if(!ast_strlen_zero(appdata_tmp))</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                                         pbx_substitute_variables_helper(chan, appdata_tmp, appdata, sizeof(appdata) - 1);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                                 ast_verb(3, &quot;Executing [%s@%s:%d] %s(\&quot;%s\&quot;, \&quot;%s\&quot;)\n&quot;,</span>
+<span class="lineNum">     341 </span>            :                                                 ast_channel_exten(chan), ast_channel_context(chan), ast_channel_priority(chan),
+<span class="lineNum">     342 </span>            :                                                  term_color(tmp1, app, COLOR_BRCYAN, 0, sizeof(tmp1)),
+<span class="lineNum">     343 </span>            :                                                  term_color(tmp2, ast_channel_name(chan), COLOR_BRMAGENTA, 0, sizeof(tmp2)),
+<span class="lineNum">     344 </span>            :                                                  term_color(tmp3, S_OR(appdata, &quot;&quot;), COLOR_BRMAGENTA, 0, sizeof(tmp3)));
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                                 if (ast_channel_snapshot_type()) {</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                                         ast_channel_lock(chan);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                                         snapshot = ast_channel_snapshot_create(chan);</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                                         ast_channel_unlock(chan);</span>
+<span class="lineNum">     349 </span>            :                                 }
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                                 if (snapshot) {</span>
+<span class="lineNum">     351 </span>            :                                         /* pbx_exec sets application name and data, but we don't want to log
+<span class="lineNum">     352 </span>            :                                          * every exec. Just update the snapshot here instead.
+<span class="lineNum">     353 </span>            :                                          */
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                                         ast_string_field_set(snapshot, appl, app);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                                         ast_string_field_set(snapshot, data, !ast_strlen_zero(appdata) ? appdata : &quot;(NULL)&quot;);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                                         msg = stasis_message_create(ast_channel_snapshot_type(), snapshot);</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                                         if (msg) {</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :                                                 stasis_publish(ast_channel_topic(chan), msg);</span>
+<span class="lineNum">     359 </span>            :                                         }
+<span class="lineNum">     360 </span>            :                                 }
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                                 res = pbx_exec(chan, a, appdata);</span>
+<span class="lineNum">     362 </span>            :                         } else
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;No such application '%s' for extension '%s' in context '%s'\n&quot;, app, exten, context);</span>
+<span class="lineNum">     364 </span>            :                 } else {
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;No application specified for realtime extension '%s' in context '%s'\n&quot;, exten, context);</span>
+<span class="lineNum">     366 </span>            :                 }
+<span class="lineNum">     367 </span>            :         }
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="369"><span class="lineNum">     369 </span>            : }</a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 : static int realtime_matchmore(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">     372 </span>            : {
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         struct ast_variable *var = realtime_common(context, exten, priority, data, MODE_MATCHMORE);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         if (var) {</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 ast_variables_destroy(var);</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     377 </span>            :         }
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     379 </span>            : }
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span>            : static struct ast_switch realtime_switch =
+<span class="lineNum">     382 </span>            : {
+<span class="lineNum">     383 </span>            :         .name                   = &quot;Realtime&quot;,
+<span class="lineNum">     384 </span>            :         .description            = &quot;Realtime Dialplan Switch&quot;,
+<span class="lineNum">     385 </span>            :         .exists                 = realtime_exists,
+<span class="lineNum">     386 </span>            :         .canmatch               = realtime_canmatch,
+<span class="lineNum">     387 </span>            :         .exec                   = realtime_exec,
+<span class="lineNum">     388 </span>            :         .matchmore              = realtime_matchmore,
+<a name="389"><span class="lineNum">     389 </span>            : };</a>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     392 </span>            : {
+<span class="lineNum">     393 </span><span class="lineCov">       1115 :         ast_unregister_switch(&amp;realtime_switch);</span>
+<span class="lineNum">     394 </span><span class="lineCov">       1115 :         pthread_cancel(cleanup_thread);</span>
+<span class="lineNum">     395 </span><span class="lineCov">       1115 :         pthread_kill(cleanup_thread, SIGURG);</span>
+<span class="lineNum">     396 </span><span class="lineCov">       1115 :         pthread_join(cleanup_thread, NULL);</span>
+<span class="lineNum">     397 </span>            :         /* Destroy all remaining entries */
+<span class="lineNum">     398 </span><span class="lineCov">       1115 :         ao2_ref(cache, -1);</span>
+<span class="lineNum">     399 </span><span class="lineCov">       1115 :         return 0;</span>
+<a name="400"><span class="lineNum">     400 </span>            : }</a>
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     403 </span>            : {
+<span class="lineNum">     404 </span><span class="lineCov">       1117 :         if (!(cache = ao2_container_alloc(573, cache_hash, cache_cmp))) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">     406 </span>            :         }
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">       1117 :         if (ast_pthread_create(&amp;cleanup_thread, NULL, cleanup, NULL)) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">     410 </span>            :         }
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">       1117 :         if (ast_register_switch(&amp;realtime_switch))</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">     414 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="415"><span class="lineNum">     415 </span>            : }</a>
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">       2234 : AST_MODULE_INFO_STANDARD_EXTENDED(ASTERISK_GPL_KEY, &quot;Realtime Switch&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

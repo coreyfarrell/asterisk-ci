@@ -1,0 +1,821 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/frame.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - frame.c<span style="font-size: 80%;"> (source / <a href="frame.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">119</td>
+            <td class="headerCovTableEntry">427</td>
+            <td class="headerCovTableEntryLo">27.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryLo">53.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Frame and codec manipulation routines
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/term.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/threadstorage.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/dsp.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">      47 </span>            : static void frame_cache_cleanup(void *data);
+<a name="48"><span class="lineNum">      48 </span>            : </a>
+<span class="lineNum">      49 </span>            : /*! \brief A per-thread cache of frame headers */
+<span class="lineNum">      50 </span><span class="lineCov">       1124 : AST_THREADSTORAGE_CUSTOM(frame_cache, NULL, frame_cache_cleanup);</span>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /*!
+<span class="lineNum">      53 </span>            :  * \brief Maximum ast_frame cache size
+<span class="lineNum">      54 </span>            :  *
+<span class="lineNum">      55 </span>            :  * In most cases where the frame header cache will be useful, the size
+<span class="lineNum">      56 </span>            :  * of the cache will stay very small.  However, it is not always the case that
+<span class="lineNum">      57 </span>            :  * the same thread that allocates the frame will be the one freeing them, so
+<span class="lineNum">      58 </span>            :  * sometimes a thread will never have any frames in its cache, or the cache
+<span class="lineNum">      59 </span>            :  * will never be pulled from.  For the latter case, we limit the maximum size.
+<span class="lineNum">      60 </span>            :  */
+<span class="lineNum">      61 </span>            : #define FRAME_CACHE_MAX_SIZE    10
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : /*! \brief This is just so ast_frames, a list head struct for holding a list of
+<span class="lineNum">      64 </span>            :  *  ast_frame structures, is defined. */
+<span class="lineNum">      65 </span>            : AST_LIST_HEAD_NOLOCK(ast_frames, ast_frame);
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            : struct ast_frame_cache {
+<span class="lineNum">      68 </span>            :         struct ast_frames list;
+<span class="lineNum">      69 </span>            :         size_t size;
+<span class="lineNum">      70 </span>            : };
+<span class="lineNum">      71 </span>            : #endif
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span>            : struct ast_frame ast_null_frame = { AST_FRAME_NULL, };</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 : static struct ast_frame *ast_frame_header_new(void)</span>
+<span class="lineNum">      76 </span>            : {
+<span class="lineNum">      77 </span>            :         struct ast_frame *f;
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">      80 </span>            :         struct ast_frame_cache *frames;
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if ((frames = ast_threadstorage_get(&amp;frame_cache, sizeof(*frames)))) {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 if ((f = AST_LIST_REMOVE_HEAD(&amp;frames-&gt;list, frame_list))) {</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                         size_t mallocd_len = f-&gt;mallocd_hdr_len;</span>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                         memset(f, 0, sizeof(*f));</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         f-&gt;mallocd_hdr_len = mallocd_len;</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                         frames-&gt;size--;</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :                         return f;</span>
+<span class="lineNum">      90 </span>            :                 }
+<span class="lineNum">      91 </span>            :         }
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         if (!(f = ast_calloc_cache(1, sizeof(*f))))</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      94 </span>            : #else
+<span class="lineNum">      95 </span>            :         if (!(f = ast_calloc(1, sizeof(*f))))
+<span class="lineNum">      96 </span>            :                 return NULL;
+<span class="lineNum">      97 </span>            : #endif
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         f-&gt;mallocd_hdr_len = sizeof(*f);</span>
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :         return f;</span>
+<span class="lineNum">     102 </span>            : }
+<a name="103"><span class="lineNum">     103 </span>            : </a>
+<span class="lineNum">     104 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">     105 </span><span class="lineCov">       5872 : static void frame_cache_cleanup(void *data)</span>
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineCov">       5872 :         struct ast_frame_cache *frames = data;</span>
+<span class="lineNum">     108 </span>            :         struct ast_frame *f;
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span><span class="lineCov">      24712 :         while ((f = AST_LIST_REMOVE_HEAD(&amp;frames-&gt;list, frame_list)))</span>
+<span class="lineNum">     111 </span><span class="lineCov">      18840 :                 ast_free(f);</span>
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">       5872 :         ast_free(frames);</span>
+<span class="lineNum">     114 </span><span class="lineCov">       5872 : }</span>
+<a name="115"><span class="lineNum">     115 </span>            : #endif</a>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">   10605028 : static void __frame_free(struct ast_frame *fr, int cache)</span>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineCov">   10605028 :         if (!fr-&gt;mallocd)</span>
+<span class="lineNum">     120 </span><span class="lineCov">    6204990 :                 return;</span>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">     123 </span><span class="lineCov">    4400038 :         if (fr-&gt;mallocd == AST_MALLOCD_HDR</span>
+<span class="lineNum">     124 </span><span class="lineCov">    4399644 :                 &amp;&amp; cache</span>
+<span class="lineNum">     125 </span><span class="lineCov">    4388549 :                 &amp;&amp; ast_opt_cache_media_frames) {</span>
+<span class="lineNum">     126 </span>            :                 /* Cool, only the header is malloc'd, let's just cache those for now
+<span class="lineNum">     127 </span>            :                  * to keep things simple... */
+<span class="lineNum">     128 </span>            :                 struct ast_frame_cache *frames;
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span><span class="lineCov">    4388549 :                 frames = ast_threadstorage_get(&amp;frame_cache, sizeof(*frames));</span>
+<span class="lineNum">     131 </span><span class="lineCov">    4388549 :                 if (frames &amp;&amp; frames-&gt;size &lt; FRAME_CACHE_MAX_SIZE) {</span>
+<span class="lineNum">     132 </span><span class="lineCov">    4151307 :                         if (fr-&gt;frametype == AST_FRAME_VOICE</span>
+<span class="lineNum">     133 </span><span class="lineCov">     139314 :                                 || fr-&gt;frametype == AST_FRAME_VIDEO</span>
+<span class="lineNum">     134 </span><span class="lineCov">     139200 :                                 || fr-&gt;frametype == AST_FRAME_IMAGE) {</span>
+<span class="lineNum">     135 </span><span class="lineCov">    4012107 :                                 ao2_cleanup(fr-&gt;subclass.format);</span>
+<span class="lineNum">     136 </span>            :                         }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">    4151307 :                         AST_LIST_INSERT_HEAD(&amp;frames-&gt;list, fr, frame_list);</span>
+<span class="lineNum">     139 </span><span class="lineCov">    4151307 :                         frames-&gt;size++;</span>
+<span class="lineNum">     140 </span><span class="lineCov">    4151307 :                         return;</span>
+<span class="lineNum">     141 </span>            :                 }
+<span class="lineNum">     142 </span>            :         }
+<span class="lineNum">     143 </span>            : #endif
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineCov">     248731 :         if (fr-&gt;mallocd &amp; AST_MALLOCD_DATA) {</span>
+<span class="lineNum">     146 </span><span class="lineCov">        359 :                 if (fr-&gt;data.ptr) {</span>
+<span class="lineNum">     147 </span><span class="lineCov">        359 :                         ast_free(fr-&gt;data.ptr - fr-&gt;offset);</span>
+<span class="lineNum">     148 </span>            :                 }
+<span class="lineNum">     149 </span>            :         }
+<span class="lineNum">     150 </span><span class="lineCov">     248731 :         if (fr-&gt;mallocd &amp; AST_MALLOCD_SRC) {</span>
+<span class="lineNum">     151 </span><span class="lineCov">        259 :                 ast_free((void *) fr-&gt;src);</span>
+<span class="lineNum">     152 </span>            :         }
+<span class="lineNum">     153 </span><span class="lineCov">     248731 :         if (fr-&gt;mallocd &amp; AST_MALLOCD_HDR) {</span>
+<span class="lineNum">     154 </span><span class="lineCov">     248731 :                 if (fr-&gt;frametype == AST_FRAME_VOICE</span>
+<span class="lineNum">     155 </span><span class="lineCov">      21463 :                         || fr-&gt;frametype == AST_FRAME_VIDEO</span>
+<span class="lineNum">     156 </span><span class="lineCov">      21463 :                         || fr-&gt;frametype == AST_FRAME_IMAGE) {</span>
+<span class="lineNum">     157 </span><span class="lineCov">     227268 :                         ao2_cleanup(fr-&gt;subclass.format);</span>
+<span class="lineNum">     158 </span>            :                 }
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">     248731 :                 ast_free(fr);</span>
+<span class="lineNum">     161 </span>            :         } else {
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 fr-&gt;mallocd = 0;</span>
+<span class="lineNum">     163 </span>            :         }
+<span class="lineNum">     164 </span>            : }
+<a name="165"><span class="lineNum">     165 </span>            : </a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">   10626266 : void ast_frame_free(struct ast_frame *frame, int cache)</span>
+<span class="lineNum">     168 </span>            : {
+<span class="lineNum">     169 </span>            :         struct ast_frame *next;
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">   21231294 :         while (frame) {</span>
+<span class="lineNum">     172 </span><span class="lineCov">   10605028 :                 next = AST_LIST_NEXT(frame, frame_list);</span>
+<span class="lineNum">     173 </span><span class="lineCov">   10605028 :                 __frame_free(frame, cache);</span>
+<span class="lineNum">     174 </span><span class="lineCov">   10605028 :                 frame = next;</span>
+<span class="lineNum">     175 </span>            :         }
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">   10626266 : }</span></a>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">      25438 : void ast_frame_dtor(struct ast_frame *f)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span><span class="lineCov">      25438 :         ast_frfree(f);</span>
+<span class="lineNum">     181 </span><span class="lineCov">      25438 : }</span>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            : /*!
+<span class="lineNum">     184 </span>            :  * \brief 'isolates' a frame by duplicating non-malloc'ed components
+<span class="lineNum">     185 </span>            :  * (header, src, data).
+<a name="186"><span class="lineNum">     186 </span>            :  * On return all components are malloc'ed</a>
+<span class="lineNum">     187 </span>            :  */
+<span class="lineNum">     188 </span><span class="lineCov">    3944891 : struct ast_frame *ast_frisolate(struct ast_frame *fr)</span>
+<span class="lineNum">     189 </span>            : {
+<span class="lineNum">     190 </span>            :         struct ast_frame *out;
+<span class="lineNum">     191 </span>            :         void *newdata;
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            :         /* if none of the existing frame is malloc'd, let ast_frdup() do it
+<span class="lineNum">     194 </span>            :            since it is more efficient
+<span class="lineNum">     195 </span>            :         */
+<span class="lineNum">     196 </span><span class="lineCov">    3944891 :         if (fr-&gt;mallocd == 0) {</span>
+<span class="lineNum">     197 </span><span class="lineCov">    3942379 :                 return ast_frdup(fr);</span>
+<span class="lineNum">     198 </span>            :         }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            :         /* if everything is already malloc'd, we are done */
+<span class="lineNum">     201 </span><span class="lineCov">       2512 :         if ((fr-&gt;mallocd &amp; (AST_MALLOCD_HDR | AST_MALLOCD_SRC | AST_MALLOCD_DATA)) ==</span>
+<span class="lineNum">     202 </span>            :             (AST_MALLOCD_HDR | AST_MALLOCD_SRC | AST_MALLOCD_DATA)) {
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 return fr;</span>
+<span class="lineNum">     204 </span>            :         }
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">       2512 :         if (!(fr-&gt;mallocd &amp; AST_MALLOCD_HDR)) {</span>
+<span class="lineNum">     207 </span>            :                 /* Allocate a new header if needed */
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 if (!(out = ast_frame_header_new())) {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     210 </span>            :                 }
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 out-&gt;frametype = fr-&gt;frametype;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 out-&gt;subclass = fr-&gt;subclass;</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 if ((fr-&gt;frametype == AST_FRAME_VOICE) || (fr-&gt;frametype == AST_FRAME_VIDEO) ||</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                         (fr-&gt;frametype == AST_FRAME_IMAGE)) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         ao2_bump(out-&gt;subclass.format);</span>
+<span class="lineNum">     216 </span>            :                 }
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 out-&gt;datalen = fr-&gt;datalen;</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 out-&gt;samples = fr-&gt;samples;</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 out-&gt;mallocd = AST_MALLOCD_HDR;</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 out-&gt;offset = fr-&gt;offset;</span>
+<span class="lineNum">     221 </span>            :                 /* Copy the timing data */
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 ast_copy_flags(out, fr, AST_FLAGS_ALL);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 if (ast_test_flag(fr, AST_FRFLAG_HAS_TIMING_INFO)) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                         out-&gt;ts = fr-&gt;ts;</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :                         out-&gt;len = fr-&gt;len;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                         out-&gt;seqno = fr-&gt;seqno;</span>
+<span class="lineNum">     227 </span>            :                 }
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                 out-&gt;stream_num = fr-&gt;stream_num;</span>
+<span class="lineNum">     229 </span>            :         } else {
+<span class="lineNum">     230 </span><span class="lineCov">       2512 :                 out = fr;</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">       2512 :         if (fr-&gt;src) {</span>
+<span class="lineNum">     234 </span>            :                 /* The original frame has a source string */
+<span class="lineNum">     235 </span><span class="lineCov">        259 :                 if (!(fr-&gt;mallocd &amp; AST_MALLOCD_SRC)) {</span>
+<span class="lineNum">     236 </span>            :                         /*
+<span class="lineNum">     237 </span>            :                          * The original frame has a non-malloced source string.
+<span class="lineNum">     238 </span>            :                          *
+<span class="lineNum">     239 </span>            :                          * Duplicate the string and put it into the isolated frame
+<span class="lineNum">     240 </span>            :                          * which may also be the original frame.
+<span class="lineNum">     241 </span>            :                          */
+<span class="lineNum">     242 </span><span class="lineCov">        259 :                         newdata = ast_strdup(fr-&gt;src);</span>
+<span class="lineNum">     243 </span><span class="lineCov">        259 :                         if (!newdata) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                                 if (out != fr) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                                         ast_frame_free(out, 0);</span>
+<span class="lineNum">     246 </span>            :                                 }
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">     248 </span>            :                         }
+<span class="lineNum">     249 </span><span class="lineCov">        259 :                         out-&gt;src = newdata;</span>
+<span class="lineNum">     250 </span><span class="lineCov">        259 :                         out-&gt;mallocd |= AST_MALLOCD_SRC;</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 } else if (out != fr) {</span>
+<span class="lineNum">     252 </span>            :                         /* Steal the source string from the original frame. */
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         out-&gt;src = fr-&gt;src;</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         fr-&gt;src = NULL;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                         fr-&gt;mallocd &amp;= ~AST_MALLOCD_SRC;</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                         out-&gt;mallocd |= AST_MALLOCD_SRC;</span>
+<span class="lineNum">     257 </span>            :                 }
+<span class="lineNum">     258 </span>            :         }
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">       2512 :         if (!(fr-&gt;mallocd &amp; AST_MALLOCD_DATA))  {</span>
+<span class="lineNum">     261 </span>            :                 /* The original frame has a non-malloced data buffer. */
+<span class="lineNum">     262 </span><span class="lineCov">       2512 :                 if (!fr-&gt;datalen) {</span>
+<span class="lineNum">     263 </span>            :                         /* Actually it's just an int so we can simply copy it. */
+<span class="lineNum">     264 </span><span class="lineCov">       2153 :                         out-&gt;data.uint32 = fr-&gt;data.uint32;</span>
+<span class="lineNum">     265 </span><span class="lineCov">       2153 :                         return out;</span>
+<span class="lineNum">     266 </span>            :                 }
+<span class="lineNum">     267 </span>            :                 /*
+<span class="lineNum">     268 </span>            :                  * Duplicate the data buffer and put it into the isolated frame
+<span class="lineNum">     269 </span>            :                  * which may also be the original frame.
+<span class="lineNum">     270 </span>            :                  */
+<span class="lineNum">     271 </span><span class="lineCov">        359 :                 newdata = ast_malloc(fr-&gt;datalen + AST_FRIENDLY_OFFSET);</span>
+<span class="lineNum">     272 </span><span class="lineCov">        359 :                 if (!newdata) {</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                         if (out != fr) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                                 ast_frame_free(out, 0);</span>
+<span class="lineNum">     275 </span>            :                         }
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     277 </span>            :                 }
+<span class="lineNum">     278 </span><span class="lineCov">        359 :                 newdata += AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     279 </span><span class="lineCov">        359 :                 out-&gt;offset = AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     280 </span><span class="lineCov">        359 :                 memcpy(newdata, fr-&gt;data.ptr, fr-&gt;datalen);</span>
+<span class="lineNum">     281 </span><span class="lineCov">        359 :                 out-&gt;data.ptr = newdata;</span>
+<span class="lineNum">     282 </span><span class="lineCov">        359 :                 out-&gt;mallocd |= AST_MALLOCD_DATA;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         } else if (out != fr) {</span>
+<span class="lineNum">     284 </span>            :                 /* Steal the data buffer from the original frame. */
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 out-&gt;data = fr-&gt;data;</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 memset(&amp;fr-&gt;data, 0, sizeof(fr-&gt;data));</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 fr-&gt;mallocd &amp;= ~AST_MALLOCD_DATA;</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 out-&gt;mallocd |= AST_MALLOCD_DATA;</span>
+<span class="lineNum">     289 </span>            :         }
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span><span class="lineCov">        359 :         return out;</span>
+<a name="292"><span class="lineNum">     292 </span>            : }</a>
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">    4400126 : struct ast_frame *ast_frdup(const struct ast_frame *f)</span>
+<span class="lineNum">     295 </span>            : {
+<span class="lineNum">     296 </span><span class="lineCov">    4400126 :         struct ast_frame *out = NULL;</span>
+<span class="lineNum">     297 </span><span class="lineCov">    4400126 :         int len, srclen = 0;</span>
+<span class="lineNum">     298 </span><span class="lineCov">    4400126 :         void *buf = NULL;</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">     301 </span>            :         struct ast_frame_cache *frames;
+<span class="lineNum">     302 </span>            : #endif
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span>            :         /* Start with standard stuff */
+<span class="lineNum">     305 </span><span class="lineCov">    4400126 :         len = sizeof(*out) + AST_FRIENDLY_OFFSET + f-&gt;datalen;</span>
+<span class="lineNum">     306 </span>            :         /* If we have a source, add space for it */
+<span class="lineNum">     307 </span>            :         /*
+<span class="lineNum">     308 </span>            :          * XXX Watch out here - if we receive a src which is not terminated
+<span class="lineNum">     309 </span>            :          * properly, we can be easily attacked. Should limit the size we deal with.
+<span class="lineNum">     310 </span>            :          */
+<span class="lineNum">     311 </span><span class="lineCov">    4400126 :         if (f-&gt;src)</span>
+<span class="lineNum">     312 </span><span class="lineCov">    4208707 :                 srclen = strlen(f-&gt;src);</span>
+<span class="lineNum">     313 </span><span class="lineCov">    4400126 :         if (srclen &gt; 0)</span>
+<span class="lineNum">     314 </span><span class="lineCov">    4208707 :                 len += srclen + 1;</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            : #if !defined(LOW_MEMORY)
+<span class="lineNum">     317 </span><span class="lineCov">    4400126 :         if ((frames = ast_threadstorage_get(&amp;frame_cache, sizeof(*frames)))) {</span>
+<span class="lineNum">     318 </span><span class="lineCov">    5623520 :                 AST_LIST_TRAVERSE_SAFE_BEGIN(&amp;frames-&gt;list, out, frame_list) {</span>
+<span class="lineNum">     319 </span><span class="lineCov">    5352448 :                         if (out-&gt;mallocd_hdr_len &gt;= len) {</span>
+<span class="lineNum">     320 </span><span class="lineCov">    4129054 :                                 size_t mallocd_len = out-&gt;mallocd_hdr_len;</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">    4129054 :                                 AST_LIST_REMOVE_CURRENT(frame_list);</span>
+<span class="lineNum">     323 </span><span class="lineCov">    4129054 :                                 memset(out, 0, sizeof(*out));</span>
+<span class="lineNum">     324 </span><span class="lineCov">    4129054 :                                 out-&gt;mallocd_hdr_len = mallocd_len;</span>
+<span class="lineNum">     325 </span><span class="lineCov">    4129054 :                                 buf = out;</span>
+<span class="lineNum">     326 </span><span class="lineCov">    4129054 :                                 frames-&gt;size--;</span>
+<span class="lineNum">     327 </span><span class="lineCov">    4129054 :                                 break;</span>
+<span class="lineNum">     328 </span>            :                         }
+<span class="lineNum">     329 </span>            :                 }
+<span class="lineNum">     330 </span>            :                 AST_LIST_TRAVERSE_SAFE_END;
+<span class="lineNum">     331 </span>            :         }
+<span class="lineNum">     332 </span>            : #endif
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">    4400126 :         if (!buf) {</span>
+<span class="lineNum">     335 </span><span class="lineCov">     271072 :                 if (!(buf = ast_calloc_cache(1, len)))</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     337 </span><span class="lineCov">     271072 :                 out = buf;</span>
+<span class="lineNum">     338 </span><span class="lineCov">     271072 :                 out-&gt;mallocd_hdr_len = len;</span>
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">    4400126 :         out-&gt;frametype = f-&gt;frametype;</span>
+<span class="lineNum">     342 </span><span class="lineCov">    4400126 :         out-&gt;subclass = f-&gt;subclass;</span>
+<span class="lineNum">     343 </span><span class="lineCov">    4400126 :         if ((f-&gt;frametype == AST_FRAME_VOICE) || (f-&gt;frametype == AST_FRAME_VIDEO) ||</span>
+<span class="lineNum">     344 </span><span class="lineCov">     160713 :                 (f-&gt;frametype == AST_FRAME_IMAGE)) {</span>
+<span class="lineNum">     345 </span><span class="lineCov">    4239413 :                 ao2_bump(out-&gt;subclass.format);</span>
+<span class="lineNum">     346 </span>            :         }
+<span class="lineNum">     347 </span><span class="lineCov">    4400126 :         out-&gt;datalen = f-&gt;datalen;</span>
+<span class="lineNum">     348 </span><span class="lineCov">    4400126 :         out-&gt;samples = f-&gt;samples;</span>
+<span class="lineNum">     349 </span><span class="lineCov">    4400126 :         out-&gt;delivery = f-&gt;delivery;</span>
+<span class="lineNum">     350 </span>            :         /* Even though this new frame was allocated from the heap, we can't mark it
+<span class="lineNum">     351 </span>            :          * with AST_MALLOCD_HDR, AST_MALLOCD_DATA and AST_MALLOCD_SRC, because that
+<span class="lineNum">     352 </span>            :          * would cause ast_frfree() to attempt to individually free each of those
+<span class="lineNum">     353 </span>            :          * under the assumption that they were separately allocated. Since this frame
+<span class="lineNum">     354 </span>            :          * was allocated in a single allocation, we'll only mark it as if the header
+<span class="lineNum">     355 </span>            :          * was heap-allocated; this will result in the entire frame being properly freed.
+<span class="lineNum">     356 </span>            :          */
+<span class="lineNum">     357 </span><span class="lineCov">    4400126 :         out-&gt;mallocd = AST_MALLOCD_HDR;</span>
+<span class="lineNum">     358 </span><span class="lineCov">    4400126 :         out-&gt;offset = AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     359 </span><span class="lineCov">    4400126 :         if (out-&gt;datalen) {</span>
+<span class="lineNum">     360 </span><span class="lineCov">    4152152 :                 out-&gt;data.ptr = buf + sizeof(*out) + AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     361 </span><span class="lineCov">    4152152 :                 memcpy(out-&gt;data.ptr, f-&gt;data.ptr, out-&gt;datalen);</span>
+<span class="lineNum">     362 </span>            :         } else {
+<span class="lineNum">     363 </span><span class="lineCov">     247974 :                 out-&gt;data.uint32 = f-&gt;data.uint32;</span>
+<span class="lineNum">     364 </span>            :         }
+<span class="lineNum">     365 </span><span class="lineCov">    4400126 :         if (srclen &gt; 0) {</span>
+<span class="lineNum">     366 </span>            :                 /* This may seem a little strange, but it's to avoid a gcc (4.2.4) compiler warning */
+<span class="lineNum">     367 </span>            :                 char *src;
+<span class="lineNum">     368 </span><span class="lineCov">    4208707 :                 out-&gt;src = buf + sizeof(*out) + AST_FRIENDLY_OFFSET + f-&gt;datalen;</span>
+<span class="lineNum">     369 </span><span class="lineCov">    4208707 :                 src = (char *) out-&gt;src;</span>
+<span class="lineNum">     370 </span>            :                 /* Must have space since we allocated for it */
+<span class="lineNum">     371 </span><span class="lineCov">    4208707 :                 strcpy(src, f-&gt;src);</span>
+<span class="lineNum">     372 </span>            :         }
+<span class="lineNum">     373 </span><span class="lineCov">    4400126 :         ast_copy_flags(out, f, AST_FLAGS_ALL);</span>
+<span class="lineNum">     374 </span><span class="lineCov">    4400126 :         out-&gt;ts = f-&gt;ts;</span>
+<span class="lineNum">     375 </span><span class="lineCov">    4400126 :         out-&gt;len = f-&gt;len;</span>
+<span class="lineNum">     376 </span><span class="lineCov">    4400126 :         out-&gt;seqno = f-&gt;seqno;</span>
+<span class="lineNum">     377 </span><span class="lineCov">    4400126 :         out-&gt;stream_num = f-&gt;stream_num;</span>
+<span class="lineNum">     378 </span><span class="lineCov">    4400126 :         return out;</span>
+<a name="379"><span class="lineNum">     379 </span>            : }</a>
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 : void ast_swapcopy_samples(void *dst, const void *src, int samples)</span>
+<span class="lineNum">     382 </span>            : {
+<span class="lineNum">     383 </span>            :         int i;
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         unsigned short *dst_s = dst;</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         const unsigned short *src_s = src;</span>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; samples; i++)</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                 dst_s[i] = (src_s[i]&lt;&lt;8) | (src_s[i]&gt;&gt;8);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 : void ast_frame_subclass2str(struct ast_frame *f, char *subclass, size_t slen, char *moreinfo, size_t mlen)</span>
+<span class="lineNum">     392 </span>            : {
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         switch(f-&gt;frametype) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         case AST_FRAME_DTMF_BEGIN:</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 if (slen &gt; 1) {</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         subclass[0] = f-&gt;subclass.integer;</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                         subclass[1] = '\0';</span>
+<span class="lineNum">     398 </span>            :                 }
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :         case AST_FRAME_DTMF_END:</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 if (slen &gt; 1) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                         subclass[0] = f-&gt;subclass.integer;</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                         subclass[1] = '\0';</span>
+<span class="lineNum">     404 </span>            :                 }
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         case AST_FRAME_CONTROL:</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                 switch (f-&gt;subclass.integer) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_HANGUP:</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Hangup&quot;, slen);</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_RING:</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Ring&quot;, slen);</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_RINGING:</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Ringing&quot;, slen);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_ANSWER:</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Answer&quot;, slen);</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_BUSY:</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Busy&quot;, slen);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_TAKEOFFHOOK:</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Take Off Hook&quot;, slen);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_OFFHOOK:</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Line Off Hook&quot;, slen);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_CONGESTION:</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Congestion&quot;, slen);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_FLASH:</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Flash&quot;, slen);</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_WINK:</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Wink&quot;, slen);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_OPTION:</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Option&quot;, slen);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_RADIO_KEY:</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Key Radio&quot;, slen);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_RADIO_UNKEY:</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Unkey Radio&quot;, slen);</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_HOLD:</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Hold&quot;, slen);</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_UNHOLD:</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Unhold&quot;, slen);</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :                 case AST_CONTROL_T38_PARAMETERS: {</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                         char *message = &quot;Unknown&quot;;</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                         if (f-&gt;datalen != sizeof(struct ast_control_t38_parameters)) {</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                                 message = &quot;Invalid&quot;;</span>
+<span class="lineNum">     457 </span>            :                         } else {
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                                 struct ast_control_t38_parameters *parameters = f-&gt;data.ptr;</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                                 enum ast_control_t38 state = parameters-&gt;request_response;</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                                 if (state == AST_T38_REQUEST_NEGOTIATE)</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :                                         message = &quot;Negotiation Requested&quot;;</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                                 else if (state == AST_T38_REQUEST_TERMINATE)</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                                         message = &quot;Negotiation Request Terminated&quot;;</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                                 else if (state == AST_T38_NEGOTIATED)</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                         message = &quot;Negotiated&quot;;</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                                 else if (state == AST_T38_TERMINATED)</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                                         message = &quot;Terminated&quot;;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                 else if (state == AST_T38_REFUSED)</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                         message = &quot;Refused&quot;;</span>
+<span class="lineNum">     470 </span>            :                         }
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :                         snprintf(subclass, slen, &quot;T38_Parameters/%s&quot;, message);</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     473 </span>            :                 }
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :                 case -1:</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Stop generators&quot;, slen);</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                         snprintf(subclass, slen, &quot;Unknown control '%d'&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     479 </span>            :                 }
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :         case AST_FRAME_NULL:</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :                 ast_copy_string(subclass, &quot;N/A&quot;, slen);</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :         case AST_FRAME_IAX:</span>
+<span class="lineNum">     485 </span>            :                 /* Should never happen */
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 snprintf(subclass, slen, &quot;IAX Frametype %d&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :         case AST_FRAME_BRIDGE_ACTION:</span>
+<span class="lineNum">     489 </span>            :                 /* Should never happen */
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                 snprintf(subclass, slen, &quot;Bridge Frametype %d&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         case AST_FRAME_BRIDGE_ACTION_SYNC:</span>
+<span class="lineNum">     493 </span>            :                 /* Should never happen */
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                 snprintf(subclass, slen, &quot;Synchronous Bridge Frametype %d&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :         case AST_FRAME_TEXT:</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :                 ast_copy_string(subclass, &quot;N/A&quot;, slen);</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :                 if (moreinfo) {</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :                         ast_copy_string(moreinfo, f-&gt;data.ptr, mlen);</span>
+<span class="lineNum">     500 </span>            :                 }
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         case AST_FRAME_IMAGE:</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 snprintf(subclass, slen, &quot;Image format %s\n&quot;, ast_format_get_name(f-&gt;subclass.format));</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :         case AST_FRAME_HTML:</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                 switch (f-&gt;subclass.integer) {</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :                 case AST_HTML_URL:</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;URL&quot;, slen);</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :                         if (moreinfo) {</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                                 ast_copy_string(moreinfo, f-&gt;data.ptr, mlen);</span>
+<span class="lineNum">     511 </span>            :                         }
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                 case AST_HTML_DATA:</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Data&quot;, slen);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                 case AST_HTML_BEGIN:</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Begin&quot;, slen);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                 case AST_HTML_END:</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;End&quot;, slen);</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                 case AST_HTML_LDCOMPLETE:</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Load Complete&quot;, slen);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                 case AST_HTML_NOSUPPORT:</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;No Support&quot;, slen);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 case AST_HTML_LINKURL:</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Link URL&quot;, slen);</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :                         if (moreinfo) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                                 ast_copy_string(moreinfo, f-&gt;data.ptr, mlen);</span>
+<span class="lineNum">     532 </span>            :                         }
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 case AST_HTML_UNLINK:</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Unlink&quot;, slen);</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :                 case AST_HTML_LINKREJECT:</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;Link Reject&quot;, slen);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :                         snprintf(subclass, slen, &quot;Unknown HTML frame '%d'\n&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     543 </span>            :                 }
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 :         case AST_FRAME_MODEM:</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                 switch (f-&gt;subclass.integer) {</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :                 case AST_MODEM_T38:</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;T.38&quot;, slen);</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :                 case AST_MODEM_V150:</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :                         ast_copy_string(subclass, &quot;V.150&quot;, slen);</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :                         snprintf(subclass, slen, &quot;Unknown MODEM frame '%d'\n&quot;, f-&gt;subclass.integer);</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     556 </span>            :                 }
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :         case AST_FRAME_RTCP:</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :                 ast_copy_string(subclass, &quot;RTCP&quot;, slen);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 ast_copy_string(subclass, &quot;Unknown Subclass&quot;, slen);</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     563 </span>            :         }
+<a name="564"><span class="lineNum">     564 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span><span class="lineCov">          1 : void ast_frame_type2str(enum ast_frame_type frame_type, char *ftype, size_t len)</span>
+<span class="lineNum">     567 </span>            : {
+<span class="lineNum">     568 </span><span class="lineCov">          1 :         switch (frame_type) {</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :         case AST_FRAME_DTMF_BEGIN:</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;DTMF Begin&quot;, len);</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :         case AST_FRAME_DTMF_END:</span>
+<span class="lineNum">     573 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;DTMF End&quot;, len);</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :         case AST_FRAME_CONTROL:</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Control&quot;, len);</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         case AST_FRAME_NULL:</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Null Frame&quot;, len);</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :         case AST_FRAME_IAX:</span>
+<span class="lineNum">     582 </span>            :                 /* Should never happen */
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;IAX Specific&quot;, len);</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :         case AST_FRAME_BRIDGE_ACTION:</span>
+<span class="lineNum">     586 </span>            :                 /* Should never happen */
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Bridge Specific&quot;, len);</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     589 </span><span class="lineNoCov">          0 :         case AST_FRAME_BRIDGE_ACTION_SYNC:</span>
+<span class="lineNum">     590 </span>            :                 /* Should never happen */
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Bridge Specific&quot;, len);</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :         case AST_FRAME_TEXT:</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Text&quot;, len);</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     596 </span><span class="lineCov">          1 :         case AST_FRAME_TEXT_DATA:</span>
+<span class="lineNum">     597 </span><span class="lineCov">          1 :                 ast_copy_string(ftype, &quot;Text Data&quot;, len);</span>
+<span class="lineNum">     598 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :         case AST_FRAME_IMAGE:</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Image&quot;, len);</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :         case AST_FRAME_HTML:</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;HTML&quot;, len);</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :         case AST_FRAME_MODEM:</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Modem&quot;, len);</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :         case AST_FRAME_VOICE:</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Voice&quot;, len);</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :         case AST_FRAME_VIDEO:</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;Video&quot;, len);</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :         case AST_FRAME_RTCP:</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :                 ast_copy_string(ftype, &quot;RTCP&quot;, len);</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                 snprintf(ftype, len, &quot;Unknown Frametype '%u'&quot;, frame_type);</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     620 </span>            :         }
+<span class="lineNum">     621 </span><span class="lineCov">          1 : }</span>
+<a name="622"><span class="lineNum">     622 </span>            : </a>
+<span class="lineNum">     623 </span>            : /*! Dump a frame for debugging purposes */
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 : void ast_frame_dump(const char *name, struct ast_frame *f, char *prefix)</span>
+<span class="lineNum">     625 </span>            : {
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :         const char noname[] = &quot;unknown&quot;;</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :         char ftype[40] = &quot;Unknown Frametype&quot;;</span>
+<span class="lineNum">     628 </span>            :         char cft[80];
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :         char subclass[40] = &quot;Unknown Subclass&quot;;</span>
+<span class="lineNum">     630 </span>            :         char csub[80];
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :         char moreinfo[40] = &quot;&quot;;</span>
+<span class="lineNum">     632 </span>            :         char cn[60];
+<span class="lineNum">     633 </span>            :         char cp[40];
+<span class="lineNum">     634 </span>            :         char cmn[40];
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :         if (!name) {</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :                 name = noname;</span>
+<span class="lineNum">     638 </span>            :         }
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :         if (!f) {</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :                 ast_verb(-1, &quot;%s [ %s (NULL) ] [%s]\n&quot;,</span>
+<span class="lineNum">     642 </span>            :                         term_color(cp, prefix, COLOR_BRMAGENTA, COLOR_BLACK, sizeof(cp)),
+<span class="lineNum">     643 </span>            :                         term_color(cft, &quot;HANGUP&quot;, COLOR_BRRED, COLOR_BLACK, sizeof(cft)),
+<span class="lineNum">     644 </span>            :                         term_color(cn, name, COLOR_YELLOW, COLOR_BLACK, sizeof(cn)));
+<span class="lineNum">     645 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     646 </span>            :         }
+<span class="lineNum">     647 </span>            :         /* XXX We should probably print one each of voice and video when the format changes XXX */
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         if (f-&gt;frametype == AST_FRAME_VOICE) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     650 </span>            :         }
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :         if (f-&gt;frametype == AST_FRAME_VIDEO) {</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     653 </span>            :         }
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :         if (f-&gt;frametype == AST_FRAME_RTCP) {</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     656 </span>            :         }
+<span class="lineNum">     657 </span>            : 
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :         ast_frame_type2str(f-&gt;frametype, ftype, sizeof(ftype));</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :         ast_frame_subclass2str(f, subclass, sizeof(subclass), moreinfo, sizeof(moreinfo));</span>
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(moreinfo))</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 ast_verb(-1, &quot;%s [ TYPE: %s (%u) SUBCLASS: %s (%d) '%s' ] [%s]\n&quot;,</span>
+<span class="lineNum">     663 </span>            :                             term_color(cp, prefix, COLOR_BRMAGENTA, COLOR_BLACK, sizeof(cp)),
+<span class="lineNum">     664 </span>            :                             term_color(cft, ftype, COLOR_BRRED, COLOR_BLACK, sizeof(cft)),
+<span class="lineNum">     665 </span>            :                             f-&gt;frametype,
+<span class="lineNum">     666 </span>            :                             term_color(csub, subclass, COLOR_BRCYAN, COLOR_BLACK, sizeof(csub)),
+<span class="lineNum">     667 </span>            :                             f-&gt;subclass.integer,
+<span class="lineNum">     668 </span>            :                             term_color(cmn, moreinfo, COLOR_BRGREEN, COLOR_BLACK, sizeof(cmn)),
+<span class="lineNum">     669 </span>            :                             term_color(cn, name, COLOR_YELLOW, COLOR_BLACK, sizeof(cn)));
+<span class="lineNum">     670 </span>            :         else
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                 ast_verb(-1, &quot;%s [ TYPE: %s (%u) SUBCLASS: %s (%d) ] [%s]\n&quot;,</span>
+<span class="lineNum">     672 </span>            :                             term_color(cp, prefix, COLOR_BRMAGENTA, COLOR_BLACK, sizeof(cp)),
+<span class="lineNum">     673 </span>            :                             term_color(cft, ftype, COLOR_BRRED, COLOR_BLACK, sizeof(cft)),
+<span class="lineNum">     674 </span>            :                             f-&gt;frametype,
+<span class="lineNum">     675 </span>            :                             term_color(csub, subclass, COLOR_BRCYAN, COLOR_BLACK, sizeof(csub)),
+<span class="lineNum">     676 </span>            :                             f-&gt;subclass.integer,
+<span class="lineNum">     677 </span>            :                             term_color(cn, name, COLOR_YELLOW, COLOR_BLACK, sizeof(cn)));
+<a name="678"><span class="lineNum">     678 </span>            : }</a>
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 : int ast_frame_adjust_volume(struct ast_frame *f, int adjustment)</span>
+<span class="lineNum">     681 </span>            : {
+<span class="lineNum">     682 </span>            :         int count;
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :         short *fdata = f-&gt;data.ptr;</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :         short adjust_value = abs(adjustment);</span>
+<span class="lineNum">     685 </span>            : 
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :         if ((f-&gt;frametype != AST_FRAME_VOICE) || !(ast_format_cache_is_slinear(f-&gt;subclass.format))) {</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     688 </span>            :         }
+<span class="lineNum">     689 </span>            : 
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :         if (!adjustment) {</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     692 </span>            :         }
+<span class="lineNum">     693 </span>            : 
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :         for (count = 0; count &lt; f-&gt;samples; count++) {</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">          0 :                 if (adjustment &gt; 0) {</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                         ast_slinear_saturated_multiply(&amp;fdata[count], &amp;adjust_value);</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                 } else if (adjustment &lt; 0) {</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                         ast_slinear_saturated_divide(&amp;fdata[count], &amp;adjust_value);</span>
+<span class="lineNum">     699 </span>            :                 }
+<span class="lineNum">     700 </span>            :         }
+<span class="lineNum">     701 </span>            : 
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="703"><span class="lineNum">     703 </span>            : }</a>
+<span class="lineNum">     704 </span>            : 
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 : int ast_frame_slinear_sum(struct ast_frame *f1, struct ast_frame *f2)</span>
+<span class="lineNum">     706 </span>            : {
+<span class="lineNum">     707 </span>            :         int count;
+<span class="lineNum">     708 </span>            :         short *data1, *data2;
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :         if ((f1-&gt;frametype != AST_FRAME_VOICE) || (ast_format_cmp(f1-&gt;subclass.format, ast_format_slin) != AST_FORMAT_CMP_NOT_EQUAL))</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     712 </span>            : 
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :         if ((f2-&gt;frametype != AST_FRAME_VOICE) || (ast_format_cmp(f2-&gt;subclass.format, ast_format_slin) != AST_FORMAT_CMP_NOT_EQUAL))</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     715 </span>            : 
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :         if (f1-&gt;samples != f2-&gt;samples)</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :         for (count = 0, data1 = f1-&gt;data.ptr, data2 = f2-&gt;data.ptr;</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :              count &lt; f1-&gt;samples;</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :              count++, data1++, data2++)</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :                 ast_slinear_saturated_add(data1, data2);</span>
+<span class="lineNum">     723 </span>            : 
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="725"><span class="lineNum">     725 </span>            : }</a>
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 : int ast_frame_clear(struct ast_frame *frame)</span>
+<span class="lineNum">     728 </span>            : {
+<span class="lineNum">     729 </span>            :         struct ast_frame *next;
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :         for (next = AST_LIST_NEXT(frame, frame_list);</span>
+<span class="lineNum">     732 </span>            :                  frame;
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :                  frame = next, next = frame ? AST_LIST_NEXT(frame, frame_list) : NULL) {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :                 memset(frame-&gt;data.ptr, 0, frame-&gt;datalen);</span>
+<span class="lineNum">     735 </span>            :         }
+<span class="lineNum">     736 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     737 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

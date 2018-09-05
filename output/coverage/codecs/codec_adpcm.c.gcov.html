@@ -1,0 +1,443 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - codecs/codec_adpcm.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">codecs</a> - codec_adpcm.c<span style="font-size: 80%;"> (source / <a href="codec_adpcm.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">87</td>
+            <td class="headerCovTableEntry">95</td>
+            <td class="headerCovTableEntryHi">91.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Based on frompcm.c and topcm.c from the Emiliano MIPL browser/
+<span class="lineNum">       5 </span>            :  * interpreter.  See http://www.bsdtelephony.com.mx
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * Copyright (c) 2001 - 2005 Digium, Inc.
+<span class="lineNum">       8 </span>            :  * All rights reserved.
+<span class="lineNum">       9 </span>            :  *
+<span class="lineNum">      10 </span>            :  * Karl Sackett &lt;krs@linux-support.net&gt;, 2001-03-21
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      13 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      14 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      15 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      16 </span>            :  * channels for your use.
+<span class="lineNum">      17 </span>            :  *
+<span class="lineNum">      18 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      19 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      20 </span>            :  * at the top of the source tree.
+<span class="lineNum">      21 </span>            :  */
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : /*! \file
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \brief codec_adpcm.c - translate between signed linear and Dialogic ADPCM
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  * \ingroup codecs
+<span class="lineNum">      28 </span>            :  */
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : /*** MODULEINFO
+<span class="lineNum">      31 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      32 </span>            :  ***/
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /* define NOT_BLI to use a faster but not bit-level identical version */
+<span class="lineNum">      44 </span>            : /* #define NOT_BLI */
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : #define BUFFER_SAMPLES   8096   /* size for the translation buffers */
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : /* Sample frame data */
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/slin.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;ex_adpcm.h&quot;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /*
+<span class="lineNum">      53 </span>            :  * Step size index shift table
+<span class="lineNum">      54 </span>            :  */
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : static int indsft[8] = { -1, -1, -1, -1, 2, 4, 6, 8 };
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /*
+<span class="lineNum">      59 </span>            :  * Step size table, where stpsz[i]=floor[16*(11/10)^i]
+<span class="lineNum">      60 </span>            :  */
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : static int stpsz[49] = {
+<span class="lineNum">      63 </span>            :   16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73,
+<span class="lineNum">      64 </span>            :   80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279,
+<span class="lineNum">      65 </span>            :   307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796, 876, 963,
+<span class="lineNum">      66 </span>            :   1060, 1166, 1282, 1411, 1552
+<span class="lineNum">      67 </span>            : };
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : /*
+<span class="lineNum">      70 </span>            :  * Decoder/Encoder state
+<span class="lineNum">      71 </span>            :  *   States for both encoder and decoder are synchronized
+<span class="lineNum">      72 </span>            :  */
+<span class="lineNum">      73 </span>            : struct adpcm_state {
+<span class="lineNum">      74 </span>            :         int ssindex;
+<span class="lineNum">      75 </span>            :         int signal;
+<span class="lineNum">      76 </span>            :         int zero_count;
+<span class="lineNum">      77 </span>            :         int next_flag;
+<span class="lineNum">      78 </span>            : };
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : /*
+<span class="lineNum">      81 </span>            :  * Decode(encoded)
+<span class="lineNum">      82 </span>            :  *  Decodes the encoded nibble from the adpcm file.
+<span class="lineNum">      83 </span>            :  *
+<span class="lineNum">      84 </span>            :  * Results:
+<span class="lineNum">      85 </span>            :  *  Returns the encoded difference.
+<span class="lineNum">      86 </span>            :  *
+<span class="lineNum">      87 </span>            :  * Side effects:
+<span class="lineNum">      88 </span>            :  *  Sets the index to the step size table for the next encode.
+<a name="89"><span class="lineNum">      89 </span>            :  */</a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineCov">   17872000 : static inline short decode(int encoded, struct adpcm_state *state)</span>
+<span class="lineNum">      92 </span>            : {
+<span class="lineNum">      93 </span>            :         int diff;
+<span class="lineNum">      94 </span>            :         int step;
+<span class="lineNum">      95 </span>            :         int sign;
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span><span class="lineCov">   17872000 :         step = stpsz[state-&gt;ssindex];</span>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">   17872000 :         sign = encoded &amp; 0x08;</span>
+<span class="lineNum">     100 </span><span class="lineCov">   17872000 :         encoded &amp;= 0x07;</span>
+<span class="lineNum">     101 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     102 </span>            :         diff = (((encoded &lt;&lt; 1) + 1) * step) &gt;&gt; 3;
+<span class="lineNum">     103 </span>            : #else /* BLI code */
+<span class="lineNum">     104 </span><span class="lineCov">   17872000 :         diff = step &gt;&gt; 3;</span>
+<span class="lineNum">     105 </span><span class="lineCov">   17872000 :         if (encoded &amp; 4)</span>
+<span class="lineNum">     106 </span><span class="lineCov">    2009483 :                 diff += step;</span>
+<span class="lineNum">     107 </span><span class="lineCov">   17872000 :         if (encoded &amp; 2)</span>
+<span class="lineNum">     108 </span><span class="lineCov">    3238183 :                 diff += step &gt;&gt; 1;</span>
+<span class="lineNum">     109 </span><span class="lineCov">   17872000 :         if (encoded &amp; 1)</span>
+<span class="lineNum">     110 </span><span class="lineCov">    3469402 :                 diff += step &gt;&gt; 2;</span>
+<span class="lineNum">     111 </span><span class="lineCov">   17872000 :         if ((encoded &gt;&gt; 1) &amp; step &amp; 0x1)</span>
+<span class="lineNum">     112 </span><span class="lineCov">    2118949 :                 diff++;</span>
+<span class="lineNum">     113 </span>            : #endif
+<span class="lineNum">     114 </span><span class="lineCov">   17872000 :         if (sign)</span>
+<span class="lineNum">     115 </span><span class="lineCov">    4577466 :                 diff = -diff;</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">   17872000 :         if (state-&gt;next_flag &amp; 0x1)</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 state-&gt;signal -= 8;</span>
+<span class="lineNum">     119 </span><span class="lineCov">   17872000 :         else if (state-&gt;next_flag &amp; 0x2)</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 state-&gt;signal += 8;</span>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">   17872000 :         state-&gt;signal += diff;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">   17872000 :         if (state-&gt;signal &gt; 2047)</span>
+<span class="lineNum">     125 </span><span class="lineCov">    7793309 :                 state-&gt;signal = 2047;</span>
+<span class="lineNum">     126 </span><span class="lineCov">   10078691 :         else if (state-&gt;signal &lt; -2047)</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 state-&gt;signal = -2047;</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineCov">   17872000 :         state-&gt;next_flag = 0;</span>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            : #ifdef AUTO_RETURN
+<span class="lineNum">     132 </span>            :         if (encoded)
+<span class="lineNum">     133 </span>            :                 state-&gt;zero_count = 0;
+<span class="lineNum">     134 </span>            :         else if (++(state-&gt;zero_count) == 24) {
+<span class="lineNum">     135 </span>            :                 state-&gt;zero_count = 0;
+<span class="lineNum">     136 </span>            :                 if (state-&gt;signal &gt; 0)
+<span class="lineNum">     137 </span>            :                         state-&gt;next_flag = 0x1;
+<span class="lineNum">     138 </span>            :                 else if (state-&gt;signal &lt; 0)
+<span class="lineNum">     139 </span>            :                         state-&gt;next_flag = 0x2;
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span>            : #endif
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">   17872000 :         state-&gt;ssindex += indsft[encoded];</span>
+<span class="lineNum">     144 </span><span class="lineCov">   17872000 :         if (state-&gt;ssindex &lt; 0)</span>
+<span class="lineNum">     145 </span><span class="lineCov">    8956106 :                 state-&gt;ssindex = 0;</span>
+<span class="lineNum">     146 </span><span class="lineCov">    8915894 :         else if (state-&gt;ssindex &gt; 48)</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 state-&gt;ssindex = 48;</span>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">   17872000 :         return state-&gt;signal &lt;&lt; 4;</span>
+<span class="lineNum">     150 </span>            : }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : /*
+<span class="lineNum">     153 </span>            :  * Adpcm
+<span class="lineNum">     154 </span>            :  *  Takes a signed linear signal and encodes it as ADPCM
+<span class="lineNum">     155 </span>            :  *  For more information see http://en.wikipedia.org/wiki/Dialogic_ADPCM
+<span class="lineNum">     156 </span>            :  *
+<span class="lineNum">     157 </span>            :  * Results:
+<span class="lineNum">     158 </span>            :  *  Foo.
+<span class="lineNum">     159 </span>            :  *
+<span class="lineNum">     160 </span>            :  * Side effects:
+<span class="lineNum">     161 </span>            :  *  signal gets updated with each pass.
+<a name="162"><span class="lineNum">     162 </span>            :  */</a>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">    8936000 : static inline int adpcm(short csig, struct adpcm_state *state)</span>
+<span class="lineNum">     165 </span>            : {
+<span class="lineNum">     166 </span>            :         int diff;
+<span class="lineNum">     167 </span>            :         int step;
+<span class="lineNum">     168 </span>            :         int encoded;
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            :         /*
+<span class="lineNum">     171 </span>            :          * Clip csig if too large or too small
+<span class="lineNum">     172 </span>            :          */
+<span class="lineNum">     173 </span><span class="lineCov">    8936000 :         csig &gt;&gt;= 4;</span>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">    8936000 :         step = stpsz[state-&gt;ssindex];</span>
+<span class="lineNum">     176 </span><span class="lineCov">    8936000 :         diff = csig - state-&gt;signal;</span>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span>            : #ifdef NOT_BLI
+<span class="lineNum">     179 </span>            :         if (diff &lt; 0) {
+<span class="lineNum">     180 </span>            :                 encoded = (-diff &lt;&lt; 2) / step;
+<span class="lineNum">     181 </span>            :                 if (encoded &gt; 7)
+<span class="lineNum">     182 </span>            :                         encoded = 7;
+<span class="lineNum">     183 </span>            :                 encoded |= 0x08;
+<span class="lineNum">     184 </span>            :         } else {
+<span class="lineNum">     185 </span>            :                 encoded = (diff &lt;&lt; 2) / step;
+<span class="lineNum">     186 </span>            :                 if (encoded &gt; 7)
+<span class="lineNum">     187 </span>            :                         encoded = 7;
+<span class="lineNum">     188 </span>            :         }
+<span class="lineNum">     189 </span>            : #else /* BLI code */
+<span class="lineNum">     190 </span><span class="lineCov">    8936000 :         if (diff &lt; 0) {</span>
+<span class="lineNum">     191 </span><span class="lineCov">    4577466 :                 encoded = 8;</span>
+<span class="lineNum">     192 </span><span class="lineCov">    4577466 :                 diff = -diff;</span>
+<span class="lineNum">     193 </span>            :         } else
+<span class="lineNum">     194 </span><span class="lineCov">    4358534 :                 encoded = 0;</span>
+<span class="lineNum">     195 </span><span class="lineCov">    8936000 :         if (diff &gt;= step) {</span>
+<span class="lineNum">     196 </span><span class="lineCov">    2009483 :                 encoded |= 4;</span>
+<span class="lineNum">     197 </span><span class="lineCov">    2009483 :                 diff -= step;</span>
+<span class="lineNum">     198 </span>            :         }
+<span class="lineNum">     199 </span><span class="lineCov">    8936000 :         step &gt;&gt;= 1;</span>
+<span class="lineNum">     200 </span><span class="lineCov">    8936000 :         if (diff &gt;= step) {</span>
+<span class="lineNum">     201 </span><span class="lineCov">    3238183 :                 encoded |= 2;</span>
+<span class="lineNum">     202 </span><span class="lineCov">    3238183 :                 diff -= step;</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span><span class="lineCov">    8936000 :         step &gt;&gt;= 1;</span>
+<span class="lineNum">     205 </span><span class="lineCov">    8936000 :         if (diff &gt;= step)</span>
+<span class="lineNum">     206 </span><span class="lineCov">    3469402 :                 encoded |= 1;</span>
+<span class="lineNum">     207 </span>            : #endif /* NOT_BLI */
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            :         /* feedback to state */
+<span class="lineNum">     210 </span><span class="lineCov">    8936000 :         decode(encoded, state);</span>
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineCov">    8936000 :         return encoded;</span>
+<span class="lineNum">     213 </span>            : }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            : /*----------------- Asterisk-codec glue ------------*/
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span>            : /*! \brief Workspace for translating signed linear signals to ADPCM. */
+<span class="lineNum">     218 </span>            : struct adpcm_encoder_pvt {
+<span class="lineNum">     219 </span>            :         struct adpcm_state state;
+<span class="lineNum">     220 </span>            :         int16_t inbuf[BUFFER_SAMPLES];  /* Unencoded signed linear values */
+<span class="lineNum">     221 </span>            : };
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            : /*! \brief Workspace for translating ADPCM signals to signed linear. */
+<span class="lineNum">     224 </span>            : struct adpcm_decoder_pvt {
+<span class="lineNum">     225 </span>            :         struct adpcm_state state;
+<span class="lineNum">     226 </span>            : };
+<a name="227"><span class="lineNum">     227 </span>            : </a>
+<span class="lineNum">     228 </span>            : /*! \brief decode 4-bit adpcm frame data and store in output buffer */
+<span class="lineNum">     229 </span><span class="lineCov">     111700 : static int adpcmtolin_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span><span class="lineCov">     111700 :         struct adpcm_decoder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     232 </span><span class="lineCov">     111700 :         int x = f-&gt;datalen;</span>
+<span class="lineNum">     233 </span><span class="lineCov">     111700 :         unsigned char *src = f-&gt;data.ptr;</span>
+<span class="lineNum">     234 </span><span class="lineCov">     111700 :         int16_t *dst = pvt-&gt;outbuf.i16 + pvt-&gt;samples;</span>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">    4579700 :         while (x--) {</span>
+<span class="lineNum">     237 </span><span class="lineCov">    4468000 :                 *dst++ = decode((*src &gt;&gt; 4) &amp; 0xf, &amp;tmp-&gt;state);</span>
+<span class="lineNum">     238 </span><span class="lineCov">    4468000 :                 *dst++ = decode(*src++ &amp; 0x0f, &amp;tmp-&gt;state);</span>
+<span class="lineNum">     239 </span>            :         }
+<span class="lineNum">     240 </span><span class="lineCov">     111700 :         pvt-&gt;samples += f-&gt;samples;</span>
+<span class="lineNum">     241 </span><span class="lineCov">     111700 :         pvt-&gt;datalen += 2*f-&gt;samples;</span>
+<span class="lineNum">     242 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     243 </span>            : }
+<a name="244"><span class="lineNum">     244 </span>            : </a>
+<span class="lineNum">     245 </span>            : /*! \brief fill input buffer with 16-bit signed linear PCM values. */
+<span class="lineNum">     246 </span><span class="lineCov">     111700 : static int lintoadpcm_framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     247 </span>            : {
+<span class="lineNum">     248 </span><span class="lineCov">     111700 :         struct adpcm_encoder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">     111700 :         memcpy(&amp;tmp-&gt;inbuf[pvt-&gt;samples], f-&gt;data.ptr, f-&gt;datalen);</span>
+<span class="lineNum">     251 </span><span class="lineCov">     111700 :         pvt-&gt;samples += f-&gt;samples;</span>
+<span class="lineNum">     252 </span><span class="lineCov">     111700 :         return 0;</span>
+<span class="lineNum">     253 </span>            : }
+<a name="254"><span class="lineNum">     254 </span>            : </a>
+<span class="lineNum">     255 </span>            : /*! \brief convert inbuf and store into frame */
+<span class="lineNum">     256 </span><span class="lineCov">     223400 : static struct ast_frame *lintoadpcm_frameout(struct ast_trans_pvt *pvt)</span>
+<span class="lineNum">     257 </span>            : {
+<span class="lineNum">     258 </span><span class="lineCov">     223400 :         struct adpcm_encoder_pvt *tmp = pvt-&gt;pvt;</span>
+<span class="lineNum">     259 </span>            :         struct ast_frame *f;
+<span class="lineNum">     260 </span>            :         int i;
+<span class="lineNum">     261 </span><span class="lineCov">     223400 :         int samples = pvt-&gt;samples;  /* save original number */</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">     223400 :         if (samples &lt; 2)</span>
+<span class="lineNum">     264 </span><span class="lineCov">     111700 :                 return NULL;</span>
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">     111700 :         pvt-&gt;samples &amp;= ~1; /* atomic size is 2 samples */</span>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineCov">    4579700 :         for (i = 0; i &lt; pvt-&gt;samples; i += 2) {</span>
+<span class="lineNum">     269 </span><span class="lineCov">    8936000 :                 pvt-&gt;outbuf.c[i/2] =</span>
+<span class="lineNum">     270 </span><span class="lineCov">    8936000 :                         (adpcm(tmp-&gt;inbuf[i  ], &amp;tmp-&gt;state) &lt;&lt; 4) |</span>
+<span class="lineNum">     271 </span><span class="lineCov">    4468000 :                         (adpcm(tmp-&gt;inbuf[i+1], &amp;tmp-&gt;state)     );</span>
+<span class="lineNum">     272 </span>            :         };
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">     111700 :         f = ast_trans_frameout(pvt, pvt-&gt;samples/2, 0);</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            :         /*
+<span class="lineNum">     277 </span>            :          * If there is a left over sample, move it to the beginning
+<span class="lineNum">     278 </span>            :          * of the input buffer.
+<span class="lineNum">     279 </span>            :          */
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">     111700 :         if (samples &amp; 1) {  /* move the leftover sample at beginning */</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 tmp-&gt;inbuf[0] = tmp-&gt;inbuf[samples - 1];</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                 pvt-&gt;samples = 1;</span>
+<span class="lineNum">     284 </span>            :         }
+<span class="lineNum">     285 </span><span class="lineCov">     111700 :         return f;</span>
+<span class="lineNum">     286 </span>            : }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span>            : static struct ast_translator adpcmtolin = {
+<span class="lineNum">     290 </span>            :         .name = &quot;adpcmtolin&quot;,
+<span class="lineNum">     291 </span>            :         .src_codec = {
+<span class="lineNum">     292 </span>            :                 .name = &quot;adpcm&quot;,
+<span class="lineNum">     293 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     294 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     295 </span>            :         },
+<span class="lineNum">     296 </span>            :         .dst_codec = {
+<span class="lineNum">     297 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     298 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     299 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     300 </span>            :         },
+<span class="lineNum">     301 </span>            :         .format = &quot;slin&quot;,
+<span class="lineNum">     302 </span>            :         .framein = adpcmtolin_framein,
+<span class="lineNum">     303 </span>            :         .sample = adpcm_sample,
+<span class="lineNum">     304 </span>            :         .desc_size = sizeof(struct adpcm_decoder_pvt),
+<span class="lineNum">     305 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     306 </span>            :         .buf_size = BUFFER_SAMPLES * 2,
+<span class="lineNum">     307 </span>            : };
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            : static struct ast_translator lintoadpcm = {
+<span class="lineNum">     310 </span>            :         .name = &quot;lintoadpcm&quot;,
+<span class="lineNum">     311 </span>            :         .src_codec = {
+<span class="lineNum">     312 </span>            :                 .name = &quot;slin&quot;,
+<span class="lineNum">     313 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     314 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     315 </span>            :         },
+<span class="lineNum">     316 </span>            :         .dst_codec = {
+<span class="lineNum">     317 </span>            :                 .name = &quot;adpcm&quot;,
+<span class="lineNum">     318 </span>            :                 .type = AST_MEDIA_TYPE_AUDIO,
+<span class="lineNum">     319 </span>            :                 .sample_rate = 8000,
+<span class="lineNum">     320 </span>            :         },
+<span class="lineNum">     321 </span>            :         .format = &quot;adpcm&quot;,
+<span class="lineNum">     322 </span>            :         .framein = lintoadpcm_framein,
+<span class="lineNum">     323 </span>            :         .frameout = lintoadpcm_frameout,
+<span class="lineNum">     324 </span>            :         .sample = slin8_sample,
+<span class="lineNum">     325 </span>            :         .desc_size = sizeof (struct adpcm_encoder_pvt),
+<span class="lineNum">     326 </span>            :         .buffer_samples = BUFFER_SAMPLES,
+<span class="lineNum">     327 </span>            :         .buf_size = BUFFER_SAMPLES/ 2,  /* 2 samples per byte */
+<a name="328"><span class="lineNum">     328 </span>            : };</a>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         int res;
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">       1115 :         res = ast_unregister_translator(&amp;lintoadpcm);</span>
+<span class="lineNum">     335 </span><span class="lineCov">       1115 :         res |= ast_unregister_translator(&amp;adpcmtolin);</span>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="338"><span class="lineNum">     338 </span>            : }</a>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     341 </span>            : {
+<span class="lineNum">     342 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineCov">       1117 :         res = ast_register_translator(&amp;adpcmtolin);</span>
+<span class="lineNum">     345 </span><span class="lineCov">       1117 :         res |= ast_register_translator(&amp;lintoadpcm);</span>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">       1117 :         if (res) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     350 </span>            :         }
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="353"><span class="lineNum">     353 </span>            : }</a>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">       4468 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_DEFAULT, &quot;Adaptive Differential PCM Coder/Decoder&quot;,</span>
+<span class="lineNum">     356 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     357 </span>            :         .load = load_module,
+<span class="lineNum">     358 </span>            :         .unload = unload_module,
+<span class="lineNum">     359 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

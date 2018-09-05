@@ -1,0 +1,665 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - formats/format_pcm.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">formats</a> - format_pcm.c<span style="font-size: 80%;"> (source / <a href="format_pcm.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">58</td>
+            <td class="headerCovTableEntry">211</td>
+            <td class="headerCovTableEntryLo">27.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntryLo">47.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Flat, binary, ulaw PCM file format.
+<span class="lineNum">      22 </span>            :  * \arg File name extension: alaw, al, alw, pcm, ulaw, ul, mu, ulw, g722, au
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \ingroup formats
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/mod_format.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/endian.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/ulaw.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/alaw.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #define BUF_SIZE 160            /* 160 bytes, and same number of samples */
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : static char ulaw_silence[BUF_SIZE];
+<span class="lineNum">      43 </span>            : static char alaw_silence[BUF_SIZE];
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /* #define REALTIME_WRITE */    /* XXX does it work at all ? */
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : #ifdef REALTIME_WRITE
+<span class="lineNum">      48 </span>            : struct pcm_desc {
+<span class="lineNum">      49 </span>            :         unsigned long start_time;
+<span class="lineNum">      50 </span>            : };
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /* Returns time in msec since system boot. */
+<span class="lineNum">      53 </span>            : static unsigned long get_time(void)
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span>            :         struct tms buf;
+<span class="lineNum">      56 </span>            :         clock_t cur;
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            :         cur = times( &amp;buf );
+<span class="lineNum">      59 </span>            :         if( cur &lt; 0 ) {
+<span class="lineNum">      60 </span>            :                 ast_log( LOG_WARNING, &quot;Cannot get current time\n&quot; );
+<span class="lineNum">      61 </span>            :                 return 0;
+<span class="lineNum">      62 </span>            :         }
+<span class="lineNum">      63 </span>            :         return cur * 1000 / sysconf( _SC_CLK_TCK );
+<span class="lineNum">      64 </span>            : }
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : static int pcma_open(struct ast_filestream *s)
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span>            :         if (ast_format_cmp(s-&gt;fmt-&gt;format, ast_format_alaw) == AST_FORMAT_CMP_EQUAL)
+<span class="lineNum">      69 </span>            :                 pd-&gt;starttime = get_time();
+<span class="lineNum">      70 </span>            :         return 0;
+<span class="lineNum">      71 </span>            : }
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span>            : static int pcma_rewrite(struct ast_filestream *s, const char *comment)
+<span class="lineNum">      74 </span>            : {
+<span class="lineNum">      75 </span>            :         return pcma_open(s);
+<span class="lineNum">      76 </span>            : }
+<a name="77"><span class="lineNum">      77 </span>            : #endif</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineCov">      14521 : static struct ast_frame *pcm_read(struct ast_filestream *s, int *whennext)</span>
+<span class="lineNum">      80 </span>            : {
+<span class="lineNum">      81 </span>            :         size_t res;
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span>            :         /* Send a frame from the file to the appropriate channel */
+<span class="lineNum">      84 </span><span class="lineCov">      14521 :         AST_FRAME_SET_BUFFER(&amp;s-&gt;fr, s-&gt;buf, AST_FRIENDLY_OFFSET, BUF_SIZE);</span>
+<span class="lineNum">      85 </span><span class="lineCov">      14521 :         if ((res = fread(s-&gt;fr.data.ptr, 1, s-&gt;fr.datalen, s-&gt;f)) &lt; 1) {</span>
+<span class="lineNum">      86 </span><span class="lineCov">        110 :                 if (res) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Short read of %s data (expected %d bytes, read %zu): %s\n&quot;,</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                                         ast_format_get_name(s-&gt;fr.subclass.format), s-&gt;fr.datalen, res,</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :                                         strerror(errno));</span>
+<span class="lineNum">      90 </span>            :                 }
+<span class="lineNum">      91 </span><span class="lineCov">        110 :                 return NULL;</span>
+<span class="lineNum">      92 </span>            :         }
+<span class="lineNum">      93 </span><span class="lineCov">      14411 :         s-&gt;fr.datalen = res;</span>
+<span class="lineNum">      94 </span><span class="lineCov">      14411 :         *whennext = s-&gt;fr.samples = res;</span>
+<span class="lineNum">      95 </span><span class="lineCov">      14411 :         return &amp;s-&gt;fr;</span>
+<a name="96"><span class="lineNum">      96 </span>            : }</a>
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineCov">         27 : static int pcm_seek(struct ast_filestream *fs, off_t sample_offset, int whence)</span>
+<span class="lineNum">      99 </span>            : {
+<span class="lineNum">     100 </span><span class="lineCov">         27 :         off_t cur, max, offset = 0;</span>
+<span class="lineNum">     101 </span><span class="lineCov">         27 :         int ret = -1;   /* assume error */</span>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineCov">         27 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in pcm filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     106 </span>            :         }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">         27 :         if (fseeko(fs-&gt;f, 0, SEEK_END) &lt; 0) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to seek to end of pcm filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     111 </span>            :         }
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">         27 :         if ((max = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine max position in pcm filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     116 </span>            :         }
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span><span class="lineCov">         27 :         switch (whence) {</span>
+<span class="lineNum">     119 </span><span class="lineCov">          2 :         case SEEK_SET:</span>
+<span class="lineNum">     120 </span><span class="lineCov">          2 :                 offset = sample_offset;</span>
+<span class="lineNum">     121 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">     122 </span><span class="lineCov">         24 :         case SEEK_END:</span>
+<span class="lineNum">     123 </span><span class="lineCov">         24 :                 offset = max - sample_offset;</span>
+<span class="lineNum">     124 </span><span class="lineCov">         24 :                 break;</span>
+<span class="lineNum">     125 </span><span class="lineCov">          1 :         case SEEK_CUR:</span>
+<span class="lineNum">     126 </span>            :         case SEEK_FORCECUR:
+<span class="lineNum">     127 </span><span class="lineCov">          1 :                 offset = cur + sample_offset;</span>
+<span class="lineNum">     128 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;invalid whence %d, assuming SEEK_SET\n&quot;, whence);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 offset = sample_offset;</span>
+<span class="lineNum">     132 </span>            :         }
+<span class="lineNum">     133 </span><span class="lineCov">         27 :         if (offset &lt; 0) {</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;negative offset %ld, resetting to 0\n&quot;, (long) offset);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 offset = 0;</span>
+<span class="lineNum">     136 </span>            :         }
+<span class="lineNum">     137 </span><span class="lineCov">         27 :         if (whence == SEEK_FORCECUR &amp;&amp; offset &gt; max) { /* extend the file */</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 size_t left = offset - max;</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 const char *src = (ast_format_cmp(fs-&gt;fmt-&gt;format, ast_format_alaw) == AST_FORMAT_CMP_EQUAL) ? alaw_silence : ulaw_silence;</span>
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 while (left) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                         size_t written = fwrite(src, 1, MIN(left, BUF_SIZE), fs-&gt;f);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                         if (written &lt; MIN(left, BUF_SIZE)) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                                 break;  /* error */</span>
+<span class="lineNum">     145 </span>            :                         }
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                         left -= written;</span>
+<span class="lineNum">     147 </span>            :                 }
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 ret = 0; /* successful */</span>
+<span class="lineNum">     149 </span>            :         } else {
+<span class="lineNum">     150 </span><span class="lineCov">         27 :                 if (offset &gt; max) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;offset too large %ld, truncating to %ld\n&quot;, (long) offset, (long) max);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                         offset = max;</span>
+<span class="lineNum">     153 </span>            :                 }
+<span class="lineNum">     154 </span><span class="lineCov">         27 :                 ret = fseeko(fs-&gt;f, offset, SEEK_SET);</span>
+<span class="lineNum">     155 </span>            :         }
+<span class="lineNum">     156 </span><span class="lineCov">         27 :         return ret;</span>
+<a name="157"><span class="lineNum">     157 </span>            : }</a>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">         25 : static int pcm_trunc(struct ast_filestream *fs)</span>
+<span class="lineNum">     160 </span>            : {
+<span class="lineNum">     161 </span>            :         int cur, fd;
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineCov">         25 :         if ((fd = fileno(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine file descriptor for pcm filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     166 </span>            :         }
+<span class="lineNum">     167 </span><span class="lineCov">         25 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in pcm filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     170 </span>            :         }
+<span class="lineNum">     171 </span>            :         /* Truncate file to current length */
+<span class="lineNum">     172 </span><span class="lineCov">         25 :         return ftruncate(fd, cur);</span>
+<a name="173"><span class="lineNum">     173 </span>            : }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">         67 : static off_t pcm_tell(struct ast_filestream *fs)</span>
+<span class="lineNum">     176 </span>            : {
+<span class="lineNum">     177 </span><span class="lineCov">         67 :         return ftello(fs-&gt;f);</span>
+<a name="178"><span class="lineNum">     178 </span>            : }</a>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineCov">       2529 : static int pcm_write(struct ast_filestream *fs, struct ast_frame *f)</span>
+<span class="lineNum">     181 </span>            : {
+<span class="lineNum">     182 </span>            :         int res;
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            : #ifdef REALTIME_WRITE
+<span class="lineNum">     185 </span>            :         if (ast_format_cmp(s-&gt;fmt-&gt;format, ast_format_alaw) == AST_FORMAT_CMP_EQUAL) {
+<span class="lineNum">     186 </span>            :                 struct pcm_desc *pd = (struct pcm_desc *)fs-&gt;_private;
+<span class="lineNum">     187 </span>            :                 struct stat stat_buf;
+<span class="lineNum">     188 </span>            :                 unsigned long cur_time = get_time();
+<span class="lineNum">     189 </span>            :                 unsigned long fpos = ( cur_time - pd-&gt;start_time ) * 8;      /* 8 bytes per msec */
+<span class="lineNum">     190 </span>            :                 /* Check if we have written to this position yet. If we have, then increment pos by one frame
+<span class="lineNum">     191 </span>            :                 *  for some degree of protection against receiving packets in the same clock tick.
+<span class="lineNum">     192 </span>            :                 */
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            :                 fstat(fileno(fs-&gt;f), &amp;stat_buf );
+<span class="lineNum">     195 </span>            :                 if (stat_buf.st_size &gt; fpos )
+<span class="lineNum">     196 </span>            :                         fpos += f-&gt;datalen;  /* Incrementing with the size of this current frame */
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            :                 if (stat_buf.st_size &lt; fpos) {
+<span class="lineNum">     199 </span>            :                         /* fill the gap with 0x55 rather than 0. */
+<span class="lineNum">     200 </span>            :                         char buf[1024];
+<span class="lineNum">     201 </span>            :                         unsigned long cur, to_write;
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :                         cur = stat_buf.st_size;
+<span class="lineNum">     204 </span>            :                         if (fseek(fs-&gt;f, cur, SEEK_SET) &lt; 0) {
+<span class="lineNum">     205 </span>            :                                 ast_log( LOG_WARNING, &quot;Cannot seek in file: %s\n&quot;, strerror(errno) );
+<span class="lineNum">     206 </span>            :                                 return -1;
+<span class="lineNum">     207 </span>            :                         }
+<span class="lineNum">     208 </span>            :                         memset(buf, 0x55, 512);
+<span class="lineNum">     209 </span>            :                         while (cur &lt; fpos) {
+<span class="lineNum">     210 </span>            :                                 to_write = fpos - cur;
+<span class="lineNum">     211 </span>            :                                 if (to_write &gt; sizeof(buf))
+<span class="lineNum">     212 </span>            :                                         to_write = sizeof(buf);
+<span class="lineNum">     213 </span>            :                                 if (fwrite(buf, 1, to_write, fs-&gt;f) != to_write) {
+<span class="lineNum">     214 </span>            :                                         ast_log(LOG_ERROR, &quot;Failed to write to file: %s\n&quot;, strerror(errno));
+<span class="lineNum">     215 </span>            :                                         return -1;
+<span class="lineNum">     216 </span>            :                                 }
+<span class="lineNum">     217 </span>            :                                 cur += to_write;
+<span class="lineNum">     218 </span>            :                         }
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span>            :                 if (fseek(s-&gt;f, fpos, SEEK_SET) &lt; 0) {
+<span class="lineNum">     222 </span>            :                         ast_log( LOG_WARNING, &quot;Cannot seek in file: %s\n&quot;, strerror(errno) );
+<span class="lineNum">     223 </span>            :                         return -1;
+<span class="lineNum">     224 </span>            :                 }
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : #endif  /* REALTIME_WRITE */
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">       2529 :         if ((res = fwrite(f-&gt;data.ptr, 1, f-&gt;datalen, fs-&gt;f)) != f-&gt;datalen) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bad write (%d/%d): %s\n&quot;, res, f-&gt;datalen, strerror(errno));</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span><span class="lineCov">       2529 :         return 0;</span>
+<span class="lineNum">     233 </span>            : }
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : /* SUN .au support routines */
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            : #define MIN_AU_HEADER_SIZE      24
+<span class="lineNum">     238 </span>            : #define AU_HEADER(var)          uint32_t var[6]
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            : #define AU_HDR_MAGIC_OFF        0
+<span class="lineNum">     241 </span>            : #define AU_HDR_HDR_SIZE_OFF     1
+<span class="lineNum">     242 </span>            : #define AU_HDR_DATA_SIZE_OFF    2
+<span class="lineNum">     243 </span>            : #define AU_HDR_ENCODING_OFF     3
+<span class="lineNum">     244 </span>            : #define AU_HDR_SAMPLE_RATE_OFF  4
+<span class="lineNum">     245 </span>            : #define AU_HDR_CHANNELS_OFF     5
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            : #define AU_ENC_8BIT_ULAW        1
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span>            : #define AU_MAGIC 0x2e736e64
+<span class="lineNum">     250 </span>            : #if __BYTE_ORDER == __BIG_ENDIAN
+<span class="lineNum">     251 </span>            : #define htoll(b) (b)
+<span class="lineNum">     252 </span>            : #define htols(b) (b)
+<span class="lineNum">     253 </span>            : #define ltohl(b) (b)
+<span class="lineNum">     254 </span>            : #define ltohs(b) (b)
+<span class="lineNum">     255 </span>            : #else
+<span class="lineNum">     256 </span>            : #if __BYTE_ORDER == __LITTLE_ENDIAN
+<span class="lineNum">     257 </span>            : #define htoll(b)  \
+<span class="lineNum">     258 </span>            :           (((((b)      ) &amp; 0xFF) &lt;&lt; 24) | \
+<span class="lineNum">     259 </span>            :                ((((b) &gt;&gt;  8) &amp; 0xFF) &lt;&lt; 16) | \
+<span class="lineNum">     260 </span>            :                    ((((b) &gt;&gt; 16) &amp; 0xFF) &lt;&lt;  8) | \
+<span class="lineNum">     261 </span>            :                    ((((b) &gt;&gt; 24) &amp; 0xFF)      ))
+<span class="lineNum">     262 </span>            : #define htols(b) \
+<span class="lineNum">     263 </span>            :           (((((b)      ) &amp; 0xFF) &lt;&lt; 8) | \
+<span class="lineNum">     264 </span>            :                    ((((b) &gt;&gt; 8) &amp; 0xFF)      ))
+<span class="lineNum">     265 </span>            : #define ltohl(b) htoll(b)
+<span class="lineNum">     266 </span>            : #define ltohs(b) htols(b)
+<span class="lineNum">     267 </span>            : #else
+<span class="lineNum">     268 </span>            : #error &quot;Endianess not defined&quot;
+<span class="lineNum">     269 </span>            : #endif
+<span class="lineNum">     270 </span>            : #endif
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span>            : struct au_desc {
+<span class="lineNum">     273 </span>            :         uint32_t hdr_size;
+<a name="274"><span class="lineNum">     274 </span>            : };</a>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 : static int check_header(struct ast_filestream *fs)</span>
+<span class="lineNum">     277 </span>            : {
+<span class="lineNum">     278 </span>            :         AU_HEADER(header);
+<span class="lineNum">     279 </span>            :         uint32_t magic;
+<span class="lineNum">     280 </span>            :         uint32_t hdr_size;
+<span class="lineNum">     281 </span>            :         uint32_t data_size;
+<span class="lineNum">     282 </span>            :         uint32_t encoding;
+<span class="lineNum">     283 </span>            :         uint32_t sample_rate;
+<span class="lineNum">     284 </span>            :         uint32_t channels;
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         struct au_desc *desc = fs-&gt;_private;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         FILE *f = fs-&gt;f;</span>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :         if (fread(header, 1, MIN_AU_HEADER_SIZE, f) != MIN_AU_HEADER_SIZE) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Read failed (header)\n&quot;);</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     292 </span>            :         }
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :         magic = ltohl(header[AU_HDR_MAGIC_OFF]);</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         if (magic != (uint32_t) AU_MAGIC) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bad magic: 0x%x\n&quot;, magic);</span>
+<span class="lineNum">     296 </span>            :         }
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         hdr_size = ltohl(header[AU_HDR_HDR_SIZE_OFF]);</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         if (hdr_size &lt; MIN_AU_HEADER_SIZE) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 hdr_size = MIN_AU_HEADER_SIZE;</span>
+<span class="lineNum">     300 </span>            :         }
+<span class="lineNum">     301 </span>            : /*      data_size = ltohl(header[AU_HDR_DATA_SIZE_OFF]); */
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         encoding = ltohl(header[AU_HDR_ENCODING_OFF]);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         if (encoding != AU_ENC_8BIT_ULAW) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unexpected format: %u. Only 8bit ULAW allowed (%d)\n&quot;, encoding, AU_ENC_8BIT_ULAW);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         sample_rate = ltohl(header[AU_HDR_SAMPLE_RATE_OFF]);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         if (sample_rate != DEFAULT_SAMPLE_RATE) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Sample rate can only be 8000 not %u\n&quot;, sample_rate);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     311 </span>            :         }
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         channels = ltohl(header[AU_HDR_CHANNELS_OFF]);</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :         if (channels != 1) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Not in mono: channels=%u\n&quot;, channels);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span>            :         /* Skip to data */
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         fseek(f, 0, SEEK_END);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         data_size = ftell(f) - hdr_size;</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         if (fseek(f, hdr_size, SEEK_SET) == -1 ) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to skip to data: %u\n&quot;, hdr_size);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     323 </span>            :         }
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span>            :         /* We'll need this later */
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         desc-&gt;hdr_size = hdr_size;</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         return data_size;</span>
+<a name="329"><span class="lineNum">     329 </span>            : }</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 : static int update_header(struct ast_filestream *fs)</span>
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span>            :         off_t cur, end;
+<span class="lineNum">     334 </span>            :         uint32_t datalen;
+<span class="lineNum">     335 </span>            :         int bytes;
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         struct au_desc *desc = fs-&gt;_private;</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :         FILE *f = fs-&gt;f;</span>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         cur = ftell(f);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         fseek(f, 0, SEEK_END);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :         end = ftell(f);</span>
+<span class="lineNum">     342 </span>            :         /* data starts 24 bytes in */
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         bytes = end - desc-&gt;hdr_size;</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :         datalen = htoll(bytes);</span>
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         if (cur &lt; 0) {</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to find our position\n&quot;);</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         if (fseek(f, AU_HDR_DATA_SIZE_OFF * sizeof(uint32_t), SEEK_SET)) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to set our position\n&quot;);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     353 </span>            :         }
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         if (fwrite(&amp;datalen, 1, sizeof(datalen), f) != sizeof(datalen)) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to set write file size\n&quot;);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     357 </span>            :         }
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :         if (fseek(f, cur, SEEK_SET)) {</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to return to position\n&quot;);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     361 </span>            :         }
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="363"><span class="lineNum">     363 </span>            : }</a>
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 : static int write_header(struct ast_filestream *fs)</span>
+<span class="lineNum">     366 </span>            : {
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         struct au_desc *desc = fs-&gt;_private;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         FILE *f = fs-&gt;f;</span>
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span>            :         AU_HEADER(header);
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         header[AU_HDR_MAGIC_OFF] = htoll((uint32_t) AU_MAGIC);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         header[AU_HDR_HDR_SIZE_OFF] = htoll(desc-&gt;hdr_size);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         header[AU_HDR_DATA_SIZE_OFF] = 0;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         header[AU_HDR_ENCODING_OFF] = htoll(AU_ENC_8BIT_ULAW);</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         header[AU_HDR_SAMPLE_RATE_OFF] = htoll(DEFAULT_SAMPLE_RATE);</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         header[AU_HDR_CHANNELS_OFF] = htoll(1);</span>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span>            :         /* Write an au header, ignoring sizes which will be filled in later */
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         fseek(f, 0, SEEK_SET);</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (fwrite(header, 1, MIN_AU_HEADER_SIZE, f) != MIN_AU_HEADER_SIZE) {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to write header\n&quot;);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     384 </span>            :         }
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="386"><span class="lineNum">     386 </span>            : }</a>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 : static int au_open(struct ast_filestream *s)</span>
+<span class="lineNum">     389 </span>            : {
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (check_header(s) &lt; 0)</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="393"><span class="lineNum">     393 </span>            : }</a>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 : static int au_rewrite(struct ast_filestream *s, const char *comment)</span>
+<span class="lineNum">     396 </span>            : {
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :         struct au_desc *desc = s-&gt;_private;</span>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         desc-&gt;hdr_size = MIN_AU_HEADER_SIZE;</span>
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :         if (write_header(s))</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     404 </span>            : }
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span>            : /* XXX check this, probably incorrect */
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 : static int au_seek(struct ast_filestream *fs, off_t sample_offset, int whence)</span>
+<span class="lineNum">     408 </span>            : {
+<span class="lineNum">     409 </span>            :         off_t min, max, cur;
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :         long offset = 0;</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :         struct au_desc *desc = fs-&gt;_private;</span>
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         min = desc-&gt;hdr_size;</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in au filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     418 </span>            :         }
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         if (fseeko(fs-&gt;f, 0, SEEK_END) &lt; 0) {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to seek to end of au filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     423 </span>            :         }
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :         if ((max = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine max position in au filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     428 </span>            :         }
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         if (whence == SEEK_SET)</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                 offset = sample_offset + min;</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         else if (whence == SEEK_CUR || whence == SEEK_FORCECUR)</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                 offset = sample_offset + cur;</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :         else if (whence == SEEK_END)</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 offset = max - sample_offset;</span>
+<span class="lineNum">     436 </span>            : 
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :         if (whence != SEEK_FORCECUR) {</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 offset = (offset &gt; max) ? max : offset;</span>
+<span class="lineNum">     439 </span>            :         }
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span>            :         /* always protect the header space. */
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :         offset = (offset &lt; min) ? min : offset;</span>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         return fseeko(fs-&gt;f, offset, SEEK_SET);</span>
+<a name="445"><span class="lineNum">     445 </span>            : }</a>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 : static int au_trunc(struct ast_filestream *fs)</span>
+<span class="lineNum">     448 </span>            : {
+<span class="lineNum">     449 </span>            :         int fd;
+<span class="lineNum">     450 </span>            :         off_t cur;
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :         if ((fd = fileno(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine file descriptor for au filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     455 </span>            :         }
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :         if ((cur = ftello(fs-&gt;f)) &lt; 0) {</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Unable to determine current position in au filestream %p: %s\n&quot;, fs, strerror(errno));</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     459 </span>            :         }
+<span class="lineNum">     460 </span>            :         /* Truncate file to current length */
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :         if (ftruncate(fd, cur)) {</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     463 </span>            :         }
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :         return update_header(fs);</span>
+<a name="465"><span class="lineNum">     465 </span>            : }</a>
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 : static off_t au_tell(struct ast_filestream *fs)</span>
+<span class="lineNum">     468 </span>            : {
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :         struct au_desc *desc = fs-&gt;_private;</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :         off_t offset = ftello(fs-&gt;f);</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :         return offset - desc-&gt;hdr_size;</span>
+<a name="472"><span class="lineNum">     472 </span>            : }</a>
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 : static struct ast_frame *g722_read(struct ast_filestream *s, int *whennext)</span>
+<span class="lineNum">     475 </span>            : {
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :         struct ast_frame *f = pcm_read(s, whennext);</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :         *whennext = s-&gt;fr.samples = (*whennext * 2);</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :         return f;</span>
+<a name="479"><span class="lineNum">     479 </span>            : }</a>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 : static int g722_seek(struct ast_filestream *fs, off_t sample_offset, int whence)</span>
+<span class="lineNum">     482 </span>            : {
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         return pcm_seek(fs, sample_offset / 2, whence);</span>
+<a name="484"><span class="lineNum">     484 </span>            : }</a>
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 : static off_t g722_tell(struct ast_filestream *fs)</span>
+<span class="lineNum">     487 </span>            : {
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :         return pcm_tell(fs) * 2;</span>
+<span class="lineNum">     489 </span>            : }
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span>            : static struct ast_format_def alaw_f = {
+<span class="lineNum">     492 </span>            :         .name = &quot;alaw&quot;,
+<span class="lineNum">     493 </span>            :         .exts = &quot;alaw|al|alw&quot;,
+<span class="lineNum">     494 </span>            :         .write = pcm_write,
+<span class="lineNum">     495 </span>            :         .seek = pcm_seek,
+<span class="lineNum">     496 </span>            :         .trunc = pcm_trunc,
+<span class="lineNum">     497 </span>            :         .tell = pcm_tell,
+<span class="lineNum">     498 </span>            :         .read = pcm_read,
+<span class="lineNum">     499 </span>            :         .buf_size = BUF_SIZE + AST_FRIENDLY_OFFSET,
+<span class="lineNum">     500 </span>            : #ifdef REALTIME_WRITE
+<span class="lineNum">     501 </span>            :         .open = pcma_open,
+<span class="lineNum">     502 </span>            :         .rewrite = pcma_rewrite,
+<span class="lineNum">     503 </span>            :         .desc_size = sizeof(struct pcm_desc),
+<span class="lineNum">     504 </span>            : #endif
+<span class="lineNum">     505 </span>            : };
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span>            : static struct ast_format_def pcm_f = {
+<span class="lineNum">     508 </span>            :         .name = &quot;pcm&quot;,
+<span class="lineNum">     509 </span>            :         .exts = &quot;pcm|ulaw|ul|mu|ulw&quot;,
+<span class="lineNum">     510 </span>            :         .mime_types = &quot;audio/basic&quot;,
+<span class="lineNum">     511 </span>            :         .write = pcm_write,
+<span class="lineNum">     512 </span>            :         .seek = pcm_seek,
+<span class="lineNum">     513 </span>            :         .trunc = pcm_trunc,
+<span class="lineNum">     514 </span>            :         .tell = pcm_tell,
+<span class="lineNum">     515 </span>            :         .read = pcm_read,
+<span class="lineNum">     516 </span>            :         .buf_size = BUF_SIZE + AST_FRIENDLY_OFFSET,
+<span class="lineNum">     517 </span>            : };
+<span class="lineNum">     518 </span>            : 
+<span class="lineNum">     519 </span>            : static struct ast_format_def g722_f = {
+<span class="lineNum">     520 </span>            :         .name = &quot;g722&quot;,
+<span class="lineNum">     521 </span>            :         .exts = &quot;g722&quot;,
+<span class="lineNum">     522 </span>            :         .write = pcm_write,
+<span class="lineNum">     523 </span>            :         .seek = g722_seek,
+<span class="lineNum">     524 </span>            :         .trunc = pcm_trunc,
+<span class="lineNum">     525 </span>            :         .tell = g722_tell,
+<span class="lineNum">     526 </span>            :         .read = g722_read,
+<span class="lineNum">     527 </span>            :         .buf_size = (BUF_SIZE * 2) + AST_FRIENDLY_OFFSET,
+<span class="lineNum">     528 </span>            : };
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span>            : static struct ast_format_def au_f = {
+<span class="lineNum">     531 </span>            :         .name = &quot;au&quot;,
+<span class="lineNum">     532 </span>            :         .exts = &quot;au&quot;,
+<span class="lineNum">     533 </span>            :         .open = au_open,
+<span class="lineNum">     534 </span>            :         .rewrite = au_rewrite,
+<span class="lineNum">     535 </span>            :         .write = pcm_write,
+<span class="lineNum">     536 </span>            :         .seek = au_seek,
+<span class="lineNum">     537 </span>            :         .trunc = au_trunc,
+<span class="lineNum">     538 </span>            :         .tell = au_tell,
+<span class="lineNum">     539 </span>            :         .read = pcm_read,
+<span class="lineNum">     540 </span>            :         .buf_size = BUF_SIZE + AST_FRIENDLY_OFFSET,     /* this many shorts */
+<span class="lineNum">     541 </span>            :         .desc_size = sizeof(struct au_desc),
+<a name="542"><span class="lineNum">     542 </span>            : };</a>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     545 </span>            : {
+<span class="lineNum">     546 </span><span class="lineCov">       1115 :         return ast_format_def_unregister(pcm_f.name)</span>
+<span class="lineNum">     547 </span><span class="lineCov">       1115 :                 || ast_format_def_unregister(alaw_f.name)</span>
+<span class="lineNum">     548 </span><span class="lineCov">       1115 :                 || ast_format_def_unregister(au_f.name)</span>
+<span class="lineNum">     549 </span><span class="lineCov">       2230 :                 || ast_format_def_unregister(g722_f.name);</span>
+<a name="550"><span class="lineNum">     550 </span>            : }</a>
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     553 </span>            : {
+<span class="lineNum">     554 </span>            :         int i;
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span>            :         /* XXX better init ? */
+<span class="lineNum">     557 </span><span class="lineCov">     179837 :         for (i = 0; i &lt; ARRAY_LEN(ulaw_silence); i++)</span>
+<span class="lineNum">     558 </span><span class="lineCov">     178720 :                 ulaw_silence[i] = AST_LIN2MU(0);</span>
+<span class="lineNum">     559 </span><span class="lineCov">     179837 :         for (i = 0; i &lt; ARRAY_LEN(alaw_silence); i++)</span>
+<span class="lineNum">     560 </span><span class="lineCov">     178720 :                 alaw_silence[i] = AST_LIN2A(0);</span>
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span><span class="lineCov">       1117 :         pcm_f.format = ast_format_ulaw;</span>
+<span class="lineNum">     563 </span><span class="lineCov">       1117 :         alaw_f.format = ast_format_alaw;</span>
+<span class="lineNum">     564 </span><span class="lineCov">       1117 :         au_f.format = ast_format_ulaw;</span>
+<span class="lineNum">     565 </span><span class="lineCov">       1117 :         g722_f.format = ast_format_g722;</span>
+<span class="lineNum">     566 </span><span class="lineCov">       1117 :         if ( ast_format_def_register(&amp;pcm_f)</span>
+<span class="lineNum">     567 </span><span class="lineCov">       1117 :                 || ast_format_def_register(&amp;alaw_f)</span>
+<span class="lineNum">     568 </span><span class="lineCov">       1117 :                 || ast_format_def_register(&amp;au_f)</span>
+<span class="lineNum">     569 </span><span class="lineCov">       1117 :                 || ast_format_def_register(&amp;g722_f) ) {</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     572 </span>            :         }
+<span class="lineNum">     573 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="574"><span class="lineNum">     574 </span>            : }</a>
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineCov">       6702 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;Raw/Sun uLaw/ALaw 8KHz (PCM,PCMA,AU), G.722 16Khz&quot;,</span>
+<span class="lineNum">     577 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     578 </span>            :         .load = load_module,
+<span class="lineNum">     579 </span>            :         .unload = unload_module,
+<span class="lineNum">     580 </span>            :         .load_pri = AST_MODPRI_APP_DEPEND
+<span class="lineNum">     581 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

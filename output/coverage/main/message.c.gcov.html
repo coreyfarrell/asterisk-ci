@@ -1,0 +1,1767 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/message.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - message.c<span style="font-size: 80%;"> (source / <a href="message.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">489</td>
+            <td class="headerCovTableEntry">613</td>
+            <td class="headerCovTableEntryMed">79.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">63</td>
+            <td class="headerCovTableEntry">70</td>
+            <td class="headerCovTableEntryHi">90.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2010, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Out-of-call text message support
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Russell Bryant &lt;russell@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/datastore.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/strings.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/vector.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/message.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      46 </span>            :         &lt;function name=&quot;MESSAGE&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      47 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      48 </span>            :                         Create a message or read fields from a message.
+<span class="lineNum">      49 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      50 </span>            :                 &lt;syntax argsep=&quot;/&quot;&gt;
+<span class="lineNum">      51 </span>            :                         &lt;parameter name=&quot;argument&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      52 </span>            :                         &lt;para&gt;Field of the message to get or set.&lt;/para&gt;
+<span class="lineNum">      53 </span>            :                         &lt;enumlist&gt;
+<span class="lineNum">      54 </span>            :                                 &lt;enum name=&quot;to&quot;&gt;
+<span class="lineNum">      55 </span>            :                                         &lt;para&gt;Read-only.  The destination of the message.  When processing an
+<span class="lineNum">      56 </span>            :                                         incoming message, this will be set to the destination listed as
+<span class="lineNum">      57 </span>            :                                         the recipient of the message that was received by Asterisk.&lt;/para&gt;
+<span class="lineNum">      58 </span>            :                                 &lt;/enum&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;enum name=&quot;from&quot;&gt;
+<span class="lineNum">      60 </span>            :                                         &lt;para&gt;Read-only.  The source of the message.  When processing an
+<span class="lineNum">      61 </span>            :                                         incoming message, this will be set to the source of the message.&lt;/para&gt;
+<span class="lineNum">      62 </span>            :                                 &lt;/enum&gt;
+<span class="lineNum">      63 </span>            :                                 &lt;enum name=&quot;custom_data&quot;&gt;
+<span class="lineNum">      64 </span>            :                                         &lt;para&gt;Write-only.  Mark or unmark all message headers for an outgoing
+<span class="lineNum">      65 </span>            :                                         message.  The following values can be set:&lt;/para&gt;
+<span class="lineNum">      66 </span>            :                                         &lt;enumlist&gt;
+<span class="lineNum">      67 </span>            :                                                 &lt;enum name=&quot;mark_all_outbound&quot;&gt;
+<span class="lineNum">      68 </span>            :                                                         &lt;para&gt;Mark all headers for an outgoing message.&lt;/para&gt;
+<span class="lineNum">      69 </span>            :                                                 &lt;/enum&gt;
+<span class="lineNum">      70 </span>            :                                                 &lt;enum name=&quot;clear_all_outbound&quot;&gt;
+<span class="lineNum">      71 </span>            :                                                         &lt;para&gt;Unmark all headers for an outgoing message.&lt;/para&gt;
+<span class="lineNum">      72 </span>            :                                                 &lt;/enum&gt;
+<span class="lineNum">      73 </span>            :                                         &lt;/enumlist&gt;
+<span class="lineNum">      74 </span>            :                                 &lt;/enum&gt;
+<span class="lineNum">      75 </span>            :                                 &lt;enum name=&quot;body&quot;&gt;
+<span class="lineNum">      76 </span>            :                                         &lt;para&gt;Read/Write.  The message body.  When processing an incoming
+<span class="lineNum">      77 </span>            :                                         message, this includes the body of the message that Asterisk
+<span class="lineNum">      78 </span>            :                                         received.  When MessageSend() is executed, the contents of this
+<span class="lineNum">      79 </span>            :                                         field are used as the body of the outgoing message.  The body
+<span class="lineNum">      80 </span>            :                                         will always be UTF-8.&lt;/para&gt;
+<span class="lineNum">      81 </span>            :                                 &lt;/enum&gt;
+<span class="lineNum">      82 </span>            :                         &lt;/enumlist&gt;
+<span class="lineNum">      83 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      84 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      85 </span>            :                 &lt;description&gt;
+<span class="lineNum">      86 </span>            :                         &lt;para&gt;This function will read from or write a value to a text message.
+<span class="lineNum">      87 </span>            :                         It is used both to read the data out of an incoming message, as well as
+<span class="lineNum">      88 </span>            :                         modify or create a message that will be sent outbound.&lt;/para&gt;
+<span class="lineNum">      89 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      90 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">      91 </span>            :                         &lt;ref type=&quot;application&quot;&gt;MessageSend&lt;/ref&gt;
+<span class="lineNum">      92 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">      93 </span>            :         &lt;/function&gt;
+<span class="lineNum">      94 </span>            :         &lt;function name=&quot;MESSAGE_DATA&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      95 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      96 </span>            :                         Read or write custom data attached to a message.
+<span class="lineNum">      97 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      98 </span>            :                 &lt;syntax argsep=&quot;/&quot;&gt;
+<span class="lineNum">      99 </span>            :                         &lt;parameter name=&quot;argument&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     100 </span>            :                         &lt;para&gt;Field of the message to get or set.&lt;/para&gt;
+<span class="lineNum">     101 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     102 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     103 </span>            :                 &lt;description&gt;
+<span class="lineNum">     104 </span>            :                         &lt;para&gt;This function will read from or write a value to a text message.
+<span class="lineNum">     105 </span>            :                         It is used both to read the data out of an incoming message, as well as
+<span class="lineNum">     106 </span>            :                         modify a message that will be sent outbound.&lt;/para&gt;
+<span class="lineNum">     107 </span>            :                         &lt;note&gt;
+<span class="lineNum">     108 </span>            :                                 &lt;para&gt;If you want to set an outbound message to carry data in the
+<span class="lineNum">     109 </span>            :                                 current message, do
+<span class="lineNum">     110 </span>            :                                 Set(MESSAGE_DATA(&lt;replaceable&gt;key&lt;/replaceable&gt;)=${MESSAGE_DATA(&lt;replaceable&gt;key&lt;/replaceable&gt;)}).&lt;/para&gt;
+<span class="lineNum">     111 </span>            :                         &lt;/note&gt;
+<span class="lineNum">     112 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     113 </span>            :                 &lt;see-also&gt;
+<span class="lineNum">     114 </span>            :                         &lt;ref type=&quot;application&quot;&gt;MessageSend&lt;/ref&gt;
+<span class="lineNum">     115 </span>            :                 &lt;/see-also&gt;
+<span class="lineNum">     116 </span>            :         &lt;/function&gt;
+<span class="lineNum">     117 </span>            :         &lt;application name=&quot;MessageSend&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     118 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     119 </span>            :                         Send a text message.
+<span class="lineNum">     120 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     121 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     122 </span>            :                         &lt;parameter name=&quot;to&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     123 </span>            :                                 &lt;para&gt;A To URI for the message.&lt;/para&gt;
+<span class="lineNum">     124 </span>            :                                 &lt;xi:include xpointer=&quot;xpointer(/docs/info[@name='MessageToInfo'])&quot; /&gt;
+<span class="lineNum">     125 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     126 </span>            :                         &lt;parameter name=&quot;from&quot; required=&quot;false&quot;&gt;
+<span class="lineNum">     127 </span>            :                                 &lt;para&gt;A From URI for the message if needed for the
+<span class="lineNum">     128 </span>            :                                 message technology being used to send this message. This can be a
+<span class="lineNum">     129 </span>            :                                 SIP(S) URI, such as &lt;literal&gt;Alice &amp;lt;sip:alice@atlanta.com&amp;gt;&lt;/literal&gt;,
+<span class="lineNum">     130 </span>            :                                 a string in the format &lt;literal&gt;alice@atlanta.com&lt;/literal&gt;, or simply
+<span class="lineNum">     131 </span>            :                                 a username such as &lt;literal&gt;alice&lt;/literal&gt;.&lt;/para&gt;
+<span class="lineNum">     132 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     133 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     134 </span>            :                 &lt;description&gt;
+<span class="lineNum">     135 </span>            :                         &lt;para&gt;Send a text message.  The body of the message that will be
+<span class="lineNum">     136 </span>            :                         sent is what is currently set to &lt;literal&gt;MESSAGE(body)&lt;/literal&gt;.
+<span class="lineNum">     137 </span>            :                           The technology chosen for sending the message is determined
+<span class="lineNum">     138 </span>            :                         based on a prefix to the &lt;literal&gt;to&lt;/literal&gt; parameter.&lt;/para&gt;
+<span class="lineNum">     139 </span>            :                         &lt;para&gt;This application sets the following channel variables:&lt;/para&gt;
+<span class="lineNum">     140 </span>            :                         &lt;variablelist&gt;
+<span class="lineNum">     141 </span>            :                                 &lt;variable name=&quot;MESSAGE_SEND_STATUS&quot;&gt;
+<span class="lineNum">     142 </span>            :                                         &lt;para&gt;This is the message delivery status returned by this application.&lt;/para&gt;
+<span class="lineNum">     143 </span>            :                                         &lt;value name=&quot;INVALID_PROTOCOL&quot;&gt;
+<span class="lineNum">     144 </span>            :                                                 No handler for the technology part of the URI was found.
+<span class="lineNum">     145 </span>            :                                         &lt;/value&gt;
+<span class="lineNum">     146 </span>            :                                         &lt;value name=&quot;INVALID_URI&quot;&gt;
+<span class="lineNum">     147 </span>            :                                                 The protocol handler reported that the URI was not valid.
+<span class="lineNum">     148 </span>            :                                         &lt;/value&gt;
+<span class="lineNum">     149 </span>            :                                         &lt;value name=&quot;SUCCESS&quot;&gt;
+<span class="lineNum">     150 </span>            :                                                 Successfully passed on to the protocol handler, but delivery has not necessarily been guaranteed.
+<span class="lineNum">     151 </span>            :                                         &lt;/value&gt;
+<span class="lineNum">     152 </span>            :                                         &lt;value name=&quot;FAILURE&quot;&gt;
+<span class="lineNum">     153 </span>            :                                                 The protocol handler reported that it was unabled to deliver the message for some reason.
+<span class="lineNum">     154 </span>            :                                         &lt;/value&gt;
+<span class="lineNum">     155 </span>            :                                 &lt;/variable&gt;
+<span class="lineNum">     156 </span>            :                         &lt;/variablelist&gt;
+<span class="lineNum">     157 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     158 </span>            :         &lt;/application&gt;
+<span class="lineNum">     159 </span>            :         &lt;manager name=&quot;MessageSend&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     160 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     161 </span>            :                         Send an out of call message to an endpoint.
+<span class="lineNum">     162 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     163 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     164 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">     165 </span>            :                         &lt;parameter name=&quot;To&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">     166 </span>            :                                 &lt;para&gt;The URI the message is to be sent to.&lt;/para&gt;
+<span class="lineNum">     167 </span>            :                                 &lt;xi:include xpointer=&quot;xpointer(/docs/info[@name='MessageToInfo'])&quot; /&gt;
+<span class="lineNum">     168 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     169 </span>            :                         &lt;parameter name=&quot;From&quot;&gt;
+<span class="lineNum">     170 </span>            :                                 &lt;para&gt;A From URI for the message if needed for the
+<span class="lineNum">     171 </span>            :                                 message technology being used to send this message.&lt;/para&gt;
+<span class="lineNum">     172 </span>            :                                 &lt;xi:include xpointer=&quot;xpointer(/docs/info[@name='MessageFromInfo'])&quot; /&gt;
+<span class="lineNum">     173 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     174 </span>            :                         &lt;parameter name=&quot;Body&quot;&gt;
+<span class="lineNum">     175 </span>            :                                 &lt;para&gt;The message body text.  This must not contain any newlines as that
+<span class="lineNum">     176 </span>            :                                 conflicts with the AMI protocol.&lt;/para&gt;
+<span class="lineNum">     177 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     178 </span>            :                         &lt;parameter name=&quot;Base64Body&quot;&gt;
+<span class="lineNum">     179 </span>            :                                 &lt;para&gt;Text bodies requiring the use of newlines have to be base64 encoded
+<span class="lineNum">     180 </span>            :                                 in this field.  Base64Body will be decoded before being sent out.
+<span class="lineNum">     181 </span>            :                                 Base64Body takes precedence over Body.&lt;/para&gt;
+<span class="lineNum">     182 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     183 </span>            :                         &lt;parameter name=&quot;Variable&quot;&gt;
+<span class="lineNum">     184 </span>            :                                 &lt;para&gt;Message variable to set, multiple Variable: headers are
+<span class="lineNum">     185 </span>            :                                 allowed.  The header value is a comma separated list of
+<span class="lineNum">     186 </span>            :                                 name=value pairs.&lt;/para&gt;
+<span class="lineNum">     187 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">     188 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     189 </span>            :         &lt;/manager&gt;
+<span class="lineNum">     190 </span>            :  ***/
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            : struct msg_data {
+<span class="lineNum">     193 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">     194 </span>            :                 AST_STRING_FIELD(name);
+<span class="lineNum">     195 </span>            :                 AST_STRING_FIELD(value);
+<span class="lineNum">     196 </span>            :         );
+<span class="lineNum">     197 </span>            :         unsigned int send; /* Whether to send out on outbound messages */
+<span class="lineNum">     198 </span>            : };
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            : AST_LIST_HEAD_NOLOCK(outhead, msg_data);
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            : /*!
+<span class="lineNum">     203 </span>            :  * \brief A message.
+<span class="lineNum">     204 </span>            :  */
+<span class="lineNum">     205 </span>            : struct ast_msg {
+<span class="lineNum">     206 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">     207 </span>            :                 /*! Where the message is going */
+<span class="lineNum">     208 </span>            :                 AST_STRING_FIELD(to);
+<span class="lineNum">     209 </span>            :                 /*! Where we &quot;say&quot; the message came from */
+<span class="lineNum">     210 </span>            :                 AST_STRING_FIELD(from);
+<span class="lineNum">     211 </span>            :                 /*! The text to send */
+<span class="lineNum">     212 </span>            :                 AST_STRING_FIELD(body);
+<span class="lineNum">     213 </span>            :                 /*! The dialplan context for the message */
+<span class="lineNum">     214 </span>            :                 AST_STRING_FIELD(context);
+<span class="lineNum">     215 </span>            :                 /*! The dialplan extension for the message */
+<span class="lineNum">     216 </span>            :                 AST_STRING_FIELD(exten);
+<span class="lineNum">     217 </span>            :                 /*! An endpoint associated with this message */
+<span class="lineNum">     218 </span>            :                 AST_STRING_FIELD(endpoint);
+<span class="lineNum">     219 </span>            :                 /*! The technology of the endpoint associated with this message */
+<span class="lineNum">     220 </span>            :                 AST_STRING_FIELD(tech);
+<span class="lineNum">     221 </span>            :         );
+<span class="lineNum">     222 </span>            :         /*! Technology/dialplan specific variables associated with the message */
+<span class="lineNum">     223 </span>            :         struct ao2_container *vars;
+<span class="lineNum">     224 </span>            : };
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            : /*! \brief Lock for \c msg_techs vector */
+<span class="lineNum">     227 </span>            : static ast_rwlock_t msg_techs_lock;
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span>            : /*! \brief Vector of message technologies */
+<span class="lineNum">     230 </span>            : AST_VECTOR(, const struct ast_msg_tech *) msg_techs;
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            : /*! \brief Lock for \c msg_handlers vector */
+<span class="lineNum">     233 </span>            : static ast_rwlock_t msg_handlers_lock;
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : /*! \brief Vector of received message handlers */
+<span class="lineNum">     236 </span>            : AST_VECTOR(, const struct ast_msg_handler *) msg_handlers;
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            : static struct ast_taskprocessor *msg_q_tp;
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            : static const char app_msg_send[] = &quot;MessageSend&quot;;
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span>            : static void msg_ds_destroy(void *data);
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span>            : static const struct ast_datastore_info msg_datastore = {
+<span class="lineNum">     245 </span>            :         .type = &quot;message&quot;,
+<span class="lineNum">     246 </span>            :         .destroy = msg_ds_destroy,
+<span class="lineNum">     247 </span>            : };
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span>            : static int msg_func_read(struct ast_channel *chan, const char *function,
+<span class="lineNum">     250 </span>            :                 char *data, char *buf, size_t len);
+<span class="lineNum">     251 </span>            : static int msg_func_write(struct ast_channel *chan, const char *function,
+<span class="lineNum">     252 </span>            :                 char *data, const char *value);
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span>            : static struct ast_custom_function msg_function = {
+<span class="lineNum">     255 </span>            :         .name = &quot;MESSAGE&quot;,
+<span class="lineNum">     256 </span>            :         .read = msg_func_read,
+<span class="lineNum">     257 </span>            :         .write = msg_func_write,
+<span class="lineNum">     258 </span>            : };
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            : static int msg_data_func_read(struct ast_channel *chan, const char *function,
+<span class="lineNum">     261 </span>            :                 char *data, char *buf, size_t len);
+<span class="lineNum">     262 </span>            : static int msg_data_func_write(struct ast_channel *chan, const char *function,
+<span class="lineNum">     263 </span>            :                 char *data, const char *value);
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            : static struct ast_custom_function msg_data_function = {
+<span class="lineNum">     266 </span>            :         .name = &quot;MESSAGE_DATA&quot;,
+<span class="lineNum">     267 </span>            :         .read = msg_data_func_read,
+<span class="lineNum">     268 </span>            :         .write = msg_data_func_write,
+<span class="lineNum">     269 </span>            : };
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            : static struct ast_frame *chan_msg_read(struct ast_channel *chan);
+<span class="lineNum">     272 </span>            : static int chan_msg_write(struct ast_channel *chan, struct ast_frame *fr);
+<span class="lineNum">     273 </span>            : static int chan_msg_indicate(struct ast_channel *chan, int condition,
+<span class="lineNum">     274 </span>            :                 const void *data, size_t datalen);
+<span class="lineNum">     275 </span>            : static int chan_msg_send_digit_begin(struct ast_channel *chan, char digit);
+<span class="lineNum">     276 </span>            : static int chan_msg_send_digit_end(struct ast_channel *chan, char digit,
+<span class="lineNum">     277 </span>            :                 unsigned int duration);
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            : /*!
+<span class="lineNum">     280 </span>            :  * \internal
+<span class="lineNum">     281 </span>            :  * \brief A bare minimum channel technology
+<span class="lineNum">     282 </span>            :  *
+<span class="lineNum">     283 </span>            :  * This will not be registered as we never want anything to try
+<span class="lineNum">     284 </span>            :  * to create Message channels other than internally in this file.
+<span class="lineNum">     285 </span>            :  */
+<span class="lineNum">     286 </span>            : static const struct ast_channel_tech msg_chan_tech_hack = {
+<span class="lineNum">     287 </span>            :         .type             = &quot;Message&quot;,
+<span class="lineNum">     288 </span>            :         .description      = &quot;Internal Text Message Processing&quot;,
+<span class="lineNum">     289 </span>            :         .read             = chan_msg_read,
+<span class="lineNum">     290 </span>            :         .write            = chan_msg_write,
+<span class="lineNum">     291 </span>            :         .indicate         = chan_msg_indicate,
+<span class="lineNum">     292 </span>            :         .send_digit_begin = chan_msg_send_digit_begin,
+<span class="lineNum">     293 </span>            :         .send_digit_end   = chan_msg_send_digit_end,
+<span class="lineNum">     294 </span>            : };
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span>            : /*!
+<span class="lineNum">     297 </span>            :  * \internal
+<span class="lineNum">     298 </span>            :  * \brief ast_channel_tech read callback
+<span class="lineNum">     299 </span>            :  *
+<span class="lineNum">     300 </span>            :  * This should never be called.  However, we say that about chan_iax2's
+<span class="lineNum">     301 </span>            :  * read callback, too, and it seems to randomly get called for some
+<a name="302"><span class="lineNum">     302 </span>            :  * reason.  If it does, a simple NULL frame will suffice.</a>
+<span class="lineNum">     303 </span>            :  */
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 : static struct ast_frame *chan_msg_read(struct ast_channel *chan)</span>
+<span class="lineNum">     305 </span>            : {
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         return &amp;ast_null_frame;</span>
+<span class="lineNum">     307 </span>            : }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            : /*!
+<span class="lineNum">     310 </span>            :  * \internal
+<span class="lineNum">     311 </span>            :  * \brief ast_channel_tech write callback
+<span class="lineNum">     312 </span>            :  *
+<a name="313"><span class="lineNum">     313 </span>            :  * Throw all frames away.  We don't care about any of them.</a>
+<span class="lineNum">     314 </span>            :  */
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 : static int chan_msg_write(struct ast_channel *chan, struct ast_frame *fr)</span>
+<span class="lineNum">     316 </span>            : {
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     318 </span>            : }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span>            : /*!
+<span class="lineNum">     321 </span>            :  * \internal
+<span class="lineNum">     322 </span>            :  * \brief ast_channel_tech indicate callback
+<span class="lineNum">     323 </span>            :  *
+<span class="lineNum">     324 </span>            :  * The indicate callback is here just so it can return success.
+<span class="lineNum">     325 </span>            :  * We don't want any callers of ast_indicate() to think something
+<span class="lineNum">     326 </span>            :  * has failed.  We also don't want ast_indicate() itself to try
+<span class="lineNum">     327 </span>            :  * to generate inband tones since we didn't tell it that we took
+<a name="328"><span class="lineNum">     328 </span>            :  * care of it ourselves.</a>
+<span class="lineNum">     329 </span>            :  */
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : static int chan_msg_indicate(struct ast_channel *chan, int condition,</span>
+<span class="lineNum">     331 </span>            :                 const void *data, size_t datalen)
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     334 </span>            : }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span>            : /*!
+<span class="lineNum">     337 </span>            :  * \internal
+<span class="lineNum">     338 </span>            :  * \brief ast_channel_tech send_digit_begin callback
+<span class="lineNum">     339 </span>            :  *
+<span class="lineNum">     340 </span>            :  * This is here so that just in case a digit comes at a message channel
+<span class="lineNum">     341 </span>            :  * that the Asterisk core doesn't waste any time trying to generate
+<a name="342"><span class="lineNum">     342 </span>            :  * inband DTMF in audio.  It's a waste of resources.</a>
+<span class="lineNum">     343 </span>            :  */
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : static int chan_msg_send_digit_begin(struct ast_channel *chan, char digit)</span>
+<span class="lineNum">     345 </span>            : {
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     347 </span>            : }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : /*!
+<span class="lineNum">     350 </span>            :  * \internal
+<span class="lineNum">     351 </span>            :  * \brief ast_channel_tech send_digit_end callback
+<span class="lineNum">     352 </span>            :  *
+<span class="lineNum">     353 </span>            :  * This is here so that just in case a digit comes at a message channel
+<span class="lineNum">     354 </span>            :  * that the Asterisk core doesn't waste any time trying to generate
+<a name="355"><span class="lineNum">     355 </span>            :  * inband DTMF in audio.  It's a waste of resources.</a>
+<span class="lineNum">     356 </span>            :  */
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 : static int chan_msg_send_digit_end(struct ast_channel *chan, char digit,</span>
+<span class="lineNum">     358 </span>            :                 unsigned int duration)
+<span class="lineNum">     359 </span>            : {
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="361"><span class="lineNum">     361 </span>            : }</a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineCov">          6 : static void msg_ds_destroy(void *data)</span>
+<span class="lineNum">     364 </span>            : {
+<span class="lineNum">     365 </span><span class="lineCov">          6 :         struct ast_msg *msg = data;</span>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineCov">          6 :         ao2_ref(msg, -1);</span>
+<a name="368"><span class="lineNum">     368 </span><span class="lineCov">          6 : }</span></a>
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span><span class="lineCov">        394 : static int msg_data_hash_fn(const void *obj, const int flags)</span>
+<span class="lineNum">     371 </span>            : {
+<span class="lineNum">     372 </span><span class="lineCov">        394 :         const struct msg_data *data = obj;</span>
+<span class="lineNum">     373 </span><span class="lineCov">        394 :         return ast_str_case_hash(data-&gt;name);</span>
+<a name="374"><span class="lineNum">     374 </span>            : }</a>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineCov">       1118 : static int msg_data_cmp_fn(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     377 </span>            : {
+<span class="lineNum">     378 </span><span class="lineCov">       1118 :         const struct msg_data *one = obj, *two = arg;</span>
+<span class="lineNum">     379 </span><span class="lineCov">       1118 :         return !strcasecmp(one-&gt;name, two-&gt;name) ? CMP_MATCH | CMP_STOP : 0;</span>
+<a name="380"><span class="lineNum">     380 </span>            : }</a>
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span><span class="lineCov">        184 : static void msg_data_destructor(void *obj)</span>
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span><span class="lineCov">        184 :         struct msg_data *data = obj;</span>
+<span class="lineNum">     385 </span><span class="lineCov">        184 :         ast_string_field_free_memory(data);</span>
+<a name="386"><span class="lineNum">     386 </span><span class="lineCov">        184 : }</span></a>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">         32 : static void msg_destructor(void *obj)</span>
+<span class="lineNum">     389 </span>            : {
+<span class="lineNum">     390 </span><span class="lineCov">         32 :         struct ast_msg *msg = obj;</span>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">         32 :         ast_string_field_free_memory(msg);</span>
+<span class="lineNum">     393 </span><span class="lineCov">         32 :         ao2_cleanup(msg-&gt;vars);</span>
+<a name="394"><span class="lineNum">     394 </span><span class="lineCov">         32 : }</span></a>
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineCov">         32 : struct ast_msg *ast_msg_alloc(void)</span>
+<span class="lineNum">     397 </span>            : {
+<span class="lineNum">     398 </span>            :         struct ast_msg *msg;
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">         32 :         if (!(msg = ao2_alloc(sizeof(*msg), msg_destructor))) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">         32 :         if (ast_string_field_init(msg, 128)) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 ao2_ref(msg, -1);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     407 </span>            :         }
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">         32 :         if (!(msg-&gt;vars = ao2_container_alloc(1, msg_data_hash_fn, msg_data_cmp_fn))) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 ao2_ref(msg, -1);</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     412 </span>            :         }
+<span class="lineNum">     413 </span><span class="lineCov">         32 :         ast_string_field_set(msg, context, &quot;default&quot;);</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">         32 :         return msg;</span>
+<a name="416"><span class="lineNum">     416 </span>            : }</a>
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineCov">         14 : struct ast_msg *ast_msg_ref(struct ast_msg *msg)</span>
+<span class="lineNum">     419 </span>            : {
+<span class="lineNum">     420 </span><span class="lineCov">         14 :         ao2_ref(msg, 1);</span>
+<span class="lineNum">     421 </span><span class="lineCov">         14 :         return msg;</span>
+<a name="422"><span class="lineNum">     422 </span>            : }</a>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">         17 : struct ast_msg *ast_msg_destroy(struct ast_msg *msg)</span>
+<span class="lineNum">     425 </span>            : {
+<span class="lineNum">     426 </span><span class="lineCov">         17 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">     427 </span><span class="lineCov">         17 :         return NULL;</span>
+<a name="428"><span class="lineNum">     428 </span>            : }</a>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineCov">         24 : int ast_msg_set_to(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     431 </span>            : {
+<span class="lineNum">     432 </span>            :         va_list ap;
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">         24 :         va_start(ap, fmt);</span>
+<span class="lineNum">     435 </span><span class="lineCov">         24 :         ast_string_field_build_va(msg, to, fmt, ap);</span>
+<span class="lineNum">     436 </span><span class="lineCov">         24 :         va_end(ap);</span>
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineCov">         24 :         return 0;</span>
+<a name="439"><span class="lineNum">     439 </span>            : }</a>
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineCov">         21 : int ast_msg_set_from(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     442 </span>            : {
+<span class="lineNum">     443 </span>            :         va_list ap;
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineCov">         21 :         va_start(ap, fmt);</span>
+<span class="lineNum">     446 </span><span class="lineCov">         21 :         ast_string_field_build_va(msg, from, fmt, ap);</span>
+<span class="lineNum">     447 </span><span class="lineCov">         21 :         va_end(ap);</span>
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineCov">         21 :         return 0;</span>
+<a name="450"><span class="lineNum">     450 </span>            : }</a>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineCov">         29 : int ast_msg_set_body(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     453 </span>            : {
+<span class="lineNum">     454 </span>            :         va_list ap;
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">         29 :         va_start(ap, fmt);</span>
+<span class="lineNum">     457 </span><span class="lineCov">         29 :         ast_string_field_build_va(msg, body, fmt, ap);</span>
+<span class="lineNum">     458 </span><span class="lineCov">         29 :         va_end(ap);</span>
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span><span class="lineCov">         29 :         return 0;</span>
+<a name="461"><span class="lineNum">     461 </span>            : }</a>
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">         24 : int ast_msg_set_context(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     464 </span>            : {
+<span class="lineNum">     465 </span>            :         va_list ap;
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineCov">         24 :         va_start(ap, fmt);</span>
+<span class="lineNum">     468 </span><span class="lineCov">         24 :         ast_string_field_build_va(msg, context, fmt, ap);</span>
+<span class="lineNum">     469 </span><span class="lineCov">         24 :         va_end(ap);</span>
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineCov">         24 :         return 0;</span>
+<a name="472"><span class="lineNum">     472 </span>            : }</a>
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineCov">         23 : int ast_msg_set_exten(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     475 </span>            : {
+<span class="lineNum">     476 </span>            :         va_list ap;
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">         23 :         va_start(ap, fmt);</span>
+<span class="lineNum">     479 </span><span class="lineCov">         23 :         ast_string_field_build_va(msg, exten, fmt, ap);</span>
+<span class="lineNum">     480 </span><span class="lineCov">         23 :         va_end(ap);</span>
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span><span class="lineCov">         23 :         return 0;</span>
+<a name="483"><span class="lineNum">     483 </span>            : }</a>
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span><span class="lineCov">         16 : int ast_msg_set_tech(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     486 </span>            : {
+<span class="lineNum">     487 </span>            :         va_list ap;
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">         16 :         va_start(ap, fmt);</span>
+<span class="lineNum">     490 </span><span class="lineCov">         16 :         ast_string_field_build_va(msg, tech, fmt, ap);</span>
+<span class="lineNum">     491 </span><span class="lineCov">         16 :         va_end(ap);</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineCov">         16 :         return 0;</span>
+<a name="494"><span class="lineNum">     494 </span>            : }</a>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">         14 : int ast_msg_set_endpoint(struct ast_msg *msg, const char *fmt, ...)</span>
+<span class="lineNum">     497 </span>            : {
+<span class="lineNum">     498 </span>            :         va_list ap;
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">         14 :         va_start(ap, fmt);</span>
+<span class="lineNum">     501 </span><span class="lineCov">         14 :         ast_string_field_build_va(msg, endpoint, fmt, ap);</span>
+<span class="lineNum">     502 </span><span class="lineCov">         14 :         va_end(ap);</span>
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">         14 :         return 0;</span>
+<a name="505"><span class="lineNum">     505 </span>            : }</a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineCov">         31 : const char *ast_msg_get_body(const struct ast_msg *msg)</span>
+<span class="lineNum">     508 </span>            : {
+<span class="lineNum">     509 </span><span class="lineCov">         31 :         return msg-&gt;body;</span>
+<a name="510"><span class="lineNum">     510 </span>            : }</a>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">          3 : const char *ast_msg_get_from(const struct ast_msg *msg)</span>
+<span class="lineNum">     513 </span>            : {
+<span class="lineNum">     514 </span><span class="lineCov">          3 :         return msg-&gt;from;</span>
+<a name="515"><span class="lineNum">     515 </span>            : }</a>
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span><span class="lineCov">         15 : const char *ast_msg_get_to(const struct ast_msg *msg)</span>
+<span class="lineNum">     518 </span>            : {
+<span class="lineNum">     519 </span><span class="lineCov">         15 :         return msg-&gt;to;</span>
+<a name="520"><span class="lineNum">     520 </span>            : }</a>
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span><span class="lineCov">         31 : const char *ast_msg_get_tech(const struct ast_msg *msg)</span>
+<span class="lineNum">     523 </span>            : {
+<span class="lineNum">     524 </span><span class="lineCov">         31 :         return msg-&gt;tech;</span>
+<a name="525"><span class="lineNum">     525 </span>            : }</a>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineCov">         31 : const char *ast_msg_get_endpoint(const struct ast_msg *msg)</span>
+<span class="lineNum">     528 </span>            : {
+<span class="lineNum">     529 </span><span class="lineCov">         31 :         return msg-&gt;endpoint;</span>
+<a name="530"><span class="lineNum">     530 </span>            : }</a>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">        184 : static struct msg_data *msg_data_alloc(void)</span>
+<span class="lineNum">     533 </span>            : {
+<span class="lineNum">     534 </span>            :         struct msg_data *data;
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span><span class="lineCov">        184 :         if (!(data = ao2_alloc(sizeof(*data), msg_data_destructor))) {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     538 </span>            :         }
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineCov">        184 :         if (ast_string_field_init(data, 32)) {</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :                 ao2_ref(data, -1);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     543 </span>            :         }
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineCov">        184 :         return data;</span>
+<a name="546"><span class="lineNum">     546 </span>            : }</a>
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineCov">        210 : static struct msg_data *msg_data_find(struct ao2_container *vars, const char *name)</span>
+<span class="lineNum">     549 </span>            : {
+<span class="lineNum">     550 </span><span class="lineCov">        210 :         struct msg_data tmp = {</span>
+<span class="lineNum">     551 </span>            :                 .name = name,
+<span class="lineNum">     552 </span>            :         };
+<span class="lineNum">     553 </span><span class="lineCov">        210 :         return ao2_find(vars, &amp;tmp, OBJ_POINTER);</span>
+<a name="554"><span class="lineNum">     554 </span>            : }</a>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineCov">        190 : static int msg_set_var_full(struct ast_msg *msg, const char *name, const char *value, unsigned int outbound)</span>
+<span class="lineNum">     557 </span>            : {
+<span class="lineNum">     558 </span>            :         struct msg_data *data;
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineCov">        190 :         if (!(data = msg_data_find(msg-&gt;vars, name))) {</span>
+<span class="lineNum">     561 </span><span class="lineCov">        185 :                 if (ast_strlen_zero(value)) {</span>
+<span class="lineNum">     562 </span><span class="lineCov">          1 :                         return 0;</span>
+<span class="lineNum">     563 </span>            :                 }
+<span class="lineNum">     564 </span><span class="lineCov">        184 :                 if (!(data = msg_data_alloc())) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     566 </span>            :                 };
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineCov">        184 :                 ast_string_field_set(data, name, name);</span>
+<span class="lineNum">     569 </span><span class="lineCov">        184 :                 ast_string_field_set(data, value, value);</span>
+<span class="lineNum">     570 </span><span class="lineCov">        184 :                 data-&gt;send = outbound;</span>
+<span class="lineNum">     571 </span><span class="lineCov">        184 :                 ao2_link(msg-&gt;vars, data);</span>
+<span class="lineNum">     572 </span>            :         } else {
+<span class="lineNum">     573 </span><span class="lineCov">          5 :                 if (ast_strlen_zero(value)) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                         ao2_unlink(msg-&gt;vars, data);</span>
+<span class="lineNum">     575 </span>            :                 } else {
+<span class="lineNum">     576 </span><span class="lineCov">          5 :                         ast_string_field_set(data, value, value);</span>
+<span class="lineNum">     577 </span><span class="lineCov">          5 :                         data-&gt;send = outbound;</span>
+<span class="lineNum">     578 </span>            :                 }
+<span class="lineNum">     579 </span>            :         }
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span><span class="lineCov">        189 :         ao2_ref(data, -1);</span>
+<span class="lineNum">     582 </span>            : 
+<span class="lineNum">     583 </span><span class="lineCov">        189 :         return 0;</span>
+<a name="584"><span class="lineNum">     584 </span>            : }</a>
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">          9 : int ast_msg_set_var_outbound(struct ast_msg *msg, const char *name, const char *value)</span>
+<span class="lineNum">     587 </span>            : {
+<span class="lineNum">     588 </span><span class="lineCov">          9 :         return msg_set_var_full(msg, name, value, 1);</span>
+<a name="589"><span class="lineNum">     589 </span>            : }</a>
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">        181 : int ast_msg_set_var(struct ast_msg *msg, const char *name, const char *value)</span>
+<span class="lineNum">     592 </span>            : {
+<span class="lineNum">     593 </span><span class="lineCov">        181 :         return msg_set_var_full(msg, name, value, 0);</span>
+<a name="594"><span class="lineNum">     594 </span>            : }</a>
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">         20 : const char *ast_msg_get_var(struct ast_msg *msg, const char *name)</span>
+<span class="lineNum">     597 </span>            : {
+<span class="lineNum">     598 </span>            :         struct msg_data *data;
+<span class="lineNum">     599 </span><span class="lineCov">         20 :         const char *val = NULL;</span>
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineCov">         20 :         if (!(data = msg_data_find(msg-&gt;vars, name))) {</span>
+<span class="lineNum">     602 </span><span class="lineCov">          2 :                 return NULL;</span>
+<span class="lineNum">     603 </span>            :         }
+<span class="lineNum">     604 </span>            : 
+<span class="lineNum">     605 </span>            :         /* Yep, this definitely looks like val would be a dangling pointer
+<span class="lineNum">     606 </span>            :          * after the ref count is decremented.  As long as the message structure
+<span class="lineNum">     607 </span>            :          * is used in a thread safe manner, this will not be the case though.
+<span class="lineNum">     608 </span>            :          * The ast_msg holds a reference to this object in the msg-&gt;vars container. */
+<span class="lineNum">     609 </span><span class="lineCov">         18 :         val = data-&gt;value;</span>
+<span class="lineNum">     610 </span><span class="lineCov">         18 :         ao2_ref(data, -1);</span>
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineCov">         18 :         return val;</span>
+<span class="lineNum">     613 </span>            : }
+<span class="lineNum">     614 </span>            : 
+<span class="lineNum">     615 </span>            : struct ast_msg_var_iterator {
+<span class="lineNum">     616 </span>            :         struct ao2_iterator iter;
+<span class="lineNum">     617 </span>            :         struct msg_data *current_used;
+<a name="618"><span class="lineNum">     618 </span>            : };</a>
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span><span class="lineCov">         46 : struct ast_msg_var_iterator *ast_msg_var_iterator_init(const struct ast_msg *msg)</span>
+<span class="lineNum">     621 </span>            : {
+<span class="lineNum">     622 </span>            :         struct ast_msg_var_iterator *iter;
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineCov">         46 :         iter = ast_calloc(1, sizeof(*iter));</span>
+<span class="lineNum">     625 </span><span class="lineCov">         46 :         if (!iter) {</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     627 </span>            :         }
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span><span class="lineCov">         46 :         iter-&gt;iter = ao2_iterator_init(msg-&gt;vars, 0);</span>
+<span class="lineNum">     630 </span>            : 
+<span class="lineNum">     631 </span><span class="lineCov">         46 :         return iter;</span>
+<a name="632"><span class="lineNum">     632 </span>            : }</a>
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">         84 : int ast_msg_var_iterator_next(const struct ast_msg *msg, struct ast_msg_var_iterator *iter, const char **name, const char **value)</span>
+<span class="lineNum">     635 </span>            : {
+<span class="lineNum">     636 </span>            :         struct msg_data *data;
+<span class="lineNum">     637 </span>            : 
+<span class="lineNum">     638 </span><span class="lineCov">         84 :         if (!iter) {</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     640 </span>            :         }
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span>            :         /* Skip any that aren't marked for sending out */
+<span class="lineNum">     643 </span><span class="lineCov">        445 :         while ((data = ao2_iterator_next(&amp;iter-&gt;iter)) &amp;&amp; !data-&gt;send) {</span>
+<span class="lineNum">     644 </span><span class="lineCov">        361 :                 ao2_ref(data, -1);</span>
+<span class="lineNum">     645 </span>            :         }
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineCov">         84 :         if (!data) {</span>
+<span class="lineNum">     648 </span><span class="lineCov">         46 :                 return 0;</span>
+<span class="lineNum">     649 </span>            :         }
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineCov">         38 :         if (data-&gt;send) {</span>
+<span class="lineNum">     652 </span><span class="lineCov">         38 :                 *name = data-&gt;name;</span>
+<span class="lineNum">     653 </span><span class="lineCov">         38 :                 *value = data-&gt;value;</span>
+<span class="lineNum">     654 </span>            :         }
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span>            :         /* Leave the refcount to be cleaned up by the caller with
+<span class="lineNum">     657 </span>            :          * ast_msg_var_unref_current after they finish with the pointers to the data */
+<span class="lineNum">     658 </span><span class="lineCov">         38 :         iter-&gt;current_used = data;</span>
+<span class="lineNum">     659 </span>            : 
+<span class="lineNum">     660 </span><span class="lineCov">         38 :         return 1;</span>
+<a name="661"><span class="lineNum">     661 </span>            : }</a>
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span><span class="lineCov">         84 : void ast_msg_var_unref_current(struct ast_msg_var_iterator *iter)</span>
+<span class="lineNum">     664 </span>            : {
+<span class="lineNum">     665 </span><span class="lineCov">         84 :         ao2_cleanup(iter-&gt;current_used);</span>
+<span class="lineNum">     666 </span><span class="lineCov">         84 :         iter-&gt;current_used = NULL;</span>
+<a name="667"><span class="lineNum">     667 </span><span class="lineCov">         84 : }</span></a>
+<span class="lineNum">     668 </span>            : 
+<span class="lineNum">     669 </span><span class="lineCov">       1169 : void ast_msg_var_iterator_destroy(struct ast_msg_var_iterator *iter)</span>
+<span class="lineNum">     670 </span>            : {
+<span class="lineNum">     671 </span><span class="lineCov">       1169 :         if (iter) {</span>
+<span class="lineNum">     672 </span><span class="lineCov">         46 :                 ao2_iterator_destroy(&amp;iter-&gt;iter);</span>
+<span class="lineNum">     673 </span><span class="lineCov">         46 :                 ast_msg_var_unref_current(iter);</span>
+<span class="lineNum">     674 </span><span class="lineCov">         46 :                 ast_free(iter);</span>
+<span class="lineNum">     675 </span>            :         }
+<a name="676"><span class="lineNum">     676 </span><span class="lineCov">       1169 : }</span></a>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span><span class="lineCov">         13 : static struct ast_channel *create_msg_q_chan(void)</span>
+<span class="lineNum">     679 </span>            : {
+<span class="lineNum">     680 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     681 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">     682 </span>            : 
+<span class="lineNum">     683 </span><span class="lineCov">         13 :         chan = ast_channel_alloc(1, AST_STATE_UP,</span>
+<span class="lineNum">     684 </span>            :                         NULL, NULL, NULL,
+<span class="lineNum">     685 </span>            :                         NULL, NULL, NULL, NULL, 0,
+<span class="lineNum">     686 </span>            :                         &quot;%s&quot;, &quot;Message/ast_msg_queue&quot;);
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span><span class="lineCov">         13 :         if (!chan) {</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     690 </span>            :         }
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span><span class="lineCov">         13 :         ast_channel_tech_set(chan, &amp;msg_chan_tech_hack);</span>
+<span class="lineNum">     693 </span><span class="lineCov">         13 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     694 </span><span class="lineCov">         13 :         ast_channel_unlink(chan);</span>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">         13 :         if (!(ds = ast_datastore_alloc(&amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                 ast_hangup(chan);</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     699 </span>            :         }
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">         13 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     702 </span><span class="lineCov">         13 :         ast_channel_datastore_add(chan, ds);</span>
+<span class="lineNum">     703 </span><span class="lineCov">         13 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     704 </span>            : 
+<span class="lineNum">     705 </span><span class="lineCov">         13 :         return chan;</span>
+<span class="lineNum">     706 </span>            : }
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span>            : /*!
+<span class="lineNum">     709 </span>            :  * \internal
+<span class="lineNum">     710 </span>            :  * \brief Run the dialplan for message processing
+<span class="lineNum">     711 </span>            :  *
+<span class="lineNum">     712 </span>            :  * \pre The message has already been set up on the msg datastore
+<a name="713"><span class="lineNum">     713 </span>            :  *      on this channel.</a>
+<span class="lineNum">     714 </span>            :  */
+<span class="lineNum">     715 </span><span class="lineCov">         15 : static void msg_route(struct ast_channel *chan, struct ast_msg *msg)</span>
+<span class="lineNum">     716 </span>            : {
+<span class="lineNum">     717 </span>            :         struct ast_pbx_args pbx_args;
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span><span class="lineCov">         15 :         ast_explicit_goto(chan, msg-&gt;context, S_OR(msg-&gt;exten, &quot;s&quot;), 1);</span>
+<span class="lineNum">     720 </span>            : 
+<span class="lineNum">     721 </span><span class="lineCov">         15 :         memset(&amp;pbx_args, 0, sizeof(pbx_args));</span>
+<span class="lineNum">     722 </span><span class="lineCov">         15 :         pbx_args.no_hangup_chan = 1,</span>
+<span class="lineNum">     723 </span><span class="lineCov">         15 :         ast_pbx_run_args(chan, &amp;pbx_args);</span>
+<span class="lineNum">     724 </span><span class="lineCov">         15 : }</span>
+<span class="lineNum">     725 </span>            : 
+<span class="lineNum">     726 </span>            : /*!
+<span class="lineNum">     727 </span>            :  * \internal
+<span class="lineNum">     728 </span>            :  * \brief Clean up ast_channel after each message
+<span class="lineNum">     729 </span>            :  *
+<span class="lineNum">     730 </span>            :  * Reset various bits of state after routing each message so the same ast_channel
+<a name="731"><span class="lineNum">     731 </span>            :  * can just be reused.</a>
+<span class="lineNum">     732 </span>            :  */
+<span class="lineNum">     733 </span><span class="lineCov">         15 : static void chan_cleanup(struct ast_channel *chan)</span>
+<span class="lineNum">     734 </span>            : {
+<span class="lineNum">     735 </span>            :         struct ast_datastore *msg_ds, *ds;
+<span class="lineNum">     736 </span>            :         struct varshead *headp;
+<span class="lineNum">     737 </span>            :         struct ast_var_t *vardata;
+<span class="lineNum">     738 </span>            :         struct ast_frame *cur;
+<span class="lineNum">     739 </span>            : 
+<span class="lineNum">     740 </span><span class="lineCov">         15 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     741 </span>            : 
+<span class="lineNum">     742 </span>            :         /*
+<span class="lineNum">     743 </span>            :          * Remove the msg datastore.  Free its data but keep around the datastore
+<span class="lineNum">     744 </span>            :          * object and just reuse it.
+<span class="lineNum">     745 </span>            :          */
+<span class="lineNum">     746 </span><span class="lineCov">         15 :         if ((msg_ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL)) &amp;&amp; msg_ds-&gt;data) {</span>
+<span class="lineNum">     747 </span><span class="lineCov">         15 :                 ast_channel_datastore_remove(chan, msg_ds);</span>
+<span class="lineNum">     748 </span><span class="lineCov">         15 :                 ao2_ref(msg_ds-&gt;data, -1);</span>
+<span class="lineNum">     749 </span><span class="lineCov">         15 :                 msg_ds-&gt;data = NULL;</span>
+<span class="lineNum">     750 </span>            :         }
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span>            :         /*
+<span class="lineNum">     753 </span>            :          * Destroy all other datastores.
+<span class="lineNum">     754 </span>            :          */
+<span class="lineNum">     755 </span><span class="lineCov">         15 :         while ((ds = AST_LIST_REMOVE_HEAD(ast_channel_datastores(chan), entry))) {</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :                 ast_datastore_free(ds);</span>
+<span class="lineNum">     757 </span>            :         }
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span>            :         /*
+<span class="lineNum">     760 </span>            :          * Destroy all channel variables.
+<span class="lineNum">     761 </span>            :          */
+<span class="lineNum">     762 </span><span class="lineCov">         15 :         headp = ast_channel_varshead(chan);</span>
+<span class="lineNum">     763 </span><span class="lineCov">         27 :         while ((vardata = AST_LIST_REMOVE_HEAD(headp, entries))) {</span>
+<span class="lineNum">     764 </span><span class="lineCov">         12 :                 ast_var_delete(vardata);</span>
+<span class="lineNum">     765 </span>            :         }
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :         /*
+<span class="lineNum">     768 </span>            :          * Remove frames from read queue
+<span class="lineNum">     769 </span>            :          */
+<span class="lineNum">     770 </span><span class="lineCov">         15 :         while ((cur = AST_LIST_REMOVE_HEAD(ast_channel_readq(chan), frame_list))) {</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                 ast_frfree(cur);</span>
+<span class="lineNum">     772 </span>            :         }
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span>            :         /*
+<span class="lineNum">     775 </span>            :          * Restore msg datastore.
+<span class="lineNum">     776 </span>            :          */
+<span class="lineNum">     777 </span><span class="lineCov">         15 :         if (msg_ds) {</span>
+<span class="lineNum">     778 </span><span class="lineCov">         15 :                 ast_channel_datastore_add(chan, msg_ds);</span>
+<span class="lineNum">     779 </span>            :         }
+<span class="lineNum">     780 </span>            : 
+<span class="lineNum">     781 </span>            :         /*
+<span class="lineNum">     782 </span>            :          * Clear softhangup flags.
+<span class="lineNum">     783 </span>            :          */
+<span class="lineNum">     784 </span><span class="lineCov">         15 :         ast_channel_clear_softhangup(chan, AST_SOFTHANGUP_ALL);</span>
+<span class="lineNum">     785 </span>            : 
+<span class="lineNum">     786 </span>            :         /*
+<span class="lineNum">     787 </span>            :          * Flush the alert pipe in case we miscounted somewhere when
+<span class="lineNum">     788 </span>            :          * messing with frames on the read queue, we had to flush the
+<span class="lineNum">     789 </span>            :          * read queue above, or we had an &quot;Exceptionally long queue
+<span class="lineNum">     790 </span>            :          * length&quot; event.
+<span class="lineNum">     791 </span>            :          */
+<span class="lineNum">     792 </span><span class="lineCov">         15 :         ast_channel_internal_alert_flush(chan);</span>
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span><span class="lineCov">         15 :         ast_channel_unlock(chan);</span>
+<a name="795"><span class="lineNum">     795 </span><span class="lineCov">         15 : }</span></a>
+<span class="lineNum">     796 </span>            : 
+<span class="lineNum">     797 </span><span class="lineCov">         13 : static void destroy_msg_q_chan(void *data)</span>
+<span class="lineNum">     798 </span>            : {
+<span class="lineNum">     799 </span><span class="lineCov">         13 :         struct ast_channel **chan = data;</span>
+<span class="lineNum">     800 </span>            : 
+<span class="lineNum">     801 </span><span class="lineCov">         13 :         if (!*chan) {</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     803 </span>            :         }
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span><span class="lineCov">         13 :         ast_channel_release(*chan);</span>
+<a name="806"><span class="lineNum">     806 </span>            : }</a>
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span><span class="lineCov">         13 : AST_THREADSTORAGE_CUSTOM(msg_q_chan, NULL, destroy_msg_q_chan);</span>
+<a name="809"><span class="lineNum">     809 </span>            : </a>
+<span class="lineNum">     810 </span>            : /*! \internal \brief Handle a message bound for the dialplan */
+<span class="lineNum">     811 </span><span class="lineCov">         15 : static int dialplan_handle_msg_cb(struct ast_msg *msg)</span>
+<span class="lineNum">     812 </span>            : {
+<span class="lineNum">     813 </span>            :         struct ast_channel **chan_p, *chan;
+<span class="lineNum">     814 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span><span class="lineCov">         15 :         if (!(chan_p = ast_threadstorage_get(&amp;msg_q_chan, sizeof(struct ast_channel *)))) {</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     818 </span>            :         }
+<span class="lineNum">     819 </span><span class="lineCov">         15 :         if (!*chan_p) {</span>
+<span class="lineNum">     820 </span><span class="lineCov">         13 :                 if (!(*chan_p = create_msg_q_chan())) {</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     822 </span>            :                 }
+<span class="lineNum">     823 </span>            :         }
+<span class="lineNum">     824 </span><span class="lineCov">         15 :         chan = *chan_p;</span>
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span><span class="lineCov">         15 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     827 </span><span class="lineCov">         15 :         if (!(ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     829 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     830 </span>            :         }
+<span class="lineNum">     831 </span><span class="lineCov">         15 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">     832 </span><span class="lineCov">         15 :         ds-&gt;data = msg;</span>
+<span class="lineNum">     833 </span><span class="lineCov">         15 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     834 </span>            : 
+<span class="lineNum">     835 </span><span class="lineCov">         15 :         msg_route(chan, msg);</span>
+<span class="lineNum">     836 </span><span class="lineCov">         15 :         chan_cleanup(chan);</span>
+<span class="lineNum">     837 </span>            : 
+<span class="lineNum">     838 </span><span class="lineCov">         15 :         return 0;</span>
+<span class="lineNum">     839 </span>            : }
+<a name="840"><span class="lineNum">     840 </span>            : </a>
+<span class="lineNum">     841 </span>            : /*! \internal \brief Determine if a message has a destination in the dialplan */
+<span class="lineNum">     842 </span><span class="lineCov">         42 : static int dialplan_has_destination_cb(const struct ast_msg *msg)</span>
+<span class="lineNum">     843 </span>            : {
+<span class="lineNum">     844 </span><span class="lineCov">         42 :         if (ast_strlen_zero(msg-&gt;context)) {</span>
+<span class="lineNum">     845 </span><span class="lineCov">          3 :                 return 0;</span>
+<span class="lineNum">     846 </span>            :         }
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span><span class="lineCov">         39 :         return ast_exists_extension(NULL, msg-&gt;context, S_OR(msg-&gt;exten, &quot;s&quot;), 1, NULL);</span>
+<span class="lineNum">     849 </span>            : }
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span>            : static struct ast_msg_handler dialplan_msg_handler = {
+<span class="lineNum">     852 </span>            :         .name = &quot;dialplan&quot;,
+<span class="lineNum">     853 </span>            :         .handle_msg = dialplan_handle_msg_cb,
+<span class="lineNum">     854 </span>            :         .has_destination = dialplan_has_destination_cb,
+<span class="lineNum">     855 </span>            : };
+<span class="lineNum">     856 </span>            : 
+<span class="lineNum">     857 </span>            : /*!
+<span class="lineNum">     858 </span>            :  * \internal
+<span class="lineNum">     859 </span>            :  * \brief Message queue task processor callback
+<span class="lineNum">     860 </span>            :  *
+<span class="lineNum">     861 </span>            :  * \retval 0 success
+<span class="lineNum">     862 </span>            :  * \retval non-zero failure
+<span class="lineNum">     863 </span>            :  *
+<a name="864"><span class="lineNum">     864 </span>            :  * \note Even though this returns a value, the taskprocessor code ignores the value.</a>
+<span class="lineNum">     865 </span>            :  */
+<span class="lineNum">     866 </span><span class="lineCov">         18 : static int msg_q_cb(void *data)</span>
+<span class="lineNum">     867 </span>            : {
+<span class="lineNum">     868 </span><span class="lineCov">         18 :         struct ast_msg *msg = data;</span>
+<span class="lineNum">     869 </span><span class="lineCov">         18 :         int res = 1;</span>
+<span class="lineNum">     870 </span>            :         int i;
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span><span class="lineCov">         18 :         ast_rwlock_rdlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">     873 </span><span class="lineCov">         56 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;msg_handlers); i++) {</span>
+<span class="lineNum">     874 </span><span class="lineCov">         38 :                 const struct ast_msg_handler *handler = AST_VECTOR_GET(&amp;msg_handlers, i);</span>
+<span class="lineNum">     875 </span>            : 
+<span class="lineNum">     876 </span><span class="lineCov">         38 :                 if (!handler-&gt;has_destination(msg)) {</span>
+<span class="lineNum">     877 </span><span class="lineCov">         19 :                         ast_debug(5, &quot;Handler %s doesn't want message, moving on\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">     878 </span><span class="lineCov">         19 :                         continue;</span>
+<span class="lineNum">     879 </span>            :                 }
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span><span class="lineCov">         19 :                 ast_debug(5, &quot;Dispatching message to %s handler\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">     882 </span><span class="lineCov">         19 :                 res &amp;= handler-&gt;handle_msg(msg);</span>
+<span class="lineNum">     883 </span>            :         }
+<span class="lineNum">     884 </span><span class="lineCov">         18 :         ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span><span class="lineCov">         18 :         if (res != 0) {</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No handler processed message from %s to %s\n&quot;,</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                         S_OR(msg-&gt;from, &quot;&lt;unknown&gt;&quot;), S_OR(msg-&gt;to, &quot;&lt;unknown&gt;&quot;));</span>
+<span class="lineNum">     889 </span>            :         }
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">         18 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">     892 </span>            : 
+<span class="lineNum">     893 </span><span class="lineCov">         18 :         return res;</span>
+<a name="894"><span class="lineNum">     894 </span>            : }</a>
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span><span class="lineCov">         24 : int ast_msg_has_destination(const struct ast_msg *msg)</span>
+<span class="lineNum">     897 </span>            : {
+<span class="lineNum">     898 </span>            :         int i;
+<span class="lineNum">     899 </span><span class="lineCov">         24 :         int result = 0;</span>
+<span class="lineNum">     900 </span>            : 
+<span class="lineNum">     901 </span><span class="lineCov">         24 :         ast_rwlock_rdlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">     902 </span><span class="lineCov">         43 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;msg_handlers); i++) {</span>
+<span class="lineNum">     903 </span><span class="lineCov">         38 :                 const struct ast_msg_handler *handler = AST_VECTOR_GET(&amp;msg_handlers, i);</span>
+<span class="lineNum">     904 </span>            : 
+<span class="lineNum">     905 </span><span class="lineCov">         38 :                 ast_debug(5, &quot;Seeing if %s can handle message\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">     906 </span><span class="lineCov">         38 :                 if (handler-&gt;has_destination(msg)) {</span>
+<span class="lineNum">     907 </span><span class="lineCov">         19 :                         ast_debug(5, &quot;%s can handle message\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">     908 </span><span class="lineCov">         19 :                         result = 1;</span>
+<span class="lineNum">     909 </span><span class="lineCov">         19 :                         break;</span>
+<span class="lineNum">     910 </span>            :                 }
+<span class="lineNum">     911 </span>            :         }
+<span class="lineNum">     912 </span><span class="lineCov">         24 :         ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">     913 </span>            : 
+<span class="lineNum">     914 </span><span class="lineCov">         24 :         return result;</span>
+<a name="915"><span class="lineNum">     915 </span>            : }</a>
+<span class="lineNum">     916 </span>            : 
+<span class="lineNum">     917 </span><span class="lineCov">         18 : int ast_msg_queue(struct ast_msg *msg)</span>
+<span class="lineNum">     918 </span>            : {
+<span class="lineNum">     919 </span>            :         int res;
+<span class="lineNum">     920 </span><span class="lineCov">         18 :         res = ast_taskprocessor_push(msg_q_tp, msg_q_cb, msg);</span>
+<span class="lineNum">     921 </span><span class="lineCov">         18 :         if (res == -1) {</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                 ao2_ref(msg, -1);</span>
+<span class="lineNum">     923 </span>            :         }
+<span class="lineNum">     924 </span>            : 
+<span class="lineNum">     925 </span><span class="lineCov">         18 :         return res;</span>
+<span class="lineNum">     926 </span>            : }
+<span class="lineNum">     927 </span>            : 
+<span class="lineNum">     928 </span>            : /*!
+<span class="lineNum">     929 </span>            :  * \internal
+<span class="lineNum">     930 </span>            :  * \brief Find or create a message datastore on a channel
+<span class="lineNum">     931 </span>            :  *
+<span class="lineNum">     932 </span>            :  * \pre chan is locked
+<span class="lineNum">     933 </span>            :  *
+<span class="lineNum">     934 </span>            :  * \param chan the relevant channel
+<span class="lineNum">     935 </span>            :  *
+<a name="936"><span class="lineNum">     936 </span>            :  * \return the channel's message datastore, or NULL on error</a>
+<span class="lineNum">     937 </span>            :  */
+<span class="lineNum">     938 </span><span class="lineCov">         11 : static struct ast_datastore *msg_datastore_find_or_create(struct ast_channel *chan)</span>
+<span class="lineNum">     939 </span>            : {
+<span class="lineNum">     940 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">     941 </span>            : 
+<span class="lineNum">     942 </span><span class="lineCov">         11 :         if ((ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">     943 </span><span class="lineCov">          5 :                 return ds;</span>
+<span class="lineNum">     944 </span>            :         }
+<span class="lineNum">     945 </span>            : 
+<span class="lineNum">     946 </span><span class="lineCov">          6 :         if (!(ds = ast_datastore_alloc(&amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">     947 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     948 </span>            :         }
+<span class="lineNum">     949 </span>            : 
+<span class="lineNum">     950 </span><span class="lineCov">          6 :         if (!(ds-&gt;data = ast_msg_alloc())) {</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                 ast_datastore_free(ds);</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     953 </span>            :         }
+<span class="lineNum">     954 </span>            : 
+<span class="lineNum">     955 </span><span class="lineCov">          6 :         ast_channel_datastore_add(chan, ds);</span>
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span><span class="lineCov">          6 :         return ds;</span>
+<a name="958"><span class="lineNum">     958 </span>            : }</a>
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span><span class="lineCov">         45 : static int msg_func_read(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">     961 </span>            :                 char *data, char *buf, size_t len)
+<span class="lineNum">     962 </span>            : {
+<span class="lineNum">     963 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">     964 </span>            :         struct ast_msg *msg;
+<span class="lineNum">     965 </span>            : 
+<span class="lineNum">     966 </span><span class="lineCov">         45 :         if (!chan) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     969 </span>            :         }
+<span class="lineNum">     970 </span>            : 
+<span class="lineNum">     971 </span><span class="lineCov">         45 :         ast_channel_lock(chan);</span>
+<span class="lineNum">     972 </span>            : 
+<span class="lineNum">     973 </span><span class="lineCov">         45 :         if (!(ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;No MESSAGE data found on the channel to read.\n&quot;);</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     977 </span>            :         }
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span><span class="lineCov">         45 :         msg = ds-&gt;data;</span>
+<span class="lineNum">     980 </span><span class="lineCov">         45 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">     981 </span><span class="lineCov">         45 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     982 </span>            : 
+<span class="lineNum">     983 </span><span class="lineCov">         45 :         ao2_lock(msg);</span>
+<span class="lineNum">     984 </span>            : 
+<span class="lineNum">     985 </span><span class="lineCov">         45 :         if (!strcasecmp(data, &quot;to&quot;)) {</span>
+<span class="lineNum">     986 </span><span class="lineCov">         16 :                 ast_copy_string(buf, msg-&gt;to, len);</span>
+<span class="lineNum">     987 </span><span class="lineCov">         29 :         } else if (!strcasecmp(data, &quot;from&quot;)) {</span>
+<span class="lineNum">     988 </span><span class="lineCov">         17 :                 ast_copy_string(buf, msg-&gt;from, len);</span>
+<span class="lineNum">     989 </span><span class="lineCov">         12 :         } else if (!strcasecmp(data, &quot;body&quot;)) {</span>
+<span class="lineNum">     990 </span><span class="lineCov">         12 :                 ast_copy_string(buf, msg-&gt;body, len);</span>
+<span class="lineNum">     991 </span>            :         } else {
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Invalid argument to MESSAGE(): '%s'\n&quot;, data);</span>
+<span class="lineNum">     993 </span>            :         }
+<span class="lineNum">     994 </span>            : 
+<span class="lineNum">     995 </span><span class="lineCov">         45 :         ao2_unlock(msg);</span>
+<span class="lineNum">     996 </span><span class="lineCov">         45 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">     997 </span>            : 
+<span class="lineNum">     998 </span><span class="lineCov">         45 :         return 0;</span>
+<a name="999"><span class="lineNum">     999 </span>            : }</a>
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span><span class="lineCov">          7 : static int msg_func_write(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">    1002 </span>            :                 char *data, const char *value)
+<span class="lineNum">    1003 </span>            : {
+<span class="lineNum">    1004 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">    1005 </span>            :         struct ast_msg *msg;
+<span class="lineNum">    1006 </span>            : 
+<span class="lineNum">    1007 </span><span class="lineCov">          7 :         if (!chan) {</span>
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1010 </span>            :         }
+<span class="lineNum">    1011 </span>            : 
+<span class="lineNum">    1012 </span><span class="lineCov">          7 :         ast_channel_lock(chan);</span>
+<span class="lineNum">    1013 </span>            : 
+<span class="lineNum">    1014 </span><span class="lineCov">          7 :         if (!(ds = msg_datastore_find_or_create(chan))) {</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1017 </span>            :         }
+<span class="lineNum">    1018 </span>            : 
+<span class="lineNum">    1019 </span><span class="lineCov">          7 :         msg = ds-&gt;data;</span>
+<span class="lineNum">    1020 </span><span class="lineCov">          7 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">    1021 </span><span class="lineCov">          7 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineCov">          7 :         ao2_lock(msg);</span>
+<span class="lineNum">    1024 </span>            : 
+<span class="lineNum">    1025 </span><span class="lineCov">          7 :         if (!strcasecmp(data, &quot;to&quot;)) {</span>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :                 ast_msg_set_to(msg, &quot;%s&quot;, value);</span>
+<span class="lineNum">    1027 </span><span class="lineCov">          7 :         } else if (!strcasecmp(data, &quot;from&quot;)) {</span>
+<span class="lineNum">    1028 </span><span class="lineNoCov">          0 :                 ast_msg_set_from(msg, &quot;%s&quot;, value);</span>
+<span class="lineNum">    1029 </span><span class="lineCov">          7 :         } else if (!strcasecmp(data, &quot;body&quot;)) {</span>
+<span class="lineNum">    1030 </span><span class="lineCov">          6 :                 ast_msg_set_body(msg, &quot;%s&quot;, value);</span>
+<span class="lineNum">    1031 </span><span class="lineCov">          1 :         } else if (!strcasecmp(data, &quot;custom_data&quot;)) {</span>
+<span class="lineNum">    1032 </span><span class="lineCov">          1 :                 int outbound = -1;</span>
+<span class="lineNum">    1033 </span><span class="lineCov">          1 :                 if (!strcasecmp(value, &quot;mark_all_outbound&quot;)) {</span>
+<span class="lineNum">    1034 </span><span class="lineCov">          1 :                         outbound = 1;</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                 } else if (!strcasecmp(value, &quot;clear_all_outbound&quot;)) {</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                         outbound = 0;</span>
+<span class="lineNum">    1037 </span>            :                 } else {
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;'%s' is not a valid value for custom_data\n&quot;, value);</span>
+<span class="lineNum">    1039 </span>            :                 }
+<span class="lineNum">    1040 </span>            : 
+<span class="lineNum">    1041 </span><span class="lineCov">          1 :                 if (outbound != -1) {</span>
+<span class="lineNum">    1042 </span>            :                         struct msg_data *hdr_data;
+<span class="lineNum">    1043 </span><span class="lineCov">          1 :                         struct ao2_iterator iter = ao2_iterator_init(msg-&gt;vars, 0);</span>
+<span class="lineNum">    1044 </span>            : 
+<span class="lineNum">    1045 </span><span class="lineCov">         16 :                         while ((hdr_data = ao2_iterator_next(&amp;iter))) {</span>
+<span class="lineNum">    1046 </span><span class="lineCov">         15 :                                 hdr_data-&gt;send = outbound;</span>
+<span class="lineNum">    1047 </span><span class="lineCov">         15 :                                 ao2_ref(hdr_data, -1);</span>
+<span class="lineNum">    1048 </span>            :                         }
+<span class="lineNum">    1049 </span><span class="lineCov">          1 :                         ao2_iterator_destroy(&amp;iter);</span>
+<span class="lineNum">    1050 </span>            :                 }
+<span class="lineNum">    1051 </span>            :         } else {
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;'%s' is not a valid write argument.\n&quot;, data);</span>
+<span class="lineNum">    1053 </span>            :         }
+<span class="lineNum">    1054 </span>            : 
+<span class="lineNum">    1055 </span><span class="lineCov">          7 :         ao2_unlock(msg);</span>
+<span class="lineNum">    1056 </span><span class="lineCov">          7 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1057 </span>            : 
+<span class="lineNum">    1058 </span><span class="lineCov">          7 :         return 0;</span>
+<a name="1059"><span class="lineNum">    1059 </span>            : }</a>
+<span class="lineNum">    1060 </span>            : 
+<span class="lineNum">    1061 </span><span class="lineCov">         18 : static int msg_data_func_read(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">    1062 </span>            :                 char *data, char *buf, size_t len)
+<span class="lineNum">    1063 </span>            : {
+<span class="lineNum">    1064 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">    1065 </span>            :         struct ast_msg *msg;
+<span class="lineNum">    1066 </span>            :         const char *val;
+<span class="lineNum">    1067 </span>            : 
+<span class="lineNum">    1068 </span><span class="lineCov">         18 :         if (!chan) {</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1071 </span>            :         }
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span><span class="lineCov">         18 :         ast_channel_lock(chan);</span>
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span><span class="lineCov">         18 :         if (!(ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;No MESSAGE data found on the channel to read.\n&quot;);</span>
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1079 </span>            :         }
+<span class="lineNum">    1080 </span>            : 
+<span class="lineNum">    1081 </span><span class="lineCov">         18 :         msg = ds-&gt;data;</span>
+<span class="lineNum">    1082 </span><span class="lineCov">         18 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">    1083 </span><span class="lineCov">         18 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1084 </span>            : 
+<span class="lineNum">    1085 </span><span class="lineCov">         18 :         ao2_lock(msg);</span>
+<span class="lineNum">    1086 </span>            : 
+<span class="lineNum">    1087 </span><span class="lineCov">         18 :         if ((val = ast_msg_get_var(msg, data))) {</span>
+<span class="lineNum">    1088 </span><span class="lineCov">         16 :                 ast_copy_string(buf, val, len);</span>
+<span class="lineNum">    1089 </span>            :         }
+<span class="lineNum">    1090 </span>            : 
+<span class="lineNum">    1091 </span><span class="lineCov">         18 :         ao2_unlock(msg);</span>
+<span class="lineNum">    1092 </span><span class="lineCov">         18 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1093 </span>            : 
+<span class="lineNum">    1094 </span><span class="lineCov">         18 :         return 0;</span>
+<a name="1095"><span class="lineNum">    1095 </span>            : }</a>
+<span class="lineNum">    1096 </span>            : 
+<span class="lineNum">    1097 </span><span class="lineCov">          4 : static int msg_data_func_write(struct ast_channel *chan, const char *function,</span>
+<span class="lineNum">    1098 </span>            :                 char *data, const char *value)
+<span class="lineNum">    1099 </span>            : {
+<span class="lineNum">    1100 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">    1101 </span>            :         struct ast_msg *msg;
+<span class="lineNum">    1102 </span>            : 
+<span class="lineNum">    1103 </span><span class="lineCov">          4 :         if (!chan) {</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No channel was provided to %s function.\n&quot;, function);</span>
+<span class="lineNum">    1105 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1106 </span>            :         }
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span><span class="lineCov">          4 :         ast_channel_lock(chan);</span>
+<span class="lineNum">    1109 </span>            : 
+<span class="lineNum">    1110 </span><span class="lineCov">          4 :         if (!(ds = msg_datastore_find_or_create(chan))) {</span>
+<span class="lineNum">    1111 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1112 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1113 </span>            :         }
+<span class="lineNum">    1114 </span>            : 
+<span class="lineNum">    1115 </span><span class="lineCov">          4 :         msg = ds-&gt;data;</span>
+<span class="lineNum">    1116 </span><span class="lineCov">          4 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">    1117 </span><span class="lineCov">          4 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span><span class="lineCov">          4 :         ao2_lock(msg);</span>
+<span class="lineNum">    1120 </span>            : 
+<span class="lineNum">    1121 </span><span class="lineCov">          4 :         ast_msg_set_var_outbound(msg, data, value);</span>
+<span class="lineNum">    1122 </span>            : 
+<span class="lineNum">    1123 </span><span class="lineCov">          4 :         ao2_unlock(msg);</span>
+<span class="lineNum">    1124 </span><span class="lineCov">          4 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1125 </span>            : 
+<span class="lineNum">    1126 </span><span class="lineCov">          4 :         return 0;</span>
+<span class="lineNum">    1127 </span>            : }
+<span class="lineNum">    1128 </span>            : 
+<span class="lineNum">    1129 </span>            : /*!
+<span class="lineNum">    1130 </span>            :  * \internal \brief Find a \c ast_msg_tech by its technology name
+<span class="lineNum">    1131 </span>            :  *
+<span class="lineNum">    1132 </span>            :  * \param tech_name The name of the message technology
+<span class="lineNum">    1133 </span>            :  *
+<span class="lineNum">    1134 </span>            :  * \note \c msg_techs should be locked via \c msg_techs_lock prior to
+<span class="lineNum">    1135 </span>            :  *       calling this function
+<span class="lineNum">    1136 </span>            :  *
+<span class="lineNum">    1137 </span>            :  * \retval NULL if no \c ast_msg_tech has been registered
+<a name="1138"><span class="lineNum">    1138 </span>            :  * \retval \c ast_msg_tech if registered</a>
+<span class="lineNum">    1139 </span>            :  */
+<span class="lineNum">    1140 </span><span class="lineCov">       1457 : static const struct ast_msg_tech *msg_find_by_tech_name(const char *tech_name)</span>
+<span class="lineNum">    1141 </span>            : {
+<span class="lineNum">    1142 </span>            :         const struct ast_msg_tech *current;
+<span class="lineNum">    1143 </span>            :         int i;
+<span class="lineNum">    1144 </span>            : 
+<span class="lineNum">    1145 </span><span class="lineCov">       1771 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;msg_techs); i++) {</span>
+<span class="lineNum">    1146 </span><span class="lineCov">        344 :                 current = AST_VECTOR_GET(&amp;msg_techs, i);</span>
+<span class="lineNum">    1147 </span><span class="lineCov">        344 :                 if (!strcmp(current-&gt;name, tech_name)) {</span>
+<span class="lineNum">    1148 </span><span class="lineCov">         30 :                         return current;</span>
+<span class="lineNum">    1149 </span>            :                 }
+<span class="lineNum">    1150 </span>            :         }
+<span class="lineNum">    1151 </span>            : 
+<span class="lineNum">    1152 </span><span class="lineCov">       1427 :         return NULL;</span>
+<span class="lineNum">    1153 </span>            : }
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span>            : /*!
+<span class="lineNum">    1156 </span>            :  * \internal \brief Find a \c ast_msg_handler by its technology name
+<span class="lineNum">    1157 </span>            :  *
+<span class="lineNum">    1158 </span>            :  * \param tech_name The name of the message technology
+<span class="lineNum">    1159 </span>            :  *
+<span class="lineNum">    1160 </span>            :  * \note \c msg_handlers should be locked via \c msg_handlers_lock
+<span class="lineNum">    1161 </span>            :  *       prior to calling this function
+<span class="lineNum">    1162 </span>            :  *
+<span class="lineNum">    1163 </span>            :  * \retval NULL if no \c ast_msg_handler has been registered
+<a name="1164"><span class="lineNum">    1164 </span>            :  * \retval \c ast_msg_handler if registered</a>
+<span class="lineNum">    1165 </span>            :  */
+<span class="lineNum">    1166 </span><span class="lineCov">       2254 : static const struct ast_msg_handler *msg_handler_find_by_tech_name(const char *tech_name)</span>
+<span class="lineNum">    1167 </span>            : {
+<span class="lineNum">    1168 </span>            :         const struct ast_msg_handler *current;
+<span class="lineNum">    1169 </span>            :         int i;
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineCov">       3390 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;msg_handlers); i++) {</span>
+<span class="lineNum">    1172 </span><span class="lineCov">       1137 :                 current = AST_VECTOR_GET(&amp;msg_handlers, i);</span>
+<span class="lineNum">    1173 </span><span class="lineCov">       1137 :                 if (!strcmp(current-&gt;name, tech_name)) {</span>
+<span class="lineNum">    1174 </span><span class="lineCov">          1 :                         return current;</span>
+<span class="lineNum">    1175 </span>            :                 }
+<span class="lineNum">    1176 </span>            :         }
+<span class="lineNum">    1177 </span>            : 
+<span class="lineNum">    1178 </span><span class="lineCov">       2253 :         return NULL;</span>
+<span class="lineNum">    1179 </span>            : }
+<span class="lineNum">    1180 </span>            : 
+<span class="lineNum">    1181 </span>            : /*!
+<span class="lineNum">    1182 </span>            :  * \internal
+<a name="1183"><span class="lineNum">    1183 </span>            :  * \brief MessageSend() application</a>
+<span class="lineNum">    1184 </span>            :  */
+<span class="lineNum">    1185 </span><span class="lineCov">         26 : static int msg_send_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">    1186 </span>            : {
+<span class="lineNum">    1187 </span>            :         struct ast_datastore *ds;
+<span class="lineNum">    1188 </span>            :         struct ast_msg *msg;
+<span class="lineNum">    1189 </span>            :         char *tech_name;
+<span class="lineNum">    1190 </span>            :         const struct ast_msg_tech *msg_tech;
+<span class="lineNum">    1191 </span>            :         char *parse;
+<span class="lineNum">    1192 </span><span class="lineCov">         26 :         int res = -1;</span>
+<span class="lineNum">    1193 </span><span class="lineCov">         26 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">    1194 </span>            :                 AST_APP_ARG(to);
+<span class="lineNum">    1195 </span>            :                 AST_APP_ARG(from);
+<span class="lineNum">    1196 </span>            :         );
+<span class="lineNum">    1197 </span>            : 
+<span class="lineNum">    1198 </span><span class="lineCov">         26 :         if (ast_strlen_zero(data)) {</span>
+<span class="lineNum">    1199 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;An argument is required to MessageSend()\n&quot;);</span>
+<span class="lineNum">    1200 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;MESSAGE_SEND_STATUS&quot;, &quot;INVALID_URI&quot;);</span>
+<span class="lineNum">    1201 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1202 </span>            :         }
+<span class="lineNum">    1203 </span>            : 
+<span class="lineNum">    1204 </span><span class="lineCov">         26 :         parse = ast_strdupa(data);</span>
+<span class="lineNum">    1205 </span><span class="lineCov">         26 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">    1206 </span>            : 
+<span class="lineNum">    1207 </span><span class="lineCov">         26 :         if (ast_strlen_zero(args.to)) {</span>
+<span class="lineNum">    1208 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;A 'to' URI is required for MessageSend()\n&quot;);</span>
+<span class="lineNum">    1209 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;MESSAGE_SEND_STATUS&quot;, &quot;INVALID_URI&quot;);</span>
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1211 </span>            :         }
+<span class="lineNum">    1212 </span>            : 
+<span class="lineNum">    1213 </span><span class="lineCov">         26 :         ast_channel_lock(chan);</span>
+<span class="lineNum">    1214 </span>            : 
+<span class="lineNum">    1215 </span><span class="lineCov">         26 :         if (!(ds = ast_channel_datastore_find(chan, &amp;msg_datastore, NULL))) {</span>
+<span class="lineNum">    1216 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1217 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No message data found on channel to send.\n&quot;);</span>
+<span class="lineNum">    1218 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;MESSAGE_SEND_STATUS&quot;, &quot;FAILURE&quot;);</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1220 </span>            :         }
+<span class="lineNum">    1221 </span>            : 
+<span class="lineNum">    1222 </span><span class="lineCov">         26 :         msg = ds-&gt;data;</span>
+<span class="lineNum">    1223 </span><span class="lineCov">         26 :         ao2_ref(msg, +1);</span>
+<span class="lineNum">    1224 </span><span class="lineCov">         26 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1225 </span>            : 
+<span class="lineNum">    1226 </span><span class="lineCov">         26 :         tech_name = ast_strdupa(args.to);</span>
+<span class="lineNum">    1227 </span><span class="lineCov">         26 :         tech_name = strsep(&amp;tech_name, &quot;:&quot;);</span>
+<span class="lineNum">    1228 </span>            : 
+<span class="lineNum">    1229 </span><span class="lineCov">         26 :         ast_rwlock_rdlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1230 </span><span class="lineCov">         26 :         msg_tech = msg_find_by_tech_name(tech_name);</span>
+<span class="lineNum">    1231 </span>            : 
+<span class="lineNum">    1232 </span><span class="lineCov">         26 :         if (!msg_tech) {</span>
+<span class="lineNum">    1233 </span><span class="lineCov">          2 :                 ast_log(LOG_WARNING, &quot;No message technology '%s' found.\n&quot;, tech_name);</span>
+<span class="lineNum">    1234 </span><span class="lineCov">          2 :                 pbx_builtin_setvar_helper(chan, &quot;MESSAGE_SEND_STATUS&quot;, &quot;INVALID_PROTOCOL&quot;);</span>
+<span class="lineNum">    1235 </span><span class="lineCov">          2 :                 goto exit_cleanup;</span>
+<span class="lineNum">    1236 </span>            :         }
+<span class="lineNum">    1237 </span>            : 
+<span class="lineNum">    1238 </span>            :         /*
+<span class="lineNum">    1239 </span>            :          * The message lock is held here to safely allow the technology
+<span class="lineNum">    1240 </span>            :          * implementation to access the message fields without worrying
+<span class="lineNum">    1241 </span>            :          * that they could change.
+<span class="lineNum">    1242 </span>            :          */
+<span class="lineNum">    1243 </span><span class="lineCov">         24 :         ao2_lock(msg);</span>
+<span class="lineNum">    1244 </span><span class="lineCov">         24 :         res = msg_tech-&gt;msg_send(msg, S_OR(args.to, &quot;&quot;), S_OR(args.from, &quot;&quot;));</span>
+<span class="lineNum">    1245 </span><span class="lineCov">         24 :         ao2_unlock(msg);</span>
+<span class="lineNum">    1246 </span>            : 
+<span class="lineNum">    1247 </span><span class="lineCov">         24 :         pbx_builtin_setvar_helper(chan, &quot;MESSAGE_SEND_STATUS&quot;, res ? &quot;FAILURE&quot; : &quot;SUCCESS&quot;);</span>
+<span class="lineNum">    1248 </span>            : 
+<span class="lineNum">    1249 </span><span class="lineCov">         26 : exit_cleanup:</span>
+<span class="lineNum">    1250 </span><span class="lineCov">         26 :         ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1251 </span><span class="lineCov">         26 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1252 </span>            : 
+<span class="lineNum">    1253 </span><span class="lineCov">         26 :         return 0;</span>
+<a name="1254"><span class="lineNum">    1254 </span>            : }</a>
+<span class="lineNum">    1255 </span>            : 
+<span class="lineNum">    1256 </span><span class="lineCov">          2 : static int action_messagesend(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">    1257 </span>            : {
+<span class="lineNum">    1258 </span><span class="lineCov">          2 :         const char *to = ast_strdupa(astman_get_header(m, &quot;To&quot;));</span>
+<span class="lineNum">    1259 </span><span class="lineCov">          2 :         const char *from = astman_get_header(m, &quot;From&quot;);</span>
+<span class="lineNum">    1260 </span><span class="lineCov">          2 :         const char *body = astman_get_header(m, &quot;Body&quot;);</span>
+<span class="lineNum">    1261 </span><span class="lineCov">          2 :         const char *base64body = astman_get_header(m, &quot;Base64Body&quot;);</span>
+<span class="lineNum">    1262 </span><span class="lineCov">          2 :         char base64decoded[1301] = { 0, };</span>
+<span class="lineNum">    1263 </span><span class="lineCov">          2 :         char *tech_name = NULL;</span>
+<span class="lineNum">    1264 </span><span class="lineCov">          2 :         struct ast_variable *vars = NULL;</span>
+<span class="lineNum">    1265 </span><span class="lineCov">          2 :         struct ast_variable *data = NULL;</span>
+<span class="lineNum">    1266 </span>            :         const struct ast_msg_tech *msg_tech;
+<span class="lineNum">    1267 </span>            :         struct ast_msg *msg;
+<span class="lineNum">    1268 </span><span class="lineCov">          2 :         int res = -1;</span>
+<span class="lineNum">    1269 </span>            : 
+<span class="lineNum">    1270 </span><span class="lineCov">          2 :         if (ast_strlen_zero(to)) {</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No 'To' address specified.&quot;);</span>
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1273 </span>            :         }
+<span class="lineNum">    1274 </span>            : 
+<span class="lineNum">    1275 </span><span class="lineCov">          2 :         if (!ast_strlen_zero(base64body)) {</span>
+<span class="lineNum">    1276 </span><span class="lineNoCov">          0 :                 ast_base64decode((unsigned char *) base64decoded, base64body, sizeof(base64decoded) - 1);</span>
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                 body = base64decoded;</span>
+<span class="lineNum">    1278 </span>            :         }
+<span class="lineNum">    1279 </span>            : 
+<span class="lineNum">    1280 </span><span class="lineCov">          2 :         tech_name = ast_strdupa(to);</span>
+<span class="lineNum">    1281 </span><span class="lineCov">          2 :         tech_name = strsep(&amp;tech_name, &quot;:&quot;);</span>
+<span class="lineNum">    1282 </span>            : 
+<span class="lineNum">    1283 </span><span class="lineCov">          2 :         ast_rwlock_rdlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1284 </span><span class="lineCov">          2 :         msg_tech = msg_find_by_tech_name(tech_name);</span>
+<span class="lineNum">    1285 </span><span class="lineCov">          2 :         if (!msg_tech) {</span>
+<span class="lineNum">    1286 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Message technology not found.&quot;);</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1289 </span>            :         }
+<span class="lineNum">    1290 </span>            : 
+<span class="lineNum">    1291 </span><span class="lineCov">          2 :         if (!(msg = ast_msg_alloc())) {</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1293 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Internal failure\n&quot;);</span>
+<span class="lineNum">    1294 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1295 </span>            :         }
+<span class="lineNum">    1296 </span>            : 
+<span class="lineNum">    1297 </span><span class="lineCov">          2 :         data = astman_get_variables_order(m, ORDER_NATURAL);</span>
+<span class="lineNum">    1298 </span><span class="lineCov">          3 :         for (vars = data; vars; vars = vars-&gt;next) {</span>
+<span class="lineNum">    1299 </span><span class="lineCov">          1 :                 ast_msg_set_var_outbound(msg, vars-&gt;name, vars-&gt;value);</span>
+<span class="lineNum">    1300 </span>            :         }
+<span class="lineNum">    1301 </span>            : 
+<span class="lineNum">    1302 </span><span class="lineCov">          2 :         ast_msg_set_body(msg, &quot;%s&quot;, body);</span>
+<span class="lineNum">    1303 </span>            : 
+<span class="lineNum">    1304 </span><span class="lineCov">          2 :         res = msg_tech-&gt;msg_send(msg, S_OR(to, &quot;&quot;), S_OR(from, &quot;&quot;));</span>
+<span class="lineNum">    1305 </span>            : 
+<span class="lineNum">    1306 </span><span class="lineCov">          2 :         ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineCov">          2 :         ast_variables_destroy(vars);</span>
+<span class="lineNum">    1309 </span><span class="lineCov">          2 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1310 </span>            : 
+<span class="lineNum">    1311 </span><span class="lineCov">          2 :         if (res) {</span>
+<span class="lineNum">    1312 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Message failed to send.&quot;);</span>
+<span class="lineNum">    1313 </span>            :         } else {
+<span class="lineNum">    1314 </span><span class="lineCov">          2 :                 astman_send_ack(s, m, &quot;Message successfully sent&quot;);</span>
+<span class="lineNum">    1315 </span>            :         }
+<span class="lineNum">    1316 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="1317"><span class="lineNum">    1317 </span>            : }</a>
+<span class="lineNum">    1318 </span>            : 
+<span class="lineNum">    1319 </span><span class="lineCov">          3 : int ast_msg_send(struct ast_msg *msg, const char *to, const char *from)</span>
+<span class="lineNum">    1320 </span>            : {
+<span class="lineNum">    1321 </span><span class="lineCov">          3 :         char *tech_name = NULL;</span>
+<span class="lineNum">    1322 </span>            :         const struct ast_msg_tech *msg_tech;
+<span class="lineNum">    1323 </span><span class="lineCov">          3 :         int res = -1;</span>
+<span class="lineNum">    1324 </span>            : 
+<span class="lineNum">    1325 </span><span class="lineCov">          3 :         if (ast_strlen_zero(to)) {</span>
+<span class="lineNum">    1326 </span><span class="lineNoCov">          0 :                 ao2_ref(msg, -1);</span>
+<span class="lineNum">    1327 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1328 </span>            :         }
+<span class="lineNum">    1329 </span>            : 
+<span class="lineNum">    1330 </span><span class="lineCov">          3 :         tech_name = ast_strdupa(to);</span>
+<span class="lineNum">    1331 </span><span class="lineCov">          3 :         tech_name = strsep(&amp;tech_name, &quot;:&quot;);</span>
+<span class="lineNum">    1332 </span>            : 
+<span class="lineNum">    1333 </span><span class="lineCov">          3 :         ast_rwlock_rdlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1334 </span><span class="lineCov">          3 :         msg_tech = msg_find_by_tech_name(tech_name);</span>
+<span class="lineNum">    1335 </span>            : 
+<span class="lineNum">    1336 </span><span class="lineCov">          3 :         if (!msg_tech) {</span>
+<span class="lineNum">    1337 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unknown message tech: %s\n&quot;, tech_name);</span>
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1339 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1340 </span>            :         }
+<span class="lineNum">    1341 </span>            : 
+<span class="lineNum">    1342 </span><span class="lineCov">          3 :         res = msg_tech-&gt;msg_send(msg, S_OR(to, &quot;&quot;), S_OR(from, &quot;&quot;));</span>
+<span class="lineNum">    1343 </span>            : 
+<span class="lineNum">    1344 </span><span class="lineCov">          3 :         ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1345 </span>            : 
+<span class="lineNum">    1346 </span><span class="lineCov">          3 :         ao2_ref(msg, -1);</span>
+<span class="lineNum">    1347 </span>            : 
+<span class="lineNum">    1348 </span><span class="lineCov">          3 :         return res;</span>
+<span class="lineNum">    1349 </span>            : }
+<span class="lineNum">    1350 </span>            : 
+<span class="lineNum">    1351 </span>            : /*!
+<span class="lineNum">    1352 </span>            :  * \brief Structure used to transport a message through the frame core
+<span class="lineNum">    1353 </span>            :  * \since 13.22.0
+<span class="lineNum">    1354 </span>            :  * \since 15.5.0
+<span class="lineNum">    1355 </span>            :  */
+<span class="lineNum">    1356 </span>            : struct ast_msg_data {
+<span class="lineNum">    1357 </span>            :         /*! The length of this structure plus the actual length of the allocated buffer */
+<span class="lineNum">    1358 </span>            :         size_t length;
+<span class="lineNum">    1359 </span>            :         enum ast_msg_data_source_type source;
+<span class="lineNum">    1360 </span>            :         /*! These are indices into the buffer where teh attribute starts */
+<span class="lineNum">    1361 </span>            :         int attribute_value_offsets[__AST_MSG_DATA_ATTR_LAST];
+<span class="lineNum">    1362 </span>            :         /*! The buffer containing the NULL separated attributes */
+<span class="lineNum">    1363 </span>            :         char buf[0];
+<span class="lineNum">    1364 </span>            : };
+<span class="lineNum">    1365 </span>            : 
+<a name="1366"><span class="lineNum">    1366 </span>            : #define ATTRIBUTE_UNSET -1</a>
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span><span class="lineCov">         10 : struct ast_msg_data *ast_msg_data_alloc(enum ast_msg_data_source_type source,</span>
+<span class="lineNum">    1369 </span>            :         struct ast_msg_data_attribute attributes[], size_t count)
+<span class="lineNum">    1370 </span>            : {
+<span class="lineNum">    1371 </span>            :         struct ast_msg_data *msg;
+<span class="lineNum">    1372 </span><span class="lineCov">         10 :         size_t len = sizeof(*msg);</span>
+<span class="lineNum">    1373 </span>            :         size_t i;
+<span class="lineNum">    1374 </span><span class="lineCov">         10 :         size_t current_offset = 0;</span>
+<span class="lineNum">    1375 </span>            :         enum ast_msg_data_attribute_type attr_type;
+<span class="lineNum">    1376 </span>            : 
+<span class="lineNum">    1377 </span><span class="lineCov">         10 :         if (!attributes) {</span>
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :                 ast_assert(attributes != NULL);</span>
+<span class="lineNum">    1379 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1380 </span>            :         }
+<span class="lineNum">    1381 </span>            : 
+<span class="lineNum">    1382 </span><span class="lineCov">         10 :         if (!count) {</span>
+<span class="lineNum">    1383 </span><span class="lineNoCov">          0 :                 ast_assert(count &gt; 0);</span>
+<span class="lineNum">    1384 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1385 </span>            :         }
+<span class="lineNum">    1386 </span>            : 
+<span class="lineNum">    1387 </span>            :         /* Calculate the length required for the buffer */
+<span class="lineNum">    1388 </span><span class="lineCov">         46 :         for (i=0; i &lt; count; i++) {</span>
+<span class="lineNum">    1389 </span><span class="lineCov">         36 :                 if (!attributes[i].value) {</span>
+<span class="lineNum">    1390 </span><span class="lineNoCov">          0 :                         ast_assert(attributes[i].value != NULL);</span>
+<span class="lineNum">    1391 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1392 </span>            :                 }
+<span class="lineNum">    1393 </span><span class="lineCov">         36 :                 len += (strlen(attributes[i].value) + 1);</span>
+<span class="lineNum">    1394 </span>            :         }
+<span class="lineNum">    1395 </span>            : 
+<span class="lineNum">    1396 </span><span class="lineCov">         10 :         msg = ast_calloc(1, len);</span>
+<span class="lineNum">    1397 </span><span class="lineCov">         10 :         if (!msg) {</span>
+<span class="lineNum">    1398 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1399 </span>            :         }
+<span class="lineNum">    1400 </span><span class="lineCov">         10 :         msg-&gt;source = source;</span>
+<span class="lineNum">    1401 </span><span class="lineCov">         10 :         msg-&gt;length = len;</span>
+<span class="lineNum">    1402 </span>            : 
+<span class="lineNum">    1403 </span>            :         /* Mark all of the attributes as unset */
+<span class="lineNum">    1404 </span><span class="lineCov">         50 :         for (attr_type = 0; attr_type &lt; __AST_MSG_DATA_ATTR_LAST; attr_type++) {</span>
+<span class="lineNum">    1405 </span><span class="lineCov">         40 :                 msg-&gt;attribute_value_offsets[attr_type] = ATTRIBUTE_UNSET;</span>
+<span class="lineNum">    1406 </span>            :         }
+<span class="lineNum">    1407 </span>            : 
+<span class="lineNum">    1408 </span>            :         /* Set the ones we have and increment the offset */
+<span class="lineNum">    1409 </span><span class="lineCov">         46 :         for (i=0; i &lt; count; i++) {</span>
+<span class="lineNum">    1410 </span><span class="lineCov">         36 :                 len = (strlen(attributes[i].value) + 1);</span>
+<span class="lineNum">    1411 </span><span class="lineCov">         36 :                 strcpy(msg-&gt;buf + current_offset, attributes[i].value); /* Safe */</span>
+<span class="lineNum">    1412 </span><span class="lineCov">         36 :                 msg-&gt;attribute_value_offsets[attributes[i].type] = current_offset;</span>
+<span class="lineNum">    1413 </span><span class="lineCov">         36 :                 current_offset += len;</span>
+<span class="lineNum">    1414 </span>            :         }
+<span class="lineNum">    1415 </span>            : 
+<span class="lineNum">    1416 </span><span class="lineCov">         10 :         return msg;</span>
+<a name="1417"><span class="lineNum">    1417 </span>            : }</a>
+<span class="lineNum">    1418 </span>            : 
+<span class="lineNum">    1419 </span><span class="lineCov">          9 : struct ast_msg_data *ast_msg_data_dup(struct ast_msg_data *msg)</span>
+<span class="lineNum">    1420 </span>            : {
+<span class="lineNum">    1421 </span>            :         struct ast_msg_data *dest;
+<span class="lineNum">    1422 </span>            : 
+<span class="lineNum">    1423 </span><span class="lineCov">          9 :         if (!msg) {</span>
+<span class="lineNum">    1424 </span><span class="lineNoCov">          0 :                 ast_assert(msg != NULL);</span>
+<span class="lineNum">    1425 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1426 </span>            :         }
+<span class="lineNum">    1427 </span>            : 
+<span class="lineNum">    1428 </span><span class="lineCov">          9 :         dest = ast_malloc(msg-&gt;length);</span>
+<span class="lineNum">    1429 </span><span class="lineCov">          9 :         if (!dest) {</span>
+<span class="lineNum">    1430 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1431 </span>            :         }
+<span class="lineNum">    1432 </span><span class="lineCov">          9 :         memcpy(dest, msg, msg-&gt;length);</span>
+<span class="lineNum">    1433 </span>            : 
+<span class="lineNum">    1434 </span><span class="lineCov">          9 :         return dest;</span>
+<a name="1435"><span class="lineNum">    1435 </span>            : }</a>
+<span class="lineNum">    1436 </span>            : 
+<span class="lineNum">    1437 </span><span class="lineNoCov">          0 : size_t ast_msg_data_get_length(struct ast_msg_data *msg)</span>
+<span class="lineNum">    1438 </span>            : {
+<span class="lineNum">    1439 </span><span class="lineNoCov">          0 :         if (!msg) {</span>
+<span class="lineNum">    1440 </span><span class="lineNoCov">          0 :                 ast_assert(msg != NULL);</span>
+<span class="lineNum">    1441 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1442 </span>            :         }
+<span class="lineNum">    1443 </span>            : 
+<span class="lineNum">    1444 </span><span class="lineNoCov">          0 :         return msg-&gt;length;</span>
+<a name="1445"><span class="lineNum">    1445 </span>            : }</a>
+<span class="lineNum">    1446 </span>            : 
+<span class="lineNum">    1447 </span><span class="lineNoCov">          0 : enum ast_msg_data_source_type ast_msg_data_get_source_type(struct ast_msg_data *msg)</span>
+<span class="lineNum">    1448 </span>            : {
+<span class="lineNum">    1449 </span><span class="lineNoCov">          0 :         if (!msg) {</span>
+<span class="lineNum">    1450 </span><span class="lineNoCov">          0 :                 ast_assert(msg != NULL);</span>
+<span class="lineNum">    1451 </span><span class="lineNoCov">          0 :                 return AST_MSG_DATA_SOURCE_TYPE_UNKNOWN;</span>
+<span class="lineNum">    1452 </span>            :         }
+<span class="lineNum">    1453 </span>            : 
+<span class="lineNum">    1454 </span><span class="lineNoCov">          0 :         return msg-&gt;source;</span>
+<a name="1455"><span class="lineNum">    1455 </span>            : }</a>
+<span class="lineNum">    1456 </span>            : 
+<span class="lineNum">    1457 </span><span class="lineCov">        129 : const char *ast_msg_data_get_attribute(struct ast_msg_data *msg,</span>
+<span class="lineNum">    1458 </span>            :         enum ast_msg_data_attribute_type attribute_type)
+<span class="lineNum">    1459 </span>            : {
+<span class="lineNum">    1460 </span><span class="lineCov">        129 :         if (!msg) {</span>
+<span class="lineNum">    1461 </span><span class="lineNoCov">          0 :                 ast_assert(msg != NULL);</span>
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :                 return &quot;&quot;;</span>
+<span class="lineNum">    1463 </span>            :         }
+<span class="lineNum">    1464 </span>            : 
+<span class="lineNum">    1465 </span><span class="lineCov">        129 :         if (msg-&gt;attribute_value_offsets[attribute_type] &gt; ATTRIBUTE_UNSET) {</span>
+<span class="lineNum">    1466 </span><span class="lineCov">        122 :                 return msg-&gt;buf + msg-&gt;attribute_value_offsets[attribute_type];</span>
+<span class="lineNum">    1467 </span>            :         }
+<span class="lineNum">    1468 </span>            : 
+<span class="lineNum">    1469 </span><span class="lineCov">          7 :         return &quot;&quot;;</span>
+<a name="1470"><span class="lineNum">    1470 </span>            : }</a>
+<span class="lineNum">    1471 </span>            : 
+<span class="lineNum">    1472 </span><span class="lineCov">          2 : int ast_msg_data_queue_frame(struct ast_channel *channel, struct ast_msg_data *msg)</span>
+<span class="lineNum">    1473 </span>            : {
+<span class="lineNum">    1474 </span>            :         struct ast_frame f;
+<span class="lineNum">    1475 </span>            : 
+<span class="lineNum">    1476 </span><span class="lineCov">          2 :         if (!channel) {</span>
+<span class="lineNum">    1477 </span><span class="lineNoCov">          0 :                 ast_assert(channel != NULL);</span>
+<span class="lineNum">    1478 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1479 </span>            :         }
+<span class="lineNum">    1480 </span>            : 
+<span class="lineNum">    1481 </span><span class="lineCov">          2 :         if (!msg) {</span>
+<span class="lineNum">    1482 </span><span class="lineNoCov">          0 :                 ast_assert(msg != NULL);</span>
+<span class="lineNum">    1483 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1484 </span>            :         }
+<span class="lineNum">    1485 </span>            : 
+<span class="lineNum">    1486 </span><span class="lineCov">          2 :         memset(&amp;f, 0, sizeof(f));</span>
+<span class="lineNum">    1487 </span><span class="lineCov">          2 :         f.frametype = AST_FRAME_TEXT_DATA;</span>
+<span class="lineNum">    1488 </span><span class="lineCov">          2 :         f.data.ptr = msg;</span>
+<span class="lineNum">    1489 </span><span class="lineCov">          2 :         f.datalen = msg-&gt;length;</span>
+<span class="lineNum">    1490 </span><span class="lineCov">          2 :         return ast_queue_frame(channel, &amp;f);</span>
+<a name="1491"><span class="lineNum">    1491 </span>            : }</a>
+<span class="lineNum">    1492 </span>            : 
+<span class="lineNum">    1493 </span><span class="lineCov">       1426 : int ast_msg_tech_register(const struct ast_msg_tech *tech)</span>
+<span class="lineNum">    1494 </span>            : {
+<span class="lineNum">    1495 </span>            :         const struct ast_msg_tech *match;
+<span class="lineNum">    1496 </span>            : 
+<span class="lineNum">    1497 </span><span class="lineCov">       1426 :         ast_rwlock_wrlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1498 </span>            : 
+<span class="lineNum">    1499 </span><span class="lineCov">       1426 :         match = msg_find_by_tech_name(tech-&gt;name);</span>
+<span class="lineNum">    1500 </span><span class="lineCov">       1426 :         if (match) {</span>
+<span class="lineNum">    1501 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;Message technology already registered for '%s'\n&quot;,</span>
+<span class="lineNum">    1502 </span>            :                         tech-&gt;name);
+<span class="lineNum">    1503 </span><span class="lineCov">          1 :                 ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1504 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">    1505 </span>            :         }
+<span class="lineNum">    1506 </span>            : 
+<span class="lineNum">    1507 </span><span class="lineCov">       1425 :         if (AST_VECTOR_APPEND(&amp;msg_techs, tech)) {</span>
+<span class="lineNum">    1508 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to register message technology for '%s'\n&quot;,</span>
+<span class="lineNum">    1509 </span>            :                         tech-&gt;name);
+<span class="lineNum">    1510 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1511 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1512 </span>            :         }
+<span class="lineNum">    1513 </span><span class="lineCov">       1425 :         ast_verb(3, &quot;Message technology '%s' registered.\n&quot;, tech-&gt;name);</span>
+<span class="lineNum">    1514 </span>            : 
+<span class="lineNum">    1515 </span><span class="lineCov">       1425 :         ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1516 </span>            : 
+<span class="lineNum">    1517 </span><span class="lineCov">       1425 :         return 0;</span>
+<span class="lineNum">    1518 </span>            : }
+<span class="lineNum">    1519 </span>            : 
+<span class="lineNum">    1520 </span>            : /*!
+<span class="lineNum">    1521 </span>            :  * \brief Comparison callback for \c ast_msg_tech vector removal
+<span class="lineNum">    1522 </span>            :  *
+<span class="lineNum">    1523 </span>            :  * \param vec_elem The element in the vector being compared
+<span class="lineNum">    1524 </span>            :  * \param srch The element being looked up
+<span class="lineNum">    1525 </span>            :  *
+<span class="lineNum">    1526 </span>            :  * \retval non-zero The items are equal
+<a name="1527"><span class="lineNum">    1527 </span>            :  * \retval 0 The items are not equal</a>
+<span class="lineNum">    1528 </span>            :  */
+<span class="lineNum">    1529 </span><span class="lineCov">       1727 : static int msg_tech_cmp(const struct ast_msg_tech *vec_elem, const struct ast_msg_tech *srch)</span>
+<span class="lineNum">    1530 </span>            : {
+<span class="lineNum">    1531 </span><span class="lineCov">       1727 :         return !strcmp(vec_elem-&gt;name, srch-&gt;name);</span>
+<a name="1532"><span class="lineNum">    1532 </span>            : }</a>
+<span class="lineNum">    1533 </span>            : 
+<span class="lineNum">    1534 </span><span class="lineCov">       1423 : int ast_msg_tech_unregister(const struct ast_msg_tech *tech)</span>
+<span class="lineNum">    1535 </span>            : {
+<span class="lineNum">    1536 </span>            :         int match;
+<span class="lineNum">    1537 </span>            : 
+<span class="lineNum">    1538 </span><span class="lineCov">       1423 :         ast_rwlock_wrlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1539 </span><span class="lineCov">       1728 :         match = AST_VECTOR_REMOVE_CMP_UNORDERED(&amp;msg_techs, tech, msg_tech_cmp,</span>
+<span class="lineNum">    1540 </span>            :                                                 AST_VECTOR_ELEM_CLEANUP_NOOP);
+<span class="lineNum">    1541 </span><span class="lineCov">       1423 :         ast_rwlock_unlock(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1542 </span>            : 
+<span class="lineNum">    1543 </span><span class="lineCov">       1423 :         if (match) {</span>
+<span class="lineNum">    1544 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;No '%s' message technology found.\n&quot;, tech-&gt;name);</span>
+<span class="lineNum">    1545 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">    1546 </span>            :         }
+<span class="lineNum">    1547 </span>            : 
+<span class="lineNum">    1548 </span><span class="lineCov">       1422 :         ast_verb(2, &quot;Message technology '%s' unregistered.\n&quot;, tech-&gt;name);</span>
+<span class="lineNum">    1549 </span>            : 
+<span class="lineNum">    1550 </span><span class="lineCov">       1422 :         return 0;</span>
+<a name="1551"><span class="lineNum">    1551 </span>            : }</a>
+<span class="lineNum">    1552 </span>            : 
+<span class="lineNum">    1553 </span><span class="lineCov">       2254 : int ast_msg_handler_register(const struct ast_msg_handler *handler)</span>
+<span class="lineNum">    1554 </span>            : {
+<span class="lineNum">    1555 </span>            :         const struct ast_msg_handler *match;
+<span class="lineNum">    1556 </span>            : 
+<span class="lineNum">    1557 </span><span class="lineCov">       2254 :         ast_rwlock_wrlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1558 </span>            : 
+<span class="lineNum">    1559 </span><span class="lineCov">       2254 :         match = msg_handler_find_by_tech_name(handler-&gt;name);</span>
+<span class="lineNum">    1560 </span><span class="lineCov">       2254 :         if (match) {</span>
+<span class="lineNum">    1561 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;Message handler already registered for '%s'\n&quot;,</span>
+<span class="lineNum">    1562 </span>            :                         handler-&gt;name);
+<span class="lineNum">    1563 </span><span class="lineCov">          1 :                 ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1564 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">    1565 </span>            :         }
+<span class="lineNum">    1566 </span>            : 
+<span class="lineNum">    1567 </span><span class="lineCov">       2253 :         if (AST_VECTOR_APPEND(&amp;msg_handlers, handler)) {</span>
+<span class="lineNum">    1568 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to register message handler for '%s'\n&quot;,</span>
+<span class="lineNum">    1569 </span>            :                         handler-&gt;name);
+<span class="lineNum">    1570 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1571 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1572 </span>            :         }
+<span class="lineNum">    1573 </span><span class="lineCov">       2253 :         ast_verb(2, &quot;Message handler '%s' registered.\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">    1574 </span>            : 
+<span class="lineNum">    1575 </span><span class="lineCov">       2253 :         ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1576 </span>            : 
+<span class="lineNum">    1577 </span><span class="lineCov">       2253 :         return 0;</span>
+<span class="lineNum">    1578 </span>            : 
+<span class="lineNum">    1579 </span>            : }
+<span class="lineNum">    1580 </span>            : 
+<span class="lineNum">    1581 </span>            : /*!
+<span class="lineNum">    1582 </span>            :  * \brief Comparison callback for \c ast_msg_handler vector removal
+<span class="lineNum">    1583 </span>            :  *
+<span class="lineNum">    1584 </span>            :  * \param vec_elem The element in the vector being compared
+<span class="lineNum">    1585 </span>            :  * \param srch The element being looked up
+<span class="lineNum">    1586 </span>            :  *
+<span class="lineNum">    1587 </span>            :  * \retval non-zero The items are equal
+<a name="1588"><span class="lineNum">    1588 </span>            :  * \retval 0 The items are not equal</a>
+<span class="lineNum">    1589 </span>            :  */
+<span class="lineNum">    1590 </span><span class="lineCov">       3276 : static int msg_handler_cmp(const struct ast_msg_handler *vec_elem, const struct ast_msg_handler *srch)</span>
+<span class="lineNum">    1591 </span>            : {
+<span class="lineNum">    1592 </span><span class="lineCov">       3276 :         return !strcmp(vec_elem-&gt;name, srch-&gt;name);</span>
+<a name="1593"><span class="lineNum">    1593 </span>            : }</a>
+<span class="lineNum">    1594 </span>            : 
+<span class="lineNum">    1595 </span><span class="lineCov">       2143 : int ast_msg_handler_unregister(const struct ast_msg_handler *handler)</span>
+<span class="lineNum">    1596 </span>            : {
+<span class="lineNum">    1597 </span>            :         int match;
+<span class="lineNum">    1598 </span>            : 
+<span class="lineNum">    1599 </span><span class="lineCov">       2143 :         ast_rwlock_wrlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1600 </span><span class="lineCov">       3277 :         match = AST_VECTOR_REMOVE_CMP_UNORDERED(&amp;msg_handlers, handler, msg_handler_cmp,</span>
+<span class="lineNum">    1601 </span>            :                                                 AST_VECTOR_ELEM_CLEANUP_NOOP);
+<span class="lineNum">    1602 </span><span class="lineCov">       2143 :         ast_rwlock_unlock(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1603 </span>            : 
+<span class="lineNum">    1604 </span><span class="lineCov">       2143 :         if (match) {</span>
+<span class="lineNum">    1605 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;No '%s' message handler found.\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">    1606 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">    1607 </span>            :         }
+<span class="lineNum">    1608 </span>            : 
+<span class="lineNum">    1609 </span><span class="lineCov">       2142 :         ast_verb(3, &quot;Message handler '%s' unregistered.\n&quot;, handler-&gt;name);</span>
+<span class="lineNum">    1610 </span><span class="lineCov">       2142 :         return 0;</span>
+<a name="1611"><span class="lineNum">    1611 </span>            : }</a>
+<span class="lineNum">    1612 </span>            : 
+<span class="lineNum">    1613 </span><span class="lineCov">       4531 : void ast_msg_shutdown(void)</span>
+<span class="lineNum">    1614 </span>            : {
+<span class="lineNum">    1615 </span><span class="lineCov">       4531 :         if (msg_q_tp) {</span>
+<span class="lineNum">    1616 </span><span class="lineCov">       1123 :                 msg_q_tp = ast_taskprocessor_unreference(msg_q_tp);</span>
+<span class="lineNum">    1617 </span>            :         }
+<span class="lineNum">    1618 </span><span class="lineCov">       4531 : }</span>
+<span class="lineNum">    1619 </span>            : 
+<span class="lineNum">    1620 </span>            : /*!
+<span class="lineNum">    1621 </span>            :  * \internal
+<span class="lineNum">    1622 </span>            :  * \brief Clean up other resources on Asterisk shutdown
+<span class="lineNum">    1623 </span>            :  *
+<span class="lineNum">    1624 </span>            :  * \note This does not include the msg_q_tp object, which must be disposed
+<span class="lineNum">    1625 </span>            :  * of prior to Asterisk checking for channel destruction in its shutdown
+<a name="1626"><span class="lineNum">    1626 </span>            :  * sequence.  The atexit handlers are executed after this occurs.</a>
+<span class="lineNum">    1627 </span>            :  */
+<span class="lineNum">    1628 </span><span class="lineCov">       1015 : static void message_shutdown(void)</span>
+<span class="lineNum">    1629 </span>            : {
+<span class="lineNum">    1630 </span><span class="lineCov">       1015 :         ast_msg_handler_unregister(&amp;dialplan_msg_handler);</span>
+<span class="lineNum">    1631 </span>            : 
+<span class="lineNum">    1632 </span><span class="lineCov">       1015 :         ast_custom_function_unregister(&amp;msg_function);</span>
+<span class="lineNum">    1633 </span><span class="lineCov">       1015 :         ast_custom_function_unregister(&amp;msg_data_function);</span>
+<span class="lineNum">    1634 </span><span class="lineCov">       1015 :         ast_unregister_application(app_msg_send);</span>
+<span class="lineNum">    1635 </span><span class="lineCov">       1015 :         ast_manager_unregister(&quot;MessageSend&quot;);</span>
+<span class="lineNum">    1636 </span>            : 
+<span class="lineNum">    1637 </span><span class="lineCov">       1015 :         AST_VECTOR_FREE(&amp;msg_techs);</span>
+<span class="lineNum">    1638 </span><span class="lineCov">       1015 :         ast_rwlock_destroy(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1639 </span>            : 
+<span class="lineNum">    1640 </span><span class="lineCov">       1015 :         AST_VECTOR_FREE(&amp;msg_handlers);</span>
+<span class="lineNum">    1641 </span><span class="lineCov">       1015 :         ast_rwlock_destroy(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1642 </span><span class="lineCov">       1015 : }</span>
+<span class="lineNum">    1643 </span>            : 
+<span class="lineNum">    1644 </span>            : /*
+<span class="lineNum">    1645 </span>            :  * \internal
+<span class="lineNum">    1646 </span>            :  * \brief Initialize stuff during Asterisk startup.
+<span class="lineNum">    1647 </span>            :  *
+<span class="lineNum">    1648 </span>            :  * Cleanup isn't a big deal in this function.  If we return non-zero,
+<span class="lineNum">    1649 </span>            :  * Asterisk is going to exit.
+<span class="lineNum">    1650 </span>            :  *
+<span class="lineNum">    1651 </span>            :  * \retval 0 success
+<a name="1652"><span class="lineNum">    1652 </span>            :  * \retval non-zero failure</a>
+<span class="lineNum">    1653 </span>            :  */
+<span class="lineNum">    1654 </span><span class="lineCov">       1124 : int ast_msg_init(void)</span>
+<span class="lineNum">    1655 </span>            : {
+<span class="lineNum">    1656 </span>            :         int res;
+<span class="lineNum">    1657 </span>            : 
+<span class="lineNum">    1658 </span><span class="lineCov">       1124 :         msg_q_tp = ast_taskprocessor_get(&quot;ast_msg_queue&quot;, TPS_REF_DEFAULT);</span>
+<span class="lineNum">    1659 </span><span class="lineCov">       1124 :         if (!msg_q_tp) {</span>
+<span class="lineNum">    1660 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1661 </span>            :         }
+<span class="lineNum">    1662 </span>            : 
+<span class="lineNum">    1663 </span><span class="lineCov">       1124 :         ast_rwlock_init(&amp;msg_techs_lock);</span>
+<span class="lineNum">    1664 </span><span class="lineCov">       1124 :         if (AST_VECTOR_INIT(&amp;msg_techs, 8)) {</span>
+<span class="lineNum">    1665 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1666 </span>            :         }
+<span class="lineNum">    1667 </span>            : 
+<span class="lineNum">    1668 </span><span class="lineCov">       1124 :         ast_rwlock_init(&amp;msg_handlers_lock);</span>
+<span class="lineNum">    1669 </span><span class="lineCov">       1124 :         if (AST_VECTOR_INIT(&amp;msg_handlers, 4)) {</span>
+<span class="lineNum">    1670 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1671 </span>            :         }
+<span class="lineNum">    1672 </span>            : 
+<span class="lineNum">    1673 </span><span class="lineCov">       1124 :         res = ast_msg_handler_register(&amp;dialplan_msg_handler);</span>
+<span class="lineNum">    1674 </span>            : 
+<span class="lineNum">    1675 </span><span class="lineCov">       1124 :         res |= __ast_custom_function_register(&amp;msg_function, NULL);</span>
+<span class="lineNum">    1676 </span><span class="lineCov">       1124 :         res |= __ast_custom_function_register(&amp;msg_data_function, NULL);</span>
+<span class="lineNum">    1677 </span><span class="lineCov">       1124 :         res |= ast_register_application2(app_msg_send, msg_send_exec, NULL, NULL, NULL);</span>
+<span class="lineNum">    1678 </span><span class="lineCov">       1124 :         res |= ast_manager_register_xml_core(&quot;MessageSend&quot;, EVENT_FLAG_MESSAGE, action_messagesend);</span>
+<span class="lineNum">    1679 </span>            : 
+<span class="lineNum">    1680 </span><span class="lineCov">       1124 :         ast_register_cleanup(message_shutdown);</span>
+<span class="lineNum">    1681 </span>            : 
+<span class="lineNum">    1682 </span><span class="lineCov">       1124 :         return res;</span>
+<span class="lineNum">    1683 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

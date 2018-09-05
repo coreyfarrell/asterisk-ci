@@ -1,0 +1,498 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/codec.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - codec.c<span style="font-size: 80%;"> (source / <a href="codec.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">111</td>
+            <td class="headerCovTableEntry">181</td>
+            <td class="headerCovTableEntryLo">61.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryHi">94.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2014, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Codecs API
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/codec.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/format.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/strings.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : /*! \brief Number of buckets to use for codecs (should be prime for performance reasons) */
+<span class="lineNum">      42 </span>            : #define CODEC_BUCKETS 53
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : /*! \brief Current identifier value for newly registered codec */
+<span class="lineNum">      45 </span>            : static int codec_id = 1;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*! \brief Registered codecs */
+<span class="lineNum">      48 </span>            : static struct ao2_container *codecs;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : /*!
+<span class="lineNum">      51 </span>            :  * \internal
+<span class="lineNum">      52 </span>            :  * \brief Internal codec structure
+<span class="lineNum">      53 </span>            :  *
+<span class="lineNum">      54 </span>            :  * External codecs won't know about the format_name field so the public
+<span class="lineNum">      55 </span>            :  * ast_codec structure has to leave it out.  This structure will be used
+<span class="lineNum">      56 </span>            :  * for the internal codecs.
+<span class="lineNum">      57 </span>            :  *
+<span class="lineNum">      58 </span>            :  */
+<span class="lineNum">      59 </span>            : struct internal_ast_codec {
+<span class="lineNum">      60 </span>            :         /*! \brief Public codec structure.  Must remain first. */
+<span class="lineNum">      61 </span>            :         struct ast_codec external;
+<span class="lineNum">      62 </span>            :         /*! \brief A format name for a default sane format using this codec */
+<span class="lineNum">      63 </span>            :         const char *format_name;
+<span class="lineNum">      64 </span>            : };
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : /*!
+<span class="lineNum">      67 </span>            :  * \internal
+<span class="lineNum">      68 </span>            :  * \brief Internal function for registration with format name
+<span class="lineNum">      69 </span>            :  *
+<span class="lineNum">      70 </span>            :  * This function is only used by codec.c and codec_builtin.c and
+<span class="lineNum">      71 </span>            :  * will be removed in Asterisk 14
+<span class="lineNum">      72 </span>            :  */
+<span class="lineNum">      73 </span>            : int __ast_codec_register_with_format(struct ast_codec *codec, const char *format_name,
+<a name="74"><span class="lineNum">      74 </span>            :         struct ast_module *mod);</a>
+<span class="lineNum">      75 </span>            : 
+<a name="76"><span class="lineNum">      76 </span><span class="lineCov">     426916 : AO2_STRING_FIELD_HASH_FN(ast_codec, name)</span></a>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">    1170312 : static int codec_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span><span class="lineCov">    1170312 :         const struct ast_codec *left = obj;</span>
+<span class="lineNum">      81 </span><span class="lineCov">    1170312 :         const struct ast_codec *right = arg;</span>
+<span class="lineNum">      82 </span><span class="lineCov">    1170312 :         const char *right_key = arg;</span>
+<span class="lineNum">      83 </span>            :         int cmp;
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineCov">    1170312 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">      86 </span><span class="lineCov">    1170312 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">      87 </span><span class="lineCov">    1170312 :                 right_key = right-&gt;name;</span>
+<span class="lineNum">      88 </span><span class="lineCov">    1170312 :                 cmp = strcmp(left-&gt;name, right_key);</span>
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineCov">    1170312 :                 if (right-&gt;type != AST_MEDIA_TYPE_UNKNOWN) {</span>
+<span class="lineNum">      91 </span><span class="lineCov">    1170310 :                         cmp |= (right-&gt;type != left-&gt;type);</span>
+<span class="lineNum">      92 </span>            :                 }
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span>            :                 /* BUGBUG: this will allow a match on a codec by name only.
+<span class="lineNum">      95 </span>            :                  * This is particularly useful when executed by the CLI; if
+<span class="lineNum">      96 </span>            :                  * that is not needed in translate.c, this can be removed.
+<span class="lineNum">      97 </span>            :                  */
+<span class="lineNum">      98 </span><span class="lineCov">    1170312 :                 if (right-&gt;sample_rate) {</span>
+<span class="lineNum">      99 </span><span class="lineCov">    1164691 :                         cmp |= (right-&gt;sample_rate != left-&gt;sample_rate);</span>
+<span class="lineNum">     100 </span>            :                 }
+<span class="lineNum">     101 </span><span class="lineCov">    1170312 :                 break;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                 cmp = strcmp(left-&gt;name, right_key);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 cmp = strncmp(left-&gt;name, right_key, strlen(right_key));</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     112 </span>            :         }
+<span class="lineNum">     113 </span><span class="lineCov">    1170312 :         if (cmp) {</span>
+<span class="lineNum">     114 </span><span class="lineCov">     851307 :                 return 0;</span>
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">     319005 :         return CMP_MATCH;</span>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineCov">       1124 : static char *show_codecs(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     121 </span>            : {
+<span class="lineNum">     122 </span>            :         struct ao2_iterator i;
+<span class="lineNum">     123 </span>            :         struct internal_ast_codec *codec;
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     126 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     127 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show codecs [audio|video|image|text]&quot;;</span>
+<span class="lineNum">     128 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     129 </span>            :                         &quot;Usage: core show codecs [audio|video|image|text]\n&quot;
+<span class="lineNum">     130 </span>            :                         &quot;       Displays codec mapping\n&quot;;
+<span class="lineNum">     131 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         if ((a-&gt;argc &lt; 3) || (a-&gt;argc &gt; 4)) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         if (!ast_opt_dont_warn) {</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Disclaimer: this command is for informational purposes only.\n&quot;</span>
+<span class="lineNum">     142 </span>            :                                 &quot;\tIt does not indicate anything about your configuration.\n&quot;);
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%8s %-5s %-12s %-16s %s\n&quot;,&quot;ID&quot;,&quot;TYPE&quot;,&quot;NAME&quot;,&quot;FORMAT&quot;,&quot;DESCRIPTION&quot;);</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;------------------------------------------------------------------------------------------------\n&quot;);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         ao2_rdlock(codecs);</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :         i = ao2_iterator_init(codecs, AO2_ITERATOR_DONTLOCK);</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         for (; (codec = ao2_iterator_next(&amp;i)); ao2_ref(codec, -1)) {</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 if (a-&gt;argc == 4) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                         if (!strcasecmp(a-&gt;argv[3], &quot;audio&quot;)) {</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                                 if (codec-&gt;external.type != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     156 </span>            :                                 }
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                         } else if (!strcasecmp(a-&gt;argv[3], &quot;video&quot;)) {</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                                 if (codec-&gt;external.type != AST_MEDIA_TYPE_VIDEO) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     160 </span>            :                                 }
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                         } else if (!strcasecmp(a-&gt;argv[3], &quot;image&quot;)) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                                 if (codec-&gt;external.type != AST_MEDIA_TYPE_IMAGE) {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     164 </span>            :                                 }
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :                         } else if (!strcasecmp(a-&gt;argv[3], &quot;text&quot;)) {</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                                 if (codec-&gt;external.type != AST_MEDIA_TYPE_TEXT) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     168 </span>            :                                 }
+<span class="lineNum">     169 </span>            :                         } else {
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     171 </span>            :                         }
+<span class="lineNum">     172 </span>            :                 }
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%8u %-5s %-12s %-16s (%s)\n&quot;,</span>
+<span class="lineNum">     175 </span>            :                         codec-&gt;external.id,
+<span class="lineNum">     176 </span>            :                         ast_codec_media_type2str(codec-&gt;external.type),
+<span class="lineNum">     177 </span>            :                         codec-&gt;external.name,
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                         S_OR(codec-&gt;format_name, &quot;no cached format&quot;),</span>
+<span class="lineNum">     179 </span>            :                         codec-&gt;external.description);
+<span class="lineNum">     180 </span>            :         }
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         ao2_unlock(codecs);</span>
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     186 </span>            : }
+<a name="187"><span class="lineNum">     187 </span>            : </a>
+<span class="lineNum">     188 </span>            : /*! \brief Callback function for getting a codec based on unique identifier */
+<span class="lineNum">     189 </span><span class="lineCov">    9450286 : static int codec_id_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span><span class="lineCov">    9450286 :         struct ast_codec *codec = obj;</span>
+<span class="lineNum">     192 </span><span class="lineCov">    9450286 :         int *id = arg;</span>
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineCov">    9450286 :         return (codec-&gt;id == *id) ? CMP_MATCH | CMP_STOP : 0;</span>
+<a name="195"><span class="lineNum">     195 </span>            : }</a>
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span><span class="lineCov">       1124 : static char *show_codec(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     198 </span>            : {
+<span class="lineNum">     199 </span>            :         int type_punned_codec;
+<span class="lineNum">     200 </span>            :         struct internal_ast_codec *codec;
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     203 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     204 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show codec&quot;;</span>
+<span class="lineNum">     205 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     206 </span>            :                         &quot;Usage: core show codec &lt;number&gt;\n&quot;
+<span class="lineNum">     207 </span>            :                         &quot;       Displays codec mapping\n&quot;;
+<span class="lineNum">     208 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     211 </span>            :         }
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     215 </span>            :         }
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :         if (sscanf(a-&gt;argv[3], &quot;%30d&quot;, &amp;type_punned_codec) != 1) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     219 </span>            :         }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :         codec = ao2_callback(codecs, 0, codec_id_cmp, &amp;type_punned_codec);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         if (!codec) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Codec %d not found\n&quot;, type_punned_codec);</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 return CLI_SUCCESS;</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%11u %s (%s)\n&quot;, (unsigned int) codec-&gt;external.id, codec-&gt;external.description,</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                 S_OR(codec-&gt;format_name, &quot;no format&quot;));</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         ao2_ref(codec, -1);</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     233 </span>            : }
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : /* Builtin Asterisk CLI-commands for debugging */
+<span class="lineNum">     236 </span>            : static struct ast_cli_entry codec_cli[] = {
+<span class="lineNum">     237 </span>            :         AST_CLI_DEFINE(show_codecs, &quot;Displays a list of registered codecs&quot;),
+<span class="lineNum">     238 </span>            :         AST_CLI_DEFINE(show_codec, &quot;Shows a specific codec&quot;),
+<span class="lineNum">     239 </span>            : };
+<a name="240"><span class="lineNum">     240 </span>            : </a>
+<span class="lineNum">     241 </span>            : /*! \brief Function called when the process is shutting down */
+<span class="lineNum">     242 </span><span class="lineCov">       1015 : static void codec_shutdown(void)</span>
+<span class="lineNum">     243 </span>            : {
+<span class="lineNum">     244 </span><span class="lineCov">       1015 :         ast_cli_unregister_multiple(codec_cli, ARRAY_LEN(codec_cli));</span>
+<span class="lineNum">     245 </span><span class="lineCov">       1015 :         ao2_cleanup(codecs);</span>
+<span class="lineNum">     246 </span><span class="lineCov">       1015 :         codecs = NULL;</span>
+<a name="247"><span class="lineNum">     247 </span><span class="lineCov">       1015 : }</span></a>
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span><span class="lineCov">       1124 : int ast_codec_init(void)</span>
+<span class="lineNum">     250 </span>            : {
+<span class="lineNum">     251 </span><span class="lineCov">       1124 :         codecs = ao2_container_alloc_options(AO2_ALLOC_OPT_LOCK_RWLOCK, CODEC_BUCKETS,</span>
+<span class="lineNum">     252 </span>            :                 ast_codec_hash_fn, codec_cmp);
+<span class="lineNum">     253 </span><span class="lineCov">       1124 :         if (!codecs) {</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     255 </span>            :         }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">       1124 :         ast_cli_register_multiple(codec_cli, ARRAY_LEN(codec_cli));</span>
+<span class="lineNum">     258 </span><span class="lineCov">       1124 :         ast_register_cleanup(codec_shutdown);</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">       1124 :         return 0;</span>
+<a name="261"><span class="lineNum">     261 </span>            : }</a>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">      48258 : static void codec_dtor(void *obj)</span>
+<span class="lineNum">     264 </span>            : {
+<span class="lineNum">     265 </span>            :         struct ast_codec *codec;
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">      48258 :         codec = obj;</span>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">      48258 :         ast_module_unref(codec-&gt;mod);</span>
+<a name="270"><span class="lineNum">     270 </span><span class="lineCov">      48258 : }</span></a>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">       2254 : int __ast_codec_register(struct ast_codec *codec, struct ast_module *mod)</span>
+<span class="lineNum">     273 </span>            : {
+<span class="lineNum">     274 </span><span class="lineCov">       2254 :         return __ast_codec_register_with_format(codec, NULL, mod);</span>
+<a name="275"><span class="lineNum">     275 </span>            : }</a>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">      53958 : int __ast_codec_register_with_format(struct ast_codec *codec, const char *format_name, struct ast_module *mod)</span></a>
+<span class="lineNum">     278 </span>            : {
+<span class="lineNum">     279 </span><span class="lineCov">     161874 :         SCOPED_AO2WRLOCK(lock, codecs);</span>
+<span class="lineNum">     280 </span>            :         struct internal_ast_codec *codec_new;
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span>            :         /* Some types have specific requirements */
+<span class="lineNum">     283 </span><span class="lineCov">      53958 :         if (codec-&gt;type == AST_MEDIA_TYPE_UNKNOWN) {</span>
+<span class="lineNum">     284 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;A media type must be specified for codec '%s'\n&quot;, codec-&gt;name);</span>
+<span class="lineNum">     285 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     286 </span><span class="lineCov">      53957 :         } else if (codec-&gt;type == AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">     287 </span><span class="lineCov">      40469 :                 if (!codec-&gt;sample_rate) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">          1 :                         ast_log(LOG_ERROR, &quot;A sample rate must be specified for codec '%s' of type '%s'\n&quot;,</span>
+<span class="lineNum">     289 </span>            :                                 codec-&gt;name, ast_codec_media_type2str(codec-&gt;type));
+<span class="lineNum">     290 </span><span class="lineCov">          1 :                         return -1;</span>
+<span class="lineNum">     291 </span>            :                 }
+<span class="lineNum">     292 </span>            :         }
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">      53956 :         codec_new = ao2_find(codecs, codec, OBJ_SEARCH_OBJECT | OBJ_NOLOCK);</span>
+<span class="lineNum">     295 </span><span class="lineCov">      53956 :         if (codec_new) {</span>
+<span class="lineNum">     296 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;A codec with name '%s' of type '%s' and sample rate '%u' is already registered\n&quot;,</span>
+<span class="lineNum">     297 </span>            :                         codec-&gt;name, ast_codec_media_type2str(codec-&gt;type), codec-&gt;sample_rate);
+<span class="lineNum">     298 </span><span class="lineCov">          1 :                 ao2_ref(codec_new, -1);</span>
+<span class="lineNum">     299 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     300 </span>            :         }
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">      53955 :         codec_new = ao2_t_alloc_options(sizeof(*codec_new), codec_dtor,</span>
+<span class="lineNum">     303 </span>            :                 AO2_ALLOC_OPT_LOCK_NOLOCK, S_OR(codec-&gt;description, &quot;&quot;));
+<span class="lineNum">     304 </span><span class="lineCov">      53955 :         if (!codec_new) {</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not allocate a codec with name '%s' of type '%s' and sample rate '%u'\n&quot;,</span>
+<span class="lineNum">     306 </span>            :                         codec-&gt;name, ast_codec_media_type2str(codec-&gt;type), codec-&gt;sample_rate);
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span><span class="lineCov">      53955 :         codec_new-&gt;external = *codec;</span>
+<span class="lineNum">     310 </span><span class="lineCov">      53955 :         codec_new-&gt;format_name = format_name;</span>
+<span class="lineNum">     311 </span><span class="lineCov">      53955 :         codec_new-&gt;external.id = codec_id++;</span>
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span><span class="lineCov">      53955 :         ao2_link_flags(codecs, codec_new, OBJ_NOLOCK);</span>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            :         /* Once registered a codec can not be unregistered, and the module must persist until shutdown */
+<span class="lineNum">     316 </span><span class="lineCov">      53955 :         ast_module_shutdown_ref(mod);</span>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">      53955 :         ast_verb(2, &quot;Registered '%s' codec '%s' at sample rate '%u' with id '%u'\n&quot;,</span>
+<span class="lineNum">     319 </span>            :                 ast_codec_media_type2str(codec-&gt;type), codec-&gt;name, codec-&gt;sample_rate, codec_new-&gt;external.id);
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">      53955 :         ao2_ref(codec_new, -1);</span>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineCov">      53955 :         return 0;</span>
+<a name="324"><span class="lineNum">     324 </span>            : }</a>
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineCov">     319005 : struct ast_codec *ast_codec_get(const char *name, enum ast_media_type type, unsigned int sample_rate)</span>
+<span class="lineNum">     327 </span>            : {
+<span class="lineNum">     328 </span><span class="lineCov">     319005 :         struct ast_codec codec = {</span>
+<span class="lineNum">     329 </span>            :                 .name = name,
+<span class="lineNum">     330 </span>            :                 .type = type,
+<span class="lineNum">     331 </span>            :                 .sample_rate = sample_rate,
+<span class="lineNum">     332 </span>            :         };
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">     319005 :         return ao2_find(codecs, &amp;codec, OBJ_SEARCH_OBJECT);</span>
+<a name="335"><span class="lineNum">     335 </span>            : }</a>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineCov">     402035 : struct ast_codec *ast_codec_get_by_id(int id)</span>
+<span class="lineNum">     338 </span>            : {
+<span class="lineNum">     339 </span><span class="lineCov">     402035 :         return ao2_callback(codecs, 0, codec_id_cmp, &amp;id);</span>
+<a name="340"><span class="lineNum">     340 </span>            : }</a>
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span><span class="lineCov">     392865 : int ast_codec_get_max(void)</span>
+<span class="lineNum">     343 </span>            : {
+<span class="lineNum">     344 </span><span class="lineCov">     392865 :         return codec_id;</span>
+<a name="345"><span class="lineNum">     345 </span>            : }</a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">      70161 : const char *ast_codec_media_type2str(enum ast_media_type type)</span>
+<span class="lineNum">     348 </span>            : {
+<span class="lineNum">     349 </span><span class="lineCov">      70161 :         switch (type) {</span>
+<span class="lineNum">     350 </span><span class="lineCov">      56081 :         case AST_MEDIA_TYPE_AUDIO:</span>
+<span class="lineNum">     351 </span><span class="lineCov">      56081 :                 return &quot;audio&quot;;</span>
+<span class="lineNum">     352 </span><span class="lineCov">       8348 :         case AST_MEDIA_TYPE_VIDEO:</span>
+<span class="lineNum">     353 </span><span class="lineCov">       8348 :                 return &quot;video&quot;;</span>
+<span class="lineNum">     354 </span><span class="lineCov">       3464 :         case AST_MEDIA_TYPE_IMAGE:</span>
+<span class="lineNum">     355 </span><span class="lineCov">       3464 :                 return &quot;image&quot;;</span>
+<span class="lineNum">     356 </span><span class="lineCov">       2255 :         case AST_MEDIA_TYPE_TEXT:</span>
+<span class="lineNum">     357 </span><span class="lineCov">       2255 :                 return &quot;text&quot;;</span>
+<span class="lineNum">     358 </span><span class="lineCov">         13 :         default:</span>
+<span class="lineNum">     359 </span><span class="lineCov">         13 :                 return &quot;&lt;unknown&gt;&quot;;</span>
+<span class="lineNum">     360 </span>            :         }
+<a name="361"><span class="lineNum">     361 </span>            : }</a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineCov">       1356 : enum ast_media_type ast_media_type_from_str(const char *media_type_str)</span>
+<span class="lineNum">     364 </span>            : {
+<span class="lineNum">     365 </span><span class="lineCov">       1356 :         if (!strcasecmp(media_type_str, &quot;audio&quot;)) {</span>
+<span class="lineNum">     366 </span><span class="lineCov">       1186 :                 return AST_MEDIA_TYPE_AUDIO;</span>
+<span class="lineNum">     367 </span><span class="lineCov">        170 :         } else if (!strcasecmp(media_type_str, &quot;video&quot;)) {</span>
+<span class="lineNum">     368 </span><span class="lineCov">        100 :                 return AST_MEDIA_TYPE_VIDEO;</span>
+<span class="lineNum">     369 </span><span class="lineCov">         70 :         } else if (!strcasecmp(media_type_str, &quot;image&quot;)) {</span>
+<span class="lineNum">     370 </span><span class="lineCov">         62 :                 return AST_MEDIA_TYPE_IMAGE;</span>
+<span class="lineNum">     371 </span><span class="lineCov">          8 :         } else if (!strcasecmp(media_type_str, &quot;text&quot;)) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 return AST_MEDIA_TYPE_TEXT;</span>
+<span class="lineNum">     373 </span>            :         } else {
+<span class="lineNum">     374 </span><span class="lineCov">          8 :                 return AST_MEDIA_TYPE_UNKNOWN;</span>
+<span class="lineNum">     375 </span>            :         }
+<a name="376"><span class="lineNum">     376 </span>            : }</a>
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineCov">     308451 : unsigned int ast_codec_samples_count(struct ast_frame *frame)</span>
+<span class="lineNum">     379 </span>            : {
+<span class="lineNum">     380 </span>            :         struct ast_codec *codec;
+<span class="lineNum">     381 </span><span class="lineCov">     308451 :         unsigned int samples = 0;</span>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">     308451 :         if ((frame-&gt;frametype != AST_FRAME_VOICE) &amp;&amp;</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                 (frame-&gt;frametype != AST_FRAME_VIDEO) &amp;&amp;</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 (frame-&gt;frametype != AST_FRAME_IMAGE)) {</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     387 </span>            :         }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">     308451 :         codec = ast_format_get_codec(frame-&gt;subclass.format);</span>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">     308451 :         if (codec-&gt;samples_count) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">     308451 :                 samples = codec-&gt;samples_count(frame);</span>
+<span class="lineNum">     393 </span><span class="lineCov">     308451 :                 if ((int) samples &lt; 0) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Codec %s returned invalid number of samples.\n&quot;,</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                                 ast_format_get_name(frame-&gt;subclass.format));</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         samples = 0;</span>
+<span class="lineNum">     397 </span>            :                 }
+<span class="lineNum">     398 </span>            :         } else {
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to calculate samples for codec %s\n&quot;,</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                         ast_format_get_name(frame-&gt;subclass.format));</span>
+<span class="lineNum">     401 </span>            :         }
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineCov">     308451 :         ao2_ref(codec, -1);</span>
+<span class="lineNum">     404 </span><span class="lineCov">     308451 :         return samples;</span>
+<a name="405"><span class="lineNum">     405 </span>            : }</a>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 : unsigned int ast_codec_determine_length(const struct ast_codec *codec, unsigned int samples)</span>
+<span class="lineNum">     408 </span>            : {
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :         if (!codec-&gt;get_length) {</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     411 </span>            :         }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         return codec-&gt;get_length(samples);</span>
+<span class="lineNum">     414 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

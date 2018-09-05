@@ -1,0 +1,448 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - cdr/cdr_sqlite3_custom.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">cdr</a> - cdr_sqlite3_custom.c<span style="font-size: 80%;"> (source / <a href="cdr_sqlite3_custom.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">107</td>
+            <td class="headerCovTableEntry">167</td>
+            <td class="headerCovTableEntryLo">64.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryMed">81.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2007, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt; and others.
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \brief Custom SQLite3 CDR records.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Adapted by Alejandro Rios &lt;alejandro.rios@avatar.com.co&gt; and
+<span class="lineNum">      24 </span>            :  *  Russell Bryant &lt;russell@digium.com&gt; from
+<span class="lineNum">      25 </span>            :  *  cdr_mysql_custom by Edward Eastman &lt;ed@dm3.co.uk&gt;,
+<span class="lineNum">      26 </span>            :  *      and cdr_sqlite by Holger Schurig &lt;hs4233@mail.mn-solutions.de&gt;
+<span class="lineNum">      27 </span>            :  *
+<span class="lineNum">      28 </span>            :  *
+<span class="lineNum">      29 </span>            :  * \arg See also \ref AstCDR
+<span class="lineNum">      30 </span>            :  *
+<span class="lineNum">      31 </span>            :  *
+<span class="lineNum">      32 </span>            :  * \ingroup cdr_drivers
+<span class="lineNum">      33 </span>            :  */
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : /*** MODULEINFO
+<span class="lineNum">      36 </span>            :         &lt;depend&gt;sqlite3&lt;/depend&gt;
+<span class="lineNum">      37 </span>            :         &lt;support_level&gt;extended&lt;/support_level&gt;
+<span class="lineNum">      38 </span>            :  ***/
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : #include &lt;sqlite3.h&gt;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/paths.h&quot;   /* use ast_config_AST_LOG_DIR */
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/cdr.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/config.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      52 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            : AST_MUTEX_DEFINE_STATIC(lock);
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : static const char config_file[] = &quot;cdr_sqlite3_custom.conf&quot;;
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : static const char desc[] = &quot;Customizable SQLite3 CDR Backend&quot;;
+<span class="lineNum">      59 </span>            : static const char name[] = &quot;cdr_sqlite3_custom&quot;;
+<span class="lineNum">      60 </span>            : static sqlite3 *db = NULL;
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : static char table[80];
+<span class="lineNum">      63 </span>            : static char *columns;
+<span class="lineNum">      64 </span>            : static int busy_timeout;
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : struct values {
+<span class="lineNum">      67 </span>            :         AST_LIST_ENTRY(values) list;
+<span class="lineNum">      68 </span>            :         char expression[1];
+<span class="lineNum">      69 </span>            : };
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            : static AST_LIST_HEAD_STATIC(sql_values, values);
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span>            : static void free_config(int reload);</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">          1 : static int load_column_config(const char *tmp)</span>
+<span class="lineNum">      76 </span>            : {
+<span class="lineNum">      77 </span><span class="lineCov">          1 :         char *col = NULL;</span>
+<span class="lineNum">      78 </span><span class="lineCov">          1 :         char *cols = NULL, *save = NULL;</span>
+<span class="lineNum">      79 </span><span class="lineCov">          1 :         char *escaped = NULL;</span>
+<span class="lineNum">      80 </span><span class="lineCov">          1 :         struct ast_str *column_string = NULL;</span>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">          1 :         if (ast_strlen_zero(tmp)) {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Column names not specified. Module not loaded.\n&quot;);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      85 </span>            :         }
+<span class="lineNum">      86 </span><span class="lineCov">          1 :         if (!(column_string = ast_str_create(1024))) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Out of memory creating temporary buffer for column list for table '%s.'\n&quot;, table);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      89 </span>            :         }
+<span class="lineNum">      90 </span><span class="lineCov">          1 :         if (!(save = cols = ast_strdup(tmp))) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Out of memory creating temporary buffer for column list for table '%s.'\n&quot;, table);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 ast_free(column_string);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      94 </span>            :         }
+<span class="lineNum">      95 </span><span class="lineCov">         17 :         while ((col = strsep(&amp;cols, &quot;,&quot;))) {</span>
+<span class="lineNum">      96 </span><span class="lineCov">         16 :                 col = ast_strip(col);</span>
+<span class="lineNum">      97 </span><span class="lineCov">         16 :                 escaped = sqlite3_mprintf(&quot;%q&quot;, col);</span>
+<span class="lineNum">      98 </span><span class="lineCov">         16 :                 if (!escaped) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Out of memory creating entry for column '%s' in table '%s.'\n&quot;, col, table);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                         ast_free(column_string);</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :                         ast_free(save);</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     103 </span>            :                 }
+<span class="lineNum">     104 </span><span class="lineCov">         16 :                 ast_str_append(&amp;column_string, 0, &quot;%s%s&quot;, ast_str_strlen(column_string) ? &quot;,&quot; : &quot;&quot;, escaped);</span>
+<span class="lineNum">     105 </span><span class="lineCov">         16 :                 sqlite3_free(escaped);</span>
+<span class="lineNum">     106 </span>            :         }
+<span class="lineNum">     107 </span><span class="lineCov">          1 :         if (!(columns = ast_strdup(ast_str_buffer(column_string)))) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Out of memory copying columns string for table '%s.'\n&quot;, table);</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 ast_free(column_string);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 ast_free(save);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     112 </span>            :         }
+<span class="lineNum">     113 </span><span class="lineCov">          1 :         ast_free(column_string);</span>
+<span class="lineNum">     114 </span><span class="lineCov">          1 :         ast_free(save);</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">          1 :         return 0;</span>
+<a name="117"><span class="lineNum">     117 </span>            : }</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">          1 : static int load_values_config(const char *tmp)</span>
+<span class="lineNum">     120 </span>            : {
+<span class="lineNum">     121 </span><span class="lineCov">          1 :         char *vals = NULL, *save = NULL;</span>
+<span class="lineNum">     122 </span><span class="lineCov">          1 :         struct values *value = NULL;</span>
+<span class="lineNum">     123 </span>            :         int i;
+<span class="lineNum">     124 </span><span class="lineCov">          1 :         AST_DECLARE_APP_ARGS(val,</span>
+<span class="lineNum">     125 </span>            :                 AST_APP_ARG(ues)[200]; /* More than 200 columns in this CDR?  Yeah, right... */
+<span class="lineNum">     126 </span>            :         );
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">          1 :         if (ast_strlen_zero(tmp)) {</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Values not specified. Module not loaded.\n&quot;);</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     131 </span>            :         }
+<span class="lineNum">     132 </span><span class="lineCov">          1 :         if (!(save = vals = ast_strdup(tmp))) {</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Out of memory creating temporary buffer for value '%s'\n&quot;, tmp);</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     135 </span>            :         }
+<span class="lineNum">     136 </span><span class="lineCov">          1 :         AST_STANDARD_RAW_ARGS(val, vals);</span>
+<span class="lineNum">     137 </span><span class="lineCov">         17 :         for (i = 0; i &lt; val.argc; i++) {</span>
+<span class="lineNum">     138 </span>            :                 /* Strip the single quotes off if they are there */
+<span class="lineNum">     139 </span><span class="lineCov">         16 :                 char *v = ast_strip_quoted(val.ues[i], &quot;'&quot;, &quot;'&quot;);</span>
+<span class="lineNum">     140 </span><span class="lineCov">         16 :                 value = ast_calloc(sizeof(char), sizeof(*value) + strlen(v));</span>
+<span class="lineNum">     141 </span><span class="lineCov">         16 :                 if (!value) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Out of memory creating entry for value '%s'\n&quot;, v);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                         ast_free(save);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     145 </span>            :                 }
+<span class="lineNum">     146 </span><span class="lineCov">         16 :                 strcpy(value-&gt;expression, v); /* SAFE */</span>
+<span class="lineNum">     147 </span><span class="lineCov">         16 :                 AST_LIST_INSERT_TAIL(&amp;sql_values, value, list);</span>
+<span class="lineNum">     148 </span>            :         }
+<span class="lineNum">     149 </span><span class="lineCov">          1 :         ast_free(save);</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">          1 :         return 0;</span>
+<a name="152"><span class="lineNum">     152 </span>            : }</a>
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">       1117 : static int load_config(int reload)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span>            :         struct ast_config *cfg;
+<span class="lineNum">     157 </span><span class="lineCov">       1117 :         struct ast_flags config_flags = { reload ? CONFIG_FLAG_FILEUNCHANGED : 0 };</span>
+<span class="lineNum">     158 </span>            :         const char *tmp;
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">       1117 :         if ((cfg = ast_config_load(config_file, config_flags)) == CONFIG_STATUS_FILEMISSING || cfg == CONFIG_STATUS_FILEINVALID) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to %sload configuration file. %s\n&quot;, reload ? &quot;re&quot; : &quot;&quot;, reload ? &quot;&quot; : &quot;Module not activated.&quot;);</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     163 </span><span class="lineCov">       1117 :         } else if (cfg == CONFIG_STATUS_FILEUNCHANGED) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     165 </span>            :         }
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">       1117 :         if (reload) {</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 free_config(1);</span>
+<span class="lineNum">     169 </span>            :         }
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">       1117 :         if (!ast_variable_browse(cfg, &quot;master&quot;)) {</span>
+<span class="lineNum">     172 </span>            :                 /* Nothing configured */
+<span class="lineNum">     173 </span><span class="lineCov">       1116 :                 ast_config_destroy(cfg);</span>
+<span class="lineNum">     174 </span><span class="lineCov">       1116 :                 return -1;</span>
+<span class="lineNum">     175 </span>            :         }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :         /* Mapping must have a table name */
+<span class="lineNum">     178 </span><span class="lineCov">          1 :         if (!ast_strlen_zero(tmp = ast_variable_retrieve(cfg, &quot;master&quot;, &quot;table&quot;))) {</span>
+<span class="lineNum">     179 </span><span class="lineCov">          1 :                 ast_copy_string(table, tmp, sizeof(table));</span>
+<span class="lineNum">     180 </span>            :         } else {
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Table name not specified.  Assuming cdr.\n&quot;);</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                 strcpy(table, &quot;cdr&quot;);</span>
+<span class="lineNum">     183 </span>            :         }
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span>            :         /* sqlite3_busy_timeout in miliseconds */
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         if ((tmp = ast_variable_retrieve(cfg, &quot;master&quot;, &quot;busy_timeout&quot;)) != NULL) {</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 if (ast_parse_arg(tmp, PARSE_INT32|PARSE_DEFAULT, &amp;busy_timeout, 1000) != 0) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Invalid busy_timeout value '%s' specified. Using 1000 instead.\n&quot;, tmp);</span>
+<span class="lineNum">     189 </span>            :                 }
+<span class="lineNum">     190 </span>            :         } else {
+<span class="lineNum">     191 </span><span class="lineCov">          1 :                 busy_timeout = 1000;</span>
+<span class="lineNum">     192 </span>            :         }
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            :         /* Columns */
+<span class="lineNum">     195 </span><span class="lineCov">          1 :         if (load_column_config(ast_variable_retrieve(cfg, &quot;master&quot;, &quot;columns&quot;))) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 ast_config_destroy(cfg);</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 free_config(0);</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     199 </span>            :         }
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :         /* Values */
+<span class="lineNum">     202 </span><span class="lineCov">          1 :         if (load_values_config(ast_variable_retrieve(cfg, &quot;master&quot;, &quot;values&quot;))) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 ast_config_destroy(cfg);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 free_config(0);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     206 </span>            :         }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">          1 :         ast_verb(4, &quot;cdr_sqlite3_custom: Logging CDR records to table '%s' in 'master.db'\n&quot;, table);</span>
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span><span class="lineCov">          1 :         ast_config_destroy(cfg);</span>
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineCov">          1 :         return 0;</span>
+<a name="213"><span class="lineNum">     213 </span>            : }</a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">          1 : static void free_config(int reload)</span>
+<span class="lineNum">     216 </span>            : {
+<span class="lineNum">     217 </span>            :         struct values *value;
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">          1 :         if (!reload &amp;&amp; db) {</span>
+<span class="lineNum">     220 </span><span class="lineCov">          1 :                 sqlite3_close(db);</span>
+<span class="lineNum">     221 </span><span class="lineCov">          1 :                 db = NULL;</span>
+<span class="lineNum">     222 </span>            :         }
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineCov">          1 :         if (columns) {</span>
+<span class="lineNum">     225 </span><span class="lineCov">          1 :                 ast_free(columns);</span>
+<span class="lineNum">     226 </span><span class="lineCov">          1 :                 columns = NULL;</span>
+<span class="lineNum">     227 </span>            :         }
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">         17 :         while ((value = AST_LIST_REMOVE_HEAD(&amp;sql_values, list))) {</span>
+<span class="lineNum">     230 </span><span class="lineCov">         16 :                 ast_free(value);</span>
+<span class="lineNum">     231 </span>            :         }
+<a name="232"><span class="lineNum">     232 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineCov">          3 : static int write_cdr(struct ast_cdr *cdr)</span>
+<span class="lineNum">     235 </span>            : {
+<span class="lineNum">     236 </span><span class="lineCov">          3 :         int res = 0;</span>
+<span class="lineNum">     237 </span><span class="lineCov">          3 :         char *error = NULL;</span>
+<span class="lineNum">     238 </span><span class="lineCov">          3 :         char *sql = NULL;</span>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineCov">          3 :         if (db == NULL) {</span>
+<span class="lineNum">     241 </span>            :                 /* Should not have loaded, but be failsafe. */
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     243 </span>            :         }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">          3 :         ast_mutex_lock(&amp;lock);</span>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            :         { /* Make it obvious that only sql should be used outside of this block */
+<span class="lineNum">     248 </span>            :                 char *escaped;
+<span class="lineNum">     249 </span>            :                 char subst_buf[2048];
+<span class="lineNum">     250 </span>            :                 struct values *value;
+<span class="lineNum">     251 </span>            :                 struct ast_channel *dummy;
+<span class="lineNum">     252 </span><span class="lineCov">          3 :                 struct ast_str *value_string = ast_str_create(1024);</span>
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span><span class="lineCov">          3 :                 dummy = ast_dummy_channel_alloc();</span>
+<span class="lineNum">     255 </span><span class="lineCov">          3 :                 if (!dummy) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to allocate channel for variable subsitution.\n&quot;);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                         ast_free(value_string);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                         ast_mutex_unlock(&amp;lock);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     260 </span>            :                 }
+<span class="lineNum">     261 </span><span class="lineCov">          3 :                 ast_channel_cdr_set(dummy, ast_cdr_dup(cdr));</span>
+<span class="lineNum">     262 </span><span class="lineCov">         51 :                 AST_LIST_TRAVERSE(&amp;sql_values, value, list) {</span>
+<span class="lineNum">     263 </span><span class="lineCov">         48 :                         pbx_substitute_variables_helper(dummy, value-&gt;expression, subst_buf, sizeof(subst_buf) - 1);</span>
+<span class="lineNum">     264 </span><span class="lineCov">         48 :                         escaped = sqlite3_mprintf(&quot;%q&quot;, subst_buf);</span>
+<span class="lineNum">     265 </span><span class="lineCov">         48 :                         ast_str_append(&amp;value_string, 0, &quot;%s'%s'&quot;, ast_str_strlen(value_string) ? &quot;,&quot; : &quot;&quot;, escaped);</span>
+<span class="lineNum">     266 </span><span class="lineCov">         48 :                         sqlite3_free(escaped);</span>
+<span class="lineNum">     267 </span>            :                 }
+<span class="lineNum">     268 </span><span class="lineCov">          3 :                 sql = sqlite3_mprintf(&quot;INSERT INTO %q (%s) VALUES (%s)&quot;, table, columns, ast_str_buffer(value_string));</span>
+<span class="lineNum">     269 </span><span class="lineCov">          3 :                 ast_debug(1, &quot;About to log: %s\n&quot;, sql);</span>
+<span class="lineNum">     270 </span><span class="lineCov">          3 :                 ast_channel_unref(dummy);</span>
+<span class="lineNum">     271 </span><span class="lineCov">          3 :                 ast_free(value_string);</span>
+<span class="lineNum">     272 </span>            :         }
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">          3 :         if (sqlite3_exec(db, sql, NULL, NULL, &amp;error) != SQLITE_OK) {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;%s. SQL: %s.\n&quot;, error, sql);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                 sqlite3_free(error);</span>
+<span class="lineNum">     277 </span>            :         }
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">          3 :         if (sql) {</span>
+<span class="lineNum">     280 </span><span class="lineCov">          3 :                 sqlite3_free(sql);</span>
+<span class="lineNum">     281 </span>            :         }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">          3 :         ast_mutex_unlock(&amp;lock);</span>
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineCov">          3 :         return res;</span>
+<a name="286"><span class="lineNum">     286 </span>            : }</a>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">          1 : static int unload_module(void)</span>
+<span class="lineNum">     289 </span>            : {
+<span class="lineNum">     290 </span><span class="lineCov">          1 :         if (ast_cdr_unregister(name)) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     292 </span>            :         }
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">          1 :         free_config(0);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">          1 :         return 0;</span>
+<a name="297"><span class="lineNum">     297 </span>            : }</a>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     300 </span>            : {
+<span class="lineNum">     301 </span>            :         char *error;
+<span class="lineNum">     302 </span>            :         char filename[PATH_MAX];
+<span class="lineNum">     303 </span>            :         int res;
+<span class="lineNum">     304 </span>            :         char *sql;
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">       1117 :         if (load_config(0)) {</span>
+<span class="lineNum">     307 </span><span class="lineCov">       1116 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            :         /* is the database there? */
+<span class="lineNum">     311 </span><span class="lineCov">          1 :         snprintf(filename, sizeof(filename), &quot;%s/master.db&quot;, ast_config_AST_LOG_DIR);</span>
+<span class="lineNum">     312 </span><span class="lineCov">          1 :         res = sqlite3_open(filename, &amp;db);</span>
+<span class="lineNum">     313 </span><span class="lineCov">          1 :         if (res != SQLITE_OK) {</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not open database %s.\n&quot;, filename);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 free_config(0);</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     317 </span>            :         }
+<span class="lineNum">     318 </span><span class="lineCov">          1 :         sqlite3_busy_timeout(db, busy_timeout);</span>
+<span class="lineNum">     319 </span>            :         /* is the table there? */
+<span class="lineNum">     320 </span><span class="lineCov">          1 :         sql = sqlite3_mprintf(&quot;SELECT COUNT(AcctId) FROM %q;&quot;, table);</span>
+<span class="lineNum">     321 </span><span class="lineCov">          1 :         res = sqlite3_exec(db, sql, NULL, NULL, NULL);</span>
+<span class="lineNum">     322 </span><span class="lineCov">          1 :         sqlite3_free(sql);</span>
+<span class="lineNum">     323 </span><span class="lineCov">          1 :         if (res != SQLITE_OK) {</span>
+<span class="lineNum">     324 </span>            :                 /* We don't use %q for the column list here since we already escaped when building it */
+<span class="lineNum">     325 </span><span class="lineCov">          1 :                 sql = sqlite3_mprintf(&quot;CREATE TABLE %q (AcctId INTEGER PRIMARY KEY, %s)&quot;, table, columns);</span>
+<span class="lineNum">     326 </span><span class="lineCov">          1 :                 res = sqlite3_exec(db, sql, NULL, NULL, &amp;error);</span>
+<span class="lineNum">     327 </span><span class="lineCov">          1 :                 sqlite3_free(sql);</span>
+<span class="lineNum">     328 </span><span class="lineCov">          1 :                 if (res != SQLITE_OK) {</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to create table '%s': %s.\n&quot;, table, error);</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                         sqlite3_free(error);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         free_config(0);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                         return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     333 </span>            :                 }
+<span class="lineNum">     334 </span>            :         }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          1 :         res = ast_cdr_register(name, desc, write_cdr);</span>
+<span class="lineNum">     337 </span><span class="lineCov">          1 :         if (res) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to register custom SQLite3 CDR handling\n&quot;);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                 free_config(0);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     341 </span>            :         }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">          1 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="344"><span class="lineNum">     344 </span>            : }</a>
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 : static int reload(void)</span>
+<span class="lineNum">     347 </span>            : {
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         int res = 0;</span>
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;lock);</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :         res = load_config(1);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;lock);</span>
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="355"><span class="lineNum">     355 </span>            : }</a>
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">       2234 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_LOAD_ORDER, &quot;SQLite3 Custom CDR Module&quot;,</span>
+<span class="lineNum">     358 </span>            :         .support_level = AST_MODULE_SUPPORT_EXTENDED,
+<span class="lineNum">     359 </span>            :         .load = load_module,
+<span class="lineNum">     360 </span>            :         .unload = unload_module,
+<span class="lineNum">     361 </span>            :         .reload = reload,
+<span class="lineNum">     362 </span>            :         .load_pri = AST_MODPRI_CDR_DRIVER,
+<span class="lineNum">     363 </span>            :         .requires = &quot;cdr&quot;,
+<span class="lineNum">     364 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

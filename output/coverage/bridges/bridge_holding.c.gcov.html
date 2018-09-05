@@ -1,0 +1,530 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - bridges/bridge_holding.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">bridges</a> - bridge_holding.c<span style="font-size: 80%;"> (source / <a href="bridge_holding.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">155</td>
+            <td class="headerCovTableEntry">187</td>
+            <td class="headerCovTableEntryMed">82.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryHi">94.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Bridging technology for storing channels in a bridge for
+<span class="lineNum">      22 </span>            :  *        the purpose of holding, parking, queues, and other such
+<span class="lineNum">      23 </span>            :  *        states where a channel may need to be in a bridge but not
+<span class="lineNum">      24 </span>            :  *        actually communicating with anything.
+<span class="lineNum">      25 </span>            :  *
+<span class="lineNum">      26 </span>            :  * \author Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">      27 </span>            :  *
+<span class="lineNum">      28 </span>            :  * \ingroup bridges
+<span class="lineNum">      29 </span>            :  */
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : /*** MODULEINFO
+<span class="lineNum">      32 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      33 </span>            :  ***/
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : #include &lt;stdio.h&gt;
+<span class="lineNum">      38 </span>            : #include &lt;stdlib.h&gt;
+<span class="lineNum">      39 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      40 </span>            : #include &lt;sys/types.h&gt;
+<span class="lineNum">      41 </span>            : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/bridge_technology.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/musiconhold.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : enum holding_roles {
+<span class="lineNum">      52 </span>            :         HOLDING_ROLE_PARTICIPANT,
+<span class="lineNum">      53 </span>            :         HOLDING_ROLE_ANNOUNCER,
+<span class="lineNum">      54 </span>            : };
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : enum idle_modes {
+<span class="lineNum">      57 </span>            :         IDLE_MODE_NONE,
+<span class="lineNum">      58 </span>            :         IDLE_MODE_MOH,
+<span class="lineNum">      59 </span>            :         IDLE_MODE_RINGING,
+<span class="lineNum">      60 </span>            :         IDLE_MODE_SILENCE,
+<span class="lineNum">      61 </span>            :         IDLE_MODE_HOLD,
+<span class="lineNum">      62 </span>            : };
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : /*! \brief Structure which contains per-channel role information */
+<span class="lineNum">      65 </span>            : struct holding_channel {
+<span class="lineNum">      66 </span>            :         struct ast_silence_generator *silence_generator;
+<span class="lineNum">      67 </span>            :         enum holding_roles role;
+<span class="lineNum">      68 </span>            :         enum idle_modes idle_mode;
+<span class="lineNum">      69 </span>            :         /*! TRUE if the entertainment is started. */
+<span class="lineNum">      70 </span>            :         unsigned int entertainment_active:1;
+<span class="lineNum">      71 </span>            : };
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span>            : typedef void (*deferred_cb)(struct ast_bridge_channel *bridge_channel);
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span>            : struct deferred_data {
+<span class="lineNum">      76 </span>            :         /*! Deferred holding technology callback */
+<span class="lineNum">      77 </span>            :         deferred_cb callback;
+<span class="lineNum">      78 </span>            : };
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : static void deferred_action(struct ast_bridge_channel *bridge_channel, const void *payload, size_t payload_size);
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            : /*!
+<span class="lineNum">      83 </span>            :  * \internal
+<span class="lineNum">      84 </span>            :  * \brief Defer an action to a bridge_channel.
+<span class="lineNum">      85 </span>            :  * \since 12.0.0
+<span class="lineNum">      86 </span>            :  *
+<span class="lineNum">      87 </span>            :  * \param bridge_channel Which channel to operate on.
+<span class="lineNum">      88 </span>            :  * \param callback action to defer.
+<span class="lineNum">      89 </span>            :  *
+<span class="lineNum">      90 </span>            :  * \retval 0 on success.
+<a name="91"><span class="lineNum">      91 </span>            :  * \retval -1 on error.</a>
+<span class="lineNum">      92 </span>            :  */
+<span class="lineNum">      93 </span><span class="lineCov">         57 : static int defer_action(struct ast_bridge_channel *bridge_channel, deferred_cb callback)</span>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineCov">         57 :         struct deferred_data data = { .callback = callback };</span>
+<span class="lineNum">      96 </span>            :         int res;
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineCov">         57 :         res = ast_bridge_channel_queue_callback(bridge_channel, 0, deferred_action,</span>
+<span class="lineNum">      99 </span>            :                 &amp;data, sizeof(data));
+<span class="lineNum">     100 </span><span class="lineCov">         57 :         if (res) {</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Bridge %s: Could not defer action on %s.\n&quot;,</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                         bridge_channel-&gt;bridge-&gt;uniqueid, ast_channel_name(bridge_channel-&gt;chan));</span>
+<span class="lineNum">     103 </span>            :         }
+<span class="lineNum">     104 </span><span class="lineCov">         57 :         return res;</span>
+<span class="lineNum">     105 </span>            : }
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : /*!
+<span class="lineNum">     108 </span>            :  * \internal
+<span class="lineNum">     109 </span>            :  * \brief Setup participant idle mode from channel.
+<span class="lineNum">     110 </span>            :  * \since 12.0.0
+<span class="lineNum">     111 </span>            :  *
+<span class="lineNum">     112 </span>            :  * \param bridge_channel Channel to setup idle mode.
+<span class="lineNum">     113 </span>            :  *
+<a name="114"><span class="lineNum">     114 </span>            :  * \return Nothing</a>
+<span class="lineNum">     115 </span>            :  */
+<span class="lineNum">     116 </span><span class="lineCov">         59 : static void participant_idle_mode_setup(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     117 </span>            : {
+<span class="lineNum">     118 </span><span class="lineCov">         59 :         const char *idle_mode = ast_bridge_channel_get_role_option(bridge_channel, &quot;holding_participant&quot;, &quot;idle_mode&quot;);</span>
+<span class="lineNum">     119 </span><span class="lineCov">         59 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">         59 :         ast_assert(hc != NULL);</span>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineCov">         59 :         if (ast_strlen_zero(idle_mode)) {</span>
+<span class="lineNum">     124 </span><span class="lineCov">          4 :                 hc-&gt;idle_mode = IDLE_MODE_MOH;</span>
+<span class="lineNum">     125 </span><span class="lineCov">         55 :         } else if (!strcmp(idle_mode, &quot;musiconhold&quot;)) {</span>
+<span class="lineNum">     126 </span><span class="lineCov">         33 :                 hc-&gt;idle_mode = IDLE_MODE_MOH;</span>
+<span class="lineNum">     127 </span><span class="lineCov">         22 :         } else if (!strcmp(idle_mode, &quot;ringing&quot;)) {</span>
+<span class="lineNum">     128 </span><span class="lineCov">          1 :                 hc-&gt;idle_mode = IDLE_MODE_RINGING;</span>
+<span class="lineNum">     129 </span><span class="lineCov">         21 :         } else if (!strcmp(idle_mode, &quot;none&quot;)) {</span>
+<span class="lineNum">     130 </span><span class="lineCov">         13 :                 hc-&gt;idle_mode = IDLE_MODE_NONE;</span>
+<span class="lineNum">     131 </span><span class="lineCov">          8 :         } else if (!strcmp(idle_mode, &quot;silence&quot;)) {</span>
+<span class="lineNum">     132 </span><span class="lineCov">          7 :                 hc-&gt;idle_mode = IDLE_MODE_SILENCE;</span>
+<span class="lineNum">     133 </span><span class="lineCov">          1 :         } else if (!strcmp(idle_mode, &quot;hold&quot;)) {</span>
+<span class="lineNum">     134 </span><span class="lineCov">          1 :                 hc-&gt;idle_mode = IDLE_MODE_HOLD;</span>
+<span class="lineNum">     135 </span>            :         } else {
+<span class="lineNum">     136 </span>            :                 /* Invalid idle mode requested. */
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;channel %s idle mode '%s' doesn't match any defined idle mode\n&quot;,</span>
+<span class="lineNum">     138 </span>            :                         ast_channel_name(bridge_channel-&gt;chan), idle_mode);
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     140 </span>            :         }
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">         59 : }</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">         67 : static void participant_entertainment_stop(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     144 </span>            : {
+<span class="lineNum">     145 </span><span class="lineCov">         67 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">         67 :         ast_assert(hc != NULL);</span>
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span><span class="lineCov">         67 :         if (!hc-&gt;entertainment_active) {</span>
+<span class="lineNum">     150 </span>            :                 /* Already stopped */
+<span class="lineNum">     151 </span><span class="lineCov">          8 :                 return;</span>
+<span class="lineNum">     152 </span>            :         }
+<span class="lineNum">     153 </span><span class="lineCov">         59 :         hc-&gt;entertainment_active = 0;</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">         59 :         switch (hc-&gt;idle_mode) {</span>
+<span class="lineNum">     156 </span><span class="lineCov">         37 :         case IDLE_MODE_MOH:</span>
+<span class="lineNum">     157 </span><span class="lineCov">         37 :                 ast_moh_stop(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     158 </span><span class="lineCov">         37 :                 break;</span>
+<span class="lineNum">     159 </span><span class="lineCov">          1 :         case IDLE_MODE_RINGING:</span>
+<span class="lineNum">     160 </span><span class="lineCov">          1 :                 ast_indicate(bridge_channel-&gt;chan, -1);</span>
+<span class="lineNum">     161 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     162 </span><span class="lineCov">         13 :         case IDLE_MODE_NONE:</span>
+<span class="lineNum">     163 </span><span class="lineCov">         13 :                 break;</span>
+<span class="lineNum">     164 </span><span class="lineCov">          7 :         case IDLE_MODE_SILENCE:</span>
+<span class="lineNum">     165 </span><span class="lineCov">          7 :                 if (hc-&gt;silence_generator) {</span>
+<span class="lineNum">     166 </span><span class="lineCov">          7 :                         ast_channel_stop_silence_generator(bridge_channel-&gt;chan, hc-&gt;silence_generator);</span>
+<span class="lineNum">     167 </span><span class="lineCov">          7 :                         hc-&gt;silence_generator = NULL;</span>
+<span class="lineNum">     168 </span>            :                 }
+<span class="lineNum">     169 </span><span class="lineCov">          7 :                 break;</span>
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         case IDLE_MODE_HOLD:</span>
+<span class="lineNum">     171 </span><span class="lineCov">          1 :                 ast_indicate(bridge_channel-&gt;chan, AST_CONTROL_UNHOLD);</span>
+<span class="lineNum">     172 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     173 </span>            :         }
+<a name="174"><span class="lineNum">     174 </span>            : }</a>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">          1 : static void participant_reaction_announcer_join(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     177 </span>            : {
+<span class="lineNum">     178 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineCov">          1 :         chan = bridge_channel-&gt;chan;</span>
+<span class="lineNum">     181 </span><span class="lineCov">          1 :         participant_entertainment_stop(bridge_channel);</span>
+<span class="lineNum">     182 </span><span class="lineCov">          1 :         if (ast_set_write_format(chan, ast_format_slin)) {</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not make participant %s compatible.\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     184 </span>            :         }
+<span class="lineNum">     185 </span><span class="lineCov">          1 : }</span>
+<a name="186"><span class="lineNum">     186 </span>            : </a>
+<span class="lineNum">     187 </span>            : /* This should only be called on verified holding_participants. */
+<span class="lineNum">     188 </span><span class="lineCov">         76 : static void participant_entertainment_start(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     189 </span>            : {
+<span class="lineNum">     190 </span><span class="lineCov">         76 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     191 </span>            :         const char *moh_class;
+<span class="lineNum">     192 </span>            :         size_t moh_length;
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span><span class="lineCov">         76 :         ast_assert(hc != NULL);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">         76 :         if (hc-&gt;entertainment_active) {</span>
+<span class="lineNum">     197 </span>            :                 /* Already started */
+<span class="lineNum">     198 </span><span class="lineCov">         17 :                 return;</span>
+<span class="lineNum">     199 </span>            :         }
+<span class="lineNum">     200 </span><span class="lineCov">         59 :         hc-&gt;entertainment_active = 1;</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">         59 :         participant_idle_mode_setup(bridge_channel);</span>
+<span class="lineNum">     203 </span><span class="lineCov">         59 :         switch(hc-&gt;idle_mode) {</span>
+<span class="lineNum">     204 </span><span class="lineCov">         37 :         case IDLE_MODE_MOH:</span>
+<span class="lineNum">     205 </span><span class="lineCov">         37 :                 moh_class = ast_bridge_channel_get_role_option(bridge_channel, &quot;holding_participant&quot;, &quot;moh_class&quot;);</span>
+<span class="lineNum">     206 </span><span class="lineCov">         37 :                 if (ast_moh_start(bridge_channel-&gt;chan, moh_class, NULL)) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Failed to start moh, starting silence generator instead\n&quot;);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                         hc-&gt;idle_mode = IDLE_MODE_SILENCE;</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                         hc-&gt;silence_generator = ast_channel_start_silence_generator(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     210 </span>            :                 }
+<span class="lineNum">     211 </span><span class="lineCov">         37 :                 break;</span>
+<span class="lineNum">     212 </span><span class="lineCov">          1 :         case IDLE_MODE_RINGING:</span>
+<span class="lineNum">     213 </span><span class="lineCov">          1 :                 ast_indicate(bridge_channel-&gt;chan, AST_CONTROL_RINGING);</span>
+<span class="lineNum">     214 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     215 </span><span class="lineCov">         13 :         case IDLE_MODE_NONE:</span>
+<span class="lineNum">     216 </span><span class="lineCov">         13 :                 break;</span>
+<span class="lineNum">     217 </span><span class="lineCov">          7 :         case IDLE_MODE_SILENCE:</span>
+<span class="lineNum">     218 </span><span class="lineCov">          7 :                 hc-&gt;silence_generator = ast_channel_start_silence_generator(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     219 </span><span class="lineCov">          7 :                 break;</span>
+<span class="lineNum">     220 </span><span class="lineCov">          1 :         case IDLE_MODE_HOLD:</span>
+<span class="lineNum">     221 </span><span class="lineCov">          1 :                 moh_class = ast_bridge_channel_get_role_option(bridge_channel, &quot;holding_participant&quot;, &quot;moh_class&quot;);</span>
+<span class="lineNum">     222 </span><span class="lineCov">          1 :                 moh_length = moh_class ? strlen(moh_class + 1) : 0;</span>
+<span class="lineNum">     223 </span><span class="lineCov">          1 :                 ast_indicate_data(bridge_channel-&gt;chan, AST_CONTROL_HOLD, moh_class, moh_length);</span>
+<span class="lineNum">     224 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     225 </span>            :         }
+<a name="226"><span class="lineNum">     226 </span>            : }</a>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">         55 : static void handle_participant_join(struct ast_bridge_channel *bridge_channel, struct ast_bridge_channel *announcer_channel)</span>
+<span class="lineNum">     229 </span>            : {
+<span class="lineNum">     230 </span><span class="lineCov">         55 :         struct ast_channel *us = bridge_channel-&gt;chan;</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            :         /* If the announcer channel isn't present, we need to set up ringing, music on hold, or whatever. */
+<span class="lineNum">     233 </span><span class="lineCov">         55 :         if (!announcer_channel) {</span>
+<span class="lineNum">     234 </span><span class="lineCov">         55 :                 defer_action(bridge_channel, participant_entertainment_start);</span>
+<span class="lineNum">     235 </span><span class="lineCov">         55 :                 return;</span>
+<span class="lineNum">     236 </span>            :         }
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            :         /* We need to get compatible with the announcer. */
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         if (ast_set_write_format(us, ast_format_slin)) {</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not make participant %s compatible.\n&quot;, ast_channel_name(us));</span>
+<span class="lineNum">     241 </span>            :         }
+<a name="242"><span class="lineNum">     242 </span>            : }</a>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">         56 : static int holding_bridge_join(struct ast_bridge *bridge, struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     245 </span>            : {
+<span class="lineNum">     246 </span>            :         struct ast_bridge_channel *other_channel;
+<span class="lineNum">     247 </span>            :         struct ast_bridge_channel *announcer_channel;
+<span class="lineNum">     248 </span>            :         struct holding_channel *hc;
+<span class="lineNum">     249 </span><span class="lineCov">         56 :         struct ast_channel *us = bridge_channel-&gt;chan; /* The joining channel */</span>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">         56 :         ast_assert(bridge_channel-&gt;tech_pvt == NULL);</span>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span><span class="lineCov">         56 :         if (!(hc = ast_calloc(1, sizeof(*hc)))) {</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     255 </span>            :         }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">         56 :         bridge_channel-&gt;tech_pvt = hc;</span>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span>            :         /* The bridge pvt holds the announcer channel if we have one. */
+<span class="lineNum">     260 </span><span class="lineCov">         56 :         announcer_channel = bridge-&gt;tech_pvt;</span>
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">         56 :         if (ast_bridge_channel_has_role(bridge_channel, &quot;announcer&quot;)) {</span>
+<span class="lineNum">     263 </span><span class="lineCov">          1 :                 if (announcer_channel) {</span>
+<span class="lineNum">     264 </span>            :                         /* Another announcer already exists. */
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         bridge_channel-&gt;tech_pvt = NULL;</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                         ast_free(hc);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Bridge %s: Channel %s tried to be an announcer.  Bridge already has one.\n&quot;,</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                                 bridge-&gt;uniqueid, ast_channel_name(bridge_channel-&gt;chan));</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     270 </span>            :                 }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          1 :                 bridge-&gt;tech_pvt = bridge_channel;</span>
+<span class="lineNum">     273 </span><span class="lineCov">          1 :                 hc-&gt;role = HOLDING_ROLE_ANNOUNCER;</span>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span>            :                 /* The announcer should always be made compatible with signed linear */
+<span class="lineNum">     276 </span><span class="lineCov">          1 :                 if (ast_set_read_format(us, ast_format_slin)) {</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Could not make announcer %s compatible.\n&quot;, ast_channel_name(us));</span>
+<span class="lineNum">     278 </span>            :                 }
+<span class="lineNum">     279 </span>            : 
+<span class="lineNum">     280 </span>            :                 /* Make everyone listen to the announcer. */
+<span class="lineNum">     281 </span><span class="lineCov">          3 :                 AST_LIST_TRAVERSE(&amp;bridge-&gt;channels, other_channel, entry) {</span>
+<span class="lineNum">     282 </span>            :                         /* Skip the reaction if we are the channel in question */
+<span class="lineNum">     283 </span><span class="lineCov">          2 :                         if (bridge_channel == other_channel) {</span>
+<span class="lineNum">     284 </span><span class="lineCov">          1 :                                 continue;</span>
+<span class="lineNum">     285 </span>            :                         }
+<span class="lineNum">     286 </span><span class="lineCov">          1 :                         defer_action(other_channel, participant_reaction_announcer_join);</span>
+<span class="lineNum">     287 </span>            :                 }
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">         55 :         hc-&gt;role = HOLDING_ROLE_PARTICIPANT;</span>
+<span class="lineNum">     293 </span><span class="lineCov">         55 :         handle_participant_join(bridge_channel, announcer_channel);</span>
+<span class="lineNum">     294 </span><span class="lineCov">         55 :         return 0;</span>
+<a name="295"><span class="lineNum">     295 </span>            : }</a>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 : static void participant_reaction_announcer_leave(struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     298 </span>            : {
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         ast_bridge_channel_restore_formats(bridge_channel);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :         participant_entertainment_start(bridge_channel);</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">         56 : static void holding_bridge_leave(struct ast_bridge *bridge, struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     304 </span>            : {
+<span class="lineNum">     305 </span>            :         struct ast_bridge_channel *other_channel;
+<span class="lineNum">     306 </span><span class="lineCov">         56 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">         56 :         if (!hc) {</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">         56 :         switch (hc-&gt;role) {</span>
+<span class="lineNum">     313 </span><span class="lineCov">          1 :         case HOLDING_ROLE_ANNOUNCER:</span>
+<span class="lineNum">     314 </span>            :                 /* The announcer is leaving */
+<span class="lineNum">     315 </span><span class="lineCov">          1 :                 bridge-&gt;tech_pvt = NULL;</span>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            :                 /* Reset the other channels back to moh/ringing. */
+<span class="lineNum">     318 </span><span class="lineCov">          2 :                 AST_LIST_TRAVERSE(&amp;bridge-&gt;channels, other_channel, entry) {</span>
+<span class="lineNum">     319 </span><span class="lineCov">          1 :                         defer_action(other_channel, participant_reaction_announcer_leave);</span>
+<span class="lineNum">     320 </span>            :                 }
+<span class="lineNum">     321 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     322 </span><span class="lineCov">         55 :         default:</span>
+<span class="lineNum">     323 </span>            :                 /* Nothing needs to react to its departure. */
+<span class="lineNum">     324 </span><span class="lineCov">         55 :                 participant_entertainment_stop(bridge_channel);</span>
+<span class="lineNum">     325 </span><span class="lineCov">         55 :                 break;</span>
+<span class="lineNum">     326 </span>            :         }
+<span class="lineNum">     327 </span><span class="lineCov">         56 :         bridge_channel-&gt;tech_pvt = NULL;</span>
+<span class="lineNum">     328 </span><span class="lineCov">         56 :         ast_free(hc);</span>
+<a name="329"><span class="lineNum">     329 </span>            : }</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">      10446 : static int holding_bridge_write(struct ast_bridge *bridge, struct ast_bridge_channel *bridge_channel, struct ast_frame *frame)</span>
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span><span class="lineCov">      10446 :         struct holding_channel *hc = bridge_channel ? bridge_channel-&gt;tech_pvt : NULL;</span>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span>            :         /* If there is no tech_pvt, then the channel failed to allocate one when it joined and is borked. Don't listen to him. */
+<span class="lineNum">     336 </span><span class="lineCov">      10446 :         if (!hc) {</span>
+<span class="lineNum">     337 </span>            :                 /* &quot;Accept&quot; the frame and discard it. */
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineCov">      10446 :         switch (hc-&gt;role) {</span>
+<span class="lineNum">     342 </span><span class="lineCov">        284 :         case HOLDING_ROLE_ANNOUNCER:</span>
+<span class="lineNum">     343 </span>            :                 /* Write the frame to all other channels if any. */
+<span class="lineNum">     344 </span><span class="lineCov">        284 :                 ast_bridge_queue_everyone_else(bridge, bridge_channel, frame);</span>
+<span class="lineNum">     345 </span><span class="lineCov">        284 :                 break;</span>
+<span class="lineNum">     346 </span><span class="lineCov">      10162 :         default:</span>
+<span class="lineNum">     347 </span>            :                 /* &quot;Accept&quot; the frame and discard it. */
+<span class="lineNum">     348 </span><span class="lineCov">      10162 :                 break;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">      10446 :         return 0;</span>
+<a name="352"><span class="lineNum">     352 </span>            : }</a>
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineCov">         11 : static void holding_bridge_suspend(struct ast_bridge *bridge, struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     355 </span>            : {
+<span class="lineNum">     356 </span><span class="lineCov">         11 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span><span class="lineCov">         11 :         if (!hc) {</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     360 </span>            :         }
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineCov">         11 :         switch (hc-&gt;role) {</span>
+<span class="lineNum">     363 </span><span class="lineCov">         11 :         case HOLDING_ROLE_PARTICIPANT:</span>
+<span class="lineNum">     364 </span><span class="lineCov">         11 :                 participant_entertainment_stop(bridge_channel);</span>
+<span class="lineNum">     365 </span><span class="lineCov">         11 :                 break;</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     368 </span>            :         }
+<a name="369"><span class="lineNum">     369 </span>            : }</a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineCov">         22 : static void holding_bridge_unsuspend(struct ast_bridge *bridge, struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     372 </span>            : {
+<span class="lineNum">     373 </span><span class="lineCov">         22 :         struct holding_channel *hc = bridge_channel-&gt;tech_pvt;</span>
+<span class="lineNum">     374 </span><span class="lineCov">         22 :         struct ast_bridge_channel *announcer_channel = bridge-&gt;tech_pvt;</span>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineCov">         22 :         if (!hc) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     378 </span>            :         }
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">         22 :         switch (hc-&gt;role) {</span>
+<span class="lineNum">     381 </span><span class="lineCov">         22 :         case HOLDING_ROLE_PARTICIPANT:</span>
+<span class="lineNum">     382 </span><span class="lineCov">         22 :                 if (announcer_channel) {</span>
+<span class="lineNum">     383 </span>            :                         /* There is an announcer channel in the bridge. */
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     385 </span>            :                 }
+<span class="lineNum">     386 </span>            :                 /* We need to restart the entertainment. */
+<span class="lineNum">     387 </span><span class="lineCov">         22 :                 participant_entertainment_start(bridge_channel);</span>
+<span class="lineNum">     388 </span><span class="lineCov">         22 :                 break;</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     391 </span>            :         }
+<span class="lineNum">     392 </span>            : }
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span>            : static struct ast_bridge_technology holding_bridge = {
+<span class="lineNum">     395 </span>            :         .name = &quot;holding_bridge&quot;,
+<span class="lineNum">     396 </span>            :         .capabilities = AST_BRIDGE_CAPABILITY_HOLDING,
+<span class="lineNum">     397 </span>            :         .preference = AST_BRIDGE_PREFERENCE_BASE_HOLDING,
+<span class="lineNum">     398 </span>            :         .write = holding_bridge_write,
+<span class="lineNum">     399 </span>            :         .join = holding_bridge_join,
+<span class="lineNum">     400 </span>            :         .leave = holding_bridge_leave,
+<span class="lineNum">     401 </span>            :         .suspend = holding_bridge_suspend,
+<span class="lineNum">     402 </span>            :         .unsuspend = holding_bridge_unsuspend,
+<span class="lineNum">     403 </span>            : };
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span>            : /*!
+<span class="lineNum">     406 </span>            :  * \internal
+<span class="lineNum">     407 </span>            :  * \brief Deferred action to start/stop participant entertainment.
+<span class="lineNum">     408 </span>            :  * \since 12.0.0
+<span class="lineNum">     409 </span>            :  *
+<span class="lineNum">     410 </span>            :  * \param bridge_channel Which channel to operate on.
+<span class="lineNum">     411 </span>            :  * \param payload Data to pass to the callback. (NULL if none).
+<span class="lineNum">     412 </span>            :  * \param payload_size Size of the payload if payload is non-NULL.  A number otherwise.
+<span class="lineNum">     413 </span>            :  *
+<a name="414"><span class="lineNum">     414 </span>            :  * \return Nothing</a>
+<span class="lineNum">     415 </span>            :  */
+<span class="lineNum">     416 </span><span class="lineCov">         56 : static void deferred_action(struct ast_bridge_channel *bridge_channel, const void *payload, size_t payload_size)</span>
+<span class="lineNum">     417 </span>            : {
+<span class="lineNum">     418 </span><span class="lineCov">         56 :         const struct deferred_data *data = payload;</span>
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineCov">         56 :         ast_bridge_channel_lock_bridge(bridge_channel);</span>
+<span class="lineNum">     421 </span><span class="lineCov">         56 :         if (bridge_channel-&gt;bridge-&gt;technology != &amp;holding_bridge</span>
+<span class="lineNum">     422 </span><span class="lineCov">         55 :                 || !bridge_channel-&gt;tech_pvt) {</span>
+<span class="lineNum">     423 </span>            :                 /* Not valid anymore. */
+<span class="lineNum">     424 </span><span class="lineCov">          1 :                 ast_bridge_unlock(bridge_channel-&gt;bridge);</span>
+<span class="lineNum">     425 </span><span class="lineCov">          1 :                 return;</span>
+<span class="lineNum">     426 </span>            :         }
+<span class="lineNum">     427 </span><span class="lineCov">         55 :         data-&gt;callback(bridge_channel);</span>
+<span class="lineNum">     428 </span><span class="lineCov">         55 :         ast_bridge_unlock(bridge_channel-&gt;bridge);</span>
+<a name="429"><span class="lineNum">     429 </span>            : }</a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     432 </span>            : {
+<span class="lineNum">     433 </span><span class="lineCov">       1115 :         ast_bridge_technology_unregister(&amp;holding_bridge);</span>
+<span class="lineNum">     434 </span><span class="lineCov">       1115 :         return 0;</span>
+<a name="435"><span class="lineNum">     435 </span>            : }</a>
+<span class="lineNum">     436 </span>            : 
+<span class="lineNum">     437 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     438 </span>            : {
+<span class="lineNum">     439 </span><span class="lineCov">       1117 :         if (ast_bridge_technology_register(&amp;holding_bridge)) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span><span class="lineCov">       1117 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="444"><span class="lineNum">     444 </span>            : }</a>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Holding bridge module&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

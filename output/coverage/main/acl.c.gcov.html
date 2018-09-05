@@ -1,0 +1,1112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/acl.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - acl.c<span style="font-size: 80%;"> (source / <a href="acl.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">265</td>
+            <td class="headerCovTableEntry">420</td>
+            <td class="headerCovTableEntryLo">63.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntryMed">80.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2012, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Various sorts of access control
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/network.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__Darwin__)
+<span class="lineNum">      35 </span>            : #include &lt;fcntl.h&gt;
+<span class="lineNum">      36 </span>            : #include &lt;net/route.h&gt;
+<span class="lineNum">      37 </span>            : #endif
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #if defined(SOLARIS)
+<span class="lineNum">      40 </span>            : #include &lt;sys/sockio.h&gt;
+<span class="lineNum">      41 </span>            : #include &lt;net/if.h&gt;
+<span class="lineNum">      42 </span>            : #elif defined(HAVE_GETIFADDRS)
+<span class="lineNum">      43 </span>            : #include &lt;ifaddrs.h&gt;
+<span class="lineNum">      44 </span>            : #endif
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/acl.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/srv.h&quot;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : #if (!defined(SOLARIS) &amp;&amp; !defined(HAVE_GETIFADDRS))
+<span class="lineNum">      53 </span>            : static int get_local_address(struct ast_sockaddr *ourip)
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span>            :         return -1;
+<a name="56"><span class="lineNum">      56 </span>            : }</a>
+<span class="lineNum">      57 </span>            : #else
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 : static void score_address(const struct sockaddr_in *sin, struct in_addr *best_addr, int *best_score)</span>
+<span class="lineNum">      59 </span>            : {
+<span class="lineNum">      60 </span>            :         const char *address;
+<span class="lineNum">      61 </span>            :         int score;
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         address = ast_inet_ntoa(sin-&gt;sin_addr);</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            :         /* RFC 1700 alias for the local network */
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         if (address[0] == '0') {</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 score = -25;</span>
+<span class="lineNum">      68 </span>            :         /* RFC 1700 localnet */
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;127&quot;, 3) == 0) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 score = -20;</span>
+<span class="lineNum">      71 </span>            :         /* RFC 1918 non-public address space */
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;10.&quot;, 3) == 0) {</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :                 score = -5;</span>
+<span class="lineNum">      74 </span>            :         /* RFC 1918 non-public address space */
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;172&quot;, 3) == 0) {</span>
+<span class="lineNum">      76 </span>            :                 /* 172.16.0.0 - 172.19.255.255, but not 172.160.0.0 - 172.169.255.255 */
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 if (address[4] == '1' &amp;&amp; address[5] &gt;= '6' &amp;&amp; address[6] == '.') {</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                         score = -5;</span>
+<span class="lineNum">      79 </span>            :                 /* 172.20.0.0 - 172.29.255.255, but not 172.200.0.0 - 172.255.255.255 nor 172.2.0.0 - 172.2.255.255 */
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :                 } else if (address[4] == '2' &amp;&amp; address[6] == '.') {</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 :                         score = -5;</span>
+<span class="lineNum">      82 </span>            :                 /* 172.30.0.0 - 172.31.255.255, but not 172.3.0.0 - 172.3.255.255 */
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 } else if (address[4] == '3' &amp;&amp; (address[5] == '0' || address[5] == '1')) {</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                         score = -5;</span>
+<span class="lineNum">      85 </span>            :                 /* All other 172 addresses are public */
+<span class="lineNum">      86 </span>            :                 } else {
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         score = 0;</span>
+<span class="lineNum">      88 </span>            :                 }
+<span class="lineNum">      89 </span>            :         /* RFC 2544 Benchmark test range (198.18.0.0 - 198.19.255.255, but not 198.180.0.0 - 198.199.255.255) */
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;198.1&quot;, 5) == 0 &amp;&amp; address[5] &gt;= '8' &amp;&amp; address[6] == '.') {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 score = -10;</span>
+<span class="lineNum">      92 </span>            :         /* RFC 1918 non-public address space */
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;192.168&quot;, 7) == 0) {</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 score = -5;</span>
+<span class="lineNum">      95 </span>            :         /* RFC 3330 Zeroconf network */
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;169.254&quot;, 7) == 0) {</span>
+<span class="lineNum">      97 </span>            :                 /*!\note Better score than a test network, but not quite as good as RFC 1918
+<span class="lineNum">      98 </span>            :                  * address space.  The reason is that some Linux distributions automatically
+<span class="lineNum">      99 </span>            :                  * configure a Zeroconf address before trying DHCP, so we want to prefer a
+<span class="lineNum">     100 </span>            :                  * DHCP lease to a Zeroconf address.
+<span class="lineNum">     101 </span>            :                  */
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 score = -10;</span>
+<span class="lineNum">     103 </span>            :         /* RFC 3330 Test network */
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         } else if (strncmp(address, &quot;192.0.2.&quot;, 8) == 0) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 score = -15;</span>
+<span class="lineNum">     106 </span>            :         /* Every other address should be publically routable */
+<span class="lineNum">     107 </span>            :         } else {
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 score = 0;</span>
+<span class="lineNum">     109 </span>            :         }
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :         if (score &gt; *best_score) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 *best_score = score;</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 memcpy(best_addr, &amp;sin-&gt;sin_addr, sizeof(*best_addr));</span>
+<span class="lineNum">     114 </span>            :         }
+<a name="115"><span class="lineNum">     115 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 : static int get_local_address(struct ast_sockaddr *ourip)</span>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         int s, res = -1;</span>
+<span class="lineNum">     120 </span>            : #ifdef SOLARIS
+<span class="lineNum">     121 </span>            :         struct lifreq *ifr = NULL;
+<span class="lineNum">     122 </span>            :         struct lifnum ifn;
+<span class="lineNum">     123 </span>            :         struct lifconf ifc;
+<span class="lineNum">     124 </span>            :         struct sockaddr_in *sa;
+<span class="lineNum">     125 </span>            :         char *buf = NULL;
+<span class="lineNum">     126 </span>            :         int bufsz, x;
+<span class="lineNum">     127 </span>            : #endif /* SOLARIS */
+<span class="lineNum">     128 </span>            : #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__linux__) || defined(__Darwin__) || defined(__GLIBC__)
+<span class="lineNum">     129 </span>            :         struct ifaddrs *ifap, *ifaphead;
+<span class="lineNum">     130 </span>            :         int rtnerr;
+<span class="lineNum">     131 </span>            :         const struct sockaddr_in *sin;
+<span class="lineNum">     132 </span>            : #endif /* BSD_OR_LINUX */
+<span class="lineNum">     133 </span>            :         struct in_addr best_addr;
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         int best_score = -100;</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         memset(&amp;best_addr, 0, sizeof(best_addr));</span>
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span>            : #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__linux__) || defined(__Darwin__) || defined(__GLIBC__)
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         rtnerr = getifaddrs(&amp;ifaphead);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         if (rtnerr) {</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 perror(NULL);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     142 </span>            :         }
+<span class="lineNum">     143 </span>            : #endif /* BSD_OR_LINUX */
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :         s = socket(AF_INET, SOCK_STREAM, 0);</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         if (s &gt; 0) {</span>
+<span class="lineNum">     148 </span>            : #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__linux__) || defined(__Darwin__) || defined(__GLIBC__)
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 for (ifap = ifaphead; ifap; ifap = ifap-&gt;ifa_next) {</span>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                         if (ifap-&gt;ifa_addr &amp;&amp; ifap-&gt;ifa_addr-&gt;sa_family == AF_INET) {</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                                 sin = (const struct sockaddr_in *) ifap-&gt;ifa_addr;</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                                 score_address(sin, &amp;best_addr, &amp;best_score);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                                 res = 0;</span>
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                                 if (best_score == 0) {</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     158 </span>            :                                 }
+<span class="lineNum">     159 </span>            :                         }
+<span class="lineNum">     160 </span>            :                 }
+<span class="lineNum">     161 </span>            : #endif /* BSD_OR_LINUX */
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            :                 /* There is no reason whatsoever that this shouldn't work on Linux or BSD also. */
+<span class="lineNum">     164 </span>            : #ifdef SOLARIS
+<span class="lineNum">     165 </span>            :                 /* Get a count of interfaces on the machine */
+<span class="lineNum">     166 </span>            :                 ifn.lifn_family = AF_INET;
+<span class="lineNum">     167 </span>            :                 ifn.lifn_flags = 0;
+<span class="lineNum">     168 </span>            :                 ifn.lifn_count = 0;
+<span class="lineNum">     169 </span>            :                 if (ioctl(s, SIOCGLIFNUM, &amp;ifn) &lt; 0) {
+<span class="lineNum">     170 </span>            :                         close(s);
+<span class="lineNum">     171 </span>            :                         return -1;
+<span class="lineNum">     172 </span>            :                 }
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span>            :                 bufsz = ifn.lifn_count * sizeof(struct lifreq);
+<span class="lineNum">     175 </span>            :                 if (!(buf = ast_malloc(bufsz))) {
+<span class="lineNum">     176 </span>            :                         close(s);
+<span class="lineNum">     177 </span>            :                         return -1;
+<span class="lineNum">     178 </span>            :                 }
+<span class="lineNum">     179 </span>            :                 memset(buf, 0, bufsz);
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span>            :                 /* Get a list of interfaces on the machine */
+<span class="lineNum">     182 </span>            :                 ifc.lifc_len = bufsz;
+<span class="lineNum">     183 </span>            :                 ifc.lifc_buf = buf;
+<span class="lineNum">     184 </span>            :                 ifc.lifc_family = AF_INET;
+<span class="lineNum">     185 </span>            :                 ifc.lifc_flags = 0;
+<span class="lineNum">     186 </span>            :                 if (ioctl(s, SIOCGLIFCONF, &amp;ifc) &lt; 0) {
+<span class="lineNum">     187 </span>            :                         close(s);
+<span class="lineNum">     188 </span>            :                         ast_free(buf);
+<span class="lineNum">     189 </span>            :                         return -1;
+<span class="lineNum">     190 </span>            :                 }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :                 for (ifr = ifc.lifc_req, x = 0; x &lt; ifn.lifn_count; ifr++, x++) {
+<span class="lineNum">     193 </span>            :                         sa = (struct sockaddr_in *)&amp;(ifr-&gt;lifr_addr);
+<span class="lineNum">     194 </span>            :                         score_address(sa, &amp;best_addr, &amp;best_score);
+<span class="lineNum">     195 </span>            :                         res = 0;
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span>            :                         if (best_score == 0) {
+<span class="lineNum">     198 </span>            :                                 break;
+<span class="lineNum">     199 </span>            :                         }
+<span class="lineNum">     200 </span>            :                 }
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            :                 ast_free(buf);
+<span class="lineNum">     203 </span>            : #endif /* SOLARIS */
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 close(s);</span>
+<span class="lineNum">     206 </span>            :         }
+<span class="lineNum">     207 </span>            : #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__linux__) || defined(__Darwin__)
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         freeifaddrs(ifaphead);</span>
+<span class="lineNum">     209 </span>            : #endif /* BSD_OR_LINUX */
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         if (res == 0 &amp;&amp; ourip) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 ast_sockaddr_setnull(ourip);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 ourip-&gt;ss.ss_family = AF_INET;</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 ((struct sockaddr_in *)&amp;ourip-&gt;ss)-&gt;sin_addr = best_addr;</span>
+<span class="lineNum">     215 </span>            :         }
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         return res;</span>
+<span class="lineNum">     217 </span>            : }
+<span class="lineNum">     218 </span>            : #endif /* HAVE_GETIFADDRS */
+<a name="219"><span class="lineNum">     219 </span>            : </a>
+<span class="lineNum">     220 </span>            : /* Free HA structure */
+<span class="lineNum">     221 </span><span class="lineCov">       4304 : void ast_free_ha(struct ast_ha *ha)</span>
+<span class="lineNum">     222 </span>            : {
+<span class="lineNum">     223 </span>            :         struct ast_ha *hal;
+<span class="lineNum">     224 </span><span class="lineCov">       4602 :         while (ha) {</span>
+<span class="lineNum">     225 </span><span class="lineCov">        298 :                 hal = ha;</span>
+<span class="lineNum">     226 </span><span class="lineCov">        298 :                 ha = ha-&gt;next;</span>
+<span class="lineNum">     227 </span><span class="lineCov">        298 :                 ast_free(hal);</span>
+<span class="lineNum">     228 </span>            :         }
+<span class="lineNum">     229 </span><span class="lineCov">       4304 : }</span>
+<a name="230"><span class="lineNum">     230 </span>            : </a>
+<span class="lineNum">     231 </span>            : /* Free ACL list structure */
+<span class="lineNum">     232 </span><span class="lineCov">      11871 : struct ast_acl_list *ast_free_acl_list(struct ast_acl_list *acl_list)</span>
+<span class="lineNum">     233 </span>            : {
+<span class="lineNum">     234 </span>            :         struct ast_acl *current;
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">      11871 :         if (!acl_list) {</span>
+<span class="lineNum">     237 </span><span class="lineCov">      11842 :                 return NULL;</span>
+<span class="lineNum">     238 </span>            :         }
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineCov">         29 :         AST_LIST_LOCK(acl_list);</span>
+<span class="lineNum">     241 </span><span class="lineCov">         72 :         while ((current = AST_LIST_REMOVE_HEAD(acl_list, list))) {</span>
+<span class="lineNum">     242 </span><span class="lineCov">         43 :                 ast_free_ha(current-&gt;acl);</span>
+<span class="lineNum">     243 </span><span class="lineCov">         43 :                 ast_free(current);</span>
+<span class="lineNum">     244 </span>            :         }
+<span class="lineNum">     245 </span><span class="lineCov">         29 :         AST_LIST_UNLOCK(acl_list);</span>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">         29 :         AST_LIST_HEAD_DESTROY(acl_list);</span>
+<span class="lineNum">     248 </span><span class="lineCov">         29 :         ast_free(acl_list);</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">         29 :         return NULL;</span>
+<span class="lineNum">     251 </span>            : }
+<a name="252"><span class="lineNum">     252 </span>            : </a>
+<span class="lineNum">     253 </span>            : /* Copy HA structure */
+<span class="lineNum">     254 </span><span class="lineCov">         44 : void ast_copy_ha(const struct ast_ha *from, struct ast_ha *to)</span>
+<span class="lineNum">     255 </span>            : {
+<span class="lineNum">     256 </span><span class="lineCov">         44 :         ast_sockaddr_copy(&amp;to-&gt;addr, &amp;from-&gt;addr);</span>
+<span class="lineNum">     257 </span><span class="lineCov">         44 :         ast_sockaddr_copy(&amp;to-&gt;netmask, &amp;from-&gt;netmask);</span>
+<span class="lineNum">     258 </span><span class="lineCov">         44 :         to-&gt;sense = from-&gt;sense;</span>
+<span class="lineNum">     259 </span><span class="lineCov">         44 : }</span>
+<a name="260"><span class="lineNum">     260 </span>            : </a>
+<span class="lineNum">     261 </span>            : /* Create duplicate of ha structure */
+<span class="lineNum">     262 </span><span class="lineCov">         44 : static struct ast_ha *ast_duplicate_ha(struct ast_ha *original)</span>
+<span class="lineNum">     263 </span>            : {
+<span class="lineNum">     264 </span>            :         struct ast_ha *new_ha;
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">         44 :         if ((new_ha = ast_calloc(1, sizeof(*new_ha)))) {</span>
+<span class="lineNum">     267 </span>            :                 /* Copy from original to new object */
+<span class="lineNum">     268 </span><span class="lineCov">         44 :                 ast_copy_ha(original, new_ha);</span>
+<span class="lineNum">     269 </span>            :         }
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineCov">         44 :         return new_ha;</span>
+<span class="lineNum">     272 </span>            : }
+<span class="lineNum">     273 </span>            : 
+<a name="274"><span class="lineNum">     274 </span>            : /* Create duplicate HA link list */</a>
+<span class="lineNum">     275 </span>            : /*  Used in chan_sip2 templates */
+<span class="lineNum">     276 </span><span class="lineCov">         28 : struct ast_ha *ast_duplicate_ha_list(struct ast_ha *original)</span>
+<span class="lineNum">     277 </span>            : {
+<span class="lineNum">     278 </span><span class="lineCov">         28 :         struct ast_ha *start = original;</span>
+<span class="lineNum">     279 </span><span class="lineCov">         28 :         struct ast_ha *ret = NULL;</span>
+<span class="lineNum">     280 </span><span class="lineCov">         28 :         struct ast_ha *current, *prev = NULL;</span>
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">         72 :         while (start) {</span>
+<span class="lineNum">     283 </span><span class="lineCov">         44 :                 current = ast_duplicate_ha(start);  /* Create copy of this object */</span>
+<span class="lineNum">     284 </span><span class="lineCov">         44 :                 if (!current) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                         ast_free_ha(ret);</span>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     288 </span>            :                 }
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">         44 :                 if (prev) {</span>
+<span class="lineNum">     291 </span><span class="lineCov">         16 :                         prev-&gt;next = current;           /* Link previous to this object */</span>
+<span class="lineNum">     292 </span>            :                 }
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineCov">         44 :                 if (!ret) {</span>
+<span class="lineNum">     295 </span><span class="lineCov">         28 :                         ret = current;                  /* Save starting point */</span>
+<span class="lineNum">     296 </span>            :                 }
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineCov">         44 :                 start = start-&gt;next;                /* Go to next object */</span>
+<span class="lineNum">     299 </span><span class="lineCov">         44 :                 prev = current;                     /* Save pointer to this object */</span>
+<span class="lineNum">     300 </span>            :         }
+<span class="lineNum">     301 </span><span class="lineCov">         28 :         return ret;                             /* Return start of list */</span>
+<a name="302"><span class="lineNum">     302 </span>            : }</a>
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">         51 : static int acl_new(struct ast_acl **pointer, const char *name) {</span>
+<span class="lineNum">     305 </span>            :         struct ast_acl *acl;
+<span class="lineNum">     306 </span><span class="lineCov">         51 :         if (!(acl = ast_calloc(1, sizeof(*acl)))) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineCov">         51 :         *pointer = acl;</span>
+<span class="lineNum">     311 </span><span class="lineCov">         51 :         ast_copy_string(acl-&gt;name, name, ACL_NAME_LENGTH);</span>
+<span class="lineNum">     312 </span><span class="lineCov">         51 :         return 0;</span>
+<a name="313"><span class="lineNum">     313 </span>            : }</a>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineCov">        298 : struct ast_acl_list *ast_duplicate_acl_list(struct ast_acl_list *original)</span>
+<span class="lineNum">     316 </span>            : {
+<span class="lineNum">     317 </span>            :         struct ast_acl_list *clone;
+<span class="lineNum">     318 </span>            :         struct ast_acl *current_cursor;
+<span class="lineNum">     319 </span>            :         struct ast_acl *current_clone;
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span>            :         /* Early return if we receive a duplication request for a NULL original. */
+<span class="lineNum">     322 </span><span class="lineCov">        298 :         if (!original) {</span>
+<span class="lineNum">     323 </span><span class="lineCov">        298 :                 return NULL;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         if (!(clone = ast_calloc(1, sizeof(*clone)))) {</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to allocate ast_acl_list struct while cloning an ACL\n&quot;);</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     329 </span>            :         }
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :         AST_LIST_HEAD_INIT(clone);</span>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :         AST_LIST_LOCK(original);</span>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(original, current_cursor, list) {</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 if ((acl_new(&amp;current_clone, current_cursor-&gt;name))) {</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to allocate ast_acl struct while cloning an ACL.\n&quot;);</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                         ast_free_acl_list(clone);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                         clone = NULL;</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     340 </span>            :                 }
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span>            :                 /* Copy data from original ACL to clone ACL */
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 current_clone-&gt;acl = ast_duplicate_ha_list(current_cursor-&gt;acl);</span>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                 current_clone-&gt;is_invalid = current_cursor-&gt;is_invalid;</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                 current_clone-&gt;is_realtime = current_cursor-&gt;is_realtime;</span>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 AST_LIST_INSERT_TAIL(clone, current_clone, list);</span>
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 if (current_cursor-&gt;acl &amp;&amp; !current_clone-&gt;acl) {</span>
+<span class="lineNum">     351 </span>            :                         /* Deal with failure after adding to clone so we don't have to free
+<span class="lineNum">     352 </span>            :                          * current_clone separately. */
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to duplicate HA list while cloning ACL.\n&quot;);</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                         ast_free_acl_list(clone);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                         clone = NULL;</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     357 </span>            :                 }
+<span class="lineNum">     358 </span>            :         }
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         AST_LIST_UNLOCK(original);</span>
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         return clone;</span>
+<span class="lineNum">     363 </span>            : }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span>            : /*!
+<span class="lineNum">     366 </span>            :  * \brief
+<span class="lineNum">     367 </span>            :  * Parse a netmask in CIDR notation
+<span class="lineNum">     368 </span>            :  *
+<span class="lineNum">     369 </span>            :  * \details
+<span class="lineNum">     370 </span>            :  * For a mask of an IPv4 address, this should be a number between 0 and 32. For
+<span class="lineNum">     371 </span>            :  * a mask of an IPv6 address, this should be a number between 0 and 128. This
+<span class="lineNum">     372 </span>            :  * function creates an IPv6 ast_sockaddr from the given netmask. For masks of
+<span class="lineNum">     373 </span>            :  * IPv4 addresses, this is accomplished by adding 96 to the original netmask.
+<span class="lineNum">     374 </span>            :  *
+<span class="lineNum">     375 </span>            :  * \param[out] addr The ast_sockaddr produced from the CIDR netmask
+<span class="lineNum">     376 </span>            :  * \param is_v4 Tells if the address we are masking is IPv4.
+<span class="lineNum">     377 </span>            :  * \param mask_str The CIDR mask to convert
+<span class="lineNum">     378 </span>            :  * \retval -1 Failure
+<a name="379"><span class="lineNum">     379 </span>            :  * \retval 0 Success</a>
+<span class="lineNum">     380 </span>            :  */
+<span class="lineNum">     381 </span><span class="lineCov">        212 : static int parse_cidr_mask(struct ast_sockaddr *addr, int is_v4, const char *mask_str)</span>
+<span class="lineNum">     382 </span>            : {
+<span class="lineNum">     383 </span>            :         int mask;
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">        212 :         if (sscanf(mask_str, &quot;%30d&quot;, &amp;mask) != 1) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     387 </span>            :         }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">        211 :         if (is_v4) {</span>
+<span class="lineNum">     390 </span>            :                 struct sockaddr_in sin;
+<span class="lineNum">     391 </span><span class="lineCov">        194 :                 if (mask &lt; 0 || mask &gt; 32) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">          3 :                         return -1;</span>
+<span class="lineNum">     393 </span>            :                 }
+<span class="lineNum">     394 </span><span class="lineCov">        191 :                 memset(&amp;sin, 0, sizeof(sin));</span>
+<span class="lineNum">     395 </span><span class="lineCov">        191 :                 sin.sin_family = AF_INET;</span>
+<span class="lineNum">     396 </span>            :                 /* If mask is 0, then we already have the
+<span class="lineNum">     397 </span>            :                  * appropriate all 0s address in sin from
+<span class="lineNum">     398 </span>            :                  * the above memset.
+<span class="lineNum">     399 </span>            :                  */
+<span class="lineNum">     400 </span><span class="lineCov">        191 :                 if (mask != 0) {</span>
+<span class="lineNum">     401 </span><span class="lineCov">        185 :                         sin.sin_addr.s_addr = htonl(0xFFFFFFFF &lt;&lt; (32 - mask));</span>
+<span class="lineNum">     402 </span>            :                 }
+<span class="lineNum">     403 </span><span class="lineCov">        191 :                 ast_sockaddr_from_sin(addr, &amp;sin);</span>
+<span class="lineNum">     404 </span>            :         } else {
+<span class="lineNum">     405 </span>            :                 struct sockaddr_in6 sin6;
+<span class="lineNum">     406 </span>            :                 int i;
+<span class="lineNum">     407 </span><span class="lineCov">         17 :                 if (mask &lt; 0 || mask &gt; 128) {</span>
+<span class="lineNum">     408 </span><span class="lineCov">          1 :                         return -1;</span>
+<span class="lineNum">     409 </span>            :                 }
+<span class="lineNum">     410 </span><span class="lineCov">         16 :                 memset(&amp;sin6, 0, sizeof(sin6));</span>
+<span class="lineNum">     411 </span><span class="lineCov">         16 :                 sin6.sin6_family = AF_INET6;</span>
+<span class="lineNum">     412 </span><span class="lineCov">         80 :                 for (i = 0; i &lt; 4; ++i) {</span>
+<span class="lineNum">     413 </span>            :                         /* Once mask reaches 0, we don't have
+<span class="lineNum">     414 </span>            :                          * to explicitly set anything anymore
+<span class="lineNum">     415 </span>            :                          * since sin6 was zeroed out already
+<span class="lineNum">     416 </span>            :                          */
+<span class="lineNum">     417 </span><span class="lineCov">         64 :                         if (mask &gt; 0) {</span>
+<span class="lineNum">     418 </span><span class="lineCov">         36 :                                 V6_WORD(&amp;sin6, i) = htonl(0xFFFFFFFF &lt;&lt; (mask &lt; 32 ? (32 - mask) : 0));</span>
+<span class="lineNum">     419 </span><span class="lineCov">         36 :                                 mask -= mask &lt; 32 ? mask : 32;</span>
+<span class="lineNum">     420 </span>            :                         }
+<span class="lineNum">     421 </span>            :                 }
+<span class="lineNum">     422 </span><span class="lineCov">         16 :                 memcpy(&amp;addr-&gt;ss, &amp;sin6, sizeof(sin6));</span>
+<span class="lineNum">     423 </span><span class="lineCov">         16 :                 addr-&gt;len = sizeof(sin6);</span>
+<span class="lineNum">     424 </span>            :         }
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">        207 :         return 0;</span>
+<a name="427"><span class="lineNum">     427 </span>            : }</a>
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineCov">         47 : void ast_append_acl(const char *sense, const char *stuff, struct ast_acl_list **path, int *error, int *named_acl_flag)</span>
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span><span class="lineCov">         47 :         struct ast_acl *acl = NULL;</span>
+<span class="lineNum">     432 </span>            :         struct ast_acl *current;
+<span class="lineNum">     433 </span>            :         struct ast_acl_list *working_list;
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span>            :         char *tmp, *list;
+<span class="lineNum">     436 </span>            : 
+<span class="lineNum">     437 </span>            :         /* If the ACL list is currently uninitialized, it must be initialized. */
+<span class="lineNum">     438 </span><span class="lineCov">         47 :         if (*path == NULL) {</span>
+<span class="lineNum">     439 </span>            :                 struct ast_acl_list *list;
+<span class="lineNum">     440 </span><span class="lineCov">         33 :                 list = ast_calloc(1, sizeof(*list));</span>
+<span class="lineNum">     441 </span><span class="lineCov">         33 :                 if (!list) {</span>
+<span class="lineNum">     442 </span>            :                         /* Allocation Error */
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                         if (error) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                                 *error = 1;</span>
+<span class="lineNum">     445 </span>            :                         }
+<span class="lineNum">     446 </span><span class="lineCov">         28 :                         return;</span>
+<span class="lineNum">     447 </span>            :                 }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineCov">         33 :                 AST_LIST_HEAD_INIT(list);</span>
+<span class="lineNum">     450 </span><span class="lineCov">         33 :                 *path = list;</span>
+<span class="lineNum">     451 </span>            :         }
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">         47 :         working_list = *path;</span>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">         47 :         AST_LIST_LOCK(working_list);</span>
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span>            :         /* First we need to determine if we will need to add a new ACL node or if we can use an existing one. */
+<span class="lineNum">     458 </span><span class="lineCov">         47 :         if (strncasecmp(sense, &quot;a&quot;, 1)) {</span>
+<span class="lineNum">     459 </span>            :                 /* The first element in the path should be the unnamed, base ACL. If that's the case, we use it. If not,
+<span class="lineNum">     460 </span>            :                  * we have to make one and link it up appropriately. */
+<span class="lineNum">     461 </span><span class="lineCov">         28 :                 current = AST_LIST_FIRST(working_list);</span>
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">         28 :                 if (!current || !ast_strlen_zero(current-&gt;name)) {</span>
+<span class="lineNum">     464 </span><span class="lineCov">         14 :                         if (acl_new(&amp;acl, &quot;&quot;)) {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                 if (error) {</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                                         *error = 1;</span>
+<span class="lineNum">     467 </span>            :                                 }
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                 AST_LIST_UNLOCK(working_list);</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                 return;</span>
+<span class="lineNum">     470 </span>            :                         }
+<span class="lineNum">     471 </span>            :                         // Need to INSERT the ACL at the head here.
+<span class="lineNum">     472 </span><span class="lineCov">         14 :                         AST_LIST_INSERT_HEAD(working_list, acl, list);</span>
+<span class="lineNum">     473 </span>            :                 } else {
+<span class="lineNum">     474 </span>            :                         /* If the first element was already the unnamed base ACL, we just use that one. */
+<span class="lineNum">     475 </span><span class="lineCov">         14 :                         acl = current;</span>
+<span class="lineNum">     476 </span>            :                 }
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span>            :                 /* With the proper ACL set for modification, we can just pass this off to the ast_ha append function. */
+<span class="lineNum">     479 </span><span class="lineCov">         28 :                 acl-&gt;acl = ast_append_ha(sense, stuff, acl-&gt;acl, error);</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">         28 :                 AST_LIST_UNLOCK(working_list);</span>
+<span class="lineNum">     482 </span><span class="lineCov">         28 :                 return;</span>
+<span class="lineNum">     483 </span>            :         }
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span>            :         /* We are in ACL append mode, so we know we'll be adding one or more named ACLs. */
+<span class="lineNum">     486 </span><span class="lineCov">         19 :         list = ast_strdupa(stuff);</span>
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineCov">         56 :         while ((tmp = strsep(&amp;list, &quot;,&quot;))) {</span>
+<span class="lineNum">     489 </span>            :                 struct ast_ha *named_ha;
+<span class="lineNum">     490 </span><span class="lineCov">         37 :                 int already_included = 0;</span>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span>            :                 /* Remove leading whitespace from the string in case the user put spaces between items */
+<span class="lineNum">     493 </span><span class="lineCov">         37 :                 tmp = ast_skip_blanks(tmp);</span>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span>            :                 /* The first step is to check for a duplicate */
+<span class="lineNum">     496 </span><span class="lineCov">         64 :                 AST_LIST_TRAVERSE(working_list, current, list) {</span>
+<span class="lineNum">     497 </span><span class="lineCov">         27 :                         if (!strcasecmp(current-&gt;name, tmp)) { /* ACL= */</span>
+<span class="lineNum">     498 </span>            :                                 /* Inclusion of the same ACL multiple times isn't a catastrophic error, but it will raise the error flag and skip the entry. */
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Named ACL '%s' occurs multiple times in ACL definition. &quot;</span>
+<span class="lineNum">     500 </span>            :                                                    &quot;Please update your ACL configuration.\n&quot;, tmp);
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :                                 if (error) {</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :                                         *error = 1;</span>
+<span class="lineNum">     503 </span>            :                                 }
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                                 already_included = 1;</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     506 </span>            :                         }
+<span class="lineNum">     507 </span>            :                 }
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span><span class="lineCov">         37 :                 if (already_included) {</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     511 </span>            :                 }
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span><span class="lineCov">         37 :                 if (acl_new(&amp;acl, tmp)) {</span>
+<span class="lineNum">     514 </span>            :                         /* This is a catastrophic allocation error and we'll return immediately if this happens. */
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                         if (error) {</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                                 *error = 1;</span>
+<span class="lineNum">     517 </span>            :                         }
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                         AST_LIST_UNLOCK(working_list);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     520 </span>            :                 }
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span>            :                 /* Attempt to grab the Named ACL we are looking for. */
+<span class="lineNum">     523 </span><span class="lineCov">         37 :                 named_ha = ast_named_acl_find(tmp, &amp;acl-&gt;is_realtime, &amp;acl-&gt;is_invalid);</span>
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span>            :                 /* Set the ACL's ast_ha to the duplicated named ACL retrieved above. */
+<span class="lineNum">     526 </span><span class="lineCov">         37 :                 acl-&gt;acl = named_ha;</span>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span>            :                 /* Raise the named_acl_flag since we are adding a named ACL to the ACL container. */
+<span class="lineNum">     529 </span><span class="lineCov">         37 :                 if (named_acl_flag) {</span>
+<span class="lineNum">     530 </span><span class="lineCov">         37 :                         *named_acl_flag = 1;</span>
+<span class="lineNum">     531 </span>            :                 }
+<span class="lineNum">     532 </span>            : 
+<span class="lineNum">     533 </span>            :                 /* Now insert the new ACL at the end of the list. */
+<span class="lineNum">     534 </span><span class="lineCov">         37 :                 AST_LIST_INSERT_TAIL(working_list, acl, list);</span>
+<span class="lineNum">     535 </span>            :         }
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">         19 :         AST_LIST_UNLOCK(working_list);</span>
+<a name="538"><span class="lineNum">     538 </span>            : }</a>
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineCov">       7178 : int ast_acl_list_is_empty(struct ast_acl_list *acl_list)</span>
+<span class="lineNum">     541 </span>            : {
+<span class="lineNum">     542 </span>            :         struct ast_acl *head;
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">       7178 :         if (!acl_list) {</span>
+<span class="lineNum">     545 </span><span class="lineCov">       7125 :                 return 1;</span>
+<span class="lineNum">     546 </span>            :         }
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineCov">         53 :         AST_LIST_LOCK(acl_list);</span>
+<span class="lineNum">     549 </span><span class="lineCov">         53 :         head = AST_LIST_FIRST(acl_list);</span>
+<span class="lineNum">     550 </span><span class="lineCov">         53 :         AST_LIST_UNLOCK(acl_list);</span>
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineCov">         53 :         if (head) {</span>
+<span class="lineNum">     553 </span><span class="lineCov">         53 :                 return 0;</span>
+<span class="lineNum">     554 </span>            :         }
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     557 </span>            : }
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span>            : /*!
+<span class="lineNum">     560 </span>            :  * \internal
+<span class="lineNum">     561 </span>            :  * \brief Used by ast_append_ha to avoid ast_strdupa in a loop.
+<span class="lineNum">     562 </span>            :  *
+<a name="563"><span class="lineNum">     563 </span>            :  * \note This function is only called at debug level 3 and higher.</a>
+<span class="lineNum">     564 </span>            :  */
+<span class="lineNum">     565 </span><span class="lineCov">        216 : static void debug_ha_sense_appended(struct ast_ha *ha)</span>
+<span class="lineNum">     566 </span>            : {
+<span class="lineNum">     567 </span><span class="lineCov">        216 :         const char *parsed_mask = ast_strdupa(ast_sockaddr_stringify(&amp;ha-&gt;netmask));</span>
+<span class="lineNum">     568 </span>            : 
+<span class="lineNum">     569 </span><span class="lineCov">        216 :         ast_log(LOG_DEBUG, &quot;%s/%s sense %u appended to ACL\n&quot;,</span>
+<span class="lineNum">     570 </span><span class="lineCov">        216 :                 ast_sockaddr_stringify(&amp;ha-&gt;addr),</span>
+<span class="lineNum">     571 </span>            :                 parsed_mask,
+<span class="lineNum">     572 </span><span class="lineCov">        216 :                 ha-&gt;sense);</span>
+<a name="573"><span class="lineNum">     573 </span><span class="lineCov">        216 : }</span></a>
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span><span class="lineCov">        264 : struct ast_ha *ast_append_ha(const char *sense, const char *stuff, struct ast_ha *path, int *error)</span>
+<span class="lineNum">     576 </span>            : {
+<span class="lineNum">     577 </span>            :         struct ast_ha *ha;
+<span class="lineNum">     578 </span><span class="lineCov">        264 :         struct ast_ha *prev = NULL;</span>
+<span class="lineNum">     579 </span>            :         struct ast_ha *ret;
+<span class="lineNum">     580 </span><span class="lineCov">        264 :         char *tmp, *list = ast_strdupa(stuff);</span>
+<span class="lineNum">     581 </span><span class="lineCov">        264 :         char *address = NULL, *mask = NULL;</span>
+<span class="lineNum">     582 </span>            :         int addr_is_v4;
+<span class="lineNum">     583 </span><span class="lineCov">        264 :         int allowing = strncasecmp(sense, &quot;p&quot;, 1) ? AST_SENSE_DENY : AST_SENSE_ALLOW;</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span><span class="lineCov">        264 :         ret = path;</span>
+<span class="lineNum">     586 </span><span class="lineCov">        324 :         while (path) {</span>
+<span class="lineNum">     587 </span><span class="lineCov">         60 :                 prev = path;</span>
+<span class="lineNum">     588 </span><span class="lineCov">         60 :                 path = path-&gt;next;</span>
+<span class="lineNum">     589 </span>            :         }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">        514 :         while ((tmp = strsep(&amp;list, &quot;,&quot;))) {</span>
+<span class="lineNum">     592 </span><span class="lineCov">        267 :                 if (!(ha = ast_calloc(1, sizeof(*ha)))) {</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :                         if (error) {</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :                                 *error = 1;</span>
+<span class="lineNum">     595 </span>            :                         }
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                         return ret;</span>
+<span class="lineNum">     597 </span>            :                 }
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineCov">        267 :                 address = strsep(&amp;tmp, &quot;/&quot;);</span>
+<span class="lineNum">     600 </span><span class="lineCov">        267 :                 if (!address) {</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :                         address = tmp;</span>
+<span class="lineNum">     602 </span>            :                 } else {
+<span class="lineNum">     603 </span><span class="lineCov">        267 :                         mask = tmp;</span>
+<span class="lineNum">     604 </span>            :                 }
+<span class="lineNum">     605 </span>            : 
+<span class="lineNum">     606 </span><span class="lineCov">        267 :                 if (*address == '!') {</span>
+<span class="lineNum">     607 </span><span class="lineCov">          2 :                         ha-&gt;sense = (allowing == AST_SENSE_DENY) ? AST_SENSE_ALLOW : AST_SENSE_DENY;</span>
+<span class="lineNum">     608 </span><span class="lineCov">          2 :                         address++;</span>
+<span class="lineNum">     609 </span>            :                 } else {
+<span class="lineNum">     610 </span><span class="lineCov">        265 :                         ha-&gt;sense = allowing;</span>
+<span class="lineNum">     611 </span>            :                 }
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span><span class="lineCov">        267 :                 if (!ast_sockaddr_parse(&amp;ha-&gt;addr, address, PARSE_PORT_FORBID)) {</span>
+<span class="lineNum">     614 </span><span class="lineCov">          9 :                         ast_log(LOG_WARNING, &quot;Invalid IP address: %s\n&quot;, address);</span>
+<span class="lineNum">     615 </span><span class="lineCov">          9 :                         ast_free_ha(ha);</span>
+<span class="lineNum">     616 </span><span class="lineCov">          9 :                         if (error) {</span>
+<span class="lineNum">     617 </span><span class="lineCov">          9 :                                 *error = 1;</span>
+<span class="lineNum">     618 </span>            :                         }
+<span class="lineNum">     619 </span><span class="lineCov">          9 :                         return ret;</span>
+<span class="lineNum">     620 </span>            :                 }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            :                 /* If someone specifies an IPv4-mapped IPv6 address,
+<span class="lineNum">     623 </span>            :                  * we just convert this to an IPv4 ACL
+<span class="lineNum">     624 </span>            :                  */
+<span class="lineNum">     625 </span><span class="lineCov">        258 :                 if (ast_sockaddr_ipv4_mapped(&amp;ha-&gt;addr, &amp;ha-&gt;addr)) {</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;IPv4-mapped ACL network address specified. &quot;</span>
+<span class="lineNum">     627 </span>            :                                 &quot;Converting to an IPv4 ACL network address.\n&quot;);
+<span class="lineNum">     628 </span>            :                 }
+<span class="lineNum">     629 </span>            : 
+<span class="lineNum">     630 </span><span class="lineCov">        258 :                 addr_is_v4 = ast_sockaddr_is_ipv4(&amp;ha-&gt;addr);</span>
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">        258 :                 if (!mask) {</span>
+<span class="lineNum">     633 </span><span class="lineCov">        178 :                         parse_cidr_mask(&amp;ha-&gt;netmask, addr_is_v4, addr_is_v4 ? &quot;32&quot; : &quot;128&quot;);</span>
+<span class="lineNum">     634 </span><span class="lineCov">        123 :                 } else if (strchr(mask, ':') || strchr(mask, '.')) {</span>
+<span class="lineNum">     635 </span>            :                         int mask_is_v4;
+<span class="lineNum">     636 </span>            :                         /* Mask is of x.x.x.x or x:x:x:x:x:x:x:x variety */
+<span class="lineNum">     637 </span><span class="lineCov">         46 :                         if (!ast_sockaddr_parse(&amp;ha-&gt;netmask, mask, PARSE_PORT_FORBID)) {</span>
+<span class="lineNum">     638 </span><span class="lineCov">          2 :                                 ast_log(LOG_WARNING, &quot;Invalid netmask: %s\n&quot;, mask);</span>
+<span class="lineNum">     639 </span><span class="lineCov">          2 :                                 ast_free_ha(ha);</span>
+<span class="lineNum">     640 </span><span class="lineCov">          2 :                                 if (error) {</span>
+<span class="lineNum">     641 </span><span class="lineCov">          2 :                                         *error = 1;</span>
+<span class="lineNum">     642 </span>            :                                 }
+<span class="lineNum">     643 </span><span class="lineCov">          2 :                                 return ret;</span>
+<span class="lineNum">     644 </span>            :                         }
+<span class="lineNum">     645 </span>            :                         /* If someone specifies an IPv4-mapped IPv6 netmask,
+<span class="lineNum">     646 </span>            :                          * we just convert this to an IPv4 ACL
+<span class="lineNum">     647 </span>            :                          */
+<span class="lineNum">     648 </span><span class="lineCov">         44 :                         if (ast_sockaddr_ipv4_mapped(&amp;ha-&gt;netmask, &amp;ha-&gt;netmask)) {</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_NOTICE, &quot;IPv4-mapped ACL netmask specified. &quot;</span>
+<span class="lineNum">     650 </span>            :                                         &quot;Converting to an IPv4 ACL netmask.\n&quot;);
+<span class="lineNum">     651 </span>            :                         }
+<span class="lineNum">     652 </span><span class="lineCov">         44 :                         mask_is_v4 = ast_sockaddr_is_ipv4(&amp;ha-&gt;netmask);</span>
+<span class="lineNum">     653 </span><span class="lineCov">         44 :                         if (addr_is_v4 ^ mask_is_v4) {</span>
+<span class="lineNum">     654 </span><span class="lineCov">          1 :                                 ast_log(LOG_WARNING, &quot;Address and mask are not using same address scheme.\n&quot;);</span>
+<span class="lineNum">     655 </span><span class="lineCov">          1 :                                 ast_free_ha(ha);</span>
+<span class="lineNum">     656 </span><span class="lineCov">          1 :                                 if (error) {</span>
+<span class="lineNum">     657 </span><span class="lineCov">          1 :                                         *error = 1;</span>
+<span class="lineNum">     658 </span>            :                                 }
+<span class="lineNum">     659 </span><span class="lineCov">          1 :                                 return ret;</span>
+<span class="lineNum">     660 </span>            :                         }
+<span class="lineNum">     661 </span><span class="lineCov">         34 :                 } else if (parse_cidr_mask(&amp;ha-&gt;netmask, addr_is_v4, mask)) {</span>
+<span class="lineNum">     662 </span><span class="lineCov">          5 :                         ast_log(LOG_WARNING, &quot;Invalid CIDR netmask: %s\n&quot;, mask);</span>
+<span class="lineNum">     663 </span><span class="lineCov">          5 :                         ast_free_ha(ha);</span>
+<span class="lineNum">     664 </span><span class="lineCov">          5 :                         if (error) {</span>
+<span class="lineNum">     665 </span><span class="lineCov">          5 :                                 *error = 1;</span>
+<span class="lineNum">     666 </span>            :                         }
+<span class="lineNum">     667 </span><span class="lineCov">          5 :                         return ret;</span>
+<span class="lineNum">     668 </span>            :                 }
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineCov">        250 :                 if (ast_sockaddr_apply_netmask(&amp;ha-&gt;addr, &amp;ha-&gt;netmask, &amp;ha-&gt;addr)) {</span>
+<span class="lineNum">     671 </span>            :                         /* This shouldn't happen because ast_sockaddr_parse would
+<span class="lineNum">     672 </span>            :                          * have failed much earlier on an unsupported address scheme
+<span class="lineNum">     673 </span>            :                          */
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                         char *failmask = ast_strdupa(ast_sockaddr_stringify(&amp;ha-&gt;netmask));</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                         char *failaddr = ast_strdupa(ast_sockaddr_stringify(&amp;ha-&gt;addr));</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to apply netmask %s to address %s\n&quot;, failmask, failaddr);</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :                         ast_free_ha(ha);</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :                         if (error) {</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :                                 *error = 1;</span>
+<span class="lineNum">     680 </span>            :                         }
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                         return ret;</span>
+<span class="lineNum">     682 </span>            :                 }
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span><span class="lineCov">        250 :                 if (prev) {</span>
+<span class="lineNum">     685 </span><span class="lineCov">         52 :                         prev-&gt;next = ha;</span>
+<span class="lineNum">     686 </span>            :                 } else {
+<span class="lineNum">     687 </span><span class="lineCov">        198 :                         ret = ha;</span>
+<span class="lineNum">     688 </span>            :                 }
+<span class="lineNum">     689 </span><span class="lineCov">        250 :                 prev = ha;</span>
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineCov">        250 :                 if (DEBUG_ATLEAST(3)) {</span>
+<span class="lineNum">     692 </span><span class="lineCov">        216 :                         debug_ha_sense_appended(ha);</span>
+<span class="lineNum">     693 </span>            :                 }
+<span class="lineNum">     694 </span>            :         }
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">        247 :         return ret;</span>
+<a name="697"><span class="lineNum">     697 </span>            : }</a>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineCov">          5 : void ast_ha_join(const struct ast_ha *ha, struct ast_str **buf)</span>
+<span class="lineNum">     700 </span>            : {
+<span class="lineNum">     701 </span><span class="lineCov">          8 :         for (; ha; ha = ha-&gt;next) {</span>
+<span class="lineNum">     702 </span><span class="lineCov">          6 :                 ast_str_append(buf, 0, &quot;%s%s/&quot;,</span>
+<span class="lineNum">     703 </span><span class="lineCov">          3 :                         ha-&gt;sense == AST_SENSE_ALLOW ? &quot;!&quot; : &quot;&quot;,</span>
+<span class="lineNum">     704 </span>            :                         ast_sockaddr_stringify_addr(&amp;ha-&gt;addr));
+<span class="lineNum">     705 </span>            :                 /* Separated to avoid duplicating stringified addresses. */
+<span class="lineNum">     706 </span><span class="lineCov">          3 :                 ast_str_append(buf, 0, &quot;%s&quot;, ast_sockaddr_stringify_addr(&amp;ha-&gt;netmask));</span>
+<span class="lineNum">     707 </span><span class="lineCov">          3 :                 if (ha-&gt;next) {</span>
+<span class="lineNum">     708 </span><span class="lineCov">          1 :                         ast_str_append(buf, 0, &quot;,&quot;);</span>
+<span class="lineNum">     709 </span>            :                 }
+<span class="lineNum">     710 </span>            :         }
+<a name="711"><span class="lineNum">     711 </span><span class="lineCov">          5 : }</span></a>
+<span class="lineNum">     712 </span>            : 
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 : void ast_ha_join_cidr(const struct ast_ha *ha, struct ast_str **buf)</span>
+<span class="lineNum">     714 </span>            : {
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         for (; ha; ha = ha-&gt;next) {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                 const char *addr = ast_sockaddr_stringify_addr(&amp;ha-&gt;addr);</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :                 ast_str_append(buf, 0, &quot;%s%s/%d&quot;,</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                                ha-&gt;sense == AST_SENSE_ALLOW ? &quot;!&quot; : &quot;&quot;,</span>
+<span class="lineNum">     719 </span>            :                                addr, ast_sockaddr_cidr_bits(&amp;ha-&gt;netmask));
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :                 if (ha-&gt;next) {</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :                         ast_str_append(buf, 0, &quot;,&quot;);</span>
+<span class="lineNum">     722 </span>            :                 }
+<span class="lineNum">     723 </span>            :         }
+<a name="724"><span class="lineNum">     724 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     725 </span>            : 
+<span class="lineNum">     726 </span><span class="lineCov">        609 : enum ast_acl_sense ast_apply_acl(struct ast_acl_list *acl_list, const struct ast_sockaddr *addr, const char *purpose)</span>
+<span class="lineNum">     727 </span>            : {
+<span class="lineNum">     728 </span>            :         struct ast_acl *acl;
+<span class="lineNum">     729 </span>            : 
+<span class="lineNum">     730 </span>            :         /* If the list is NULL, there are no rules, so we'll allow automatically. */
+<span class="lineNum">     731 </span><span class="lineCov">        609 :         if (!acl_list) {</span>
+<span class="lineNum">     732 </span><span class="lineCov">        491 :                 return AST_SENSE_ALLOW;</span>
+<span class="lineNum">     733 </span>            :         }
+<span class="lineNum">     734 </span>            : 
+<span class="lineNum">     735 </span><span class="lineCov">        118 :         AST_LIST_LOCK(acl_list);</span>
+<span class="lineNum">     736 </span>            : 
+<span class="lineNum">     737 </span><span class="lineCov">        219 :         AST_LIST_TRAVERSE(acl_list, acl, list) {</span>
+<span class="lineNum">     738 </span><span class="lineCov">        170 :                 if (acl-&gt;is_invalid) {</span>
+<span class="lineNum">     739 </span>            :                         /* In this case, the baseline ACL shouldn't ever trigger this, but if that somehow happens, it'll still be shown. */
+<span class="lineNum">     740 </span><span class="lineCov">         16 :                         ast_log(LOG_WARNING, &quot;%sRejecting '%s' due to use of an invalid ACL '%s'.\n&quot;, purpose ? purpose : &quot;&quot;, ast_sockaddr_stringify_addr(addr),</span>
+<span class="lineNum">     741 </span><span class="lineCov">         16 :                                         ast_strlen_zero(acl-&gt;name) ? &quot;(BASELINE)&quot; : acl-&gt;name);</span>
+<span class="lineNum">     742 </span><span class="lineCov">         16 :                         AST_LIST_UNLOCK(acl_list);</span>
+<span class="lineNum">     743 </span><span class="lineCov">         16 :                         return AST_SENSE_DENY;</span>
+<span class="lineNum">     744 </span>            :                 }
+<span class="lineNum">     745 </span>            : 
+<span class="lineNum">     746 </span><span class="lineCov">        154 :                 if (acl-&gt;acl) {</span>
+<span class="lineNum">     747 </span><span class="lineCov">        134 :                         if (ast_apply_ha(acl-&gt;acl, addr) == AST_SENSE_DENY) {</span>
+<span class="lineNum">     748 </span><span class="lineCov">         53 :                                 ast_log(LOG_NOTICE, &quot;%sRejecting '%s' due to a failure to pass ACL '%s'\n&quot;, purpose ? purpose : &quot;&quot;, ast_sockaddr_stringify_addr(addr),</span>
+<span class="lineNum">     749 </span><span class="lineCov">         53 :                                                 ast_strlen_zero(acl-&gt;name) ? &quot;(BASELINE)&quot; : acl-&gt;name);</span>
+<span class="lineNum">     750 </span><span class="lineCov">         53 :                                 AST_LIST_UNLOCK(acl_list);</span>
+<span class="lineNum">     751 </span><span class="lineCov">         53 :                                 return AST_SENSE_DENY;</span>
+<span class="lineNum">     752 </span>            :                         }
+<span class="lineNum">     753 </span>            :                 }
+<span class="lineNum">     754 </span>            :         }
+<span class="lineNum">     755 </span>            : 
+<span class="lineNum">     756 </span><span class="lineCov">         49 :         AST_LIST_UNLOCK(acl_list);</span>
+<span class="lineNum">     757 </span>            : 
+<span class="lineNum">     758 </span><span class="lineCov">         49 :         return AST_SENSE_ALLOW;</span>
+<a name="759"><span class="lineNum">     759 </span>            : }</a>
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineCov">        962 : enum ast_acl_sense ast_apply_ha(const struct ast_ha *ha, const struct ast_sockaddr *addr)</span>
+<span class="lineNum">     762 </span>            : {
+<span class="lineNum">     763 </span>            :         /* Start optimistic */
+<span class="lineNum">     764 </span><span class="lineCov">        962 :         enum ast_acl_sense res = AST_SENSE_ALLOW;</span>
+<span class="lineNum">     765 </span>            :         const struct ast_ha *current_ha;
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span><span class="lineCov">       1726 :         for (current_ha = ha; current_ha; current_ha = current_ha-&gt;next) {</span>
+<span class="lineNum">     768 </span>            :                 struct ast_sockaddr result;
+<span class="lineNum">     769 </span>            :                 struct ast_sockaddr mapped_addr;
+<span class="lineNum">     770 </span>            :                 const struct ast_sockaddr *addr_to_use;
+<span class="lineNum">     771 </span>            : #if 0   /* debugging code */
+<span class="lineNum">     772 </span>            :                 char iabuf[INET_ADDRSTRLEN];
+<span class="lineNum">     773 </span>            :                 char iabuf2[INET_ADDRSTRLEN];
+<span class="lineNum">     774 </span>            :                 /* DEBUG */
+<span class="lineNum">     775 </span>            :                 ast_copy_string(iabuf, ast_sockaddr_stringify(addr), sizeof(iabuf));
+<span class="lineNum">     776 </span>            :                 ast_copy_string(iabuf2, ast_sockaddr_stringify(&amp;current_ha-&gt;addr), sizeof(iabuf2));
+<span class="lineNum">     777 </span>            :                 ast_debug(1, &quot;##### Testing %s with %s\n&quot;, iabuf, iabuf2);
+<span class="lineNum">     778 </span>            : #endif
+<span class="lineNum">     779 </span><span class="lineCov">        764 :                 if (ast_sockaddr_is_ipv4(&amp;current_ha-&gt;addr)) {</span>
+<span class="lineNum">     780 </span><span class="lineCov">        599 :                         if (ast_sockaddr_is_ipv6(addr)) {</span>
+<span class="lineNum">     781 </span><span class="lineCov">        105 :                                 if (ast_sockaddr_is_ipv4_mapped(addr)) {</span>
+<span class="lineNum">     782 </span>            :                                         /* IPv4 ACLs apply to IPv4-mapped addresses */
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                                         if (!ast_sockaddr_ipv4_mapped(addr, &amp;mapped_addr)) {</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_ERROR, &quot;%s provided to ast_sockaddr_ipv4_mapped could not be converted. That shouldn't be possible.\n&quot;,</span>
+<span class="lineNum">     785 </span>            :                                                         ast_sockaddr_stringify(addr));
+<span class="lineNum">     786 </span><span class="lineCov">        177 :                                                 continue;</span>
+<span class="lineNum">     787 </span>            :                                         }
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :                                         addr_to_use = &amp;mapped_addr;</span>
+<span class="lineNum">     789 </span>            :                                 } else {
+<span class="lineNum">     790 </span>            :                                         /* An IPv4 ACL does not apply to an IPv6 address */
+<span class="lineNum">     791 </span><span class="lineCov">        105 :                                         continue;</span>
+<span class="lineNum">     792 </span>            :                                 }
+<span class="lineNum">     793 </span>            :                         } else {
+<span class="lineNum">     794 </span>            :                                 /* Address is IPv4 and ACL is IPv4. No biggie */
+<span class="lineNum">     795 </span><span class="lineCov">        494 :                                 addr_to_use = addr;</span>
+<span class="lineNum">     796 </span>            :                         }
+<span class="lineNum">     797 </span>            :                 } else {
+<span class="lineNum">     798 </span><span class="lineCov">        165 :                         if (ast_sockaddr_is_ipv6(addr) &amp;&amp; !ast_sockaddr_is_ipv4_mapped(addr)) {</span>
+<span class="lineNum">     799 </span><span class="lineCov">         93 :                                 addr_to_use = addr;</span>
+<span class="lineNum">     800 </span>            :                         } else {
+<span class="lineNum">     801 </span>            :                                 /* Address is IPv4 or IPv4 mapped but ACL is IPv6. Skip */
+<span class="lineNum">     802 </span><span class="lineCov">         72 :                                 continue;</span>
+<span class="lineNum">     803 </span>            :                         }
+<span class="lineNum">     804 </span>            :                 }
+<span class="lineNum">     805 </span>            : 
+<span class="lineNum">     806 </span>            :                 /* For each rule, if this address and the netmask = the net address
+<span class="lineNum">     807 </span>            :                    apply the current rule */
+<span class="lineNum">     808 </span><span class="lineCov">        587 :                 if (ast_sockaddr_apply_netmask(addr_to_use, &amp;current_ha-&gt;netmask, &amp;result)) {</span>
+<span class="lineNum">     809 </span>            :                         /* Unlikely to happen since we know the address to be IPv4 or IPv6 */
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     811 </span>            :                 }
+<span class="lineNum">     812 </span><span class="lineCov">        587 :                 if (!ast_sockaddr_cmp_addr(&amp;result, &amp;current_ha-&gt;addr)) {</span>
+<span class="lineNum">     813 </span><span class="lineCov">        430 :                         res = current_ha-&gt;sense;</span>
+<span class="lineNum">     814 </span>            :                 }
+<span class="lineNum">     815 </span>            :         }
+<span class="lineNum">     816 </span><span class="lineCov">        962 :         return res;</span>
+<a name="817"><span class="lineNum">     817 </span>            : }</a>
+<span class="lineNum">     818 </span>            : 
+<span class="lineNum">     819 </span><span class="lineCov">       1323 : static int resolve_first(struct ast_sockaddr *addr, const char *name, int flag,</span>
+<span class="lineNum">     820 </span>            :                          int family)
+<span class="lineNum">     821 </span>            : {
+<span class="lineNum">     822 </span>            :         struct ast_sockaddr *addrs;
+<span class="lineNum">     823 </span>            :         int addrs_cnt;
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span><span class="lineCov">       1323 :         addrs_cnt = ast_sockaddr_resolve(&amp;addrs, name, flag, family);</span>
+<span class="lineNum">     826 </span><span class="lineCov">       1323 :         if (addrs_cnt &gt; 0) {</span>
+<span class="lineNum">     827 </span><span class="lineCov">       1320 :                 if (addrs_cnt &gt; 1) {</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;Multiple addresses. Using the first only\n&quot;);</span>
+<span class="lineNum">     829 </span>            :                 }
+<span class="lineNum">     830 </span><span class="lineCov">       1320 :                 ast_sockaddr_copy(addr, &amp;addrs[0]);</span>
+<span class="lineNum">     831 </span><span class="lineCov">       1320 :                 ast_free(addrs);</span>
+<span class="lineNum">     832 </span>            :         } else {
+<span class="lineNum">     833 </span><span class="lineCov">          3 :                 ast_log(LOG_WARNING, &quot;Unable to lookup '%s'\n&quot;, name);</span>
+<span class="lineNum">     834 </span><span class="lineCov">          3 :                 return -1;</span>
+<span class="lineNum">     835 </span>            :         }
+<span class="lineNum">     836 </span>            : 
+<span class="lineNum">     837 </span><span class="lineCov">       1320 :         return 0;</span>
+<a name="838"><span class="lineNum">     838 </span>            : }</a>
+<span class="lineNum">     839 </span>            : 
+<span class="lineNum">     840 </span><span class="lineCov">         13 : int ast_get_ip_or_srv(struct ast_sockaddr *addr, const char *hostname, const char *service)</span>
+<span class="lineNum">     841 </span>            : {
+<span class="lineNum">     842 </span>            :         char srv[256];
+<span class="lineNum">     843 </span>            :         char host[256];
+<span class="lineNum">     844 </span><span class="lineCov">         13 :         int srv_ret = 0;</span>
+<span class="lineNum">     845 </span>            :         int tportno;
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span><span class="lineCov">         13 :         if (service) {</span>
+<span class="lineNum">     848 </span><span class="lineCov">          1 :                 snprintf(srv, sizeof(srv), &quot;%s.%s&quot;, service, hostname);</span>
+<span class="lineNum">     849 </span><span class="lineCov">          1 :                 if ((srv_ret = ast_get_srv(NULL, host, sizeof(host), &amp;tportno, srv)) &gt; 0) {</span>
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :                         hostname = host;</span>
+<span class="lineNum">     851 </span>            :                 }
+<span class="lineNum">     852 </span>            :         }
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span><span class="lineCov">         13 :         if (resolve_first(addr, hostname, PARSE_PORT_FORBID, addr-&gt;ss.ss_family) != 0) {</span>
+<span class="lineNum">     855 </span><span class="lineCov">          3 :                 return -1;</span>
+<span class="lineNum">     856 </span>            :         }
+<span class="lineNum">     857 </span>            : 
+<span class="lineNum">     858 </span><span class="lineCov">         10 :         if (srv_ret &gt; 0) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                 ast_sockaddr_set_port(addr, tportno);</span>
+<span class="lineNum">     860 </span>            :         }
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span><span class="lineCov">         10 :         return 0;</span>
+<span class="lineNum">     863 </span>            : }
+<span class="lineNum">     864 </span>            : 
+<span class="lineNum">     865 </span>            : struct dscp_codepoint {
+<span class="lineNum">     866 </span>            :         char *name;
+<span class="lineNum">     867 </span>            :         unsigned int space;
+<span class="lineNum">     868 </span>            : };
+<span class="lineNum">     869 </span>            : 
+<span class="lineNum">     870 </span>            : /* IANA registered DSCP codepoints */
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span>            : static const struct dscp_codepoint dscp_pool1[] = {
+<span class="lineNum">     873 </span>            :         { &quot;CS0&quot;, 0x00 },
+<span class="lineNum">     874 </span>            :         { &quot;CS1&quot;, 0x08 },
+<span class="lineNum">     875 </span>            :         { &quot;CS2&quot;, 0x10 },
+<span class="lineNum">     876 </span>            :         { &quot;CS3&quot;, 0x18 },
+<span class="lineNum">     877 </span>            :         { &quot;CS4&quot;, 0x20 },
+<span class="lineNum">     878 </span>            :         { &quot;CS5&quot;, 0x28 },
+<span class="lineNum">     879 </span>            :         { &quot;CS6&quot;, 0x30 },
+<span class="lineNum">     880 </span>            :         { &quot;CS7&quot;, 0x38 },
+<span class="lineNum">     881 </span>            :         { &quot;AF11&quot;, 0x0A },
+<span class="lineNum">     882 </span>            :         { &quot;AF12&quot;, 0x0C },
+<span class="lineNum">     883 </span>            :         { &quot;AF13&quot;, 0x0E },
+<span class="lineNum">     884 </span>            :         { &quot;AF21&quot;, 0x12 },
+<span class="lineNum">     885 </span>            :         { &quot;AF22&quot;, 0x14 },
+<span class="lineNum">     886 </span>            :         { &quot;AF23&quot;, 0x16 },
+<span class="lineNum">     887 </span>            :         { &quot;AF31&quot;, 0x1A },
+<span class="lineNum">     888 </span>            :         { &quot;AF32&quot;, 0x1C },
+<span class="lineNum">     889 </span>            :         { &quot;AF33&quot;, 0x1E },
+<span class="lineNum">     890 </span>            :         { &quot;AF41&quot;, 0x22 },
+<span class="lineNum">     891 </span>            :         { &quot;AF42&quot;, 0x24 },
+<span class="lineNum">     892 </span>            :         { &quot;AF43&quot;, 0x26 },
+<span class="lineNum">     893 </span>            :         { &quot;EF&quot;, 0x2E },
+<a name="894"><span class="lineNum">     894 </span>            : };</a>
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 : int ast_str2cos(const char *value, unsigned int *cos)</span>
+<span class="lineNum">     897 </span>            : {
+<span class="lineNum">     898 </span>            :         int fval;
+<span class="lineNum">     899 </span>            : 
+<span class="lineNum">     900 </span><span class="lineNoCov">          0 :         if (sscanf(value, &quot;%30d&quot;, &amp;fval) == 1) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 :                 if (fval &lt; 8) {</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">          0 :                     *cos = fval;</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                     return 0;</span>
+<span class="lineNum">     904 </span>            :                 }
+<span class="lineNum">     905 </span>            :         }
+<span class="lineNum">     906 </span>            : 
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="908"><span class="lineNum">     908 </span>            : }</a>
+<span class="lineNum">     909 </span>            : 
+<span class="lineNum">     910 </span><span class="lineCov">       4229 : int ast_str2tos(const char *value, unsigned int *tos)</span>
+<span class="lineNum">     911 </span>            : {
+<span class="lineNum">     912 </span>            :         int fval;
+<span class="lineNum">     913 </span>            :         unsigned int x;
+<span class="lineNum">     914 </span>            : 
+<span class="lineNum">     915 </span><span class="lineCov">       4229 :         if (sscanf(value, &quot;%30i&quot;, &amp;fval) == 1) {</span>
+<span class="lineNum">     916 </span><span class="lineCov">       4229 :                 *tos = fval &amp; 0xFF;</span>
+<span class="lineNum">     917 </span><span class="lineCov">       4229 :                 return 0;</span>
+<span class="lineNum">     918 </span>            :         }
+<span class="lineNum">     919 </span>            : 
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; ARRAY_LEN(dscp_pool1); x++) {</span>
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(value, dscp_pool1[x].name)) {</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                         *tos = dscp_pool1[x].space &lt;&lt; 2;</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     924 </span>            :                 }
+<span class="lineNum">     925 </span>            :         }
+<span class="lineNum">     926 </span>            : 
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="928"><span class="lineNum">     928 </span>            : }</a>
+<span class="lineNum">     929 </span>            : 
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 : const char *ast_tos2str(unsigned int tos)</span>
+<span class="lineNum">     931 </span>            : {
+<span class="lineNum">     932 </span>            :         unsigned int x;
+<span class="lineNum">     933 </span>            : 
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; ARRAY_LEN(dscp_pool1); x++) {</span>
+<span class="lineNum">     935 </span><span class="lineNoCov">          0 :                 if (dscp_pool1[x].space == (tos &gt;&gt; 2)) {</span>
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                         return dscp_pool1[x].name;</span>
+<span class="lineNum">     937 </span>            :                 }
+<span class="lineNum">     938 </span>            :         }
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span><span class="lineNoCov">          0 :         return &quot;unknown&quot;;</span>
+<a name="941"><span class="lineNum">     941 </span>            : }</a>
+<span class="lineNum">     942 </span>            : 
+<span class="lineNum">     943 </span><span class="lineCov">          4 : int ast_get_ip(struct ast_sockaddr *addr, const char *hostname)</span>
+<span class="lineNum">     944 </span>            : {
+<span class="lineNum">     945 </span><span class="lineCov">          4 :         return ast_get_ip_or_srv(addr, hostname, NULL);</span>
+<a name="946"><span class="lineNum">     946 </span>            : }</a>
+<span class="lineNum">     947 </span>            : 
+<span class="lineNum">     948 </span><span class="lineCov">       2626 : int ast_ouraddrfor(const struct ast_sockaddr *them, struct ast_sockaddr *us)</span>
+<span class="lineNum">     949 </span>            : {
+<span class="lineNum">     950 </span>            :         /*
+<span class="lineNum">     951 </span>            :          * We must create the errno string before creating the address
+<span class="lineNum">     952 </span>            :          * string because it could wipe out errno on the error return
+<span class="lineNum">     953 </span>            :          * paths.
+<span class="lineNum">     954 </span>            :          */
+<span class="lineNum">     955 </span>            :         const char *sock_err;
+<span class="lineNum">     956 </span>            :         int port;
+<span class="lineNum">     957 </span>            :         int s;
+<span class="lineNum">     958 </span>            : 
+<span class="lineNum">     959 </span>            :         /* Preserve our original address port */
+<span class="lineNum">     960 </span><span class="lineCov">       2626 :         port = ast_sockaddr_port(us);</span>
+<span class="lineNum">     961 </span>            : 
+<span class="lineNum">     962 </span><span class="lineCov">       2626 :         s = socket(ast_sockaddr_is_ipv6(them) ? AF_INET6 : AF_INET, SOCK_DGRAM, 0);</span>
+<span class="lineNum">     963 </span><span class="lineCov">       2626 :         if (s &lt; 0) {</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 :                 sock_err = ast_strdupa(strerror(errno));</span>
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Cannot create socket to %s: %s\n&quot;,</span>
+<span class="lineNum">     966 </span>            :                         ast_sockaddr_stringify_addr(them), sock_err);
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     968 </span>            :         }
+<span class="lineNum">     969 </span>            : 
+<span class="lineNum">     970 </span><span class="lineCov">       2626 :         if (ast_connect(s, them)) {</span>
+<span class="lineNum">     971 </span><span class="lineCov">          8 :                 sock_err = ast_strdupa(strerror(errno));</span>
+<span class="lineNum">     972 </span><span class="lineCov">          8 :                 ast_log(LOG_WARNING, &quot;Cannot connect to %s: %s\n&quot;,</span>
+<span class="lineNum">     973 </span>            :                         ast_sockaddr_stringify_addr(them), sock_err);
+<span class="lineNum">     974 </span><span class="lineCov">          8 :                 close(s);</span>
+<span class="lineNum">     975 </span><span class="lineCov">          8 :                 return -1;</span>
+<span class="lineNum">     976 </span>            :         }
+<span class="lineNum">     977 </span><span class="lineCov">       2618 :         if (ast_getsockname(s, us)) {</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :                 sock_err = ast_strdupa(strerror(errno));</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Cannot get socket name for connection to %s: %s\n&quot;,</span>
+<span class="lineNum">     980 </span>            :                         ast_sockaddr_stringify_addr(them), sock_err);
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :                 close(s);</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     983 </span>            :         }
+<span class="lineNum">     984 </span><span class="lineCov">       2618 :         close(s);</span>
+<span class="lineNum">     985 </span>            : 
+<span class="lineNum">     986 </span><span class="lineCov">       2618 :         ast_sockaddr_set_port(us, port);</span>
+<span class="lineNum">     987 </span>            : 
+<span class="lineNum">     988 </span><span class="lineCov">       2618 :         ast_debug(3, &quot;For destination '%s', our source address is '%s'.\n&quot;,</span>
+<span class="lineNum">     989 </span>            :                 ast_strdupa(ast_sockaddr_stringify_addr(them)),
+<span class="lineNum">     990 </span>            :                 ast_strdupa(ast_sockaddr_stringify_addr(us)));
+<span class="lineNum">     991 </span>            : 
+<span class="lineNum">     992 </span><span class="lineCov">       2618 :         return 0;</span>
+<a name="993"><span class="lineNum">     993 </span>            : }</a>
+<span class="lineNum">     994 </span>            : 
+<span class="lineNum">     995 </span><span class="lineCov">       2461 : int ast_find_ourip(struct ast_sockaddr *ourip, const struct ast_sockaddr *bindaddr, int family)</span>
+<span class="lineNum">     996 </span>            : {
+<span class="lineNum">     997 </span><span class="lineCov">       2461 :         char ourhost[MAXHOSTNAMELEN] = &quot;&quot;;</span>
+<span class="lineNum">     998 </span>            :         struct ast_sockaddr root;
+<span class="lineNum">     999 </span><span class="lineCov">       2461 :         int res, port = ast_sockaddr_port(ourip);</span>
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span>            :         /* just use the bind address if it is nonzero */
+<span class="lineNum">    1002 </span><span class="lineCov">       2461 :         if (!ast_sockaddr_is_any(bindaddr)) {</span>
+<span class="lineNum">    1003 </span><span class="lineCov">       1151 :                 ast_sockaddr_copy(ourip, bindaddr);</span>
+<span class="lineNum">    1004 </span><span class="lineCov">       1151 :                 ast_debug(3, &quot;Attached to given IP address\n&quot;);</span>
+<span class="lineNum">    1005 </span><span class="lineCov">       1151 :                 return 0;</span>
+<span class="lineNum">    1006 </span>            :         }
+<span class="lineNum">    1007 </span>            :         /* try to use our hostname */
+<span class="lineNum">    1008 </span><span class="lineCov">       1310 :         if (gethostname(ourhost, sizeof(ourhost) - 1)) {</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to get hostname\n&quot;);</span>
+<span class="lineNum">    1010 </span>            :         } else {
+<span class="lineNum">    1011 </span><span class="lineCov">       1310 :                 if (resolve_first(ourip, ourhost, PARSE_PORT_FORBID, family) == 0) {</span>
+<span class="lineNum">    1012 </span>            :                         /* reset port since resolve_first wipes this out */
+<span class="lineNum">    1013 </span><span class="lineCov">       1310 :                         ast_sockaddr_set_port(ourip, port);</span>
+<span class="lineNum">    1014 </span><span class="lineCov">       1310 :                         return 0;</span>
+<span class="lineNum">    1015 </span>            :                 }
+<span class="lineNum">    1016 </span>            :         }
+<span class="lineNum">    1017 </span><span class="lineNoCov">          0 :         ast_debug(3, &quot;Trying to check A.ROOT-SERVERS.NET and get our IP address for that connection\n&quot;);</span>
+<span class="lineNum">    1018 </span>            :         /* A.ROOT-SERVERS.NET. */
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :         if (!resolve_first(&amp;root, &quot;A.ROOT-SERVERS.NET&quot;, PARSE_PORT_FORBID, 0) &amp;&amp;</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :             !ast_ouraddrfor(&amp;root, ourip)) {</span>
+<span class="lineNum">    1021 </span>            :                 /* reset port since resolve_first wipes this out */
+<span class="lineNum">    1022 </span><span class="lineNoCov">          0 :                 ast_sockaddr_set_port(ourip, port);</span>
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1024 </span>            :         }
+<span class="lineNum">    1025 </span><span class="lineNoCov">          0 :         res = get_local_address(ourip);</span>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :         ast_sockaddr_set_port(ourip, port);</span>
+<span class="lineNum">    1027 </span><span class="lineNoCov">          0 :         return res;</span>
+<span class="lineNum">    1028 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

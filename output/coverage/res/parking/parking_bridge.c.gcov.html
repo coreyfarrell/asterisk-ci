@@ -1,0 +1,545 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/parking/parking_bridge.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/parking</a> - parking_bridge.c<span style="font-size: 80%;"> (source / <a href="parking_bridge.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">140</td>
+            <td class="headerCovTableEntry">179</td>
+            <td class="headerCovTableEntryMed">78.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryMed">85.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Parking Bridge Class
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Jonathan Rose &lt;jrose@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;res_parking.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/say.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/term.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/features.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/bridge_internal.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : struct ast_bridge_parking
+<span class="lineNum">      36 </span>            : {
+<span class="lineNum">      37 </span>            :         struct ast_bridge base;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            :         /* private stuff for parking */
+<span class="lineNum">      40 </span>            :         struct parking_lot *lot;
+<span class="lineNum">      41 </span>            : };
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*!
+<span class="lineNum">      44 </span>            :  * \internal
+<span class="lineNum">      45 </span>            :  * \brief ast_bridge parking class destructor
+<span class="lineNum">      46 </span>            :  * \since 12.0.0
+<span class="lineNum">      47 </span>            :  *
+<span class="lineNum">      48 </span>            :  * \param self Bridge to operate upon.
+<span class="lineNum">      49 </span>            :  *
+<span class="lineNum">      50 </span>            :  * \note XXX Stub... and it might go unused.
+<span class="lineNum">      51 </span>            :  *
+<a name="52"><span class="lineNum">      52 </span>            :  * \return Nothing</a>
+<span class="lineNum">      53 </span>            :  */
+<span class="lineNum">      54 </span><span class="lineCov">         13 : static void bridge_parking_destroy(struct ast_bridge_parking *self)</span>
+<span class="lineNum">      55 </span>            : {
+<span class="lineNum">      56 </span><span class="lineCov">         13 :         ast_bridge_base_v_table.destroy(&amp;self-&gt;base);</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">         13 : }</span></a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">         13 : static void bridge_parking_dissolving(struct ast_bridge_parking *self)</span>
+<span class="lineNum">      60 </span>            : {
+<span class="lineNum">      61 </span><span class="lineCov">         13 :         self-&gt;lot = NULL;</span>
+<span class="lineNum">      62 </span><span class="lineCov">         13 :         ast_bridge_base_v_table.dissolving(&amp;self-&gt;base);</span>
+<a name="63"><span class="lineNum">      63 </span><span class="lineCov">         13 : }</span></a>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span><span class="lineCov">         23 : static void destroy_parked_user(void *obj)</span>
+<span class="lineNum">      66 </span>            : {
+<span class="lineNum">      67 </span><span class="lineCov">         23 :         struct parked_user *pu = obj;</span>
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span><span class="lineCov">         23 :         ao2_cleanup(pu-&gt;lot);</span>
+<span class="lineNum">      70 </span><span class="lineCov">         23 :         ao2_cleanup(pu-&gt;retriever);</span>
+<span class="lineNum">      71 </span><span class="lineCov">         23 :         ast_free(pu-&gt;parker_dial_string);</span>
+<span class="lineNum">      72 </span><span class="lineCov">         23 : }</span>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span>            : /* Only call this on a parked user that hasn't had its parker_dial_string set already */
+<span class="lineNum">      75 </span><span class="lineCov">         18 : static int parked_user_set_parker_dial_string(struct parked_user *pu, struct ast_channel *parker)</span>
+<span class="lineNum">      76 </span>            : {
+<span class="lineNum">      77 </span><span class="lineCov">         18 :         char *dial_string = ast_strdupa(ast_channel_name(parker));</span>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineCov">         18 :         ast_channel_name_to_dial_string(dial_string);</span>
+<span class="lineNum">      80 </span><span class="lineCov">         18 :         pu-&gt;parker_dial_string = ast_strdup(dial_string);</span>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineCov">         18 :         if (!pu-&gt;parker_dial_string) {</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      84 </span>            :         }
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineCov">         18 :         return 0;</span>
+<span class="lineNum">      87 </span>            : }
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span>            : /*!
+<span class="lineNum">      90 </span>            :  * \internal
+<span class="lineNum">      91 </span>            :  * \since 12
+<span class="lineNum">      92 </span>            :  * \brief Construct a parked_user struct assigned to the specified parking lot
+<span class="lineNum">      93 </span>            :  *
+<span class="lineNum">      94 </span>            :  * \param lot The parking lot we are assigning the user to
+<span class="lineNum">      95 </span>            :  * \param parkee The channel being parked
+<span class="lineNum">      96 </span>            :  * \param parker The channel performing the park operation (may be the same channel)
+<span class="lineNum">      97 </span>            :  * \param parker_dial_string Takes priority over parker for setting the parker dial string if included
+<span class="lineNum">      98 </span>            :  * \param use_random_space if true, prioritize using a random parking space instead
+<span class="lineNum">      99 </span>            :  *        of ${PARKINGEXTEN} and/or automatic assignment from the parking lot
+<span class="lineNum">     100 </span>            :  * \param time_limit If using a custom timeout, this should be supplied so that the
+<span class="lineNum">     101 </span>            :  *        parked_user struct can provide this information for manager events. If &lt;0,
+<span class="lineNum">     102 </span>            :  *        use the parking lot limit instead.
+<span class="lineNum">     103 </span>            :  *
+<span class="lineNum">     104 </span>            :  * \retval NULL on failure
+<span class="lineNum">     105 </span>            :  * \retval reference to the parked user
+<span class="lineNum">     106 </span>            :  *
+<a name="107"><span class="lineNum">     107 </span>            :  * \note ao2_cleanup this reference when you are done using it or you'll cause leaks.</a>
+<span class="lineNum">     108 </span>            :  */
+<span class="lineNum">     109 </span><span class="lineCov">         23 : static struct parked_user *generate_parked_user(struct parking_lot *lot, struct ast_channel *chan, struct ast_channel *parker, const char *parker_dial_string, int use_random_space, int time_limit)</span>
+<span class="lineNum">     110 </span>            : {
+<span class="lineNum">     111 </span>            :         struct parked_user *new_parked_user;
+<span class="lineNum">     112 </span><span class="lineCov">         23 :         int preferred_space = -1; /* Initialize to use parking lot defaults */</span>
+<span class="lineNum">     113 </span>            :         int parking_space;
+<span class="lineNum">     114 </span>            :         const char *parkingexten;
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">         23 :         if (lot-&gt;mode == PARKINGLOT_DISABLED) {</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 ast_log(LOG_NOTICE, &quot;Tried to park in a parking lot that is no longer able to be parked to.\n&quot;);</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     119 </span>            :         }
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">         23 :         new_parked_user = ao2_alloc(sizeof(*new_parked_user), destroy_parked_user);</span>
+<span class="lineNum">     122 </span><span class="lineCov">         23 :         if (!new_parked_user) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     124 </span>            :         }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">         23 :         if (use_random_space) {</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 preferred_space = ast_random() % (lot-&gt;cfg-&gt;parking_stop - lot-&gt;cfg-&gt;parking_start + 1);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 preferred_space += lot-&gt;cfg-&gt;parking_start;</span>
+<span class="lineNum">     129 </span>            :         } else {
+<span class="lineNum">     130 </span><span class="lineCov">         23 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">     131 </span><span class="lineCov">         23 :                 if ((parkingexten = pbx_builtin_getvar_helper(chan, &quot;PARKINGEXTEN&quot;))) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                         parkingexten = ast_strdupa(parkingexten);</span>
+<span class="lineNum">     133 </span>            :                 }
+<span class="lineNum">     134 </span><span class="lineCov">         23 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">         23 :                 if (!ast_strlen_zero(parkingexten)) {</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                         if (sscanf(parkingexten, &quot;%30d&quot;, &amp;preferred_space) != 1 || preferred_space &lt;= 0) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;PARKINGEXTEN='%s' is not a valid parking space.\n&quot;, parkingexten);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                                 ao2_ref(new_parked_user, -1);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">     141 </span>            :                         }
+<span class="lineNum">     142 </span>            :                 }
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            :         /* We need to keep the lot locked between parking_lot_get_space and actually placing it in the lot. Or until we decide not to. */
+<span class="lineNum">     146 </span><span class="lineCov">         23 :         ao2_lock(lot);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">         23 :         parking_space = parking_lot_get_space(lot, preferred_space);</span>
+<span class="lineNum">     149 </span><span class="lineCov">         23 :         if (parking_space == -1) {</span>
+<span class="lineNum">     150 </span><span class="lineCov">          2 :                 ast_log(LOG_NOTICE, &quot;Failed to get parking space in lot '%s'. All full.\n&quot;, lot-&gt;name);</span>
+<span class="lineNum">     151 </span><span class="lineCov">          2 :                 ao2_ref(new_parked_user, -1);</span>
+<span class="lineNum">     152 </span><span class="lineCov">          2 :                 ao2_unlock(lot);</span>
+<span class="lineNum">     153 </span><span class="lineCov">          2 :                 return NULL;</span>
+<span class="lineNum">     154 </span>            :         }
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">         21 :         lot-&gt;next_space = ((parking_space + 1) - lot-&gt;cfg-&gt;parking_start) % (lot-&gt;cfg-&gt;parking_stop - lot-&gt;cfg-&gt;parking_start + 1) + lot-&gt;cfg-&gt;parking_start;</span>
+<span class="lineNum">     157 </span><span class="lineCov">         21 :         new_parked_user-&gt;chan = chan;</span>
+<span class="lineNum">     158 </span><span class="lineCov">         21 :         new_parked_user-&gt;parking_space = parking_space;</span>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span>            :         /* Have the parked user take a reference to the parking lot. This reference should be immutable and released at destruction */
+<span class="lineNum">     161 </span><span class="lineCov">         21 :         new_parked_user-&gt;lot = lot;</span>
+<span class="lineNum">     162 </span><span class="lineCov">         21 :         ao2_ref(lot, +1);</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">         21 :         new_parked_user-&gt;start = ast_tvnow();</span>
+<span class="lineNum">     165 </span><span class="lineCov">         21 :         new_parked_user-&gt;time_limit = (time_limit &gt;= 0) ? time_limit : lot-&gt;cfg-&gt;parkingtime;</span>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">         21 :         if (parker_dial_string) {</span>
+<span class="lineNum">     168 </span><span class="lineCov">          3 :                 new_parked_user-&gt;parker_dial_string = ast_strdup(parker_dial_string);</span>
+<span class="lineNum">     169 </span>            :         } else {
+<span class="lineNum">     170 </span><span class="lineCov">         18 :                 if (!parker || parked_user_set_parker_dial_string(new_parked_user, parker)) {</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                         ao2_ref(new_parked_user, -1);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                         ao2_unlock(lot);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     174 </span>            :                 }
+<span class="lineNum">     175 </span>            :         }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineCov">         21 :         if (!new_parked_user-&gt;parker_dial_string) {</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 ao2_ref(new_parked_user, -1);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 ao2_unlock(lot);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     181 </span>            :         }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :         /* Insert into the parking lot's parked user list. We can unlock the lot now. */
+<span class="lineNum">     184 </span><span class="lineCov">         21 :         ao2_link(lot-&gt;parked_users, new_parked_user);</span>
+<span class="lineNum">     185 </span><span class="lineCov">         21 :         ao2_unlock(lot);</span>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">         21 :         return new_parked_user;</span>
+<span class="lineNum">     188 </span>            : }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            : /* TODO CEL events for parking */
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            : /*!
+<span class="lineNum">     193 </span>            :  * \internal
+<span class="lineNum">     194 </span>            :  * \brief ast_bridge parking push method.
+<span class="lineNum">     195 </span>            :  * \since 12.0.0
+<span class="lineNum">     196 </span>            :  *
+<span class="lineNum">     197 </span>            :  * \param self Bridge to operate upon
+<span class="lineNum">     198 </span>            :  * \param bridge_channel Bridge channel to push
+<span class="lineNum">     199 </span>            :  * \param swap Bridge channel to swap places with if not NULL
+<span class="lineNum">     200 </span>            :  *
+<span class="lineNum">     201 </span>            :  * \note On entry, self is already locked
+<span class="lineNum">     202 </span>            :  *
+<span class="lineNum">     203 </span>            :  * \retval 0 on success
+<a name="204"><span class="lineNum">     204 </span>            :  * \retval -1 on failure</a>
+<span class="lineNum">     205 </span>            :  */
+<span class="lineNum">     206 </span><span class="lineCov">         24 : static int bridge_parking_push(struct ast_bridge_parking *self, struct ast_bridge_channel *bridge_channel, struct ast_bridge_channel *swap)</span>
+<span class="lineNum">     207 </span>            : {
+<a name="208"><span class="lineNum">     208 </span>            :         struct parked_user *pu;</a>
+<a name="209"><span class="lineNum">     209 </span>            :         const char *blind_transfer;</a>
+<span class="lineNum">     210 </span><span class="lineCov">         48 :         RAII_VAR(struct ast_channel *, parker, NULL, ao2_cleanup); /* XXX replace with ast_channel_cleanup when available */</span>
+<span class="lineNum">     211 </span><span class="lineCov">         48 :         RAII_VAR(struct park_common_datastore *, park_datastore, NULL, park_common_datastore_free);</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">         24 :         ast_bridge_base_v_table.push(&amp;self-&gt;base, bridge_channel, swap);</span>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">         24 :         ast_assert(self-&gt;lot != NULL);</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span>            :         /* Answer the channel if needed */
+<span class="lineNum">     218 </span><span class="lineCov">         24 :         if (ast_channel_state(bridge_channel-&gt;chan) != AST_STATE_UP) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 ast_answer(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     220 </span>            :         }
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span><span class="lineCov">         24 :         if (swap) {</span>
+<span class="lineNum">     223 </span><span class="lineCov">          1 :                 int use_ringing = 0;</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">          1 :                 ast_bridge_channel_lock(swap);</span>
+<span class="lineNum">     226 </span><span class="lineCov">          1 :                 pu = swap-&gt;bridge_pvt;</span>
+<span class="lineNum">     227 </span><span class="lineCov">          1 :                 if (!pu) {</span>
+<span class="lineNum">     228 </span>            :                         /* This should be impossible since the only way a channel can enter in the first place
+<span class="lineNum">     229 </span>            :                          * is if it has a parked user associated with it */
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                         publish_parked_call_failure(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                         ast_bridge_channel_unlock(swap);</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     233 </span>            :                 }
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :                 /* Give the swap channel's parked user reference to the incoming channel */
+<span class="lineNum">     236 </span><span class="lineCov">          1 :                 pu-&gt;chan = bridge_channel-&gt;chan;</span>
+<span class="lineNum">     237 </span><span class="lineCov">          1 :                 bridge_channel-&gt;bridge_pvt = pu;</span>
+<span class="lineNum">     238 </span><span class="lineCov">          1 :                 swap-&gt;bridge_pvt = NULL;</span>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineCov">          1 :                 if (ast_bridge_channel_has_role(swap, &quot;holding_participant&quot;)) {</span>
+<span class="lineNum">     241 </span><span class="lineCov">          1 :                         const char *idle_mode = ast_bridge_channel_get_role_option(swap, &quot;holding_participant&quot;, &quot;idle_mode&quot;);</span>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">          1 :                         if (!ast_strlen_zero(idle_mode) &amp;&amp; !strcmp(idle_mode, &quot;ringing&quot;)) {</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                                 use_ringing = 1;</span>
+<span class="lineNum">     245 </span>            :                         }
+<span class="lineNum">     246 </span>            :                 }
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">          1 :                 ast_bridge_channel_unlock(swap);</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">          1 :                 parking_set_duration(bridge_channel-&gt;features, pu);</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">          1 :                 if (parking_channel_set_roles(bridge_channel-&gt;chan, self-&gt;lot, use_ringing)) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Failed to apply holding bridge roles to %s while joining the parking lot.\n&quot;,</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                                 ast_channel_name(bridge_channel-&gt;chan));</span>
+<span class="lineNum">     255 </span>            :                 }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span><span class="lineCov">          1 :                 publish_parked_call(pu, PARKED_CALL_SWAP);</span>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">     260 </span>            :         }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">         23 :         if (!(park_datastore = get_park_common_datastore_copy(bridge_channel-&gt;chan))) {</span>
+<span class="lineNum">     263 </span>            :                 /* There was either a failure to apply the datastore when performing park common setup or else we had alloc failures while cloning. Abort. */
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span><span class="lineCov">         23 :         parker = ast_channel_get_by_name(park_datastore-&gt;parker_uuid);</span>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span>            :         /* If the parker and the parkee are the same channel pointer, then the channel entered using
+<span class="lineNum">     269 </span>            :          * the park application. It's possible that the channel that transferred it is still alive (particularly
+<span class="lineNum">     270 </span>            :          * when a multichannel bridge is parked), so try to get the real parker if possible. */
+<span class="lineNum">     271 </span><span class="lineCov">         23 :         ast_channel_lock(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     272 </span><span class="lineCov">         23 :         blind_transfer = pbx_builtin_getvar_helper(bridge_channel-&gt;chan, &quot;BLINDTRANSFER&quot;);</span>
+<span class="lineNum">     273 </span><span class="lineCov">         23 :         blind_transfer = ast_strdupa(S_OR(blind_transfer, &quot;&quot;));</span>
+<span class="lineNum">     274 </span><span class="lineCov">         23 :         ast_channel_unlock(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     275 </span><span class="lineCov">         23 :         if ((!parker || parker == bridge_channel-&gt;chan)</span>
+<span class="lineNum">     276 </span><span class="lineCov">          6 :                 &amp;&amp; !ast_strlen_zero(blind_transfer)) {</span>
+<span class="lineNum">     277 </span><span class="lineCov">          2 :                 struct ast_channel *real_parker = ast_channel_get_by_name(blind_transfer);</span>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">          2 :                 if (real_parker) {</span>
+<span class="lineNum">     280 </span><span class="lineCov">          2 :                         ao2_cleanup(parker);</span>
+<span class="lineNum">     281 </span><span class="lineCov">          2 :                         parker = real_parker;</span>
+<span class="lineNum">     282 </span>            :                 }
+<span class="lineNum">     283 </span>            :         }
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineCov">         69 :         pu = generate_parked_user(self-&gt;lot, bridge_channel-&gt;chan, parker,</span>
+<span class="lineNum">     286 </span><span class="lineCov">         23 :                 park_datastore-&gt;parker_dial_string, park_datastore-&gt;randomize, park_datastore-&gt;time_limit);</span>
+<span class="lineNum">     287 </span><span class="lineCov">         23 :         if (!pu) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">          2 :                 publish_parked_call_failure(bridge_channel-&gt;chan);</span>
+<span class="lineNum">     289 </span><span class="lineCov">          2 :                 return -1;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span>            :         /* If a comeback_override was provided, set it for the parked user's comeback string. */
+<span class="lineNum">     293 </span><span class="lineCov">         21 :         if (park_datastore-&gt;comeback_override) {</span>
+<span class="lineNum">     294 </span><span class="lineCov">          1 :                 ast_copy_string(pu-&gt;comeback, park_datastore-&gt;comeback_override, sizeof(pu-&gt;comeback));</span>
+<span class="lineNum">     295 </span>            :         }
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span>            :         /* Generate ParkedCall Stasis Message */
+<span class="lineNum">     298 </span><span class="lineCov">         21 :         publish_parked_call(pu, PARKED_CALL);</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span>            :         /* If not a blind transfer and silence_announce isn't set, play the announcement to the parkee */
+<span class="lineNum">     301 </span><span class="lineCov">         21 :         if (ast_strlen_zero(blind_transfer) &amp;&amp; !park_datastore-&gt;silence_announce) {</span>
+<span class="lineNum">     302 </span>            :                 char saynum_buf[16];
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineCov">          3 :                 snprintf(saynum_buf, sizeof(saynum_buf), &quot;%d %d&quot;, 0, pu-&gt;parking_space);</span>
+<span class="lineNum">     305 </span><span class="lineCov">          3 :                 ast_bridge_channel_queue_playfile(bridge_channel, say_parking_space, saynum_buf, NULL);</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            :         /* Apply parking duration limits */
+<span class="lineNum">     309 </span><span class="lineCov">         21 :         parking_set_duration(bridge_channel-&gt;features, pu);</span>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span>            :         /* Set this to the bridge pvt so that we don't have to refind the parked user associated with this bridge channel again. */
+<span class="lineNum">     312 </span><span class="lineCov">         21 :         bridge_channel-&gt;bridge_pvt = pu;</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineCov">         21 :         ast_verb(3, &quot;Parking '&quot; COLORIZE_FMT &quot;' in '&quot; COLORIZE_FMT &quot;' at space %d\n&quot;,</span>
+<span class="lineNum">     315 </span>            :                 COLORIZE(COLOR_BRMAGENTA, 0, ast_channel_name(bridge_channel-&gt;chan)),
+<span class="lineNum">     316 </span>            :                 COLORIZE(COLOR_BRMAGENTA, 0, self-&gt;lot-&gt;name),
+<span class="lineNum">     317 </span>            :                 pu-&gt;parking_space);
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineCov">         21 :         parking_notify_metermaids(pu-&gt;parking_space, self-&gt;lot-&gt;cfg-&gt;parking_con, AST_DEVICE_INUSE);</span>
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">         21 :         return 0;</span>
+<span class="lineNum">     322 </span>            : }
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            : /*!
+<span class="lineNum">     325 </span>            :  * \internal
+<span class="lineNum">     326 </span>            :  * \brief ast_bridge parking pull method.
+<span class="lineNum">     327 </span>            :  * \since 12.0.0
+<span class="lineNum">     328 </span>            :  *
+<span class="lineNum">     329 </span>            :  * \param self Bridge to operate upon.
+<span class="lineNum">     330 </span>            :  * \param bridge_channel Bridge channel to pull.
+<span class="lineNum">     331 </span>            :  *
+<span class="lineNum">     332 </span>            :  * \note On entry, self is already locked.
+<span class="lineNum">     333 </span>            :  *
+<a name="334"><span class="lineNum">     334 </span>            :  * \return Nothing</a>
+<span class="lineNum">     335 </span>            :  */
+<a name="336"><span class="lineNum">     336 </span><span class="lineCov">         22 : static void bridge_parking_pull(struct ast_bridge_parking *self, struct ast_bridge_channel *bridge_channel)</span></a>
+<span class="lineNum">     337 </span>            : {
+<span class="lineNum">     338 </span><span class="lineCov">         44 :         RAII_VAR(struct parked_user *, pu, NULL, ao2_cleanup);</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">         22 :         ast_bridge_base_v_table.pull(&amp;self-&gt;base, bridge_channel);</span>
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span>            :         /* Take over the bridge channel's pu reference. It will be released when we are done. */
+<span class="lineNum">     343 </span><span class="lineCov">         22 :         pu = bridge_channel-&gt;bridge_pvt;</span>
+<span class="lineNum">     344 </span><span class="lineCov">         22 :         bridge_channel-&gt;bridge_pvt = NULL;</span>
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span>            :         /* This should only happen if the exiting channel was swapped out */
+<span class="lineNum">     347 </span><span class="lineCov">         22 :         if (!pu) {</span>
+<span class="lineNum">     348 </span><span class="lineCov">          1 :                 return;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span>            :         /* If we got here without the resolution being set, that's because the call was hung up for some reason without
+<span class="lineNum">     352 </span>            :          * timing out or being picked up. There may be some forcible park removals later, but the resolution should be
+<span class="lineNum">     353 </span>            :          * handled in those cases */
+<span class="lineNum">     354 </span><span class="lineCov">         21 :         ao2_lock(pu);</span>
+<span class="lineNum">     355 </span><span class="lineCov">         21 :         if (pu-&gt;resolution == PARK_UNSET) {</span>
+<span class="lineNum">     356 </span><span class="lineCov">         10 :                 pu-&gt;resolution = PARK_ABANDON;</span>
+<span class="lineNum">     357 </span>            :         }
+<span class="lineNum">     358 </span><span class="lineCov">         21 :         ao2_unlock(pu);</span>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span>            :         /* Pull can still happen after the bridge starts dissolving, so make sure we still have a lot before trying to notify metermaids. */
+<span class="lineNum">     361 </span><span class="lineCov">         21 :         if (self-&gt;lot) {</span>
+<span class="lineNum">     362 </span><span class="lineCov">         21 :                 parking_notify_metermaids(pu-&gt;parking_space, self-&gt;lot-&gt;cfg-&gt;parking_con, AST_DEVICE_NOT_INUSE);</span>
+<span class="lineNum">     363 </span>            :         }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">         21 :         switch (pu-&gt;resolution) {</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         case PARK_UNSET:</span>
+<span class="lineNum">     367 </span>            :                 /* This should be impossible now since the resolution is forcibly set to abandon if it was unset at this point. Resolution
+<span class="lineNum">     368 </span>            :                    isn't allowed to be changed when it isn't currently PARK_UNSET. */
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     370 </span><span class="lineCov">         10 :         case PARK_ABANDON:</span>
+<span class="lineNum">     371 </span>            :                 /* Since the call was abandoned without additional handling, we need to issue the give up event and unpark the user. */
+<span class="lineNum">     372 </span><span class="lineCov">         10 :                 publish_parked_call(pu, PARKED_CALL_GIVEUP);</span>
+<span class="lineNum">     373 </span><span class="lineCov">         10 :                 unpark_parked_user(pu);</span>
+<span class="lineNum">     374 </span><span class="lineCov">         10 :                 break;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         case PARK_FORCED:</span>
+<span class="lineNum">     376 </span>            :                 /* PARK_FORCED is currently unused, but it is expected that it would be handled similar to PARK_ANSWERED.
+<span class="lineNum">     377 </span>            :                  * There is currently no event related to forced parked calls either */
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     379 </span><span class="lineCov">          5 :         case PARK_ANSWERED:</span>
+<span class="lineNum">     380 </span>            :                 /* If answered or forced, the channel should be pulled from the bridge as part of that process and unlinked from
+<span class="lineNum">     381 </span>            :                  * the parking lot afterwards. We do need to apply bridge features though and play the courtesy tone if set. */
+<span class="lineNum">     382 </span><span class="lineCov">          5 :                 publish_parked_call(pu, PARKED_CALL_UNPARKED);</span>
+<span class="lineNum">     383 </span><span class="lineCov">          5 :                 parked_call_retrieve_enable_features(bridge_channel-&gt;chan, pu-&gt;lot, AST_FEATURE_FLAG_BYCALLEE);</span>
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">          5 :                 if (pu-&gt;lot-&gt;cfg-&gt;parkedplay &amp; AST_FEATURE_FLAG_BYCALLEE) {</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         ast_bridge_channel_queue_playfile(bridge_channel, NULL, pu-&gt;lot-&gt;cfg-&gt;courtesytone, NULL);</span>
+<span class="lineNum">     387 </span>            :                 }
+<span class="lineNum">     388 </span><span class="lineCov">          5 :                 break;</span>
+<span class="lineNum">     389 </span><span class="lineCov">          6 :         case PARK_TIMEOUT:</span>
+<span class="lineNum">     390 </span>            :                 /* Timeout is similar to abandon because it simply sets the bridge state to end and doesn't
+<span class="lineNum">     391 </span>            :                  * actually pull the channel. Because of that, unpark should happen in here. */
+<span class="lineNum">     392 </span><span class="lineCov">          6 :                 publish_parked_call(pu, PARKED_CALL_TIMEOUT);</span>
+<span class="lineNum">     393 </span><span class="lineCov">          6 :                 parked_call_retrieve_enable_features(bridge_channel-&gt;chan, pu-&gt;lot, AST_FEATURE_FLAG_BYCALLEE);</span>
+<span class="lineNum">     394 </span><span class="lineCov">          6 :                 unpark_parked_user(pu);</span>
+<span class="lineNum">     395 </span><span class="lineCov">          6 :                 break;</span>
+<span class="lineNum">     396 </span>            :         }
+<span class="lineNum">     397 </span><span class="lineCov">         21 : }</span>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span>            : /*!
+<span class="lineNum">     400 </span>            :  * \internal
+<span class="lineNum">     401 </span>            :  * \brief ast_bridge parking notify_masquerade method.
+<span class="lineNum">     402 </span>            :  * \since 12.0.0
+<span class="lineNum">     403 </span>            :  *
+<span class="lineNum">     404 </span>            :  * \param self Bridge to operate upon.
+<span class="lineNum">     405 </span>            :  * \param bridge_channel Bridge channel that was masqueraded.
+<span class="lineNum">     406 </span>            :  *
+<span class="lineNum">     407 </span>            :  * \note On entry, self is already locked.
+<span class="lineNum">     408 </span>            :  * \note XXX Stub... and it will probably go unused.
+<span class="lineNum">     409 </span>            :  *
+<a name="410"><span class="lineNum">     410 </span>            :  * \return Nothing</a>
+<span class="lineNum">     411 </span>            :  */
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 : static void bridge_parking_notify_masquerade(struct ast_bridge_parking *self, struct ast_bridge_channel *bridge_channel)</span>
+<span class="lineNum">     413 </span>            : {
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :         ast_bridge_base_v_table.notify_masquerade(&amp;self-&gt;base, bridge_channel);</span>
+<a name="415"><span class="lineNum">     415 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 : static void bridge_parking_get_merge_priority(struct ast_bridge_parking *self)</span>
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         ast_bridge_base_v_table.get_merge_priority(&amp;self-&gt;base);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span>            : struct ast_bridge_methods ast_bridge_parking_v_table = {
+<span class="lineNum">     423 </span>            :         .name = &quot;parking&quot;,
+<span class="lineNum">     424 </span>            :         .destroy = (ast_bridge_destructor_fn) bridge_parking_destroy,
+<span class="lineNum">     425 </span>            :         .dissolving = (ast_bridge_dissolving_fn) bridge_parking_dissolving,
+<span class="lineNum">     426 </span>            :         .push = (ast_bridge_push_channel_fn) bridge_parking_push,
+<span class="lineNum">     427 </span>            :         .pull = (ast_bridge_pull_channel_fn) bridge_parking_pull,
+<span class="lineNum">     428 </span>            :         .notify_masquerade = (ast_bridge_notify_masquerade_fn) bridge_parking_notify_masquerade,
+<span class="lineNum">     429 </span>            :         .get_merge_priority = (ast_bridge_merge_priority_fn) bridge_parking_get_merge_priority,
+<a name="430"><span class="lineNum">     430 </span>            : };</a>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">         13 : static struct ast_bridge *ast_bridge_parking_init(struct ast_bridge_parking *self, struct parking_lot *bridge_lot)</span>
+<span class="lineNum">     433 </span>            : {
+<span class="lineNum">     434 </span><span class="lineCov">         13 :         if (!self) {</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     436 </span>            :         }
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span>            :         /* If no lot is defined for the bridge, then we aren't allowing the bridge to be initialized. */
+<span class="lineNum">     439 </span><span class="lineCov">         13 :         if (!bridge_lot) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 ao2_ref(self, -1);</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            :         /* It doesn't need to be a reference since the bridge only lives as long as the parking lot lives. */
+<span class="lineNum">     445 </span><span class="lineCov">         13 :         self-&gt;lot = bridge_lot;</span>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineCov">         13 :         return &amp;self-&gt;base;</span>
+<a name="448"><span class="lineNum">     448 </span>            : }</a>
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineCov">         13 : struct ast_bridge *bridge_parking_new(struct parking_lot *bridge_lot)</span>
+<span class="lineNum">     451 </span>            : {
+<span class="lineNum">     452 </span>            :         void *bridge;
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">         13 :         bridge = bridge_alloc(sizeof(struct ast_bridge_parking), &amp;ast_bridge_parking_v_table);</span>
+<span class="lineNum">     455 </span><span class="lineCov">         13 :         bridge = bridge_base_init(bridge, AST_BRIDGE_CAPABILITY_HOLDING,</span>
+<span class="lineNum">     456 </span>            :                 AST_BRIDGE_FLAG_MERGE_INHIBIT_TO | AST_BRIDGE_FLAG_MERGE_INHIBIT_FROM
+<span class="lineNum">     457 </span>            :                 | AST_BRIDGE_FLAG_SWAP_INHIBIT_FROM,  &quot;Parking&quot;, bridge_lot-&gt;name, NULL);
+<span class="lineNum">     458 </span><span class="lineCov">         13 :         bridge = ast_bridge_parking_init(bridge, bridge_lot);</span>
+<span class="lineNum">     459 </span><span class="lineCov">         13 :         bridge = bridge_register(bridge);</span>
+<span class="lineNum">     460 </span><span class="lineCov">         13 :         return bridge;</span>
+<span class="lineNum">     461 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

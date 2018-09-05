@@ -1,0 +1,628 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_pjsip/pjsip_message_filter.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/res_pjsip</a> - pjsip_message_filter.c<span style="font-size: 80%;"> (source / <a href="pjsip_message_filter.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">215</td>
+            <td class="headerCovTableEntry">239</td>
+            <td class="headerCovTableEntryHi">90.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2014-2016, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      22 </span>            : #include &lt;pjsip_ua.h&gt;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;asterisk/res_pjsip_session.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;include/res_pjsip_private.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #define MOD_DATA_RESTRICTIONS &quot;restrictions&quot;
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : static pj_status_t filter_on_tx_message(pjsip_tx_data *tdata);
+<span class="lineNum">      31 </span>            : static pj_bool_t filter_on_rx_message(pjsip_rx_data *rdata);
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : /*! \brief Outgoing message modification restrictions */
+<span class="lineNum">      34 </span>            : struct filter_message_restrictions {
+<span class="lineNum">      35 </span>            :         /*! \brief Disallow modification of the From domain */
+<span class="lineNum">      36 </span>            :         unsigned int disallow_from_domain_modification;
+<span class="lineNum">      37 </span>            : };
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : static pjsip_module filter_module_transport = {
+<span class="lineNum">      40 </span>            :         .name = { &quot;Message Filtering Transport&quot;, 27 },
+<span class="lineNum">      41 </span>            :         .id = -1,
+<span class="lineNum">      42 </span>            :         .priority = PJSIP_MOD_PRIORITY_TRANSPORT_LAYER,
+<span class="lineNum">      43 </span>            :         .on_rx_request = filter_on_rx_message,
+<span class="lineNum">      44 </span>            : };
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : static pjsip_module filter_module_tsx = {
+<span class="lineNum">      47 </span>            :         .name = { &quot;Message Filtering TSX&quot;, 21 },
+<span class="lineNum">      48 </span>            :         .id = -1,
+<span class="lineNum">      49 </span>            :         .priority = PJSIP_MOD_PRIORITY_TSX_LAYER - 1,
+<span class="lineNum">      50 </span>            :         .on_tx_request = filter_on_tx_message,
+<span class="lineNum">      51 </span>            :         .on_tx_response = filter_on_tx_message,
+<span class="lineNum">      52 </span>            : };
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span>            : /*! \brief Helper function to get (or allocate if not already present) restrictions on a message */
+<span class="lineNum">      55 </span><span class="lineCov">       2427 : static struct filter_message_restrictions *get_restrictions(pjsip_tx_data *tdata)</span>
+<span class="lineNum">      56 </span>            : {
+<span class="lineNum">      57 </span>            :         struct filter_message_restrictions *restrictions;
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">       2427 :         restrictions = ast_sip_mod_data_get(tdata-&gt;mod_data, filter_module_tsx.id, MOD_DATA_RESTRICTIONS);</span>
+<span class="lineNum">      60 </span><span class="lineCov">       2427 :         if (restrictions) {</span>
+<span class="lineNum">      61 </span><span class="lineCov">        685 :                 return restrictions;</span>
+<span class="lineNum">      62 </span>            :         }
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineCov">       1742 :         restrictions = PJ_POOL_ALLOC_T(tdata-&gt;pool, struct filter_message_restrictions);</span>
+<span class="lineNum">      65 </span><span class="lineCov">       1742 :         ast_sip_mod_data_set(tdata-&gt;pool, tdata-&gt;mod_data, filter_module_tsx.id, MOD_DATA_RESTRICTIONS, restrictions);</span>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineCov">       1742 :         return restrictions;</span>
+<span class="lineNum">      68 </span>            : }
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span>            : /*! \brief Callback invoked on non-session outgoing messages */
+<span class="lineNum">      71 </span><span class="lineCov">        254 : static void filter_outgoing_message(struct ast_sip_endpoint *endpoint, struct ast_sip_contact *contact, struct pjsip_tx_data *tdata)</span>
+<span class="lineNum">      72 </span>            : {
+<span class="lineNum">      73 </span><span class="lineCov">        254 :         struct filter_message_restrictions *restrictions = get_restrictions(tdata);</span>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">        254 :         restrictions-&gt;disallow_from_domain_modification = !ast_strlen_zero(endpoint-&gt;fromdomain);</span>
+<span class="lineNum">      76 </span><span class="lineCov">        254 : }</span>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : /*! \brief PJSIP Supplement for tagging messages with restrictions */
+<span class="lineNum">      79 </span>            : static struct ast_sip_supplement filter_supplement = {
+<span class="lineNum">      80 </span>            :         .priority = AST_SIP_SUPPLEMENT_PRIORITY_FIRST,
+<span class="lineNum">      81 </span>            :         .outgoing_request = filter_outgoing_message,
+<span class="lineNum">      82 </span>            :         .outgoing_response = filter_outgoing_message,
+<span class="lineNum">      83 </span>            : };
+<a name="84"><span class="lineNum">      84 </span>            : </a>
+<span class="lineNum">      85 </span>            : /*! \brief Callback invoked on session outgoing messages */
+<span class="lineNum">      86 </span><span class="lineCov">       2173 : static void filter_session_outgoing_message(struct ast_sip_session *session, struct pjsip_tx_data *tdata)</span>
+<span class="lineNum">      87 </span>            : {
+<span class="lineNum">      88 </span><span class="lineCov">       2173 :         struct filter_message_restrictions *restrictions = get_restrictions(tdata);</span>
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineCov">       2173 :         restrictions-&gt;disallow_from_domain_modification = !ast_strlen_zero(session-&gt;endpoint-&gt;fromdomain);</span>
+<span class="lineNum">      91 </span><span class="lineCov">       2173 : }</span>
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : /*! \brief PJSIP Session Supplement for tagging messages with restrictions */
+<span class="lineNum">      94 </span>            : static struct ast_sip_session_supplement filter_session_supplement = {
+<span class="lineNum">      95 </span>            :         .priority = 1,
+<span class="lineNum">      96 </span>            :         .outgoing_request = filter_session_outgoing_message,
+<span class="lineNum">      97 </span>            :         .outgoing_response = filter_session_outgoing_message,
+<span class="lineNum">      98 </span>            : };
+<a name="99"><span class="lineNum">      99 </span>            : </a>
+<span class="lineNum">     100 </span>            : /*! \brief Helper function which returns a UDP transport bound to the given address and port */
+<span class="lineNum">     101 </span><span class="lineCov">        568 : static pjsip_transport *get_udp_transport(pj_str_t *address, int port)</span>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span><span class="lineCov">        568 :         struct ao2_container *transport_states = ast_sip_get_transport_states();</span>
+<span class="lineNum">     104 </span>            :         struct ast_sip_transport_state *transport_state;
+<span class="lineNum">     105 </span>            :         struct ao2_iterator iter;
+<span class="lineNum">     106 </span><span class="lineCov">        568 :         pjsip_transport *sip_transport = NULL;</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">        568 :         if (!transport_states) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     110 </span>            :         }
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">       1187 :         for (iter = ao2_iterator_init(transport_states, 0); (transport_state = ao2_iterator_next(&amp;iter)); ao2_ref(transport_state, -1)) {</span>
+<span class="lineNum">     113 </span><span class="lineCov">       1191 :                 if (transport_state &amp;&amp; ((transport_state-&gt;type != AST_TRANSPORT_UDP) ||</span>
+<span class="lineNum">     114 </span><span class="lineCov">        572 :                         (pj_strcmp(&amp;transport_state-&gt;transport-&gt;local_name.host, address)) ||</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                         (transport_state-&gt;transport-&gt;local_name.port != port))) {</span>
+<span class="lineNum">     116 </span><span class="lineCov">        619 :                         continue;</span>
+<span class="lineNum">     117 </span>            :                 }
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 sip_transport = transport_state-&gt;transport;</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     121 </span>            :         }
+<span class="lineNum">     122 </span><span class="lineCov">        568 :         ao2_iterator_destroy(&amp;iter);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">        568 :         ao2_ref(transport_states, -1);</span>
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">        568 :         return sip_transport;</span>
+<span class="lineNum">     127 </span>            : }
+<a name="128"><span class="lineNum">     128 </span>            : </a>
+<span class="lineNum">     129 </span>            : /*! \brief Helper function which determines if a transport is bound to any */
+<span class="lineNum">     130 </span><span class="lineCov">       5165 : static int is_bound_any(pjsip_transport *transport)</span>
+<span class="lineNum">     131 </span>            : {
+<span class="lineNum">     132 </span><span class="lineCov">       5165 :         pj_uint32_t loop6[4] = {0, 0, 0, 0};</span>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">       5165 :         if ((transport-&gt;local_addr.addr.sa_family == pj_AF_INET() &amp;&amp;</span>
+<span class="lineNum">     135 </span><span class="lineCov">       4520 :                 transport-&gt;local_addr.ipv4.sin_addr.s_addr == PJ_INADDR_ANY) ||</span>
+<span class="lineNum">     136 </span><span class="lineCov">       4674 :                 (transport-&gt;local_addr.addr.sa_family == pj_AF_INET6() &amp;&amp;</span>
+<span class="lineNum">     137 </span><span class="lineCov">        645 :                 !pj_memcmp(&amp;transport-&gt;local_addr.ipv6.sin6_addr, loop6, sizeof(loop6)))) {</span>
+<span class="lineNum">     138 </span><span class="lineCov">       1136 :                 return 1;</span>
+<span class="lineNum">     139 </span>            :         }
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">       4029 :         return 0;</span>
+<span class="lineNum">     142 </span>            : }
+<a name="143"><span class="lineNum">     143 </span>            : </a>
+<span class="lineNum">     144 </span>            : /*! \brief Helper function which determines if the address within SDP should be rewritten */
+<span class="lineNum">     145 </span><span class="lineCov">       1133 : static int multihomed_rewrite_sdp(struct pjmedia_sdp_session *sdp)</span>
+<span class="lineNum">     146 </span>            : {
+<span class="lineNum">     147 </span><span class="lineCov">       1133 :         if (!sdp-&gt;conn) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     149 </span>            :         }
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            :         /* If the host address is used in the SDP replace it with the address of what this is going out on */
+<span class="lineNum">     152 </span><span class="lineCov">       1133 :         if ((!pj_strcmp2(&amp;sdp-&gt;conn-&gt;addr_type, &quot;IP4&quot;) &amp;&amp; !pj_strcmp2(&amp;sdp-&gt;conn-&gt;addr,</span>
+<span class="lineNum">     153 </span><span class="lineCov">        636 :                 ast_sip_get_host_ip_string(pj_AF_INET()))) ||</span>
+<span class="lineNum">     154 </span><span class="lineCov">        790 :                 (!pj_strcmp2(&amp;sdp-&gt;conn-&gt;addr_type, &quot;IP6&quot;) &amp;&amp; !pj_strcmp2(&amp;sdp-&gt;conn-&gt;addr,</span>
+<span class="lineNum">     155 </span>            :                 ast_sip_get_host_ip_string(pj_AF_INET6())))) {
+<span class="lineNum">     156 </span><span class="lineCov">        497 :                 return 1;</span>
+<span class="lineNum">     157 </span>            :         }
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">        636 :         return 0;</span>
+<span class="lineNum">     160 </span>            : }
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span>            : #define is_sip_uri(uri) \
+<a name="163"><span class="lineNum">     163 </span>            :         (PJSIP_URI_SCHEME_IS_SIP(uri) || PJSIP_URI_SCHEME_IS_SIPS(uri))</a>
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineCov">      13171 : static void print_sanitize_debug(char *msg, pjsip_uri_context_e context, pjsip_sip_uri *uri)</span>
+<span class="lineNum">     166 </span>            : {
+<span class="lineNum">     167 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">     168 </span>            :         char hdrbuf[512];
+<span class="lineNum">     169 </span>            :         int hdrbuf_len;
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">      13171 :         hdrbuf_len = pjsip_uri_print(context, uri, hdrbuf, 512);</span>
+<span class="lineNum">     172 </span><span class="lineCov">      13171 :         hdrbuf[hdrbuf_len] = '\0';</span>
+<span class="lineNum">     173 </span><span class="lineCov">      13171 :         ast_debug(2, &quot;%s: %s\n&quot;, msg, hdrbuf);</span>
+<span class="lineNum">     174 </span>            : #endif
+<span class="lineNum">     175 </span><span class="lineCov">      13171 : }</span>
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            : /* If in DEVMODE, prevent inlining to assist in debugging */
+<span class="lineNum">     178 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">     179 </span>            : #define FUNC_ATTRS __attribute__ ((noinline))
+<span class="lineNum">     180 </span>            : #else
+<span class="lineNum">     181 </span>            : #define FUNC_ATTRS
+<a name="182"><span class="lineNum">     182 </span>            : #endif</a>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineCov">       4561 : static void FUNC_ATTRS sanitize_tdata(pjsip_tx_data *tdata)</span>
+<span class="lineNum">     185 </span>            : {
+<span class="lineNum">     186 </span>            :         static const pj_str_t x_name = { AST_SIP_X_AST_TXP, AST_SIP_X_AST_TXP_LEN };
+<span class="lineNum">     187 </span>            :         pjsip_param *x_transport;
+<span class="lineNum">     188 </span>            :         pjsip_sip_uri *uri;
+<span class="lineNum">     189 </span>            :         pjsip_hdr *hdr;
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">       4561 :         if (tdata-&gt;msg-&gt;type == PJSIP_REQUEST_MSG) {</span>
+<span class="lineNum">     192 </span><span class="lineCov">       1940 :                 if (is_sip_uri(tdata-&gt;msg-&gt;line.req.uri)) {</span>
+<span class="lineNum">     193 </span><span class="lineCov">       1940 :                         uri = pjsip_uri_get_uri(tdata-&gt;msg-&gt;line.req.uri);</span>
+<span class="lineNum">     194 </span><span class="lineCov">       1940 :                         print_sanitize_debug(&quot;Sanitizing Request&quot;, PJSIP_URI_IN_REQ_URI, uri);</span>
+<span class="lineNum">     195 </span><span class="lineCov">       1945 :                         while ((x_transport = pjsip_param_find(&amp;uri-&gt;other_param, &amp;x_name))) {</span>
+<span class="lineNum">     196 </span><span class="lineCov">          5 :                                 pj_list_erase(x_transport);</span>
+<span class="lineNum">     197 </span>            :                         }
+<span class="lineNum">     198 </span>            :                 }
+<span class="lineNum">     199 </span>            :         }
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span><span class="lineCov">      42776 :         for (hdr = tdata-&gt;msg-&gt;hdr.next; hdr != &amp;tdata-&gt;msg-&gt;hdr; hdr = hdr-&gt;next) {</span>
+<span class="lineNum">     202 </span><span class="lineCov">      38215 :                 if (hdr-&gt;type == PJSIP_H_TO || hdr-&gt;type == PJSIP_H_FROM) {</span>
+<span class="lineNum">     203 </span><span class="lineCov">      18242 :                         if (is_sip_uri(((pjsip_fromto_hdr *) hdr)-&gt;uri)) {</span>
+<span class="lineNum">     204 </span><span class="lineCov">       9120 :                                 uri = pjsip_uri_get_uri(((pjsip_fromto_hdr *) hdr)-&gt;uri);</span>
+<span class="lineNum">     205 </span><span class="lineCov">       9120 :                                 print_sanitize_debug(&quot;Sanitizing From/To header&quot;, PJSIP_URI_IN_FROMTO_HDR, uri);</span>
+<span class="lineNum">     206 </span><span class="lineCov">       9125 :                                 while ((x_transport = pjsip_param_find(&amp;uri-&gt;other_param, &amp;x_name))) {</span>
+<span class="lineNum">     207 </span><span class="lineCov">          5 :                                         pj_list_erase(x_transport);</span>
+<span class="lineNum">     208 </span>            :                                 }
+<span class="lineNum">     209 </span>            :                         }
+<span class="lineNum">     210 </span><span class="lineCov">      29093 :                 } else if (hdr-&gt;type == PJSIP_H_CONTACT) {</span>
+<span class="lineNum">     211 </span><span class="lineCov">       2111 :                         if (!((pjsip_contact_hdr *) hdr)-&gt;star &amp;&amp; is_sip_uri(((pjsip_contact_hdr *) hdr)-&gt;uri)) {</span>
+<span class="lineNum">     212 </span><span class="lineCov">       2111 :                                 uri = pjsip_uri_get_uri(((pjsip_contact_hdr *) hdr)-&gt;uri);</span>
+<span class="lineNum">     213 </span><span class="lineCov">       2111 :                                 print_sanitize_debug(&quot;Sanitizing Contact header&quot;, PJSIP_URI_IN_CONTACT_HDR, uri);</span>
+<span class="lineNum">     214 </span><span class="lineCov">       2113 :                                 while ((x_transport = pjsip_param_find(&amp;uri-&gt;other_param, &amp;x_name))) {</span>
+<span class="lineNum">     215 </span><span class="lineCov">          2 :                                         pj_list_erase(x_transport);</span>
+<span class="lineNum">     216 </span>            :                                 }
+<span class="lineNum">     217 </span>            :                         }
+<span class="lineNum">     218 </span>            :                 }
+<span class="lineNum">     219 </span>            :         }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">       4561 :         pjsip_tx_data_invalidate_msg(tdata);</span>
+<a name="222"><span class="lineNum">     222 </span><span class="lineCov">       4561 : }</span></a>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineCov">       4561 : static pj_status_t filter_on_tx_message(pjsip_tx_data *tdata)</span>
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span>            :         struct filter_message_restrictions *restrictions =
+<span class="lineNum">     227 </span><span class="lineCov">       4561 :                 ast_sip_mod_data_get(tdata-&gt;mod_data, filter_module_transport.id, MOD_DATA_RESTRICTIONS);</span>
+<span class="lineNum">     228 </span>            :         pjsip_tpmgr_fla2_param prm;
+<span class="lineNum">     229 </span>            :         pjsip_cseq_hdr *cseq;
+<span class="lineNum">     230 </span>            :         pjsip_via_hdr *via;
+<span class="lineNum">     231 </span>            :         pjsip_fromto_hdr *from;
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">       4561 :         sanitize_tdata(tdata);</span>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :         /* Use the destination information to determine what local interface this message will go out on */
+<span class="lineNum">     236 </span><span class="lineCov">       4561 :         pjsip_tpmgr_fla2_param_default(&amp;prm);</span>
+<span class="lineNum">     237 </span><span class="lineCov">       4561 :         prm.tp_type = tdata-&gt;tp_info.transport-&gt;key.type;</span>
+<span class="lineNum">     238 </span><span class="lineCov">       4561 :         pj_strset2(&amp;prm.dst_host, tdata-&gt;tp_info.dst_name);</span>
+<span class="lineNum">     239 </span><span class="lineCov">       4561 :         prm.local_if = is_bound_any(tdata-&gt;tp_info.transport);</span>
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :         /* If we can't get the local address use best effort and let it pass */
+<span class="lineNum">     242 </span><span class="lineCov">       4561 :         if (pjsip_tpmgr_find_local_addr2(pjsip_endpt_get_tpmgr(ast_sip_get_pjsip_endpoint()), tdata-&gt;pool, &amp;prm) != PJ_SUCCESS) {</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 return PJ_SUCCESS;</span>
+<span class="lineNum">     244 </span>            :         }
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span>            :         /* For UDP we can have multiple transports so the port needs to be maintained */
+<span class="lineNum">     247 </span><span class="lineCov">       4561 :         if (tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP ||</span>
+<span class="lineNum">     248 </span><span class="lineCov">       1068 :                 tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     249 </span><span class="lineCov">       3836 :                 prm.ret_port = tdata-&gt;tp_info.transport-&gt;local_name.port;</span>
+<span class="lineNum">     250 </span>            :         }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span>            :         /* If the IP source differs from the existing transport see if we need to update it */
+<span class="lineNum">     253 </span><span class="lineCov">       4561 :         if (pj_strcmp(&amp;prm.ret_addr, &amp;tdata-&gt;tp_info.transport-&gt;local_name.host)) {</span>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :                 /* If the transport it is going out on is different reflect it in the message */
+<span class="lineNum">     256 </span><span class="lineCov">        604 :                 if (tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP ||</span>
+<span class="lineNum">     257 </span><span class="lineCov">         36 :                         tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     258 </span>            :                         pjsip_transport *transport;
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">        568 :                         transport = get_udp_transport(&amp;prm.ret_addr, prm.ret_port);</span>
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">        568 :                         if (transport) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                                 tdata-&gt;tp_info.transport = transport;</span>
+<span class="lineNum">     264 </span>            :                         }
+<span class="lineNum">     265 </span>            :                 }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            :                 /* If the chosen transport is not bound to any we can't use the source address as it won't get back to us */
+<span class="lineNum">     268 </span><span class="lineCov">        604 :                 if (!is_bound_any(tdata-&gt;tp_info.transport)) {</span>
+<span class="lineNum">     269 </span><span class="lineCov">         36 :                         pj_strassign(&amp;prm.ret_addr, &amp;tdata-&gt;tp_info.transport-&gt;local_name.host);</span>
+<span class="lineNum">     270 </span>            :                 }
+<span class="lineNum">     271 </span>            :         } else {
+<span class="lineNum">     272 </span>            :                 /* The transport chosen will deliver this but ensure it is updated with the right information */
+<span class="lineNum">     273 </span><span class="lineCov">       3957 :                 pj_strassign(&amp;prm.ret_addr, &amp;tdata-&gt;tp_info.transport-&gt;local_name.host);</span>
+<span class="lineNum">     274 </span>            :         }
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            :         /* If the message needs to be updated with new address do so */
+<span class="lineNum">     277 </span><span class="lineCov">       7182 :         if (tdata-&gt;msg-&gt;type == PJSIP_REQUEST_MSG || !(cseq = pjsip_msg_find_hdr(tdata-&gt;msg, PJSIP_H_CSEQ, NULL)) ||</span>
+<span class="lineNum">     278 </span><span class="lineCov">       2621 :                 pj_strcmp2(&amp;cseq-&gt;method.name, &quot;REGISTER&quot;)) {</span>
+<span class="lineNum">     279 </span><span class="lineCov">       4321 :                 pjsip_contact_hdr *contact = pjsip_msg_find_hdr(tdata-&gt;msg, PJSIP_H_CONTACT, NULL);</span>
+<span class="lineNum">     280 </span><span class="lineCov">       4321 :                 if (contact &amp;&amp; (PJSIP_URI_SCHEME_IS_SIP(contact-&gt;uri) || PJSIP_URI_SCHEME_IS_SIPS(contact-&gt;uri))</span>
+<span class="lineNum">     281 </span><span class="lineCov">       1853 :                         &amp;&amp; !(tdata-&gt;msg-&gt;type == PJSIP_RESPONSE_MSG &amp;&amp; tdata-&gt;msg-&gt;line.status.code / 100 == 3)) {</span>
+<span class="lineNum">     282 </span><span class="lineCov">       1841 :                         pjsip_sip_uri *uri = pjsip_uri_get_uri(contact-&gt;uri);</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span>            :                         /* prm.ret_addr is allocated from the tdata pool OR the transport so it is perfectly fine to just do an assignment like this */
+<span class="lineNum">     285 </span><span class="lineCov">       1841 :                         pj_strassign(&amp;uri-&gt;host, &amp;prm.ret_addr);</span>
+<span class="lineNum">     286 </span><span class="lineCov">       1841 :                         uri-&gt;port = prm.ret_port;</span>
+<span class="lineNum">     287 </span><span class="lineCov">       1841 :                         ast_debug(5, &quot;Re-wrote Contact URI host/port to %.*s:%d (this may be re-written again later)\n&quot;,</span>
+<span class="lineNum">     288 </span>            :                                 (int)pj_strlen(&amp;uri-&gt;host), pj_strbuf(&amp;uri-&gt;host), uri-&gt;port);
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineCov">       1841 :                         if (tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP ||</span>
+<span class="lineNum">     291 </span><span class="lineCov">        285 :                                 tdata-&gt;tp_info.transport-&gt;key.type == PJSIP_TRANSPORT_UDP6) {</span>
+<span class="lineNum">     292 </span><span class="lineCov">       1645 :                                 uri-&gt;transport_param.slen = 0;</span>
+<span class="lineNum">     293 </span>            :                         } else {
+<span class="lineNum">     294 </span><span class="lineCov">        196 :                                 pj_strdup2(tdata-&gt;pool, &amp;uri-&gt;transport_param, pjsip_transport_get_type_name(tdata-&gt;tp_info.transport-&gt;key.type));</span>
+<span class="lineNum">     295 </span>            :                         }
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">       1841 :                         pjsip_tx_data_invalidate_msg(tdata);</span>
+<span class="lineNum">     298 </span>            :                 }
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineCov">       4561 :         if (tdata-&gt;msg-&gt;type == PJSIP_REQUEST_MSG &amp;&amp; (via = pjsip_msg_find_hdr(tdata-&gt;msg, PJSIP_H_VIA, NULL))) {</span>
+<span class="lineNum">     302 </span><span class="lineCov">       1940 :                 pj_strassign(&amp;via-&gt;sent_by.host, &amp;prm.ret_addr);</span>
+<span class="lineNum">     303 </span><span class="lineCov">       1940 :                 via-&gt;sent_by.port = prm.ret_port;</span>
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span><span class="lineCov">       1940 :                 pjsip_tx_data_invalidate_msg(tdata);</span>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">       4561 :         if (tdata-&gt;msg-&gt;type == PJSIP_REQUEST_MSG &amp;&amp; (from = pjsip_msg_find_hdr(tdata-&gt;msg, PJSIP_H_FROM, NULL)) &amp;&amp;</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 (restrictions &amp;&amp; !restrictions-&gt;disallow_from_domain_modification)) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 pjsip_name_addr *id_name_addr = (pjsip_name_addr *)from-&gt;uri;</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 pjsip_sip_uri *uri = pjsip_uri_get_uri(id_name_addr);</span>
+<span class="lineNum">     312 </span>            :                 pj_sockaddr ip;
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 if (pj_strcmp2(&amp;uri-&gt;host, &quot;localhost&quot;) &amp;&amp; pj_sockaddr_parse(pj_AF_UNSPEC(), 0, &amp;uri-&gt;host, &amp;ip) == PJ_SUCCESS) {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                         pj_strassign(&amp;uri-&gt;host, &amp;prm.ret_addr);</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                         pjsip_tx_data_invalidate_msg(tdata);</span>
+<span class="lineNum">     317 </span>            :                 }
+<span class="lineNum">     318 </span>            :         }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span>            :         /* Update the SDP if it is present */
+<span class="lineNum">     321 </span><span class="lineCov">       5694 :         if (tdata-&gt;msg-&gt;body &amp;&amp; ast_sip_is_content_type(&amp;tdata-&gt;msg-&gt;body-&gt;content_type, &quot;application&quot;, &quot;sdp&quot;) &amp;&amp;</span>
+<span class="lineNum">     322 </span><span class="lineCov">       1133 :                 multihomed_rewrite_sdp(tdata-&gt;msg-&gt;body-&gt;data)) {</span>
+<span class="lineNum">     323 </span><span class="lineCov">        497 :                 struct pjmedia_sdp_session *sdp = tdata-&gt;msg-&gt;body-&gt;data;</span>
+<span class="lineNum">     324 </span>            :                 static const pj_str_t STR_IP4 = { &quot;IP4&quot;, 3 };
+<span class="lineNum">     325 </span>            :                 static const pj_str_t STR_IP6 = { &quot;IP6&quot;, 3 };
+<span class="lineNum">     326 </span>            :                 pj_str_t STR_IP;
+<span class="lineNum">     327 </span>            :                 int stream;
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">        497 :                 STR_IP = tdata-&gt;tp_info.transport-&gt;key.type &amp; PJSIP_TRANSPORT_IPV6 ? STR_IP6 : STR_IP4;</span>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineCov">        497 :                 pj_strassign(&amp;sdp-&gt;origin.addr, &amp;prm.ret_addr);</span>
+<span class="lineNum">     332 </span><span class="lineCov">        497 :                 sdp-&gt;origin.addr_type = STR_IP;</span>
+<span class="lineNum">     333 </span><span class="lineCov">        497 :                 pj_strassign(&amp;sdp-&gt;conn-&gt;addr, &amp;prm.ret_addr);</span>
+<span class="lineNum">     334 </span><span class="lineCov">        497 :                 sdp-&gt;conn-&gt;addr_type = STR_IP;</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">       1004 :                 for (stream = 0; stream &lt; sdp-&gt;media_count; ++stream) {</span>
+<span class="lineNum">     337 </span><span class="lineCov">        507 :                         if (sdp-&gt;media[stream]-&gt;conn) {</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                                 pj_strassign(&amp;sdp-&gt;media[stream]-&gt;conn-&gt;addr, &amp;prm.ret_addr);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                                 sdp-&gt;media[stream]-&gt;conn-&gt;addr_type = STR_IP;</span>
+<span class="lineNum">     340 </span>            :                         }
+<span class="lineNum">     341 </span>            :                 }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">        497 :                 pjsip_tx_data_invalidate_msg(tdata);</span>
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineCov">       4561 :         return PJ_SUCCESS;</span>
+<span class="lineNum">     347 </span>            : }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : enum uri_type {
+<span class="lineNum">     350 </span>            :         URI_TYPE_REQUEST = -1,
+<span class="lineNum">     351 </span>            :         URI_TYPE_TO = PJSIP_H_TO,
+<span class="lineNum">     352 </span>            :         URI_TYPE_FROM = PJSIP_H_FROM,
+<span class="lineNum">     353 </span>            :         URI_TYPE_CONTACT = PJSIP_H_CONTACT,
+<a name="354"><span class="lineNum">     354 </span>            : };</a>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineCov">          4 : static void print_uri_debug(enum uri_type ut, pjsip_rx_data *rdata, pjsip_hdr *hdr)</span>
+<span class="lineNum">     357 </span>            : {
+<span class="lineNum">     358 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">     359 </span><span class="lineCov">          4 :         pjsip_uri *local_uri = NULL;</span>
+<span class="lineNum">     360 </span>            :         char hdrbuf[512];
+<span class="lineNum">     361 </span>            :         int hdrbuf_len;
+<span class="lineNum">     362 </span>            :         char *request_uri;
+<span class="lineNum">     363 </span><span class="lineCov">          4 :         pjsip_uri_context_e context = PJSIP_URI_IN_OTHER;</span>
+<span class="lineNum">     364 </span>            :         char header_name[32];
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span><span class="lineCov">          4 :         switch (ut) {</span>
+<span class="lineNum">     367 </span><span class="lineCov">          1 :         case(URI_TYPE_REQUEST):</span>
+<span class="lineNum">     368 </span><span class="lineCov">          1 :                 context = PJSIP_URI_IN_REQ_URI;</span>
+<span class="lineNum">     369 </span><span class="lineCov">          1 :                 strcpy(header_name, &quot;Request&quot;); /* Safe */</span>
+<span class="lineNum">     370 </span><span class="lineCov">          1 :                 local_uri = rdata-&gt;msg_info.msg-&gt;line.req.uri;</span>
+<span class="lineNum">     371 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     372 </span><span class="lineCov">          1 :         case(PJSIP_H_FROM):</span>
+<span class="lineNum">     373 </span><span class="lineCov">          1 :                 strcpy(header_name, &quot;From&quot;); /* Safe */</span>
+<span class="lineNum">     374 </span><span class="lineCov">          1 :                 context = PJSIP_URI_IN_FROMTO_HDR;</span>
+<span class="lineNum">     375 </span><span class="lineCov">          1 :                 local_uri = pjsip_uri_get_uri(((pjsip_from_hdr *)hdr)-&gt;uri);</span>
+<span class="lineNum">     376 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     377 </span><span class="lineCov">          1 :         case(PJSIP_H_TO):</span>
+<span class="lineNum">     378 </span><span class="lineCov">          1 :                 strcpy(header_name, &quot;To&quot;); /* Safe */</span>
+<span class="lineNum">     379 </span><span class="lineCov">          1 :                 context = PJSIP_URI_IN_FROMTO_HDR;</span>
+<span class="lineNum">     380 </span><span class="lineCov">          1 :                 local_uri = pjsip_uri_get_uri(((pjsip_to_hdr *)hdr)-&gt;uri);</span>
+<span class="lineNum">     381 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     382 </span><span class="lineCov">          1 :         case(PJSIP_H_CONTACT):</span>
+<span class="lineNum">     383 </span><span class="lineCov">          1 :                 strcpy(header_name, &quot;Contact&quot;); /* Safe */</span>
+<span class="lineNum">     384 </span><span class="lineCov">          1 :                 context = PJSIP_URI_IN_CONTACT_HDR;</span>
+<span class="lineNum">     385 </span><span class="lineCov">          1 :                 local_uri = pjsip_uri_get_uri(((pjsip_contact_hdr *)hdr)-&gt;uri);</span>
+<span class="lineNum">     386 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     387 </span>            :         }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span><span class="lineCov">          4 :         hdrbuf_len = pjsip_uri_print(PJSIP_URI_IN_REQ_URI, rdata-&gt;msg_info.msg-&gt;line.req.uri, hdrbuf, 512);</span>
+<span class="lineNum">     390 </span><span class="lineCov">          4 :         hdrbuf[hdrbuf_len] = '\0';</span>
+<span class="lineNum">     391 </span><span class="lineCov">          4 :         request_uri = ast_strdupa(hdrbuf);</span>
+<span class="lineNum">     392 </span><span class="lineCov">          4 :         hdrbuf_len = pjsip_uri_print(context, local_uri, hdrbuf, 512);</span>
+<span class="lineNum">     393 </span><span class="lineCov">          4 :         hdrbuf[hdrbuf_len] = '\0';</span>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineCov">          4 :         ast_debug(2, &quot;There was a non sip(s) URI scheme in %s URI '%s' for request '%*.*s %s'\n&quot;,</span>
+<span class="lineNum">     396 </span>            :                 header_name, hdrbuf,
+<span class="lineNum">     397 </span>            :                 (int)rdata-&gt;msg_info.msg-&gt;line.req.method.name.slen,
+<span class="lineNum">     398 </span>            :                 (int)rdata-&gt;msg_info.msg-&gt;line.req.method.name.slen,
+<span class="lineNum">     399 </span>            :                 rdata-&gt;msg_info.msg-&gt;line.req.method.name.ptr, request_uri);
+<span class="lineNum">     400 </span>            : #endif
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineCov">       2664 : static pj_bool_t on_rx_process_uris(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     404 </span>            : {
+<span class="lineNum">     405 </span><span class="lineCov">       2664 :         pjsip_contact_hdr *contact = NULL;</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">       2664 :         if (rdata-&gt;msg_info.msg-&gt;type != PJSIP_REQUEST_MSG) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 return PJ_FALSE;</span>
+<span class="lineNum">     409 </span>            :         }
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineCov">       2664 :         if (!is_sip_uri(rdata-&gt;msg_info.msg-&gt;line.req.uri)) {</span>
+<span class="lineNum">     412 </span><span class="lineCov">          1 :                 print_uri_debug(URI_TYPE_REQUEST, rdata, NULL);</span>
+<span class="lineNum">     413 </span><span class="lineCov">          1 :                 pjsip_endpt_respond_stateless(ast_sip_get_pjsip_endpoint(), rdata,</span>
+<span class="lineNum">     414 </span>            :                         PJSIP_SC_UNSUPPORTED_URI_SCHEME, NULL, NULL, NULL);
+<span class="lineNum">     415 </span><span class="lineCov">          1 :                 return PJ_TRUE;</span>
+<span class="lineNum">     416 </span>            :         }
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span><span class="lineCov">       2663 :         if (!is_sip_uri(rdata-&gt;msg_info.from-&gt;uri)) {</span>
+<span class="lineNum">     419 </span><span class="lineCov">          1 :                 print_uri_debug(URI_TYPE_FROM, rdata, (pjsip_hdr *)rdata-&gt;msg_info.from);</span>
+<span class="lineNum">     420 </span><span class="lineCov">          1 :                 pjsip_endpt_respond_stateless(ast_sip_get_pjsip_endpoint(), rdata,</span>
+<span class="lineNum">     421 </span>            :                         PJSIP_SC_UNSUPPORTED_URI_SCHEME, NULL, NULL, NULL);
+<span class="lineNum">     422 </span><span class="lineCov">          1 :                 return PJ_TRUE;</span>
+<span class="lineNum">     423 </span>            :         }
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineCov">       2662 :         if (!is_sip_uri(rdata-&gt;msg_info.to-&gt;uri)) {</span>
+<span class="lineNum">     426 </span><span class="lineCov">          1 :                 print_uri_debug(URI_TYPE_TO, rdata, (pjsip_hdr *)rdata-&gt;msg_info.to);</span>
+<span class="lineNum">     427 </span><span class="lineCov">          1 :                 pjsip_endpt_respond_stateless(ast_sip_get_pjsip_endpoint(), rdata,</span>
+<span class="lineNum">     428 </span>            :                         PJSIP_SC_UNSUPPORTED_URI_SCHEME, NULL, NULL, NULL);
+<span class="lineNum">     429 </span><span class="lineCov">          1 :                 return PJ_TRUE;</span>
+<span class="lineNum">     430 </span>            :         }
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span>            : 
+<span class="lineNum">     433 </span><span class="lineCov">       2661 :         contact = (pjsip_contact_hdr *) pjsip_msg_find_hdr(</span>
+<span class="lineNum">     434 </span><span class="lineCov">       2661 :                 rdata-&gt;msg_info.msg, PJSIP_H_CONTACT, NULL);</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineCov">       2661 :         if (!contact &amp;&amp; pjsip_method_creates_dialog(&amp;rdata-&gt;msg_info.msg-&gt;line.req.method)) {</span>
+<span class="lineNum">     437 </span>            :                 /* A contact header is required for dialog creating methods */
+<span class="lineNum">     438 </span>            :                 static const pj_str_t missing_contact = { &quot;Missing Contact header&quot;, 22 };
+<span class="lineNum">     439 </span><span class="lineCov">          5 :                 pjsip_endpt_respond_stateless(ast_sip_get_pjsip_endpoint(), rdata, 400,</span>
+<span class="lineNum">     440 </span>            :                                 &amp;missing_contact, NULL, NULL);
+<span class="lineNum">     441 </span><span class="lineCov">          5 :                 return PJ_TRUE;</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineCov">       4996 :         while (contact) {</span>
+<span class="lineNum">     445 </span><span class="lineCov">       2341 :                 if (!contact-&gt;star &amp;&amp; !is_sip_uri(contact-&gt;uri)) {</span>
+<span class="lineNum">     446 </span><span class="lineCov">          1 :                         print_uri_debug(URI_TYPE_CONTACT, rdata, (pjsip_hdr *)contact);</span>
+<span class="lineNum">     447 </span><span class="lineCov">          1 :                         pjsip_endpt_respond_stateless(ast_sip_get_pjsip_endpoint(), rdata,</span>
+<span class="lineNum">     448 </span>            :                                 PJSIP_SC_UNSUPPORTED_URI_SCHEME, NULL, NULL, NULL);
+<span class="lineNum">     449 </span><span class="lineCov">          1 :                         return PJ_TRUE;</span>
+<span class="lineNum">     450 </span>            :                 }
+<span class="lineNum">     451 </span><span class="lineCov">       2340 :                 contact = (pjsip_contact_hdr *) pjsip_msg_find_hdr(</span>
+<span class="lineNum">     452 </span><span class="lineCov">       2340 :                         rdata-&gt;msg_info.msg, PJSIP_H_CONTACT, contact-&gt;next);</span>
+<span class="lineNum">     453 </span>            :         }
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">       2655 :         return PJ_FALSE;</span>
+<a name="456"><span class="lineNum">     456 </span>            : }</a>
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineCov">       2655 : static pj_bool_t on_rx_process_symmetric_transport(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     459 </span>            : {
+<span class="lineNum">     460 </span>            :         pjsip_contact_hdr *contact;
+<span class="lineNum">     461 </span>            :         pjsip_sip_uri *uri;
+<span class="lineNum">     462 </span>            :         const char *transport_id;
+<span class="lineNum">     463 </span>            :         struct ast_sip_transport *transport;
+<span class="lineNum">     464 </span>            :         pjsip_param *x_transport;
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineCov">       2655 :         if (rdata-&gt;msg_info.msg-&gt;type != PJSIP_REQUEST_MSG) {</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                 return PJ_FALSE;</span>
+<span class="lineNum">     468 </span>            :         }
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineCov">       2655 :         contact = pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_CONTACT, NULL);</span>
+<span class="lineNum">     471 </span><span class="lineCov">       2655 :         if (!(contact &amp;&amp; contact-&gt;uri</span>
+<span class="lineNum">     472 </span><span class="lineCov">       2228 :                 &amp;&amp; ast_begins_with(rdata-&gt;tp_info.transport-&gt;info, AST_SIP_X_AST_TXP &quot;:&quot;))) {</span>
+<span class="lineNum">     473 </span><span class="lineCov">        988 :                 return PJ_FALSE;</span>
+<span class="lineNum">     474 </span>            :         }
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">       1667 :         uri = pjsip_uri_get_uri(contact-&gt;uri);</span>
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">       1667 :         transport_id = rdata-&gt;tp_info.transport-&gt;info + AST_SIP_X_AST_TXP_LEN + 1;</span>
+<span class="lineNum">     479 </span><span class="lineCov">       1667 :         transport = ast_sorcery_retrieve_by_id(ast_sip_get_sorcery(), &quot;transport&quot;, transport_id);</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">       1667 :         if (!(transport &amp;&amp; transport-&gt;symmetric_transport)) {</span>
+<span class="lineNum">     482 </span><span class="lineCov">       1658 :                 ao2_cleanup(transport);</span>
+<span class="lineNum">     483 </span><span class="lineCov">       1658 :                 return PJ_FALSE;</span>
+<span class="lineNum">     484 </span>            :         }
+<span class="lineNum">     485 </span><span class="lineCov">          9 :         ao2_cleanup(transport);</span>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">          9 :         x_transport = PJ_POOL_ALLOC_T(rdata-&gt;tp_info.pool, pjsip_param);</span>
+<span class="lineNum">     488 </span><span class="lineCov">          9 :         x_transport-&gt;name = pj_strdup3(rdata-&gt;tp_info.pool, AST_SIP_X_AST_TXP);</span>
+<span class="lineNum">     489 </span><span class="lineCov">          9 :         x_transport-&gt;value = pj_strdup3(rdata-&gt;tp_info.pool, transport_id);</span>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">          9 :         pj_list_insert_before(&amp;uri-&gt;other_param, x_transport);</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineCov">          9 :         ast_debug(1, &quot;Set transport '%s' on %.*s from %.*s:%d\n&quot;, transport_id,</span>
+<span class="lineNum">     494 </span>            :                 (int)rdata-&gt;msg_info.msg-&gt;line.req.method.name.slen,
+<span class="lineNum">     495 </span>            :                 rdata-&gt;msg_info.msg-&gt;line.req.method.name.ptr,
+<span class="lineNum">     496 </span>            :                 (int)uri-&gt;host.slen, uri-&gt;host.ptr, uri-&gt;port);
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">          9 :         return PJ_FALSE;</span>
+<a name="499"><span class="lineNum">     499 </span>            : }</a>
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span><span class="lineCov">       2664 : static pj_bool_t filter_on_rx_message(pjsip_rx_data *rdata)</span>
+<span class="lineNum">     502 </span>            : {
+<span class="lineNum">     503 </span>            :         pj_bool_t rc;
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span><span class="lineCov">       2664 :         rc = on_rx_process_uris(rdata);</span>
+<span class="lineNum">     506 </span><span class="lineCov">       2664 :         if (rc == PJ_TRUE) {</span>
+<span class="lineNum">     507 </span><span class="lineCov">          9 :                 return rc;</span>
+<span class="lineNum">     508 </span>            :         }
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">       2655 :         rc = on_rx_process_symmetric_transport(rdata);</span>
+<span class="lineNum">     511 </span><span class="lineCov">       2655 :         if (rc == PJ_TRUE) {</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 return rc;</span>
+<span class="lineNum">     513 </span>            :         }
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span><span class="lineCov">       2655 :         return PJ_FALSE;</span>
+<a name="516"><span class="lineNum">     516 </span>            : }</a>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span><span class="lineCov">        786 : void ast_res_pjsip_cleanup_message_filter(void)</span>
+<span class="lineNum">     519 </span>            : {
+<span class="lineNum">     520 </span><span class="lineCov">        786 :         ast_sip_unregister_service(&amp;filter_module_tsx);</span>
+<span class="lineNum">     521 </span><span class="lineCov">        786 :         ast_sip_unregister_service(&amp;filter_module_transport);</span>
+<span class="lineNum">     522 </span><span class="lineCov">        786 :         ast_sip_unregister_supplement(&amp;filter_supplement);</span>
+<span class="lineNum">     523 </span><span class="lineCov">        786 :         ast_sip_session_unregister_supplement(&amp;filter_session_supplement);</span>
+<a name="524"><span class="lineNum">     524 </span><span class="lineCov">        786 : }</span></a>
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineCov">        852 : int ast_res_pjsip_init_message_filter(void)</span>
+<span class="lineNum">     527 </span>            : {
+<span class="lineNum">     528 </span><span class="lineCov">        852 :         ast_sip_session_register_supplement(&amp;filter_session_supplement);</span>
+<span class="lineNum">     529 </span><span class="lineCov">        852 :         ast_sip_register_supplement(&amp;filter_supplement);</span>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineCov">        852 :         if (ast_sip_register_service(&amp;filter_module_transport)) {</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not register message filter module for incoming and outgoing requests\n&quot;);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 ast_res_pjsip_cleanup_message_filter();</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     535 </span>            :         }
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">        852 :         if (ast_sip_register_service(&amp;filter_module_tsx)) {</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not register message filter module for incoming and outgoing requests\n&quot;);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                 ast_res_pjsip_cleanup_message_filter();</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     541 </span>            :         }
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">        852 :         return 0;</span>
+<span class="lineNum">     544 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

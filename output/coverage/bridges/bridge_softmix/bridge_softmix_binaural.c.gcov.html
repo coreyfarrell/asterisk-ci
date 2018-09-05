@@ -1,0 +1,664 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - bridges/bridge_softmix/bridge_softmix_binaural.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">bridges/bridge_softmix</a> - bridge_softmix_binaural.c<span style="font-size: 80%;"> (source / <a href="bridge_softmix_binaural.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">180</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2016, Frank Haase, Dennis Guse
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Frank Haase &lt;fra.haase@gmail.com&gt;
+<span class="lineNum">       7 </span>            :  * Dennis Guse &lt;dennis.guse@alumni.tu-berlin.de&gt;
+<span class="lineNum">       8 </span>            :  *
+<span class="lineNum">       9 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">      10 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      11 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      12 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      13 </span>            :  * channels for your use.
+<span class="lineNum">      14 </span>            :  *
+<span class="lineNum">      15 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      16 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      17 </span>            :  * at the top of the source tree.
+<span class="lineNum">      18 </span>            :  */
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : /*! \file
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \brief Multi-party software based binaural mixing
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \author Frank Haase &lt;fra.haase@googlemail.com&gt;
+<span class="lineNum">      25 </span>            :  * \author Dennis Guse &lt;dennis.guse@alumni.tu-berlin.de&gt;
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  * \ingroup bridges
+<span class="lineNum">      28 </span>            :  */
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;include/bridge_softmix_internal.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">      33 </span>            :   #include &quot;include/hrirs_configuration.h&quot;
+<span class="lineNum">      34 </span>            : #endif
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : /*! The number of prealloced channels when a bridge will be created. */
+<span class="lineNum">      37 </span>            : #define CONVOLVE_CHANNEL_PREALLOC 3
+<span class="lineNum">      38 </span>            : /*! Max size of the convolve buffer. */
+<span class="lineNum">      39 </span>            : #define CONVOLVE_MAX_BUFFER 4096
+<span class="lineNum">      40 </span>            : /*! The default sample size in an binaural environment with a two-channel
+<span class="lineNum">      41 </span>            :  * codec at 48kHz is 960 samples.
+<span class="lineNum">      42 </span>            :  */
+<span class="lineNum">      43 </span>            : #define CONVOLUTION_SAMPLE_SIZE 960
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">      46 </span>            :   #if SOFTMIX_BINAURAL_SAMPLE_RATE != HRIRS_SAMPLE_RATE
+<span class="lineNum">      47 </span>            :           #error HRIRs are required to be SOFTMIX_BINAURAL_SAMPLE_RATE Hz. Please adjust hrirs.h accordingly.
+<span class="lineNum">      48 </span>            :         #endif
+<span class="lineNum">      49 </span>            :   #if CONVOLUTION_SAMPLE_SIZE &lt; HRIRS_IMPULSE_LEN
+<span class="lineNum">      50 </span>            :           #error HRIRS_IMPULSE_LEN cannot be longer than CONVOLUTION_SAMPLE_SIZE. Please adjust hrirs.h accordingly.
+<span class="lineNum">      51 </span>            :         #endif
+<a name="52"><span class="lineNum">      52 </span>            : #endif</a>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 : void reset_channel_pair(struct convolve_channel_pair *channel_pair,</span>
+<span class="lineNum">      55 </span>            :                 unsigned int default_sample_size)
+<span class="lineNum">      56 </span>            : {
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :         memset(channel_pair-&gt;chan_left.overlap_add, 0, sizeof(float) * default_sample_size);</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         memset(channel_pair-&gt;chan_right.overlap_add, 0, sizeof(float) * default_sample_size);</span>
+<a name="59"><span class="lineNum">      59 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 : void random_binaural_pos_change(struct softmix_bridge_data *softmix_data)</span>
+<span class="lineNum">      62 </span>            : {
+<span class="lineNum">      63 </span>            :         /*
+<span class="lineNum">      64 </span>            :          * We perform a shuffle of all channels, even the ones that aren't used at the
+<span class="lineNum">      65 </span>            :          * moment of shuffling now. This has the efect that new members will be placed
+<span class="lineNum">      66 </span>            :          * randomly too.
+<span class="lineNum">      67 </span>            :          */
+<span class="lineNum">      68 </span>            :         unsigned int i;
+<span class="lineNum">      69 </span>            :         unsigned int j;
+<span class="lineNum">      70 </span>            :         struct convolve_channel_pair *tmp;
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         if (softmix_data-&gt;convolve.chan_size &lt; 2) {</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      74 </span>            :         }
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         srand(time(NULL));</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :         for (i = softmix_data-&gt;convolve.chan_size - 1; i &gt; 0; i--) {</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                 j = rand() % (i + 1);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :                 tmp = softmix_data-&gt;convolve.cchan_pair[i];</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :                 reset_channel_pair(tmp, softmix_data-&gt;default_sample_size);</span>
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 :                 softmix_data-&gt;convolve.cchan_pair[i] = softmix_data-&gt;convolve.cchan_pair[j];</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 softmix_data-&gt;convolve.cchan_pair[j] = tmp;</span>
+<span class="lineNum">      83 </span>            :         }
+<a name="84"><span class="lineNum">      84 </span>            : }</a>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 : int do_convolve(struct convolve_channel *chan, int16_t *in_samples,</span>
+<span class="lineNum">      87 </span>            :                 unsigned int in_sample_size, unsigned int hrtf_length)
+<span class="lineNum">      88 </span>            : {
+<span class="lineNum">      89 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">      90 </span>            :         unsigned int i;
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :         if (in_sample_size != CONVOLUTION_SAMPLE_SIZE) {
+<span class="lineNum">      93 </span>            :                 return -1;
+<span class="lineNum">      94 </span>            :         }
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            :         /* FFT setting real part */
+<span class="lineNum">      97 </span>            :         for (i = 0; i &lt; CONVOLUTION_SAMPLE_SIZE; i++) {
+<span class="lineNum">      98 </span>            :                 chan-&gt;fftw_in[i] = in_samples[i] * (FLT_MAX / SHRT_MAX);
+<span class="lineNum">      99 </span>            :         }
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span>            :         for (i = CONVOLUTION_SAMPLE_SIZE; i &lt; hrtf_length; i++) {
+<span class="lineNum">     102 </span>            :                 chan-&gt;fftw_in[i] = 0;
+<span class="lineNum">     103 </span>            :         }
+<span class="lineNum">     104 </span>            :         fftw_execute(chan-&gt;fftw_plan);
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            :         /* Imaginary mulitplication (frequency space). */
+<span class="lineNum">     107 </span>            :         /* First FFTW result has never an imaginary part. */
+<span class="lineNum">     108 </span>            :         chan-&gt;fftw_in[0] = chan-&gt;fftw_out[0] * chan-&gt;hrtf[0];
+<span class="lineNum">     109 </span>            :         for (i = 1; i &lt; (hrtf_length / 2); i++) {
+<span class="lineNum">     110 </span>            :                 /* Real part */
+<span class="lineNum">     111 </span>            :                 chan-&gt;fftw_in[i] = (chan-&gt;fftw_out[i] * chan-&gt;hrtf[i]) -
+<span class="lineNum">     112 </span>            :                                 (chan-&gt;fftw_out[hrtf_length - i] * chan-&gt;hrtf[hrtf_length - i]);
+<span class="lineNum">     113 </span>            :                 /* Imaginary part */
+<span class="lineNum">     114 </span>            :                 chan-&gt;fftw_in[hrtf_length - i] = (chan-&gt;fftw_out[i] * chan-&gt;hrtf[hrtf_length - i]) +
+<span class="lineNum">     115 </span>            :                                 (chan-&gt;fftw_out[hrtf_length - i] * chan-&gt;hrtf[i]);
+<span class="lineNum">     116 </span>            :         }
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :         /* The last (if even) FFTW result has never an imaginary part. */
+<span class="lineNum">     119 </span>            :         if (hrtf_length % 2 == 0) {
+<span class="lineNum">     120 </span>            :                 chan-&gt;fftw_in[hrtf_length / 2] = chan-&gt;fftw_out[hrtf_length / 2] *
+<span class="lineNum">     121 </span>            :                                 chan-&gt;hrtf[hrtf_length / 2];
+<span class="lineNum">     122 </span>            :         }
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :         /* iFFT */
+<span class="lineNum">     125 </span>            :         fftw_execute(chan-&gt;fftw_plan_inverse);
+<span class="lineNum">     126 </span>            :         /* Remove signal increase due to iFFT. */
+<span class="lineNum">     127 </span>            :         for (i = 0; i &lt; hrtf_length; i++) {
+<span class="lineNum">     128 </span>            :                 chan-&gt;fftw_out[i] = chan-&gt;fftw_out[i] / (hrtf_length / 2);
+<span class="lineNum">     129 </span>            :         }
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            :         /* Save the block for overlapp add in the next itteration. */
+<span class="lineNum">     132 </span>            :         for (i = 0; i &lt; in_sample_size; i++) {
+<span class="lineNum">     133 </span>            :                 chan-&gt;overlap_add[i] += chan-&gt;fftw_out[i];
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            :         /* Copy real part to the output, ignore the complex part. */
+<span class="lineNum">     137 </span>            :         for (i = 0; i &lt; in_sample_size; i++) {
+<span class="lineNum">     138 </span>            :                 chan-&gt;out_data[i] = chan-&gt;overlap_add[i] * (SHRT_MAX / FLT_MAX);
+<span class="lineNum">     139 </span>            :                 chan-&gt;overlap_add[i] = chan-&gt;fftw_out[i + in_sample_size];
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span>            : #endif
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="143"><span class="lineNum">     143 </span>            : }</a>
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 : struct convolve_channel_pair *do_convolve_pair(struct convolve_data *data,</span>
+<span class="lineNum">     146 </span>            :                 unsigned int pos_id, int16_t *in_samples, unsigned int in_sample_size,
+<span class="lineNum">     147 </span>            :                 const char *channel_name)
+<span class="lineNum">     148 </span>            : {
+<span class="lineNum">     149 </span>            :         struct convolve_channel_pair *chan_pair;
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            :         /* If a position has no active member we will not convolve. */
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         if (data-&gt;pos_ids[pos_id] != 1) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Channel %s: Channel pair has no active member! (pos id = %d)\n&quot;,</span>
+<span class="lineNum">     154 </span>            :                                 channel_name, pos_id);
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     156 </span>            :         }
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         chan_pair = data-&gt;cchan_pair[pos_id];</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         if (do_convolve(&amp;chan_pair-&gt;chan_left, in_samples, in_sample_size, data-&gt;hrtf_length)) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Channel %s: Binaural processing failed.&quot;, channel_name);</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     162 </span>            :         }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         if (do_convolve(&amp;chan_pair-&gt;chan_right, in_samples, in_sample_size, data-&gt;hrtf_length)) {</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Channel %s: Binaural processing failed.&quot;, channel_name);</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     167 </span>            :         }
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :         return chan_pair;</span>
+<a name="170"><span class="lineNum">     170 </span>            : }</a>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 : float *get_hrir(unsigned int chan_pos, unsigned int chan_side)</span>
+<span class="lineNum">     173 </span>            : {
+<span class="lineNum">     174 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">     175 </span>            :         if (chan_side == HRIRS_CHANNEL_LEFT) {
+<span class="lineNum">     176 </span>            :                 return hrirs_left[ast_binaural_positions[chan_pos]];
+<span class="lineNum">     177 </span>            :         } else if (chan_side == HRIRS_CHANNEL_RIGHT) {
+<span class="lineNum">     178 </span>            :                 return hrirs_right[ast_binaural_positions[chan_pos]];
+<span class="lineNum">     179 </span>            :         }
+<span class="lineNum">     180 </span>            : #else
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :         ast_log(LOG_ERROR, &quot;Requesting data for the binaural conference feature without &quot;</span>
+<span class="lineNum">     182 </span>            :                         &quot;it beeing active.\n&quot;);
+<span class="lineNum">     183 </span>            : #endif
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="186"><span class="lineNum">     186 </span>            : }</a>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 : int init_convolve_channel(struct convolve_channel *channel, unsigned int hrtf_len,</span>
+<span class="lineNum">     189 </span>            :                 unsigned int chan_pos, unsigned int chan_side, unsigned int default_sample_size)
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">     192 </span>            :         unsigned int j;
+<span class="lineNum">     193 </span>            :         float *hrir;
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span>            :         /* Prepare FFTW. */
+<span class="lineNum">     196 </span>            :         channel-&gt;fftw_in = (double *) fftw_malloc(sizeof(double) * (hrtf_len + 1));
+<span class="lineNum">     197 </span>            :         if (channel-&gt;fftw_in == NULL) {
+<span class="lineNum">     198 </span>            :                 return -1;
+<span class="lineNum">     199 </span>            :         }
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :         channel-&gt;fftw_out = (double *) fftw_malloc(sizeof(double) * (hrtf_len + 1));
+<span class="lineNum">     202 </span>            :         if (channel-&gt;fftw_out == NULL) {
+<span class="lineNum">     203 </span>            :                 fftw_free(channel-&gt;fftw_in);
+<span class="lineNum">     204 </span>            :                 return -1;
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            :         memset(channel-&gt;fftw_in, 0, sizeof(double) * (hrtf_len + 1));
+<span class="lineNum">     208 </span>            :         memset(channel-&gt;fftw_out, 0, sizeof(double) * (hrtf_len + 1));
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            :         channel-&gt;fftw_plan = fftw_plan_r2r_1d(hrtf_len, channel-&gt;fftw_in, channel-&gt;fftw_out,
+<span class="lineNum">     211 </span>            :                         FFTW_R2HC, FFTW_PATIENT);
+<span class="lineNum">     212 </span>            :         channel-&gt;fftw_plan_inverse = fftw_plan_r2r_1d(hrtf_len, channel-&gt;fftw_in, channel-&gt;fftw_out,
+<span class="lineNum">     213 </span>            :                         FFTW_HC2R, FFTW_PATIENT);
+<span class="lineNum">     214 </span>            :         channel-&gt;out_data = ast_calloc(CONVOLVE_MAX_BUFFER, sizeof(int16_t));
+<span class="lineNum">     215 </span>            :         if (channel-&gt;out_data == NULL) {
+<span class="lineNum">     216 </span>            :                 fftw_free(channel-&gt;fftw_in);
+<span class="lineNum">     217 </span>            :                 fftw_free(channel-&gt;fftw_out);
+<span class="lineNum">     218 </span>            :                 return -1;
+<span class="lineNum">     219 </span>            :         }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span>            :         /* Reuse positions if all positions are already used. */
+<span class="lineNum">     222 </span>            :         chan_pos = chan_pos % HRIRS_IMPULSE_SIZE;
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            :         /* Get HRTF for the channels spatial position. */
+<span class="lineNum">     225 </span>            :         hrir = get_hrir(chan_pos, chan_side);
+<span class="lineNum">     226 </span>            :         if (hrir == NULL) {
+<span class="lineNum">     227 </span>            :                 fftw_free(channel-&gt;fftw_in);
+<span class="lineNum">     228 </span>            :                 fftw_free(channel-&gt;fftw_out);
+<span class="lineNum">     229 </span>            :                 ast_free(channel-&gt;out_data);
+<span class="lineNum">     230 </span>            :                 return -1;
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :         for (j = 0; j &lt; HRIRS_IMPULSE_LEN; j++) {
+<span class="lineNum">     234 </span>            :                 channel-&gt;fftw_in[j] = hrir[j];
+<span class="lineNum">     235 </span>            :         }
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            :         for (j = HRIRS_IMPULSE_LEN; j &lt; hrtf_len; j++) {
+<span class="lineNum">     238 </span>            :                 channel-&gt;fftw_in[j] = 0;
+<span class="lineNum">     239 </span>            :         }
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :         fftw_execute(channel-&gt;fftw_plan);
+<span class="lineNum">     242 </span>            :         channel-&gt;hrtf = (double *) fftw_malloc(sizeof(double) * hrtf_len);
+<span class="lineNum">     243 </span>            :         if (channel-&gt;hrtf == NULL) {
+<span class="lineNum">     244 </span>            :                 fftw_free(channel-&gt;fftw_in);
+<span class="lineNum">     245 </span>            :                 fftw_free(channel-&gt;fftw_out);
+<span class="lineNum">     246 </span>            :                 ast_free(channel-&gt;out_data);
+<span class="lineNum">     247 </span>            :                 return -1;
+<span class="lineNum">     248 </span>            :         }
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span>            :         for (j = 0; j &lt; hrtf_len; j++) {
+<span class="lineNum">     251 </span>            :                 channel-&gt;hrtf[j] = channel-&gt;fftw_out[j];
+<span class="lineNum">     252 </span>            :         }
+<span class="lineNum">     253 </span>            :         channel-&gt;overlap_add = ast_calloc(default_sample_size, sizeof(float));
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :         return 0;
+<span class="lineNum">     256 </span>            : #endif
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="258"><span class="lineNum">     258 </span>            : }</a>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 : int init_convolve_channel_pair(struct convolve_channel_pair *cchan_pair,</span>
+<span class="lineNum">     261 </span>            :                 unsigned int hrtf_len, unsigned int chan_pos, unsigned int default_sample_size)
+<span class="lineNum">     262 </span>            : {
+<span class="lineNum">     263 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">     264 </span>            :         unsigned int hrirs_pos = chan_pos * 2;
+<span class="lineNum">     265 </span>            :         int success = 0;
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            :         ast_debug(3, &quot;Binaural pos for the new channel pair will be L: %d R: %d (pos id = %d)\n&quot;,
+<span class="lineNum">     268 </span>            :                         hrirs_pos, hrirs_pos + 1, chan_pos);
+<span class="lineNum">     269 </span>            :         success = init_convolve_channel(&amp;cchan_pair-&gt;chan_left, hrtf_len, chan_pos, HRIRS_CHANNEL_LEFT,
+<span class="lineNum">     270 </span>            :                         default_sample_size);
+<span class="lineNum">     271 </span>            :         if (success == -1) {
+<span class="lineNum">     272 </span>            :                 return success;
+<span class="lineNum">     273 </span>            :         }
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span>            :         success = init_convolve_channel(&amp;cchan_pair-&gt;chan_right, hrtf_len, chan_pos,
+<span class="lineNum">     276 </span>            :                         HRIRS_CHANNEL_RIGHT, default_sample_size);
+<span class="lineNum">     277 </span>            :         if (success == -1) {
+<span class="lineNum">     278 </span>            :                 free_convolve_channel(&amp;cchan_pair-&gt;chan_left);
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span>            :         return success;
+<span class="lineNum">     282 </span>            : #else
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         ast_log(LOG_ERROR, &quot;Requesting data for the binaural conference feature &quot;</span>
+<span class="lineNum">     284 </span>            :                         &quot;without it beeing active.\n&quot;);
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     287 </span>            : #endif
+<a name="288"><span class="lineNum">     288 </span>            : }</a>
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 : int init_convolve_data(struct convolve_data *data, unsigned int default_sample_size)</span>
+<span class="lineNum">     291 </span>            : {
+<span class="lineNum">     292 </span>            :         unsigned int i;
+<span class="lineNum">     293 </span>            :         unsigned int j;
+<span class="lineNum">     294 </span>            :         int success;
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         success = 0;</span>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         data-&gt;pos_ids = ast_calloc(sizeof(int), sizeof(int) * CONVOLVE_CHANNEL_PREALLOC);</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         if (data-&gt;pos_ids == NULL) {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     300 </span>            :         }
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :         data-&gt;chan_size = CONVOLVE_CHANNEL_PREALLOC;</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         data-&gt;number_channels = 0;</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         data-&gt;cchan_pair = ast_malloc(sizeof(struct convolve_channel_pair *) *</span>
+<span class="lineNum">     304 </span>            :                         CONVOLVE_CHANNEL_PREALLOC);
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :         if (data-&gt;cchan_pair == NULL) {</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 ast_free(data-&gt;pos_ids);</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     308 </span>            :         }
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; CONVOLVE_CHANNEL_PREALLOC; i++) {</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 data-&gt;cchan_pair[i] = ast_malloc(sizeof(struct convolve_channel_pair));</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 if (data-&gt;cchan_pair[i] == NULL) {</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :                         ast_free(data-&gt;pos_ids);</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                         for (j = 0; j &lt; i; j++) {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                                 ast_free(data-&gt;cchan_pair[j]);</span>
+<span class="lineNum">     316 </span>            :                         }
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                         ast_free(data-&gt;cchan_pair);</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     319 </span>            :                 }
+<span class="lineNum">     320 </span>            :         }
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         data-&gt;hrtf_length = (default_sample_size * 2) - 1;</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; CONVOLVE_CHANNEL_PREALLOC; i++) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 success = init_convolve_channel_pair(data-&gt;cchan_pair[i], data-&gt;hrtf_length, i,</span>
+<span class="lineNum">     325 </span>            :                                 default_sample_size);
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 if (success == -1) {</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                         ast_free(data-&gt;pos_ids);</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                         for (j = 0; j &lt; i; j++) {</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                                 free_convolve_channel_pair(data-&gt;cchan_pair[j]);</span>
+<span class="lineNum">     330 </span>            :                         }
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         for (j = 0; j &lt; CONVOLVE_CHANNEL_PREALLOC; j++) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                                 ast_free(data-&gt;cchan_pair[j]);</span>
+<span class="lineNum">     333 </span>            :                         }
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     335 </span>            :                 }
+<span class="lineNum">     336 </span>            :         }
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         return success;</span>
+<a name="339"><span class="lineNum">     339 </span>            : }</a>
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 : void free_convolve_channel(struct convolve_channel *cchan)</span>
+<span class="lineNum">     342 </span>            : {
+<span class="lineNum">     343 </span>            : #ifdef BINAURAL_RENDERING
+<span class="lineNum">     344 </span>            :         fftw_free(cchan-&gt;fftw_out);
+<span class="lineNum">     345 </span>            :         fftw_free(cchan-&gt;fftw_in);
+<span class="lineNum">     346 </span>            :         fftw_free(cchan-&gt;hrtf);
+<span class="lineNum">     347 </span>            :         ast_free(cchan-&gt;overlap_add);
+<span class="lineNum">     348 </span>            :         ast_free(cchan-&gt;out_data);
+<span class="lineNum">     349 </span>            :         fftw_destroy_plan(cchan-&gt;fftw_plan);
+<span class="lineNum">     350 </span>            :         fftw_destroy_plan(cchan-&gt;fftw_plan_inverse);
+<span class="lineNum">     351 </span>            : #endif
+<a name="352"><span class="lineNum">     352 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 : void free_convolve_channel_pair(struct convolve_channel_pair *cchan_pair)</span>
+<span class="lineNum">     355 </span>            : {
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         free_convolve_channel(&amp;cchan_pair-&gt;chan_left);</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :         free_convolve_channel(&amp;cchan_pair-&gt;chan_right);</span>
+<a name="358"><span class="lineNum">     358 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 : void free_convolve_data(struct convolve_data *data)</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span>            :         unsigned int i;
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         ast_free(data-&gt;pos_ids);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; data-&gt;chan_size; i++) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 free_convolve_channel_pair(data-&gt;cchan_pair[i]);</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                 ast_free(data-&gt;cchan_pair[i]);</span>
+<span class="lineNum">     367 </span>            :         }
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         ast_free(data-&gt;cchan_pair);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 : int set_binaural_data_join(struct convolve_data *data, unsigned int default_sample_size)</span>
+<span class="lineNum">     372 </span>            : {
+<span class="lineNum">     373 </span>            :         struct convolve_channel_pair **cchan_pair_tmp;
+<span class="lineNum">     374 </span>            :         unsigned int i;
+<span class="lineNum">     375 </span>            :         int *pos_ids_tmp;
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span>            :         /* Raise the number of input channels. */
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         data-&gt;number_channels++;</span>
+<span class="lineNum">     379 </span>            :         /* We realloc another channel pair if we are out of prealloced ones. */
+<span class="lineNum">     380 </span>            :         /* We have prealloced one at the beginning of a conference and if a member leaves. */
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (data-&gt;chan_size &lt; data-&gt;number_channels)  {</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 data-&gt;chan_size += 1;</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                 pos_ids_tmp = ast_realloc(data-&gt;pos_ids, data-&gt;chan_size * sizeof(int));</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 if (pos_ids_tmp) {</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         data-&gt;pos_ids = pos_ids_tmp;</span>
+<span class="lineNum">     387 </span>            :                 } else {
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                         goto binaural_join_fails;</span>
+<span class="lineNum">     389 </span>            :                 }
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 data-&gt;pos_ids[data-&gt;chan_size - 1] = 0;</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 cchan_pair_tmp = ast_realloc(data-&gt;cchan_pair,</span>
+<span class="lineNum">     393 </span>            :                                 data-&gt;chan_size * sizeof(struct convolve_channel_pair *));
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 if (cchan_pair_tmp) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         data-&gt;cchan_pair = cchan_pair_tmp;</span>
+<span class="lineNum">     396 </span>            :                 } else {
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                         goto binaural_join_fails;</span>
+<span class="lineNum">     398 </span>            :                 }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 data-&gt;cchan_pair[data-&gt;chan_size - 1] = ast_malloc(sizeof(struct convolve_channel_pair));</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 if (data-&gt;cchan_pair[data-&gt;chan_size - 1] == NULL) {</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                         goto binaural_join_fails;</span>
+<span class="lineNum">     403 </span>            :                 }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 i = init_convolve_channel_pair(data-&gt;cchan_pair[data-&gt;chan_size - 1], data-&gt;hrtf_length,</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                                 data-&gt;chan_size - 1, default_sample_size);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                 if (i == -1) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                         goto binaural_join_fails;</span>
+<span class="lineNum">     409 </span>            :                 }
+<span class="lineNum">     410 </span>            :         }
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; data-&gt;chan_size; i++) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                 if (data-&gt;pos_ids[i] == 0) {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         data-&gt;pos_ids[i] = 1;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     416 </span>            :                 }
+<span class="lineNum">     417 </span>            :         }
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         return i;</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 : binaural_join_fails:</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :         data-&gt;number_channels--;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         data-&gt;chan_size -= 1;</span>
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="426"><span class="lineNum">     426 </span>            : }</a>
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 : void set_binaural_data_leave(struct convolve_data *data, unsigned int pos,</span>
+<span class="lineNum">     429 </span>            :                 unsigned int default_sample_size)
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         if (pos &gt;= data-&gt;chan_size || data-&gt;pos_ids[pos] == 0) {</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     433 </span>            :         }
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         reset_channel_pair(data-&gt;cchan_pair[pos], default_sample_size);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         data-&gt;number_channels--;</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :         data-&gt;pos_ids[pos] = 0;</span>
+<a name="438"><span class="lineNum">     438 </span>            : }</a>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 : void softmix_process_write_binaural_audio(struct softmix_channel *sc,</span>
+<span class="lineNum">     441 </span>            :                 unsigned int default_sample_size)
+<span class="lineNum">     442 </span>            : {
+<span class="lineNum">     443 </span>            :         unsigned int i;
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :         if (sc-&gt;write_frame.samples % default_sample_size != 0) {</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     447 </span>            :         }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span>            :         /* If binaural is suspended, the source audio (mono) will be removed. */
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         if (sc-&gt;binaural_suspended) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; default_sample_size; i++) {</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                         ast_slinear_saturated_subtract(&amp;sc-&gt;final_buf[i * 2], &amp;sc-&gt;our_buf[i]);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :                         ast_slinear_saturated_subtract(&amp;sc-&gt;final_buf[(i * 2) + 1], &amp;sc-&gt;our_buf[i]);</span>
+<span class="lineNum">     454 </span>            :                 }
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     456 </span>            :         }
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span>            :   /* If binaural is NOT suspended, the source audio (binaural) will be removed. */
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; default_sample_size; i++) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 ast_slinear_saturated_subtract(&amp;sc-&gt;final_buf[i * 2],</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :                                 &amp;sc-&gt;our_chan_pair-&gt;chan_left.out_data[i]);</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 ast_slinear_saturated_subtract(&amp;sc-&gt;final_buf[(i * 2) + 1],</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                                 &amp;sc-&gt;our_chan_pair-&gt;chan_right.out_data[i]);</span>
+<span class="lineNum">     464 </span>            :         }
+<a name="465"><span class="lineNum">     465 </span>            : }</a>
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 : void check_binaural_position_change(struct ast_bridge *bridge,</span>
+<span class="lineNum">     468 </span>            :                 struct softmix_bridge_data *softmix_data)
+<span class="lineNum">     469 </span>            : {
+<span class="lineNum">     470 </span>            :         unsigned int pos_change;
+<span class="lineNum">     471 </span>            :         struct ast_bridge_channel *bridge_channel;
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            :         /*
+<span class="lineNum">     474 </span>            :          * We only check binaural things if binaural is activated by the config
+<span class="lineNum">     475 </span>            :          * and at least one binaural channel joined.
+<span class="lineNum">     476 </span>            :          */
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :         if (!(bridge-&gt;softmix.binaural_active &amp;&amp; softmix_data-&gt;convolve.binaural_active)) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     479 </span>            :         }
+<span class="lineNum">     480 </span>            :         /*
+<span class="lineNum">     481 </span>            :          * Before we pull any audio, we must check if any channel requests a
+<span class="lineNum">     482 </span>            :          * change of binaural positions.
+<span class="lineNum">     483 </span>            :          */
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :         pos_change = 0;</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :         AST_LIST_TRAVERSE(&amp;bridge-&gt;channels, bridge_channel, entry) {</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 if (!bridge_channel-&gt;binaural_pos_change) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     488 </span>            :                 }
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :                 ast_bridge_channel_lock_bridge(bridge_channel);</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                 bridge_channel-&gt;binaural_pos_change = 0;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                 ast_bridge_unlock(bridge_channel-&gt;bridge);</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                 pos_change = 1;</span>
+<span class="lineNum">     493 </span>            :         }
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :         if (pos_change) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 random_binaural_pos_change(softmix_data);</span>
+<span class="lineNum">     497 </span>            :         }
+<a name="498"><span class="lineNum">     498 </span>            : }</a>
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 : void add_binaural_mixing(struct ast_bridge *bridge, struct softmix_bridge_data *softmix_data,</span>
+<span class="lineNum">     501 </span>            :                 unsigned int softmix_samples, struct softmix_mixing_array *mixing_array,
+<span class="lineNum">     502 </span>            :                 struct softmix_channel *sc, const char *channel_name)
+<span class="lineNum">     503 </span>            : {
+<span class="lineNum">     504 </span>            :         struct convolve_channel_pair *pair;
+<span class="lineNum">     505 </span>            : 
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :         pair = NULL;</span>
+<span class="lineNum">     507 </span>            :         /* We only check binaural things if at least one binaural channel joined. */
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :         if (!(bridge-&gt;softmix.binaural_active &amp;&amp; softmix_data-&gt;convolve.binaural_active</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :                         &amp;&amp; (softmix_samples % CONVOLUTION_SAMPLE_SIZE) == 0)) {</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     511 </span>            :         }
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :         if (!sc-&gt;is_announcement) {</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                 pair = do_convolve_pair(&amp;softmix_data-&gt;convolve, sc-&gt;binaural_pos,</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                                 mixing_array-&gt;buffers[mixing_array-&gt;used_entries], softmix_samples, channel_name);</span>
+<span class="lineNum">     516 </span>            :         }
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :         sc-&gt;our_chan_pair = pair;</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         mixing_array-&gt;chan_pairs[mixing_array-&gt;used_entries] = pair;</span>
+<a name="519"><span class="lineNum">     519 </span>            : }</a>
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 : void binaural_mixing(struct ast_bridge *bridge, struct softmix_bridge_data *softmix_data,</span>
+<span class="lineNum">     522 </span>            :                 struct softmix_mixing_array *mixing_array, int16_t *bin_buf, int16_t *ann_buf)
+<span class="lineNum">     523 </span>            : {
+<span class="lineNum">     524 </span>            :         unsigned int idx;
+<span class="lineNum">     525 </span>            :         unsigned int x;
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         if (!(bridge-&gt;softmix.binaural_active &amp;&amp; softmix_data-&gt;convolve.binaural_active)) {</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     529 </span>            :         }
+<span class="lineNum">     530 </span>            :         /* mix it like crazy (binaural channels) */
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :         memset(bin_buf, 0, MAX_DATALEN);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :         memset(ann_buf, 0, MAX_DATALEN);</span>
+<span class="lineNum">     533 </span>            : 
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :         for (idx = 0; idx &lt; mixing_array-&gt;used_entries; idx++) {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 if (mixing_array-&gt;chan_pairs[idx] == NULL) {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                         for (x = 0; x &lt; softmix_data-&gt;default_sample_size; x++) {</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :                                 ast_slinear_saturated_add(bin_buf + (x * 2), mixing_array-&gt;buffers[idx] + x);</span>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                                 ast_slinear_saturated_add(bin_buf + (x * 2) + 1, mixing_array-&gt;buffers[idx] + x);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                                 ann_buf[x * 2] = mixing_array-&gt;buffers[idx][x];</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                                 ann_buf[(x * 2) + 1] = mixing_array-&gt;buffers[idx][x];</span>
+<span class="lineNum">     541 </span>            :                         }
+<span class="lineNum">     542 </span>            :                 } else {
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                         for (x = 0; x &lt; softmix_data-&gt;default_sample_size; x++) {</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :                                 ast_slinear_saturated_add(bin_buf + (x * 2),</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 :                                                 mixing_array-&gt;chan_pairs[idx]-&gt;chan_left.out_data + x);</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                                 ast_slinear_saturated_add(bin_buf + (x * 2) + 1,</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :                                                 mixing_array-&gt;chan_pairs[idx]-&gt;chan_right.out_data + x);</span>
+<span class="lineNum">     548 </span>            :                         }
+<span class="lineNum">     549 </span>            :                 }
+<span class="lineNum">     550 </span>            :         }
+<a name="551"><span class="lineNum">     551 </span>            : }</a>
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span><span class="lineNoCov">          0 : void create_binaural_frame(struct ast_bridge_channel *bridge_channel,</span>
+<span class="lineNum">     554 </span>            :                 struct softmix_channel *sc, int16_t *bin_buf, int16_t *ann_buf,
+<span class="lineNum">     555 </span>            :                 unsigned int softmix_datalen, unsigned int softmix_samples, int16_t *buf)
+<span class="lineNum">     556 </span>            : {
+<span class="lineNum">     557 </span>            :         unsigned int i;
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         sc-&gt;write_frame.datalen = softmix_datalen * 2;</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         sc-&gt;write_frame.samples = softmix_samples * 2;</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :         if (!bridge_channel-&gt;binaural_suspended) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :                 sc-&gt;binaural_suspended = 0;</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :                 if (sc-&gt;is_announcement) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                         memcpy(sc-&gt;final_buf, ann_buf, softmix_datalen * 2);</span>
+<span class="lineNum">     565 </span>            :                 } else {
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                         memcpy(sc-&gt;final_buf, bin_buf, softmix_datalen * 2);</span>
+<span class="lineNum">     567 </span>            :                 }
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     569 </span>            :         }
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span>            :         /*
+<span class="lineNum">     572 </span>            :          * Mark that binaural output is suspended, since we use two channel audio
+<span class="lineNum">     573 </span>            :          * we copy the same signals into both channels.
+<span class="lineNum">     574 </span>            :          */
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :         sc-&gt;binaural_suspended = 1;</span>
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; softmix_samples; i++) {</span>
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 sc-&gt;final_buf[i * 2] = buf[i];</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                 sc-&gt;final_buf[(i * 2) + 1] = buf[i];</span>
+<span class="lineNum">     579 </span>            :         }
+<span class="lineNum">     580 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

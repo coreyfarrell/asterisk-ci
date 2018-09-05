@@ -1,0 +1,1784 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - pbx/pbx_lua.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">pbx</a> - pbx_lua.c<span style="font-size: 80%;"> (source / <a href="pbx_lua.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">394</td>
+            <td class="headerCovTableEntry">715</td>
+            <td class="headerCovTableEntryLo">55.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">44</td>
+            <td class="headerCovTableEntryLo">72.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2007, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matthew Nicholson &lt;mnicholson@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \author Matthew Nicholson &lt;mnicholson@digium.com&gt;
+<span class="lineNum">      23 </span>            :  * \brief Lua PBX Switch
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;depend&gt;lua&lt;/depend&gt;
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;extended&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/logger.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/term.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/paths.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/hashtab.h&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #include &lt;lua.h&gt;
+<span class="lineNum">      45 </span>            : #include &lt;lauxlib.h&gt;
+<span class="lineNum">      46 </span>            : #include &lt;lualib.h&gt;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : static char *config = &quot;extensions.lua&quot;;
+<span class="lineNum">      49 </span>            : static char *registrar = &quot;pbx_lua&quot;;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : #ifdef LOW_MEMORY
+<span class="lineNum">      52 </span>            : #define LUA_EXT_DATA_SIZE 256
+<span class="lineNum">      53 </span>            : #else
+<span class="lineNum">      54 </span>            : #define LUA_EXT_DATA_SIZE 8192
+<span class="lineNum">      55 </span>            : #endif
+<span class="lineNum">      56 </span>            : #define LUA_BUF_SIZE 4096
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /* This value is used by the lua engine to signal that a Goto or dialplan jump
+<span class="lineNum">      59 </span>            :  * was detected. Ensure this value does not conflict with any values dialplan
+<span class="lineNum">      60 </span>            :  * applications might return */
+<span class="lineNum">      61 </span>            : #define LUA_GOTO_DETECTED 5
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : static char *lua_read_extensions_file(lua_State *L, long *size, int *file_not_openable);
+<span class="lineNum">      64 </span>            : static int lua_load_extensions(lua_State *L, struct ast_channel *chan);
+<span class="lineNum">      65 </span>            : static int lua_reload_extensions(lua_State *L);
+<span class="lineNum">      66 </span>            : static void lua_free_extensions(void);
+<span class="lineNum">      67 </span>            : static int lua_sort_extensions(lua_State *L);
+<span class="lineNum">      68 </span>            : static int lua_register_switches(lua_State *L);
+<span class="lineNum">      69 </span>            : static int lua_register_hints(lua_State *L);
+<span class="lineNum">      70 </span>            : static int lua_extension_cmp(lua_State *L);
+<span class="lineNum">      71 </span>            : static int lua_find_extension(lua_State *L, const char *context, const char *exten, int priority, ast_switch_f *func, int push_func);
+<span class="lineNum">      72 </span>            : static int lua_pbx_findapp(lua_State *L);
+<span class="lineNum">      73 </span>            : static int lua_pbx_exec(lua_State *L);
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span>            : static int lua_get_variable_value(lua_State *L);
+<span class="lineNum">      76 </span>            : static int lua_set_variable_value(lua_State *L);
+<span class="lineNum">      77 </span>            : static int lua_get_variable(lua_State *L);
+<span class="lineNum">      78 </span>            : static int lua_set_variable(lua_State *L);
+<span class="lineNum">      79 </span>            : static int lua_func_read(lua_State *L);
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : static int lua_autoservice_start(lua_State *L);
+<span class="lineNum">      82 </span>            : static int lua_autoservice_stop(lua_State *L);
+<span class="lineNum">      83 </span>            : static int lua_autoservice_status(lua_State *L);
+<span class="lineNum">      84 </span>            : static int lua_check_hangup(lua_State *L);
+<span class="lineNum">      85 </span>            : static int lua_error_function(lua_State *L);
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : static void lua_update_registry(lua_State *L, const char *context, const char *exten, int priority);
+<span class="lineNum">      88 </span>            : static void lua_push_variable_table(lua_State *L);
+<span class="lineNum">      89 </span>            : static void lua_create_app_table(lua_State *L);
+<span class="lineNum">      90 </span>            : static void lua_create_channel_table(lua_State *L);
+<span class="lineNum">      91 </span>            : static void lua_create_variable_metatable(lua_State *L);
+<span class="lineNum">      92 </span>            : static void lua_create_application_metatable(lua_State *L);
+<span class="lineNum">      93 </span>            : static void lua_create_autoservice_functions(lua_State *L);
+<span class="lineNum">      94 </span>            : static void lua_create_hangup_function(lua_State *L);
+<span class="lineNum">      95 </span>            : static void lua_concat_args(lua_State *L, int start, int nargs);
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span>            : static void lua_state_destroy(void *data);
+<span class="lineNum">      98 </span>            : static void lua_datastore_fixup(void *data, struct ast_channel *old_chan, struct ast_channel *new_chan);
+<span class="lineNum">      99 </span>            : static lua_State *lua_get_state(struct ast_channel *chan);
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span>            : static int exists(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data);
+<span class="lineNum">     102 </span>            : static int canmatch(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data);
+<span class="lineNum">     103 </span>            : static int matchmore(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data);
+<span class="lineNum">     104 </span>            : static int exec(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data);
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            : AST_MUTEX_DEFINE_STATIC(config_file_lock);
+<span class="lineNum">     107 </span>            : static char *config_file_data = NULL;
+<span class="lineNum">     108 </span>            : static long config_file_size = 0;
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : static struct ast_context *local_contexts = NULL;
+<span class="lineNum">     111 </span>            : static struct ast_hashtab *local_table = NULL;
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            : static const struct ast_datastore_info lua_datastore = {
+<span class="lineNum">     114 </span>            :         .type = &quot;lua&quot;,
+<span class="lineNum">     115 </span>            :         .destroy = lua_state_destroy,
+<span class="lineNum">     116 </span>            :         .chan_fixup = lua_datastore_fixup,
+<span class="lineNum">     117 </span>            : };
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : /*!
+<a name="121"><span class="lineNum">     121 </span>            :  * \brief The destructor for lua_datastore</a>
+<span class="lineNum">     122 </span>            :  */
+<span class="lineNum">     123 </span><span class="lineCov">          1 : static void lua_state_destroy(void *data)</span>
+<span class="lineNum">     124 </span>            : {
+<span class="lineNum">     125 </span><span class="lineCov">          1 :         if (data)</span>
+<span class="lineNum">     126 </span><span class="lineCov">          1 :                 lua_close(data);</span>
+<span class="lineNum">     127 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : /*!
+<span class="lineNum">     130 </span>            :  * \brief The fixup function for the lua_datastore.
+<span class="lineNum">     131 </span>            :  * \param data the datastore data, in this case it will be a lua_State
+<span class="lineNum">     132 </span>            :  * \param old_chan the channel we are moving from
+<span class="lineNum">     133 </span>            :  * \param new_chan the channel we are moving to
+<span class="lineNum">     134 </span>            :  *
+<a name="135"><span class="lineNum">     135 </span>            :  * This function updates our internal channel pointer.</a>
+<span class="lineNum">     136 </span>            :  */
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 : static void lua_datastore_fixup(void *data, struct ast_channel *old_chan, struct ast_channel *new_chan)</span>
+<span class="lineNum">     138 </span>            : {
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         lua_State *L = data;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         lua_pushlightuserdata(L, new_chan);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            : /*!
+<span class="lineNum">     145 </span>            :  * \brief [lua_CFunction] Find an app and return it in a lua table (for access from lua, don't
+<span class="lineNum">     146 </span>            :  * call directly)
+<span class="lineNum">     147 </span>            :  *
+<span class="lineNum">     148 </span>            :  * This function would be called in the following example as it would be found
+<span class="lineNum">     149 </span>            :  * in extensions.lua.
+<span class="lineNum">     150 </span>            :  *
+<span class="lineNum">     151 </span>            :  * \code
+<span class="lineNum">     152 </span>            :  * app.dial
+<a name="153"><span class="lineNum">     153 </span>            :  * \endcode</a>
+<span class="lineNum">     154 </span>            :  */
+<span class="lineNum">     155 </span><span class="lineCov">          4 : static int lua_pbx_findapp(lua_State *L)</span>
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span><span class="lineCov">          4 :         const char *app_name = luaL_checkstring(L, 2);</span>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineCov">          4 :         lua_newtable(L);</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineCov">          4 :         lua_pushstring(L, &quot;name&quot;);</span>
+<span class="lineNum">     162 </span><span class="lineCov">          4 :         lua_pushstring(L, app_name);</span>
+<span class="lineNum">     163 </span><span class="lineCov">          4 :         lua_settable(L, -3);</span>
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineCov">          4 :         luaL_getmetatable(L, &quot;application&quot;);</span>
+<span class="lineNum">     166 </span><span class="lineCov">          4 :         lua_setmetatable(L, -2);</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">          4 :         return 1;</span>
+<span class="lineNum">     169 </span>            : }
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            : /*!
+<span class="lineNum">     172 </span>            :  * \brief [lua_CFunction] This function is part of the 'application' metatable
+<span class="lineNum">     173 </span>            :  * and is used to execute applications similar to pbx_exec() (for access from
+<span class="lineNum">     174 </span>            :  * lua, don't call directly)
+<span class="lineNum">     175 </span>            :  *
+<span class="lineNum">     176 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     177 </span>            :  * \return nothing
+<span class="lineNum">     178 </span>            :  *
+<span class="lineNum">     179 </span>            :  * This funciton is executed as the '()' operator for apps accessed through the
+<span class="lineNum">     180 </span>            :  * 'app' table.
+<span class="lineNum">     181 </span>            :  *
+<span class="lineNum">     182 </span>            :  * \code
+<span class="lineNum">     183 </span>            :  * app.playback('demo-congrats')
+<a name="184"><span class="lineNum">     184 </span>            :  * \endcode</a>
+<span class="lineNum">     185 </span>            :  */
+<span class="lineNum">     186 </span><span class="lineCov">          4 : static int lua_pbx_exec(lua_State *L)</span>
+<span class="lineNum">     187 </span>            : {
+<span class="lineNum">     188 </span><span class="lineCov">          4 :         int res, nargs = lua_gettop(L);</span>
+<span class="lineNum">     189 </span><span class="lineCov">          4 :         const char *data = &quot;&quot;;</span>
+<span class="lineNum">     190 </span>            :         char *app_name, *context, *exten;
+<span class="lineNum">     191 </span>            :         char tmp[80], tmp2[80], tmp3[LUA_EXT_DATA_SIZE];
+<span class="lineNum">     192 </span>            :         int priority, autoservice;
+<span class="lineNum">     193 </span>            :         struct ast_app *app;
+<span class="lineNum">     194 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">          4 :         lua_getfield(L, 1, &quot;name&quot;);</span>
+<span class="lineNum">     197 </span><span class="lineCov">          4 :         app_name = ast_strdupa(lua_tostring(L, -1));</span>
+<span class="lineNum">     198 </span><span class="lineCov">          4 :         lua_pop(L, 1);</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineCov">          4 :         if (!(app = pbx_findapp(app_name))) {</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;application '&quot;);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, app_name);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;' not found&quot;);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 lua_concat(L, 3);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 return lua_error(L);</span>
+<span class="lineNum">     206 </span>            :         }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">          4 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     210 </span><span class="lineCov">          4 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     211 </span><span class="lineCov">          4 :         lua_pop(L, 1);</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">          4 :         context = ast_strdupa(ast_channel_context(chan));</span>
+<span class="lineNum">     214 </span><span class="lineCov">          4 :         exten = ast_strdupa(ast_channel_exten(chan));</span>
+<span class="lineNum">     215 </span><span class="lineCov">          4 :         priority = ast_channel_priority(chan);</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">          4 :         lua_concat_args(L, 2, nargs);</span>
+<span class="lineNum">     218 </span><span class="lineCov">          4 :         data = lua_tostring(L, -1);</span>
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineCov">          4 :         ast_verb(3, &quot;Executing [%s@%s:%d] %s(\&quot;%s\&quot;, \&quot;%s\&quot;)\n&quot;,</span>
+<span class="lineNum">     221 </span>            :                         exten, context, priority,
+<span class="lineNum">     222 </span>            :                         term_color(tmp, app_name, COLOR_BRCYAN, 0, sizeof(tmp)),
+<span class="lineNum">     223 </span>            :                         term_color(tmp2, ast_channel_name(chan), COLOR_BRMAGENTA, 0, sizeof(tmp2)),
+<span class="lineNum">     224 </span>            :                         term_color(tmp3, data, COLOR_BRMAGENTA, 0, sizeof(tmp3)));
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span><span class="lineCov">          4 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     227 </span><span class="lineCov">          4 :         autoservice = lua_toboolean(L, -1);</span>
+<span class="lineNum">     228 </span><span class="lineCov">          4 :         lua_pop(L, 1);</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineCov">          4 :         if (autoservice)</span>
+<span class="lineNum">     231 </span><span class="lineCov">          4 :                 ast_autoservice_stop(chan);</span>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">          4 :         res = pbx_exec(chan, app, data);</span>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">          4 :         lua_pop(L, 1); /* pop data */</span>
+<span class="lineNum">     236 </span><span class="lineCov">          4 :         data = &quot;&quot;;</span>
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span><span class="lineCov">          4 :         if (autoservice)</span>
+<span class="lineNum">     239 </span><span class="lineCov">          4 :                 ast_autoservice_start(chan);</span>
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :         /* error executing an application, report it */
+<span class="lineNum">     242 </span><span class="lineCov">          4 :         if (res) {</span>
+<span class="lineNum">     243 </span><span class="lineCov">          2 :                 lua_pushinteger(L, res);</span>
+<span class="lineNum">     244 </span><span class="lineCov">          2 :                 return lua_error(L);</span>
+<span class="lineNum">     245 </span>            :         }
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">          2 :         if (strcmp(context, ast_channel_context(chan))) {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, context);</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, ast_channel_context(chan));</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;context&quot;);</span>
+<span class="lineNum">     251 </span><span class="lineCov">          2 :         } else if (strcmp(exten, ast_channel_exten(chan))) {</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, exten);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, ast_channel_exten(chan));</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;exten&quot;);</span>
+<span class="lineNum">     255 </span><span class="lineCov">          2 :         } else if (priority != ast_channel_priority(chan)) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 lua_pushinteger(L, priority);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 lua_pushinteger(L, ast_channel_priority(chan));</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;priority&quot;);</span>
+<span class="lineNum">     259 </span>            :         } else {
+<span class="lineNum">     260 </span>            :                 /* no goto - restore the original position back
+<span class="lineNum">     261 </span>            :                  * to lua state, in case this was a recursive dialplan
+<span class="lineNum">     262 </span>            :                  * call (a dialplan application re-entering dialplan) */
+<span class="lineNum">     263 </span><span class="lineCov">          2 :                 lua_update_registry(L, context, exten, priority);</span>
+<span class="lineNum">     264 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">     265 </span>            :         }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            :         /* goto detected - construct error message */
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         lua_insert(L, -3);</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         lua_pushliteral(L, &quot; changed from &quot;);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         lua_insert(L, -3);</span>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :         lua_pushliteral(L, &quot; to &quot;);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         lua_insert(L, -2);</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         lua_concat(L, 5);</span>
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         ast_debug(2, &quot;Goto detected: %s\n&quot;, lua_tostring(L, -1));</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span>            :         /* let the lua engine know it needs to return control to the pbx */
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         lua_pushinteger(L, LUA_GOTO_DETECTED);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         lua_error(L);</span>
+<span class="lineNum">     284 </span>            : 
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     286 </span>            : }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            : /*!
+<span class="lineNum">     289 </span>            :  * \brief [lua_CFunction] Used to get the value of a variable or dialplan
+<span class="lineNum">     290 </span>            :  * function (for access from lua, don't call directly)
+<span class="lineNum">     291 </span>            :  *
+<span class="lineNum">     292 </span>            :  * The value of the variable or function is returned.  This function is the
+<span class="lineNum">     293 </span>            :  * 'get()' function in the following example as would be seen in
+<span class="lineNum">     294 </span>            :  * extensions.lua.
+<span class="lineNum">     295 </span>            :  *
+<span class="lineNum">     296 </span>            :  * \code
+<span class="lineNum">     297 </span>            :  * channel.variable:get()
+<a name="298"><span class="lineNum">     298 </span>            :  * \endcode</a>
+<span class="lineNum">     299 </span>            :  */
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 : static int lua_get_variable_value(lua_State *L)</span>
+<span class="lineNum">     301 </span>            : {
+<span class="lineNum">     302 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         char *value = NULL, *name;</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         char *workspace = ast_alloca(LUA_BUF_SIZE);</span>
+<span class="lineNum">     305 </span>            :         int autoservice;
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         workspace[0] = '\0';</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :         if (!lua_istable(L, 1)) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;User probably used '.' instead of ':' for retrieving a channel variable value&quot;);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 return lua_error(L);</span>
+<span class="lineNum">     312 </span>            :         }
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         lua_getfield(L, 1, &quot;name&quot;);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         name = ast_strdupa(lua_tostring(L, -1));</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         autoservice = lua_toboolean(L, -1);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 ast_autoservice_stop(chan);</span>
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            :         /* if this is a dialplan function then use ast_func_read(), otherwise
+<span class="lineNum">     330 </span>            :          * use pbx_retrieve_variable() */
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(name) &amp;&amp; name[strlen(name) - 1] == ')') {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                 value = ast_func_read(chan, name, workspace, LUA_BUF_SIZE) ? NULL : workspace;</span>
+<span class="lineNum">     333 </span>            :         } else {
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 pbx_retrieve_variable(chan, name, &amp;value, workspace, LUA_BUF_SIZE, ast_channel_varshead(chan));</span>
+<span class="lineNum">     335 </span>            :         }
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 ast_autoservice_start(chan);</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         if (value) {</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, value);</span>
+<span class="lineNum">     342 </span>            :         } else {
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 lua_pushnil(L);</span>
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     347 </span>            : }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : /*!
+<span class="lineNum">     350 </span>            :  * \brief [lua_CFunction] Used to set the value of a variable or dialplan
+<span class="lineNum">     351 </span>            :  * function (for access from lua, don't call directly)
+<span class="lineNum">     352 </span>            :  *
+<span class="lineNum">     353 </span>            :  * This function is the 'set()' function in the following example as would be
+<span class="lineNum">     354 </span>            :  * seen in extensions.lua.
+<span class="lineNum">     355 </span>            :  *
+<span class="lineNum">     356 </span>            :  * \code
+<span class="lineNum">     357 </span>            :  * channel.variable:set(&quot;value&quot;)
+<a name="358"><span class="lineNum">     358 </span>            :  * \endcode</a>
+<span class="lineNum">     359 </span>            :  */
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 : static int lua_set_variable_value(lua_State *L)</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span>            :         const char *name, *value;
+<span class="lineNum">     363 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     364 </span>            :         int autoservice;
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         if (!lua_istable(L, 1)) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;User probably used '.' instead of ':' for setting a channel variable&quot;);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 return lua_error(L);</span>
+<span class="lineNum">     369 </span>            :         }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         lua_getfield(L, 1, &quot;name&quot;);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         name = ast_strdupa(lua_tostring(L, -1));</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         value = luaL_checkstring(L, 2);</span>
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         autoservice = lua_toboolean(L, -1);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                 ast_autoservice_stop(chan);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :         pbx_builtin_setvar_helper(chan, name, value);</span>
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 ast_autoservice_start(chan);</span>
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     394 </span>            : }
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span>            : /*!
+<span class="lineNum">     397 </span>            :  * \brief Update the lua registry with the given context, exten, and priority.
+<span class="lineNum">     398 </span>            :  *
+<span class="lineNum">     399 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     400 </span>            :  * \param context the new context
+<span class="lineNum">     401 </span>            :  * \param exten the new exten
+<a name="402"><span class="lineNum">     402 </span>            :  * \param priority the new priority</a>
+<span class="lineNum">     403 </span>            :  */
+<span class="lineNum">     404 </span><span class="lineCov">          4 : static void lua_update_registry(lua_State *L, const char *context, const char *exten, int priority)</span>
+<span class="lineNum">     405 </span>            : {
+<span class="lineNum">     406 </span><span class="lineCov">          4 :         lua_pushstring(L, context);</span>
+<span class="lineNum">     407 </span><span class="lineCov">          4 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;context&quot;);</span>
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">          4 :         lua_pushstring(L, exten);</span>
+<span class="lineNum">     410 </span><span class="lineCov">          4 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;exten&quot;);</span>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">          4 :         lua_pushinteger(L, priority);</span>
+<span class="lineNum">     413 </span><span class="lineCov">          4 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;priority&quot;);</span>
+<span class="lineNum">     414 </span><span class="lineCov">          4 : }</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            : /*!
+<span class="lineNum">     417 </span>            :  * \brief Push a 'variable' table on the stack for access the channel variable
+<span class="lineNum">     418 </span>            :  * with the given name.
+<span class="lineNum">     419 </span>            :  *
+<span class="lineNum">     420 </span>            :  * The value on the top of the stack is popped and used as the name.
+<span class="lineNum">     421 </span>            :  *
+<a name="422"><span class="lineNum">     422 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     423 </span>            :  */
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 : static void lua_push_variable_table(lua_State *L)</span>
+<span class="lineNum">     425 </span>            : {
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         lua_newtable(L);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         luaL_getmetatable(L, &quot;variable&quot;);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :         lua_setmetatable(L, -2);</span>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         lua_insert(L, -2); /* move the table after the name */</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         lua_setfield(L, -2, &quot;name&quot;);</span>
+<span class="lineNum">     432 </span>            : 
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :         lua_pushcfunction(L, &amp;lua_get_variable_value);</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :         lua_setfield(L, -2, &quot;get&quot;);</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         lua_pushcfunction(L, &amp;lua_set_variable_value);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :         lua_setfield(L, -2, &quot;set&quot;);</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span>            : /*!
+<span class="lineNum">     441 </span>            :  * \brief Create the global 'app' table for executing applications
+<span class="lineNum">     442 </span>            :  *
+<a name="443"><span class="lineNum">     443 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     444 </span>            :  */
+<span class="lineNum">     445 </span><span class="lineCov">          3 : static void lua_create_app_table(lua_State *L)</span>
+<span class="lineNum">     446 </span>            : {
+<span class="lineNum">     447 </span><span class="lineCov">          3 :         lua_newtable(L);</span>
+<span class="lineNum">     448 </span><span class="lineCov">          3 :         luaL_newmetatable(L, &quot;app&quot;);</span>
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineCov">          3 :         lua_pushstring(L, &quot;__index&quot;);</span>
+<span class="lineNum">     451 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_pbx_findapp);</span>
+<span class="lineNum">     452 </span><span class="lineCov">          3 :         lua_settable(L, -3);</span>
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">          3 :         lua_setmetatable(L, -2);</span>
+<span class="lineNum">     455 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;app&quot;);</span>
+<span class="lineNum">     456 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span>            : /*!
+<span class="lineNum">     459 </span>            :  * \brief Create the global 'channel' table for accesing channel variables
+<span class="lineNum">     460 </span>            :  *
+<a name="461"><span class="lineNum">     461 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     462 </span>            :  */
+<span class="lineNum">     463 </span><span class="lineCov">          3 : static void lua_create_channel_table(lua_State *L)</span>
+<span class="lineNum">     464 </span>            : {
+<span class="lineNum">     465 </span><span class="lineCov">          3 :         lua_newtable(L);</span>
+<span class="lineNum">     466 </span><span class="lineCov">          3 :         luaL_newmetatable(L, &quot;channel_data&quot;);</span>
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineCov">          3 :         lua_pushstring(L, &quot;__index&quot;);</span>
+<span class="lineNum">     469 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_get_variable);</span>
+<span class="lineNum">     470 </span><span class="lineCov">          3 :         lua_settable(L, -3);</span>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">          3 :         lua_pushstring(L, &quot;__newindex&quot;);</span>
+<span class="lineNum">     473 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_set_variable);</span>
+<span class="lineNum">     474 </span><span class="lineCov">          3 :         lua_settable(L, -3);</span>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">          3 :         lua_setmetatable(L, -2);</span>
+<span class="lineNum">     477 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;channel&quot;);</span>
+<span class="lineNum">     478 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span>            : /*!
+<span class="lineNum">     481 </span>            :  * \brief Create the 'variable' metatable, used to retrieve channel variables
+<span class="lineNum">     482 </span>            :  *
+<a name="483"><span class="lineNum">     483 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     484 </span>            :  */
+<span class="lineNum">     485 </span><span class="lineCov">          3 : static void lua_create_variable_metatable(lua_State *L)</span>
+<span class="lineNum">     486 </span>            : {
+<span class="lineNum">     487 </span><span class="lineCov">          3 :         luaL_newmetatable(L, &quot;variable&quot;);</span>
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">          3 :         lua_pushstring(L, &quot;__call&quot;);</span>
+<span class="lineNum">     490 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_func_read);</span>
+<span class="lineNum">     491 </span><span class="lineCov">          3 :         lua_settable(L, -3);</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineCov">          3 :         lua_pop(L, 1);</span>
+<span class="lineNum">     494 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span>            : /*!
+<span class="lineNum">     497 </span>            :  * \brief Create the 'application' metatable, used to execute asterisk
+<span class="lineNum">     498 </span>            :  * applications from lua
+<span class="lineNum">     499 </span>            :  *
+<a name="500"><span class="lineNum">     500 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     501 </span>            :  */
+<span class="lineNum">     502 </span><span class="lineCov">          3 : static void lua_create_application_metatable(lua_State *L)</span>
+<span class="lineNum">     503 </span>            : {
+<span class="lineNum">     504 </span><span class="lineCov">          3 :         luaL_newmetatable(L, &quot;application&quot;);</span>
+<span class="lineNum">     505 </span>            : 
+<span class="lineNum">     506 </span><span class="lineCov">          3 :         lua_pushstring(L, &quot;__call&quot;);</span>
+<span class="lineNum">     507 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_pbx_exec);</span>
+<span class="lineNum">     508 </span><span class="lineCov">          3 :         lua_settable(L, -3);</span>
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">          3 :         lua_pop(L, 1);</span>
+<span class="lineNum">     511 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            : /*!
+<span class="lineNum">     514 </span>            :  * \brief Create the autoservice functions
+<span class="lineNum">     515 </span>            :  *
+<a name="516"><span class="lineNum">     516 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     517 </span>            :  */
+<span class="lineNum">     518 </span><span class="lineCov">          3 : static void lua_create_autoservice_functions(lua_State *L)</span>
+<span class="lineNum">     519 </span>            : {
+<span class="lineNum">     520 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_autoservice_start);</span>
+<span class="lineNum">     521 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;autoservice_start&quot;);</span>
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_autoservice_stop);</span>
+<span class="lineNum">     524 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;autoservice_stop&quot;);</span>
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_autoservice_status);</span>
+<span class="lineNum">     527 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;autoservice_status&quot;);</span>
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineCov">          3 :         lua_pushboolean(L, 1);</span>
+<span class="lineNum">     530 </span><span class="lineCov">          3 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     531 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     532 </span>            : 
+<span class="lineNum">     533 </span>            : /*!
+<span class="lineNum">     534 </span>            :  * \brief Create the hangup check function
+<span class="lineNum">     535 </span>            :  *
+<a name="536"><span class="lineNum">     536 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     537 </span>            :  */
+<span class="lineNum">     538 </span><span class="lineCov">          3 : static void lua_create_hangup_function(lua_State *L)</span>
+<span class="lineNum">     539 </span>            : {
+<span class="lineNum">     540 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_check_hangup);</span>
+<span class="lineNum">     541 </span><span class="lineCov">          3 :         lua_setglobal(L, &quot;check_hangup&quot;);</span>
+<span class="lineNum">     542 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span>            : /*!
+<span class="lineNum">     545 </span>            :  * \brief [lua_CFunction] Return a lua 'variable' object (for access from lua, don't call
+<span class="lineNum">     546 </span>            :  * directly)
+<span class="lineNum">     547 </span>            :  *
+<span class="lineNum">     548 </span>            :  * This function is called to lookup a variable construct a 'variable' object.
+<span class="lineNum">     549 </span>            :  * It would be called in the following example as would be seen in
+<span class="lineNum">     550 </span>            :  * extensions.lua.
+<span class="lineNum">     551 </span>            :  *
+<span class="lineNum">     552 </span>            :  * \code
+<span class="lineNum">     553 </span>            :  * channel.variable
+<a name="554"><span class="lineNum">     554 </span>            :  * \endcode</a>
+<span class="lineNum">     555 </span>            :  */
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 : static int lua_get_variable(lua_State *L)</span>
+<span class="lineNum">     557 </span>            : {
+<span class="lineNum">     558 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         const char *name = luaL_checkstring(L, 2);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         char *value = NULL;</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :         char *workspace = ast_alloca(LUA_BUF_SIZE);</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         workspace[0] = '\0';</span>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :         lua_pushvalue(L, 2);</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :         lua_push_variable_table(L);</span>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span>            :         /* if this is not a request for a dialplan funciton attempt to retrieve
+<span class="lineNum">     572 </span>            :          * the value of the variable */
+<span class="lineNum">     573 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(name) &amp;&amp; name[strlen(name) - 1] != ')') {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                 pbx_retrieve_variable(chan, name, &amp;value, workspace, LUA_BUF_SIZE, ast_channel_varshead(chan));</span>
+<span class="lineNum">     575 </span>            :         }
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :         if (value) {</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, value);</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 lua_setfield(L, -2, &quot;value&quot;);</span>
+<span class="lineNum">     580 </span>            :         }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     583 </span>            : }
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span>            : /*!
+<span class="lineNum">     586 </span>            :  * \brief [lua_CFunction] Set the value of a channel variable or dialplan
+<span class="lineNum">     587 </span>            :  * function (for access from lua, don't call directly)
+<span class="lineNum">     588 </span>            :  *
+<span class="lineNum">     589 </span>            :  * This function is called to set a variable or dialplan function.  It would be
+<span class="lineNum">     590 </span>            :  * called in the following example as would be seen in extensions.lua.
+<span class="lineNum">     591 </span>            :  *
+<span class="lineNum">     592 </span>            :  * \code
+<span class="lineNum">     593 </span>            :  * channel.variable = &quot;value&quot;
+<a name="594"><span class="lineNum">     594 </span>            :  * \endcode</a>
+<span class="lineNum">     595 </span>            :  */
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 : static int lua_set_variable(lua_State *L)</span>
+<span class="lineNum">     597 </span>            : {
+<span class="lineNum">     598 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     599 </span>            :         int autoservice;
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :         const char *name = luaL_checkstring(L, 2);</span>
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :         const char *value = luaL_checkstring(L, 3);</span>
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :         autoservice = lua_toboolean(L, -1);</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :                 ast_autoservice_stop(chan);</span>
+<span class="lineNum">     613 </span>            : 
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :         pbx_builtin_setvar_helper(chan, name, value);</span>
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :         if (autoservice)</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :                 ast_autoservice_start(chan);</span>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     620 </span>            : }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            : /*!
+<span class="lineNum">     623 </span>            :  * \brief Concatenate a list of lua function arguments into a comma separated
+<span class="lineNum">     624 </span>            :  * string.
+<span class="lineNum">     625 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     626 </span>            :  * \param start the index of the first argument
+<span class="lineNum">     627 </span>            :  * \param nargs the number of args
+<span class="lineNum">     628 </span>            :  *
+<a name="629"><span class="lineNum">     629 </span>            :  * The resulting string will be left on the top of the stack.</a>
+<span class="lineNum">     630 </span>            :  */
+<span class="lineNum">     631 </span><span class="lineCov">          4 : static void lua_concat_args(lua_State *L, int start, int nargs) {</span>
+<span class="lineNum">     632 </span><span class="lineCov">          4 :         int concat = 0;</span>
+<span class="lineNum">     633 </span><span class="lineCov">          4 :         int i = start + 1;</span>
+<span class="lineNum">     634 </span>            : 
+<span class="lineNum">     635 </span><span class="lineCov">          4 :         if (start &lt;= nargs &amp;&amp; !lua_isnil(L, start)) {</span>
+<span class="lineNum">     636 </span><span class="lineCov">          2 :                 lua_pushvalue(L, start);</span>
+<span class="lineNum">     637 </span><span class="lineCov">          2 :                 concat += 1;</span>
+<span class="lineNum">     638 </span>            :         }
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineCov">          5 :         for (; i &lt;= nargs; i++) {</span>
+<span class="lineNum">     641 </span><span class="lineCov">          1 :                 if (lua_isnil(L, i)) {</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                         lua_pushliteral(L, &quot;,&quot;);</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :                         concat += 1;</span>
+<span class="lineNum">     644 </span>            :                 } else {
+<span class="lineNum">     645 </span><span class="lineCov">          1 :                         lua_pushliteral(L, &quot;,&quot;);</span>
+<span class="lineNum">     646 </span><span class="lineCov">          1 :                         lua_pushvalue(L, i);</span>
+<span class="lineNum">     647 </span><span class="lineCov">          1 :                         concat += 2;</span>
+<span class="lineNum">     648 </span>            :                 }
+<span class="lineNum">     649 </span>            :         }
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineCov">          4 :         lua_concat(L, concat);</span>
+<span class="lineNum">     652 </span><span class="lineCov">          4 : }</span>
+<span class="lineNum">     653 </span>            : 
+<span class="lineNum">     654 </span>            : /*!
+<span class="lineNum">     655 </span>            :  * \brief [lua_CFunction] Create a 'variable' object for accessing a dialplan
+<span class="lineNum">     656 </span>            :  * function (for access from lua, don't call directly)
+<span class="lineNum">     657 </span>            :  *
+<span class="lineNum">     658 </span>            :  * This function is called to create a 'variable' object to access a dialplan
+<span class="lineNum">     659 </span>            :  * function.  It would be called in the following example as would be seen in
+<span class="lineNum">     660 </span>            :  * extensions.lua.
+<span class="lineNum">     661 </span>            :  *
+<span class="lineNum">     662 </span>            :  * \code
+<span class="lineNum">     663 </span>            :  * channel.func(&quot;arg1&quot;, &quot;arg2&quot;, &quot;arg3&quot;)
+<span class="lineNum">     664 </span>            :  * \endcode
+<span class="lineNum">     665 </span>            :  *
+<span class="lineNum">     666 </span>            :  * To actually do anything with the resulting value you must use the 'get()'
+<span class="lineNum">     667 </span>            :  * and 'set()' methods (the reason is the resulting value is not a value, but
+<a name="668"><span class="lineNum">     668 </span>            :  * an object in the form of a lua table).</a>
+<span class="lineNum">     669 </span>            :  */
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 : static int lua_func_read(lua_State *L)</span>
+<span class="lineNum">     671 </span>            : {
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         int nargs = lua_gettop(L);</span>
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span>            :         /* build a string in the form of &quot;func_name(arg1,arg2,arg3)&quot; */
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :         lua_getfield(L, 1, &quot;name&quot;);</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :         lua_pushliteral(L, &quot;(&quot;);</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :         lua_concat_args(L, 2, nargs);</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :         lua_pushliteral(L, &quot;)&quot;);</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         lua_concat(L, 4);</span>
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :         lua_push_variable_table(L);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     683 </span>            : }
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span>            : /*!
+<span class="lineNum">     686 </span>            :  * \brief [lua_CFunction] Tell pbx_lua to maintain an autoservice on this
+<span class="lineNum">     687 </span>            :  * channel (for access from lua, don't call directly)
+<span class="lineNum">     688 </span>            :  *
+<span class="lineNum">     689 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     690 </span>            :  *
+<span class="lineNum">     691 </span>            :  * This function will set a flag that will cause pbx_lua to maintain an
+<span class="lineNum">     692 </span>            :  * autoservice on this channel.  The autoservice will automatically be stopped
+<a name="693"><span class="lineNum">     693 </span>            :  * and restarted before calling applications and functions.</a>
+<span class="lineNum">     694 </span>            :  */
+<span class="lineNum">     695 </span><span class="lineNoCov">          0 : static int lua_autoservice_start(lua_State *L)</span>
+<span class="lineNum">     696 </span>            : {
+<span class="lineNum">     697 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :         if (lua_toboolean(L, -1)) {</span>
+<span class="lineNum">     701 </span>            :                 /* autservice already running */
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1);</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         ast_autoservice_start(chan);</span>
+<span class="lineNum">     712 </span>            : 
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :         lua_pushboolean(L, 1);</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     716 </span>            : }
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span>            : /*!
+<span class="lineNum">     719 </span>            :  * \brief [lua_CFunction] Tell pbx_lua to stop maintaning an autoservice on
+<span class="lineNum">     720 </span>            :  * this channel (for access from lua, don't call directly)
+<span class="lineNum">     721 </span>            :  *
+<span class="lineNum">     722 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     723 </span>            :  *
+<span class="lineNum">     724 </span>            :  * This function will stop any autoservice running and turn off the autoservice
+<span class="lineNum">     725 </span>            :  * flag.  If this function returns false, it's probably because no autoservice
+<a name="726"><span class="lineNum">     726 </span>            :  * was running to begin with.</a>
+<span class="lineNum">     727 </span>            :  */
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 : static int lua_autoservice_stop(lua_State *L)</span>
+<span class="lineNum">     729 </span>            : {
+<span class="lineNum">     730 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :         if (!lua_toboolean(L, -1)) {</span>
+<span class="lineNum">     734 </span>            :                 /* no autservice running */
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1);</span>
+<span class="lineNum">     736 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     737 </span>            :         }
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     739 </span>            : 
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     743 </span>            : 
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :         ast_autoservice_stop(chan);</span>
+<span class="lineNum">     745 </span>            : 
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :         lua_pushboolean(L, 0);</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     749 </span>            : }
+<span class="lineNum">     750 </span>            : 
+<span class="lineNum">     751 </span>            : /*!
+<span class="lineNum">     752 </span>            :  * \brief [lua_CFunction] Get the status of the autoservice flag (for access
+<span class="lineNum">     753 </span>            :  * from lua, don't call directly)
+<span class="lineNum">     754 </span>            :  *
+<span class="lineNum">     755 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     756 </span>            :  *
+<span class="lineNum">     757 </span>            :  * \return This function returns the status of the autoservice flag as a
+<a name="758"><span class="lineNum">     758 </span>            :  * boolean to its lua caller.</a>
+<span class="lineNum">     759 </span>            :  */
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 : static int lua_autoservice_status(lua_State *L)</span>
+<span class="lineNum">     761 </span>            : {
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     764 </span>            : }
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span>            : /*!
+<span class="lineNum">     767 </span>            :  * \brief [lua_CFunction] Check if this channel has been hungup or not (for
+<span class="lineNum">     768 </span>            :  * access from lua, don't call directly)
+<span class="lineNum">     769 </span>            :  *
+<span class="lineNum">     770 </span>            :  * \param L the lua_State to use
+<span class="lineNum">     771 </span>            :  *
+<a name="772"><span class="lineNum">     772 </span>            :  * \return This function returns true if the channel was hungup</a>
+<span class="lineNum">     773 </span>            :  */
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 : static int lua_check_hangup(lua_State *L)</span>
+<span class="lineNum">     775 </span>            : {
+<span class="lineNum">     776 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :         chan = lua_touserdata(L, -1);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">     780 </span>            : 
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 :         lua_pushboolean(L, ast_check_hangup(chan));</span>
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     783 </span>            : }
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            : /*!
+<span class="lineNum">     786 </span>            :  * \brief [lua_CFunction] Handle lua errors (for access from lua, don't call
+<span class="lineNum">     787 </span>            :  * directly)
+<span class="lineNum">     788 </span>            :  *
+<a name="789"><span class="lineNum">     789 </span>            :  * \param L the lua_State to use</a>
+<span class="lineNum">     790 </span>            :  */
+<span class="lineNum">     791 </span><span class="lineCov">          2 : static int lua_error_function(lua_State *L)</span>
+<span class="lineNum">     792 </span>            : {
+<span class="lineNum">     793 </span>            :         int message_index;
+<span class="lineNum">     794 </span>            : 
+<span class="lineNum">     795 </span>            :         /* pass number arguments right through back to asterisk*/
+<span class="lineNum">     796 </span><span class="lineCov">          2 :         if (lua_isnumber(L, -1)) {</span>
+<span class="lineNum">     797 </span><span class="lineCov">          2 :                 return 1;</span>
+<span class="lineNum">     798 </span>            :         }
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span>            :         /* if we are here then we have a string error message, let's attach a
+<span class="lineNum">     801 </span>            :          * backtrace to it */
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :         message_index = lua_gettop(L);</span>
+<span class="lineNum">     803 </span>            : 
+<span class="lineNum">     804 </span>            :         /* prepare to prepend a new line to the traceback */
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :         lua_pushliteral(L, &quot;\n&quot;);</span>
+<span class="lineNum">     806 </span>            : 
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :         lua_getglobal(L, &quot;debug&quot;);</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :         if (!lua_istable(L, -1)) {</span>
+<span class="lineNum">     809 </span>            :                 /* Have no 'debug' table for whatever reason */
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                 lua_pop(L, 2);</span>
+<span class="lineNum">     811 </span>            :                 /*  Original err message is on stack top now */
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     813 </span>            :         }
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :         lua_getfield(L, -1, &quot;traceback&quot;);</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 :         if (!lua_isfunction(L, -1)) {</span>
+<span class="lineNum">     816 </span>            :                 /* Same here for traceback function */
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 lua_pop(L, 3);</span>
+<span class="lineNum">     818 </span>            :                 /*  Original err message is on stack top now */
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     820 </span>            :         }
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :         lua_remove(L, -2); /* remove the 'debug' table */</span>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :         lua_pushvalue(L, message_index);</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :         lua_remove(L, message_index);</span>
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span><span class="lineNoCov">          0 :         lua_pushnumber(L, 2);</span>
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :         lua_call(L, 2, 1);</span>
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span>            :         /* prepend the new line we prepared above */
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :         lua_concat(L, 2);</span>
+<span class="lineNum">     832 </span>            : 
+<span class="lineNum">     833 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">     834 </span>            : }
+<span class="lineNum">     835 </span>            : 
+<span class="lineNum">     836 </span>            : /*!
+<span class="lineNum">     837 </span>            :  * \brief Store the sort order of each context
+<span class="lineNum">     838 </span>            : 
+<span class="lineNum">     839 </span>            :  * In the event of an error, an error string will be pushed onto the lua stack.
+<span class="lineNum">     840 </span>            :  *
+<span class="lineNum">     841 </span>            :  * \retval 0 success
+<a name="842"><span class="lineNum">     842 </span>            :  * \retval 1 failure</a>
+<span class="lineNum">     843 </span>            :  */
+<span class="lineNum">     844 </span><span class="lineCov">          5 : static int lua_sort_extensions(lua_State *L)</span>
+<span class="lineNum">     845 </span>            : {
+<span class="lineNum">     846 </span>            :         int extensions, extensions_order;
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :         /* create the extensions_order table */
+<span class="lineNum">     849 </span><span class="lineCov">          5 :         lua_newtable(L);</span>
+<span class="lineNum">     850 </span><span class="lineCov">          5 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;extensions_order&quot;);</span>
+<span class="lineNum">     851 </span><span class="lineCov">          5 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;extensions_order&quot;);</span>
+<span class="lineNum">     852 </span><span class="lineCov">          5 :         extensions_order = lua_gettop(L);</span>
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span>            :         /* sort each context in the extensions table */
+<span class="lineNum">     855 </span>            :         /* load the 'extensions' table */
+<span class="lineNum">     856 </span><span class="lineCov">          5 :         lua_getglobal(L, &quot;extensions&quot;);</span>
+<span class="lineNum">     857 </span><span class="lineCov">          5 :         extensions = lua_gettop(L);</span>
+<span class="lineNum">     858 </span><span class="lineCov">          5 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1);</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;Unable to find 'extensions' table in extensions.lua\n&quot;);</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     862 </span>            :         }
+<span class="lineNum">     863 </span>            : 
+<span class="lineNum">     864 </span>            :         /* iterate through the extensions table and create a
+<span class="lineNum">     865 </span>            :          * matching table (holding the sort order) in the
+<span class="lineNum">     866 </span>            :          * extensions_order table for each context that is found
+<span class="lineNum">     867 </span>            :          */
+<span class="lineNum">     868 </span><span class="lineCov">          9 :         for (lua_pushnil(L); lua_next(L, extensions); lua_pop(L, 1)) {</span>
+<span class="lineNum">     869 </span><span class="lineCov">          4 :                 int context = lua_gettop(L);</span>
+<span class="lineNum">     870 </span><span class="lineCov">          4 :                 int context_name = context - 1;</span>
+<span class="lineNum">     871 </span>            :                 int context_order;
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span>            :                 /* copy the context_name to be used as the key for the
+<span class="lineNum">     874 </span>            :                  * context_order table in the extensions_order table later */
+<span class="lineNum">     875 </span><span class="lineCov">          4 :                 lua_pushvalue(L, context_name);</span>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span>            :                 /* create the context_order table */
+<span class="lineNum">     878 </span><span class="lineCov">          4 :                 lua_newtable(L);</span>
+<span class="lineNum">     879 </span><span class="lineCov">          4 :                 context_order = lua_gettop(L);</span>
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span>            :                 /* iterate through this context an popluate the corrisponding
+<span class="lineNum">     882 </span>            :                  * table in the extensions_order table */
+<span class="lineNum">     883 </span><span class="lineCov">         12 :                 for (lua_pushnil(L); lua_next(L, context); lua_pop(L, 1)) {</span>
+<span class="lineNum">     884 </span><span class="lineCov">          8 :                         int exten = lua_gettop(L) - 1;</span>
+<span class="lineNum">     885 </span>            : #if LUA_VERSION_NUM &lt; 502
+<span class="lineNum">     886 </span>            :                         lua_pushinteger(L, lua_objlen(L, context_order) + 1);
+<span class="lineNum">     887 </span>            : #else
+<span class="lineNum">     888 </span><span class="lineCov">          8 :                         lua_pushinteger(L, lua_rawlen(L, context_order) + 1);</span>
+<span class="lineNum">     889 </span>            : #endif
+<span class="lineNum">     890 </span><span class="lineCov">          8 :                         lua_pushvalue(L, exten);</span>
+<span class="lineNum">     891 </span><span class="lineCov">          8 :                         lua_settable(L, context_order);</span>
+<span class="lineNum">     892 </span>            :                 }
+<span class="lineNum">     893 </span><span class="lineCov">          4 :                 lua_settable(L, extensions_order); /* put the context_order table in the extensions_order table */</span>
+<span class="lineNum">     894 </span>            : 
+<span class="lineNum">     895 </span>            :                 /* now sort the new table */
+<span class="lineNum">     896 </span>            : 
+<span class="lineNum">     897 </span>            :                 /* push the table.sort function */
+<span class="lineNum">     898 </span><span class="lineCov">          4 :                 lua_getglobal(L, &quot;table&quot;);</span>
+<span class="lineNum">     899 </span><span class="lineCov">          4 :                 lua_getfield(L, -1, &quot;sort&quot;);</span>
+<span class="lineNum">     900 </span><span class="lineCov">          4 :                 lua_remove(L, -2); /* remove the 'table' table */</span>
+<span class="lineNum">     901 </span>            : 
+<span class="lineNum">     902 </span>            :                 /* push the context_order table */
+<span class="lineNum">     903 </span><span class="lineCov">          4 :                 lua_pushvalue(L, context_name);</span>
+<span class="lineNum">     904 </span><span class="lineCov">          4 :                 lua_gettable(L, extensions_order);</span>
+<span class="lineNum">     905 </span>            : 
+<span class="lineNum">     906 </span>            :                 /* push the comp function */
+<span class="lineNum">     907 </span><span class="lineCov">          4 :                 lua_pushcfunction(L, &amp;lua_extension_cmp);</span>
+<span class="lineNum">     908 </span>            : 
+<span class="lineNum">     909 </span><span class="lineCov">          4 :                 if (lua_pcall(L, 2, 0, 0)) {</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                         lua_insert(L, -5);</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">          0 :                         lua_pop(L, 4);</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">     913 </span>            :                 }
+<span class="lineNum">     914 </span>            :         }
+<span class="lineNum">     915 </span>            : 
+<span class="lineNum">     916 </span>            :         /* remove the extensions table and the extensions_order table */
+<span class="lineNum">     917 </span><span class="lineCov">          5 :         lua_pop(L, 2);</span>
+<span class="lineNum">     918 </span><span class="lineCov">          5 :         return 0;</span>
+<span class="lineNum">     919 </span>            : }
+<span class="lineNum">     920 </span>            : 
+<span class="lineNum">     921 </span>            : /*!
+<span class="lineNum">     922 </span>            :  * \brief Register dialplan switches for our pbx_lua contexs.
+<span class="lineNum">     923 </span>            :  *
+<span class="lineNum">     924 </span>            :  * In the event of an error, an error string will be pushed onto the lua stack.
+<span class="lineNum">     925 </span>            :  *
+<span class="lineNum">     926 </span>            :  * \retval 0 success
+<a name="927"><span class="lineNum">     927 </span>            :  * \retval 1 failure</a>
+<span class="lineNum">     928 </span>            :  */
+<span class="lineNum">     929 </span><span class="lineCov">          2 : static int lua_register_switches(lua_State *L)</span>
+<span class="lineNum">     930 </span>            : {
+<span class="lineNum">     931 </span>            :         int extensions;
+<span class="lineNum">     932 </span><span class="lineCov">          2 :         struct ast_context *con = NULL;</span>
+<span class="lineNum">     933 </span>            : 
+<span class="lineNum">     934 </span>            :         /* create the hash table for our contexts */
+<span class="lineNum">     935 </span>            :         /* XXX do we ever need to destroy this? pbx_config does not */
+<span class="lineNum">     936 </span><span class="lineCov">          2 :         if (!local_table)</span>
+<span class="lineNum">     937 </span><span class="lineCov">          2 :                 local_table = ast_hashtab_create(17, ast_hashtab_compare_contexts, ast_hashtab_resize_java, ast_hashtab_newsize_java, ast_hashtab_hash_contexts, 0);</span>
+<span class="lineNum">     938 </span>            : 
+<span class="lineNum">     939 </span>            :         /* load the 'extensions' table */
+<span class="lineNum">     940 </span><span class="lineCov">          2 :         lua_getglobal(L, &quot;extensions&quot;);</span>
+<span class="lineNum">     941 </span><span class="lineCov">          2 :         extensions = lua_gettop(L);</span>
+<span class="lineNum">     942 </span><span class="lineCov">          2 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1);</span>
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;Unable to find 'extensions' table in extensions.lua\n&quot;);</span>
+<span class="lineNum">     945 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     946 </span>            :         }
+<span class="lineNum">     947 </span>            : 
+<span class="lineNum">     948 </span>            :         /* iterate through the extensions table and register a context and
+<span class="lineNum">     949 </span>            :          * dialplan switch for each lua context
+<span class="lineNum">     950 </span>            :          */
+<span class="lineNum">     951 </span><span class="lineCov">          3 :         for (lua_pushnil(L); lua_next(L, extensions); lua_pop(L, 1)) {</span>
+<span class="lineNum">     952 </span><span class="lineCov">          1 :                 int context = lua_gettop(L);</span>
+<span class="lineNum">     953 </span><span class="lineCov">          1 :                 int context_name = context - 1;</span>
+<span class="lineNum">     954 </span><span class="lineCov">          1 :                 const char *context_str = lua_tostring(L, context_name);</span>
+<span class="lineNum">     955 </span>            : 
+<span class="lineNum">     956 </span>            :                 /* find or create this context */
+<span class="lineNum">     957 </span><span class="lineCov">          1 :                 con = ast_context_find_or_create(&amp;local_contexts, local_table, context_str, registrar);</span>
+<span class="lineNum">     958 </span><span class="lineCov">          1 :                 if (!con) {</span>
+<span class="lineNum">     959 </span>            :                         /* remove extensions table and context key and value */
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                         lua_pop(L, 3);</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :                         lua_pushstring(L, &quot;Failed to find or create context\n&quot;);</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">     963 </span>            :                 }
+<span class="lineNum">     964 </span>            : 
+<span class="lineNum">     965 </span>            :                 /* register the switch */
+<span class="lineNum">     966 </span><span class="lineCov">          1 :                 if (ast_context_add_switch2(con, &quot;Lua&quot;, &quot;&quot;, 0, registrar)) {</span>
+<span class="lineNum">     967 </span>            :                         /* remove extensions table and context key and value */
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                         lua_pop(L, 3);</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         lua_pushstring(L, &quot;Unable to create switch for context\n&quot;);</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">     971 </span>            :                 }
+<span class="lineNum">     972 </span>            :         }
+<span class="lineNum">     973 </span>            : 
+<span class="lineNum">     974 </span>            :         /* remove the extensions table */
+<span class="lineNum">     975 </span><span class="lineCov">          2 :         lua_pop(L, 1);</span>
+<span class="lineNum">     976 </span><span class="lineCov">          2 :         return 0;</span>
+<span class="lineNum">     977 </span>            : }
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span>            : /*!
+<span class="lineNum">     980 </span>            :  * \brief Register dialplan hints for our pbx_lua contexs.
+<span class="lineNum">     981 </span>            :  *
+<span class="lineNum">     982 </span>            :  * In the event of an error, an error string will be pushed onto the lua stack.
+<span class="lineNum">     983 </span>            :  *
+<span class="lineNum">     984 </span>            :  * \retval 0 success
+<a name="985"><span class="lineNum">     985 </span>            :  * \retval 1 failure</a>
+<span class="lineNum">     986 </span>            :  */
+<span class="lineNum">     987 </span><span class="lineCov">          2 : static int lua_register_hints(lua_State *L)</span>
+<span class="lineNum">     988 </span>            : {
+<span class="lineNum">     989 </span>            :         int hints;
+<span class="lineNum">     990 </span><span class="lineCov">          2 :         struct ast_context *con = NULL;</span>
+<span class="lineNum">     991 </span>            : 
+<span class="lineNum">     992 </span>            :         /* create the hash table for our contexts */
+<span class="lineNum">     993 </span>            :         /* XXX do we ever need to destroy this? pbx_config does not */
+<span class="lineNum">     994 </span><span class="lineCov">          2 :         if (!local_table)</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                 local_table = ast_hashtab_create(17, ast_hashtab_compare_contexts, ast_hashtab_resize_java, ast_hashtab_newsize_java, ast_hashtab_hash_contexts, 0);</span>
+<span class="lineNum">     996 </span>            : 
+<span class="lineNum">     997 </span>            :         /* load the 'hints' table */
+<span class="lineNum">     998 </span><span class="lineCov">          2 :         lua_getglobal(L, &quot;hints&quot;);</span>
+<span class="lineNum">     999 </span><span class="lineCov">          2 :         hints = lua_gettop(L);</span>
+<span class="lineNum">    1000 </span><span class="lineCov">          2 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">    1001 </span>            :                 /* hints table not found, move along */
+<span class="lineNum">    1002 </span><span class="lineCov">          2 :                 lua_pop(L, 1);</span>
+<span class="lineNum">    1003 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">    1004 </span>            :         }
+<span class="lineNum">    1005 </span>            : 
+<span class="lineNum">    1006 </span>            :         /* iterate through the hints table and register each context and
+<span class="lineNum">    1007 </span>            :          * the hints that go along with it
+<span class="lineNum">    1008 </span>            :          */
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :         for (lua_pushnil(L); lua_next(L, hints); lua_pop(L, 1)) {</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :                 int context = lua_gettop(L);</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :                 int context_name = context - 1;</span>
+<span class="lineNum">    1012 </span><span class="lineNoCov">          0 :                 const char *context_str = lua_tostring(L, context_name);</span>
+<span class="lineNum">    1013 </span>            : 
+<span class="lineNum">    1014 </span>            :                 /* find or create this context */
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                 con = ast_context_find_or_create(&amp;local_contexts, local_table, context_str, registrar);</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :                 if (!con) {</span>
+<span class="lineNum">    1017 </span>            :                         /* remove hints table and context key and value */
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :                         lua_pop(L, 3);</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :                         lua_pushstring(L, &quot;Failed to find or create context\n&quot;);</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">    1021 </span>            :                 }
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span>            :                 /* register each hint */
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                 for (lua_pushnil(L); lua_next(L, context); lua_pop(L, 1)) {</span>
+<span class="lineNum">    1025 </span><span class="lineNoCov">          0 :                         const char *hint_value = lua_tostring(L, -1);</span>
+<span class="lineNum">    1026 </span>            :                         const char *hint_name;
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span>            :                         /* the hint value is not a string, ignore it */
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                         if (!hint_value) {</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1031 </span>            :                         }
+<span class="lineNum">    1032 </span>            : 
+<span class="lineNum">    1033 </span>            :                         /* copy the name then convert it to a string */
+<span class="lineNum">    1034 </span><span class="lineNoCov">          0 :                         lua_pushvalue(L, -2);</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                         if (!(hint_name = lua_tostring(L, -1))) {</span>
+<span class="lineNum">    1036 </span>            :                                 /* ignore non-string value */
+<span class="lineNum">    1037 </span><span class="lineNoCov">          0 :                                 lua_pop(L, 1);</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1039 </span>            :                         }
+<span class="lineNum">    1040 </span>            : 
+<span class="lineNum">    1041 </span><span class="lineNoCov">          0 :                         if (ast_add_extension2(con, 0, hint_name, PRIORITY_HINT, NULL, NULL, hint_value, NULL, NULL, registrar, NULL, 0)) {</span>
+<span class="lineNum">    1042 </span>            :                                 /* remove hints table, hint name, hint value,
+<span class="lineNum">    1043 </span>            :                                  * key copy, context name, and contex table */
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                                 lua_pop(L, 6);</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                                 lua_pushstring(L, &quot;Error creating hint\n&quot;);</span>
+<span class="lineNum">    1046 </span><span class="lineNoCov">          0 :                                 return 1;</span>
+<span class="lineNum">    1047 </span>            :                         }
+<span class="lineNum">    1048 </span>            : 
+<span class="lineNum">    1049 </span>            :                         /* pop the name copy */
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                         lua_pop(L, 1);</span>
+<span class="lineNum">    1051 </span>            :                 }
+<span class="lineNum">    1052 </span>            :         }
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span>            :         /* remove the hints table */
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">    1056 </span>            : 
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1058 </span>            : }
+<span class="lineNum">    1059 </span>            : 
+<span class="lineNum">    1060 </span>            : /*!
+<span class="lineNum">    1061 </span>            :  * \brief [lua_CFunction] Compare two extensions (for access from lua, don't
+<span class="lineNum">    1062 </span>            :  * call directly)
+<span class="lineNum">    1063 </span>            :  *
+<span class="lineNum">    1064 </span>            :  * This function returns true if the first extension passed should match after
+<a name="1065"><span class="lineNum">    1065 </span>            :  * the second.  It behaves like the '&lt;' operator.</a>
+<span class="lineNum">    1066 </span>            :  */
+<span class="lineNum">    1067 </span><span class="lineCov">          4 : static int lua_extension_cmp(lua_State *L)</span>
+<span class="lineNum">    1068 </span>            : {
+<span class="lineNum">    1069 </span><span class="lineCov">          4 :         const char *a = luaL_checkstring(L, -2);</span>
+<span class="lineNum">    1070 </span><span class="lineCov">          4 :         const char *b = luaL_checkstring(L, -1);</span>
+<span class="lineNum">    1071 </span>            : 
+<span class="lineNum">    1072 </span><span class="lineCov">          4 :         if (ast_extension_cmp(a, b) == -1)</span>
+<span class="lineNum">    1073 </span><span class="lineNoCov">          0 :                 lua_pushboolean(L, 1);</span>
+<span class="lineNum">    1074 </span>            :         else
+<span class="lineNum">    1075 </span><span class="lineCov">          4 :                 lua_pushboolean(L, 0);</span>
+<span class="lineNum">    1076 </span>            : 
+<span class="lineNum">    1077 </span><span class="lineCov">          4 :         return 1;</span>
+<span class="lineNum">    1078 </span>            : }
+<span class="lineNum">    1079 </span>            : 
+<span class="lineNum">    1080 </span>            : /*!
+<span class="lineNum">    1081 </span>            :  * \brief Load the extensions.lua file in to a buffer and execute the file
+<span class="lineNum">    1082 </span>            :  *
+<span class="lineNum">    1083 </span>            :  * \param L the lua_State to use
+<span class="lineNum">    1084 </span>            :  * \param size a pointer to store the size of the buffer
+<span class="lineNum">    1085 </span>            :  * \param file_not_openable a pointer to store if config file could be opened
+<span class="lineNum">    1086 </span>            :  *
+<span class="lineNum">    1087 </span>            :  * \note The caller is expected to free the buffer at some point.
+<span class="lineNum">    1088 </span>            :  *
+<a name="1089"><span class="lineNum">    1089 </span>            :  * \return a pointer to the buffer</a>
+<span class="lineNum">    1090 </span>            :  */
+<span class="lineNum">    1091 </span><span class="lineCov">       1117 : static char *lua_read_extensions_file(lua_State *L, long *size, int *file_not_openable)</span>
+<span class="lineNum">    1092 </span>            : {
+<span class="lineNum">    1093 </span>            :         FILE *f;
+<span class="lineNum">    1094 </span>            :         int error_func;
+<span class="lineNum">    1095 </span>            :         char *data;
+<span class="lineNum">    1096 </span><span class="lineCov">       1117 :         char *path = ast_alloca(strlen(config) + strlen(ast_config_AST_CONFIG_DIR) + 2);</span>
+<span class="lineNum">    1097 </span><span class="lineCov">       1117 :         sprintf(path, &quot;%s/%s&quot;, ast_config_AST_CONFIG_DIR, config);</span>
+<span class="lineNum">    1098 </span>            : 
+<span class="lineNum">    1099 </span><span class="lineCov">       1117 :         if (!(f = fopen(path, &quot;r&quot;))) {</span>
+<span class="lineNum">    1100 </span><span class="lineCov">       1114 :                 lua_pushstring(L, &quot;cannot open '&quot;);</span>
+<span class="lineNum">    1101 </span><span class="lineCov">       1114 :                 lua_pushstring(L, path);</span>
+<span class="lineNum">    1102 </span><span class="lineCov">       1114 :                 lua_pushstring(L, &quot;' for reading: &quot;);</span>
+<span class="lineNum">    1103 </span><span class="lineCov">       1114 :                 lua_pushstring(L, strerror(errno));</span>
+<span class="lineNum">    1104 </span><span class="lineCov">       1114 :                 lua_concat(L, 4);</span>
+<span class="lineNum">    1105 </span>            : 
+<span class="lineNum">    1106 </span><span class="lineCov">       1114 :                 *file_not_openable = 1;</span>
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span><span class="lineCov">       1114 :                 return NULL;</span>
+<span class="lineNum">    1109 </span>            :         }
+<span class="lineNum">    1110 </span>            : 
+<span class="lineNum">    1111 </span><span class="lineCov">          3 :         if (fseek(f, 0l, SEEK_END)) {</span>
+<span class="lineNum">    1112 </span><span class="lineNoCov">          0 :                 fclose(f);</span>
+<span class="lineNum">    1113 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;error determining the size of the config file&quot;);</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1115 </span>            :         }
+<span class="lineNum">    1116 </span>            : 
+<span class="lineNum">    1117 </span><span class="lineCov">          3 :         *size = ftell(f);</span>
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span><span class="lineCov">          3 :         if (fseek(f, 0l, SEEK_SET)) {</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :                 *size = 0;</span>
+<span class="lineNum">    1121 </span><span class="lineNoCov">          0 :                 fclose(f);</span>
+<span class="lineNum">    1122 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;error reading config file&quot;);</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1124 </span>            :         }
+<span class="lineNum">    1125 </span>            : 
+<span class="lineNum">    1126 </span><span class="lineCov">          3 :         if (!(data = ast_malloc(*size))) {</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                 *size = 0;</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :                 fclose(f);</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                 lua_pushstring(L, &quot;not enough memory&quot;);</span>
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1131 </span>            :         }
+<span class="lineNum">    1132 </span>            : 
+<span class="lineNum">    1133 </span><span class="lineCov">          3 :         if (fread(data, sizeof(char), *size, f) != *size) {</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">          0 :                 *size = 0;</span>
+<span class="lineNum">    1135 </span><span class="lineNoCov">          0 :                 fclose(f);</span>
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :                 lua_pushliteral(L, &quot;problem reading configuration file&quot;);</span>
+<span class="lineNum">    1137 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1138 </span>            :         }
+<span class="lineNum">    1139 </span><span class="lineCov">          3 :         fclose(f);</span>
+<span class="lineNum">    1140 </span>            : 
+<span class="lineNum">    1141 </span><span class="lineCov">          3 :         lua_pushcfunction(L, &amp;lua_error_function);</span>
+<span class="lineNum">    1142 </span><span class="lineCov">          3 :         error_func = lua_gettop(L);</span>
+<span class="lineNum">    1143 </span>            : 
+<span class="lineNum">    1144 </span><span class="lineCov">          3 :         if (luaL_loadbuffer(L, data, *size, &quot;extensions.lua&quot;)</span>
+<span class="lineNum">    1145 </span><span class="lineCov">          2 :                         || lua_pcall(L, 0, LUA_MULTRET, error_func)</span>
+<span class="lineNum">    1146 </span><span class="lineCov">          2 :                         || lua_sort_extensions(L)</span>
+<span class="lineNum">    1147 </span><span class="lineCov">          2 :                         || lua_register_switches(L)</span>
+<span class="lineNum">    1148 </span><span class="lineCov">          2 :                         || lua_register_hints(L)) {</span>
+<span class="lineNum">    1149 </span><span class="lineCov">          1 :                 ast_free(data);</span>
+<span class="lineNum">    1150 </span><span class="lineCov">          1 :                 data = NULL;</span>
+<span class="lineNum">    1151 </span><span class="lineCov">          1 :                 *size = 0;</span>
+<span class="lineNum">    1152 </span>            :         }
+<span class="lineNum">    1153 </span>            : 
+<span class="lineNum">    1154 </span><span class="lineCov">          3 :         lua_remove(L, error_func);</span>
+<span class="lineNum">    1155 </span><span class="lineCov">          3 :         return data;</span>
+<span class="lineNum">    1156 </span>            : }
+<span class="lineNum">    1157 </span>            : 
+<span class="lineNum">    1158 </span>            : /*!
+<span class="lineNum">    1159 </span>            :  * \brief Load the extensions.lua file from the internal buffer
+<span class="lineNum">    1160 </span>            :  *
+<span class="lineNum">    1161 </span>            :  * \param L the lua_State to use
+<span class="lineNum">    1162 </span>            :  * \param chan channel to work on
+<span class="lineNum">    1163 </span>            :  *
+<span class="lineNum">    1164 </span>            :  * This function also sets up some constructs used by the extensions.lua file.
+<span class="lineNum">    1165 </span>            :  * In the event of an error, an error string will be pushed onto the lua stack.
+<span class="lineNum">    1166 </span>            :  *
+<span class="lineNum">    1167 </span>            :  * \retval 0 success
+<a name="1168"><span class="lineNum">    1168 </span>            :  * \retval 1 failure</a>
+<span class="lineNum">    1169 </span>            :  */
+<span class="lineNum">    1170 </span><span class="lineCov">          3 : static int lua_load_extensions(lua_State *L, struct ast_channel *chan)</span>
+<span class="lineNum">    1171 </span>            : {
+<span class="lineNum">    1172 </span>            : 
+<span class="lineNum">    1173 </span>            :         /* store a pointer to this channel */
+<span class="lineNum">    1174 </span><span class="lineCov">          3 :         lua_pushlightuserdata(L, chan);</span>
+<span class="lineNum">    1175 </span><span class="lineCov">          3 :         lua_setfield(L, LUA_REGISTRYINDEX, &quot;channel&quot;);</span>
+<span class="lineNum">    1176 </span>            : 
+<span class="lineNum">    1177 </span><span class="lineCov">          3 :         luaL_openlibs(L);</span>
+<span class="lineNum">    1178 </span>            : 
+<span class="lineNum">    1179 </span>            :         /* load and sort extensions */
+<span class="lineNum">    1180 </span><span class="lineCov">          3 :         ast_mutex_lock(&amp;config_file_lock);</span>
+<span class="lineNum">    1181 </span><span class="lineCov">          3 :         if (luaL_loadbuffer(L, config_file_data, config_file_size, &quot;extensions.lua&quot;)</span>
+<span class="lineNum">    1182 </span><span class="lineCov">          3 :                         || lua_pcall(L, 0, LUA_MULTRET, 0)</span>
+<span class="lineNum">    1183 </span><span class="lineCov">          3 :                         || lua_sort_extensions(L)) {</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;config_file_lock);</span>
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">    1186 </span>            :         }
+<span class="lineNum">    1187 </span><span class="lineCov">          3 :         ast_mutex_unlock(&amp;config_file_lock);</span>
+<span class="lineNum">    1188 </span>            : 
+<span class="lineNum">    1189 </span>            :         /* now we setup special tables and functions */
+<span class="lineNum">    1190 </span>            : 
+<span class="lineNum">    1191 </span><span class="lineCov">          3 :         lua_create_app_table(L);</span>
+<span class="lineNum">    1192 </span><span class="lineCov">          3 :         lua_create_channel_table(L);</span>
+<span class="lineNum">    1193 </span>            : 
+<span class="lineNum">    1194 </span><span class="lineCov">          3 :         lua_create_variable_metatable(L);</span>
+<span class="lineNum">    1195 </span><span class="lineCov">          3 :         lua_create_application_metatable(L);</span>
+<span class="lineNum">    1196 </span>            : 
+<span class="lineNum">    1197 </span><span class="lineCov">          3 :         lua_create_autoservice_functions(L);</span>
+<span class="lineNum">    1198 </span><span class="lineCov">          3 :         lua_create_hangup_function(L);</span>
+<span class="lineNum">    1199 </span>            : 
+<span class="lineNum">    1200 </span><span class="lineCov">          3 :         return 0;</span>
+<span class="lineNum">    1201 </span>            : }
+<span class="lineNum">    1202 </span>            : 
+<span class="lineNum">    1203 </span>            : /*!
+<span class="lineNum">    1204 </span>            :  * \brief Reload the extensions file and update the internal buffers if it
+<span class="lineNum">    1205 </span>            :  * loads correctly.
+<span class="lineNum">    1206 </span>            :  *
+<span class="lineNum">    1207 </span>            :  * \warning This function should not be called on a lua_State returned from
+<span class="lineNum">    1208 </span>            :  * lua_get_state().
+<span class="lineNum">    1209 </span>            :  *
+<span class="lineNum">    1210 </span>            :  * \param L the lua_State to use (must be freshly allocated with
+<a name="1211"><span class="lineNum">    1211 </span>            :  * luaL_newstate(), don't use lua_get_state())</a>
+<span class="lineNum">    1212 </span>            :  */
+<span class="lineNum">    1213 </span><span class="lineCov">       1117 : static int lua_reload_extensions(lua_State *L)</span>
+<span class="lineNum">    1214 </span>            : {
+<span class="lineNum">    1215 </span><span class="lineCov">       1117 :         long size = 0;</span>
+<span class="lineNum">    1216 </span><span class="lineCov">       1117 :         char *data = NULL;</span>
+<span class="lineNum">    1217 </span><span class="lineCov">       1117 :         int file_not_openable = 0;</span>
+<span class="lineNum">    1218 </span>            : 
+<span class="lineNum">    1219 </span><span class="lineCov">       1117 :         luaL_openlibs(L);</span>
+<span class="lineNum">    1220 </span>            : 
+<span class="lineNum">    1221 </span><span class="lineCov">       1117 :         if (!(data = lua_read_extensions_file(L, &amp;size, &amp;file_not_openable))) {</span>
+<span class="lineNum">    1222 </span><span class="lineCov">       1115 :                 if (file_not_openable) {</span>
+<span class="lineNum">    1223 </span><span class="lineCov">       1114 :                         return -1;</span>
+<span class="lineNum">    1224 </span>            :                 }
+<span class="lineNum">    1225 </span><span class="lineCov">          1 :                 return 1;</span>
+<span class="lineNum">    1226 </span>            :         }
+<span class="lineNum">    1227 </span>            : 
+<span class="lineNum">    1228 </span><span class="lineCov">          2 :         ast_mutex_lock(&amp;config_file_lock);</span>
+<span class="lineNum">    1229 </span>            : 
+<span class="lineNum">    1230 </span><span class="lineCov">          2 :         if (config_file_data)</span>
+<span class="lineNum">    1231 </span><span class="lineNoCov">          0 :                 ast_free(config_file_data);</span>
+<span class="lineNum">    1232 </span>            : 
+<span class="lineNum">    1233 </span><span class="lineCov">          2 :         config_file_data = data;</span>
+<span class="lineNum">    1234 </span><span class="lineCov">          2 :         config_file_size = size;</span>
+<span class="lineNum">    1235 </span>            : 
+<span class="lineNum">    1236 </span>            :         /* merge our new contexts */
+<span class="lineNum">    1237 </span><span class="lineCov">          2 :         ast_merge_contexts_and_delete(&amp;local_contexts, local_table, registrar);</span>
+<span class="lineNum">    1238 </span>            :         /* merge_contexts_and_delete will actually, at the correct moment,
+<span class="lineNum">    1239 </span>            :            set the global dialplan pointers to your local_contexts and local_table.
+<span class="lineNum">    1240 </span>            :            It then will free up the old tables itself. Just be sure not to
+<span class="lineNum">    1241 </span>            :            hang onto the pointers. */
+<span class="lineNum">    1242 </span><span class="lineCov">          2 :         local_table = NULL;</span>
+<span class="lineNum">    1243 </span><span class="lineCov">          2 :         local_contexts = NULL;</span>
+<span class="lineNum">    1244 </span>            : 
+<span class="lineNum">    1245 </span><span class="lineCov">          2 :         ast_mutex_unlock(&amp;config_file_lock);</span>
+<span class="lineNum">    1246 </span><span class="lineCov">          2 :         return 0;</span>
+<span class="lineNum">    1247 </span>            : }
+<span class="lineNum">    1248 </span>            : 
+<span class="lineNum">    1249 </span>            : /*!
+<a name="1250"><span class="lineNum">    1250 </span>            :  * \brief Free the internal extensions buffer.</a>
+<span class="lineNum">    1251 </span>            :  */
+<span class="lineNum">    1252 </span><span class="lineCov">          2 : static void lua_free_extensions()</span>
+<span class="lineNum">    1253 </span>            : {
+<span class="lineNum">    1254 </span><span class="lineCov">          2 :         ast_mutex_lock(&amp;config_file_lock);</span>
+<span class="lineNum">    1255 </span><span class="lineCov">          2 :         config_file_size = 0;</span>
+<span class="lineNum">    1256 </span><span class="lineCov">          2 :         ast_free(config_file_data);</span>
+<span class="lineNum">    1257 </span><span class="lineCov">          2 :         ast_mutex_unlock(&amp;config_file_lock);</span>
+<span class="lineNum">    1258 </span><span class="lineCov">          2 : }</span>
+<span class="lineNum">    1259 </span>            : 
+<span class="lineNum">    1260 </span>            : /*!
+<span class="lineNum">    1261 </span>            :  * \brief Get the lua_State for this channel
+<span class="lineNum">    1262 </span>            :  *
+<span class="lineNum">    1263 </span>            :  * If no channel is passed then a new state is allocated.  States with no
+<span class="lineNum">    1264 </span>            :  * channel assocatied with them should only be used for matching extensions.
+<span class="lineNum">    1265 </span>            :  * If the channel does not yet have a lua state associated with it, one will be
+<span class="lineNum">    1266 </span>            :  * created.
+<span class="lineNum">    1267 </span>            :  *
+<span class="lineNum">    1268 </span>            :  * \note If no channel was passed then the caller is expected to free the state
+<span class="lineNum">    1269 </span>            :  * using lua_close().
+<span class="lineNum">    1270 </span>            :  *
+<a name="1271"><span class="lineNum">    1271 </span>            :  * \return a lua_State</a>
+<span class="lineNum">    1272 </span>            :  */
+<span class="lineNum">    1273 </span><span class="lineCov">         15 : static lua_State *lua_get_state(struct ast_channel *chan)</span>
+<span class="lineNum">    1274 </span>            : {
+<span class="lineNum">    1275 </span><span class="lineCov">         15 :         struct ast_datastore *datastore = NULL;</span>
+<span class="lineNum">    1276 </span>            :         lua_State *L;
+<span class="lineNum">    1277 </span>            : 
+<span class="lineNum">    1278 </span><span class="lineCov">         15 :         if (!chan) {</span>
+<span class="lineNum">    1279 </span><span class="lineCov">          2 :                 L = luaL_newstate();</span>
+<span class="lineNum">    1280 </span><span class="lineCov">          2 :                 if (!L) {</span>
+<span class="lineNum">    1281 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Error allocating lua_State, no memory\n&quot;);</span>
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1283 </span>            :                 }
+<span class="lineNum">    1284 </span>            : 
+<span class="lineNum">    1285 </span><span class="lineCov">          2 :                 if (lua_load_extensions(L, NULL)) {</span>
+<span class="lineNum">    1286 </span><span class="lineNoCov">          0 :                         const char *error = lua_tostring(L, -1);</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Error loading extensions.lua: %s\n&quot;, error);</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">          0 :                         lua_close(L);</span>
+<span class="lineNum">    1289 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1290 </span>            :                 }
+<span class="lineNum">    1291 </span><span class="lineCov">          2 :                 return L;</span>
+<span class="lineNum">    1292 </span>            :         } else {
+<span class="lineNum">    1293 </span><span class="lineCov">         13 :                 ast_channel_lock(chan);</span>
+<span class="lineNum">    1294 </span><span class="lineCov">         13 :                 datastore = ast_channel_datastore_find(chan, &amp;lua_datastore, NULL);</span>
+<span class="lineNum">    1295 </span><span class="lineCov">         13 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1296 </span>            : 
+<span class="lineNum">    1297 </span><span class="lineCov">         13 :                 if (!datastore) {</span>
+<span class="lineNum">    1298 </span>            :                         /* nothing found, allocate a new lua state */
+<span class="lineNum">    1299 </span><span class="lineCov">          1 :                         datastore = ast_datastore_alloc(&amp;lua_datastore, NULL);</span>
+<span class="lineNum">    1300 </span><span class="lineCov">          1 :                         if (!datastore) {</span>
+<span class="lineNum">    1301 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Error allocation channel datastore for lua_State\n&quot;);</span>
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">    1303 </span>            :                         }
+<span class="lineNum">    1304 </span>            : 
+<span class="lineNum">    1305 </span><span class="lineCov">          1 :                         datastore-&gt;data = luaL_newstate();</span>
+<span class="lineNum">    1306 </span><span class="lineCov">          1 :                         if (!datastore-&gt;data) {</span>
+<span class="lineNum">    1307 </span><span class="lineNoCov">          0 :                                 ast_datastore_free(datastore);</span>
+<span class="lineNum">    1308 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Error allocating lua_State, no memory\n&quot;);</span>
+<span class="lineNum">    1309 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">    1310 </span>            :                         }
+<span class="lineNum">    1311 </span>            : 
+<span class="lineNum">    1312 </span><span class="lineCov">          1 :                         ast_channel_lock(chan);</span>
+<span class="lineNum">    1313 </span><span class="lineCov">          1 :                         ast_channel_datastore_add(chan, datastore);</span>
+<span class="lineNum">    1314 </span><span class="lineCov">          1 :                         ast_channel_unlock(chan);</span>
+<span class="lineNum">    1315 </span>            : 
+<span class="lineNum">    1316 </span><span class="lineCov">          1 :                         L = datastore-&gt;data;</span>
+<span class="lineNum">    1317 </span>            : 
+<span class="lineNum">    1318 </span><span class="lineCov">          1 :                         if (lua_load_extensions(L, chan)) {</span>
+<span class="lineNum">    1319 </span><span class="lineNoCov">          0 :                                 const char *error = lua_tostring(L, -1);</span>
+<span class="lineNum">    1320 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Error loading extensions.lua for %s: %s\n&quot;, ast_channel_name(chan), error);</span>
+<span class="lineNum">    1321 </span>            : 
+<span class="lineNum">    1322 </span><span class="lineNoCov">          0 :                                 ast_channel_lock(chan);</span>
+<span class="lineNum">    1323 </span><span class="lineNoCov">          0 :                                 ast_channel_datastore_remove(chan, datastore);</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">          0 :                                 ast_channel_unlock(chan);</span>
+<span class="lineNum">    1325 </span>            : 
+<span class="lineNum">    1326 </span><span class="lineNoCov">          0 :                                 ast_datastore_free(datastore);</span>
+<span class="lineNum">    1327 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">    1328 </span>            :                         }
+<span class="lineNum">    1329 </span>            :                 }
+<span class="lineNum">    1330 </span>            : 
+<span class="lineNum">    1331 </span><span class="lineCov">         13 :                 return datastore-&gt;data;</span>
+<span class="lineNum">    1332 </span>            :         }
+<a name="1333"><span class="lineNum">    1333 </span>            : }</a>
+<span class="lineNum">    1334 </span>            : 
+<span class="lineNum">    1335 </span><span class="lineCov">          6 : static int exists(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">    1336 </span>            : {
+<span class="lineNum">    1337 </span>            :         int res;
+<span class="lineNum">    1338 </span>            :         lua_State *L;
+<span class="lineNum">    1339 </span><span class="lineCov">          6 :         struct ast_module_user *u = ast_module_user_add(chan);</span>
+<span class="lineNum">    1340 </span><span class="lineCov">          6 :         if (!u) {</span>
+<span class="lineNum">    1341 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error adjusting use count, probably could not allocate memory\n&quot;);</span>
+<span class="lineNum">    1342 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1343 </span>            :         }
+<span class="lineNum">    1344 </span>            : 
+<span class="lineNum">    1345 </span><span class="lineCov">          6 :         L = lua_get_state(chan);</span>
+<span class="lineNum">    1346 </span><span class="lineCov">          6 :         if (!L) {</span>
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 :                 ast_module_user_remove(u);</span>
+<span class="lineNum">    1348 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1349 </span>            :         }
+<span class="lineNum">    1350 </span>            : 
+<span class="lineNum">    1351 </span><span class="lineCov">          6 :         res = lua_find_extension(L, context, exten, priority, &amp;exists, 0);</span>
+<span class="lineNum">    1352 </span>            : 
+<span class="lineNum">    1353 </span><span class="lineCov">          6 :         if (!chan) lua_close(L);</span>
+<span class="lineNum">    1354 </span><span class="lineCov">          6 :         ast_module_user_remove(u);</span>
+<span class="lineNum">    1355 </span><span class="lineCov">          6 :         return res;</span>
+<a name="1356"><span class="lineNum">    1356 </span>            : }</a>
+<span class="lineNum">    1357 </span>            : 
+<span class="lineNum">    1358 </span><span class="lineCov">          1 : static int canmatch(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">    1359 </span>            : {
+<span class="lineNum">    1360 </span>            :         int res;
+<span class="lineNum">    1361 </span>            :         lua_State *L;
+<span class="lineNum">    1362 </span><span class="lineCov">          1 :         struct ast_module_user *u = ast_module_user_add(chan);</span>
+<span class="lineNum">    1363 </span><span class="lineCov">          1 :         if (!u) {</span>
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error adjusting use count, probably could not allocate memory\n&quot;);</span>
+<span class="lineNum">    1365 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1366 </span>            :         }
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span><span class="lineCov">          1 :         L = lua_get_state(chan);</span>
+<span class="lineNum">    1369 </span><span class="lineCov">          1 :         if (!L) {</span>
+<span class="lineNum">    1370 </span><span class="lineNoCov">          0 :                 ast_module_user_remove(u);</span>
+<span class="lineNum">    1371 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1372 </span>            :         }
+<span class="lineNum">    1373 </span>            : 
+<span class="lineNum">    1374 </span><span class="lineCov">          1 :         res = lua_find_extension(L, context, exten, priority, &amp;canmatch, 0);</span>
+<span class="lineNum">    1375 </span>            : 
+<span class="lineNum">    1376 </span><span class="lineCov">          1 :         if (!chan) lua_close(L);</span>
+<span class="lineNum">    1377 </span><span class="lineCov">          1 :         ast_module_user_remove(u);</span>
+<span class="lineNum">    1378 </span><span class="lineCov">          1 :         return res;</span>
+<a name="1379"><span class="lineNum">    1379 </span>            : }</a>
+<span class="lineNum">    1380 </span>            : 
+<span class="lineNum">    1381 </span><span class="lineCov">          6 : static int matchmore(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">    1382 </span>            : {
+<span class="lineNum">    1383 </span>            :         int res;
+<span class="lineNum">    1384 </span>            :         lua_State *L;
+<span class="lineNum">    1385 </span><span class="lineCov">          6 :         struct ast_module_user *u = ast_module_user_add(chan);</span>
+<span class="lineNum">    1386 </span><span class="lineCov">          6 :         if (!u) {</span>
+<span class="lineNum">    1387 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error adjusting use count, probably could not allocate memory\n&quot;);</span>
+<span class="lineNum">    1388 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1389 </span>            :         }
+<span class="lineNum">    1390 </span>            : 
+<span class="lineNum">    1391 </span><span class="lineCov">          6 :         L = lua_get_state(chan);</span>
+<span class="lineNum">    1392 </span><span class="lineCov">          6 :         if (!L) {</span>
+<span class="lineNum">    1393 </span><span class="lineNoCov">          0 :                 ast_module_user_remove(u);</span>
+<span class="lineNum">    1394 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1395 </span>            :         }
+<span class="lineNum">    1396 </span>            : 
+<span class="lineNum">    1397 </span><span class="lineCov">          6 :         res = lua_find_extension(L, context, exten, priority, &amp;matchmore, 0);</span>
+<span class="lineNum">    1398 </span>            : 
+<span class="lineNum">    1399 </span><span class="lineCov">          6 :         if (!chan) lua_close(L);</span>
+<span class="lineNum">    1400 </span><span class="lineCov">          6 :         ast_module_user_remove(u);</span>
+<span class="lineNum">    1401 </span><span class="lineCov">          6 :         return res;</span>
+<span class="lineNum">    1402 </span>            : }
+<a name="1403"><span class="lineNum">    1403 </span>            : </a>
+<span class="lineNum">    1404 </span>            : 
+<span class="lineNum">    1405 </span><span class="lineCov">          2 : static int exec(struct ast_channel *chan, const char *context, const char *exten, int priority, const char *callerid, const char *data)</span>
+<span class="lineNum">    1406 </span>            : {
+<span class="lineNum">    1407 </span>            :         int res, error_func;
+<span class="lineNum">    1408 </span>            :         lua_State *L;
+<span class="lineNum">    1409 </span><span class="lineCov">          2 :         struct ast_module_user *u = ast_module_user_add(chan);</span>
+<span class="lineNum">    1410 </span><span class="lineCov">          2 :         if (!u) {</span>
+<span class="lineNum">    1411 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error adjusting use count, probably could not allocate memory\n&quot;);</span>
+<span class="lineNum">    1412 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1413 </span>            :         }
+<span class="lineNum">    1414 </span>            : 
+<span class="lineNum">    1415 </span><span class="lineCov">          2 :         L = lua_get_state(chan);</span>
+<span class="lineNum">    1416 </span><span class="lineCov">          2 :         if (!L) {</span>
+<span class="lineNum">    1417 </span><span class="lineNoCov">          0 :                 ast_module_user_remove(u);</span>
+<span class="lineNum">    1418 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1419 </span>            :         }
+<span class="lineNum">    1420 </span>            : 
+<span class="lineNum">    1421 </span><span class="lineCov">          2 :         lua_pushcfunction(L, &amp;lua_error_function);</span>
+<span class="lineNum">    1422 </span><span class="lineCov">          2 :         error_func = lua_gettop(L);</span>
+<span class="lineNum">    1423 </span>            : 
+<span class="lineNum">    1424 </span>            :         /* push the extension function onto the stack */
+<span class="lineNum">    1425 </span><span class="lineCov">          2 :         if (!lua_find_extension(L, context, exten, priority, &amp;exists, 1)) {</span>
+<span class="lineNum">    1426 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1); /* pop the debug function */</span>
+<span class="lineNum">    1427 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not find extension %s in context %s\n&quot;, exten, context);</span>
+<span class="lineNum">    1428 </span><span class="lineNoCov">          0 :                 if (!chan) lua_close(L);</span>
+<span class="lineNum">    1429 </span><span class="lineNoCov">          0 :                 ast_module_user_remove(u);</span>
+<span class="lineNum">    1430 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1431 </span>            :         }
+<span class="lineNum">    1432 </span>            : 
+<span class="lineNum">    1433 </span><span class="lineCov">          2 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">    1434 </span><span class="lineCov">          2 :         if (lua_toboolean(L, -1)) {</span>
+<span class="lineNum">    1435 </span><span class="lineCov">          2 :                 ast_autoservice_start(chan);</span>
+<span class="lineNum">    1436 </span>            :         }
+<span class="lineNum">    1437 </span><span class="lineCov">          2 :         lua_pop(L, 1);</span>
+<span class="lineNum">    1438 </span>            : 
+<span class="lineNum">    1439 </span><span class="lineCov">          2 :         lua_update_registry(L, context, exten, priority);</span>
+<span class="lineNum">    1440 </span>            : 
+<span class="lineNum">    1441 </span><span class="lineCov">          2 :         lua_pushstring(L, context);</span>
+<span class="lineNum">    1442 </span><span class="lineCov">          2 :         lua_pushstring(L, exten);</span>
+<span class="lineNum">    1443 </span>            : 
+<span class="lineNum">    1444 </span><span class="lineCov">          2 :         res = lua_pcall(L, 2, 0, error_func);</span>
+<span class="lineNum">    1445 </span><span class="lineCov">          2 :         if (res) {</span>
+<span class="lineNum">    1446 </span><span class="lineCov">          2 :                 if (res == LUA_ERRRUN) {</span>
+<span class="lineNum">    1447 </span><span class="lineCov">          2 :                         res = -1;</span>
+<span class="lineNum">    1448 </span><span class="lineCov">          2 :                         if (lua_isnumber(L, -1)) {</span>
+<span class="lineNum">    1449 </span><span class="lineCov">          2 :                                 res = lua_tointeger(L, -1);</span>
+<span class="lineNum">    1450 </span>            : 
+<span class="lineNum">    1451 </span><span class="lineCov">          2 :                                 if (res == LUA_GOTO_DETECTED) {</span>
+<span class="lineNum">    1452 </span><span class="lineNoCov">          0 :                                         res = 0;</span>
+<span class="lineNum">    1453 </span>            :                                 }
+<span class="lineNum">    1454 </span><span class="lineNoCov">          0 :                         } else if (lua_isstring(L, -1)) {</span>
+<span class="lineNum">    1455 </span><span class="lineNoCov">          0 :                                 const char *error = lua_tostring(L, -1);</span>
+<span class="lineNum">    1456 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Error executing lua extension: %s\n&quot;, error);</span>
+<span class="lineNum">    1457 </span>            :                         }
+<span class="lineNum">    1458 </span><span class="lineNoCov">          0 :                 } else if (res == LUA_ERRERR) {</span>
+<span class="lineNum">    1459 </span><span class="lineNoCov">          0 :                         res = -1;</span>
+<span class="lineNum">    1460 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Error in the lua error handler (this is probably a bug in pbx_lua)\n&quot;);</span>
+<span class="lineNum">    1461 </span><span class="lineNoCov">          0 :                 } else if (res == LUA_ERRMEM) {</span>
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :                         res = -1;</span>
+<span class="lineNum">    1463 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Memory allocation error\n&quot;);</span>
+<span class="lineNum">    1464 </span>            :                 }
+<span class="lineNum">    1465 </span><span class="lineCov">          2 :                 lua_pop(L, 1);</span>
+<span class="lineNum">    1466 </span>            :         }
+<span class="lineNum">    1467 </span><span class="lineCov">          2 :         lua_remove(L, error_func);</span>
+<span class="lineNum">    1468 </span>            : 
+<span class="lineNum">    1469 </span><span class="lineCov">          2 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;autoservice&quot;);</span>
+<span class="lineNum">    1470 </span><span class="lineCov">          2 :         if (lua_toboolean(L, -1)) {</span>
+<span class="lineNum">    1471 </span><span class="lineCov">          2 :                 ast_autoservice_stop(chan);</span>
+<span class="lineNum">    1472 </span>            :         }
+<span class="lineNum">    1473 </span><span class="lineCov">          2 :         lua_pop(L, 1);</span>
+<span class="lineNum">    1474 </span>            : 
+<span class="lineNum">    1475 </span><span class="lineCov">          2 :         if (!chan) lua_close(L);</span>
+<span class="lineNum">    1476 </span><span class="lineCov">          2 :         ast_module_user_remove(u);</span>
+<span class="lineNum">    1477 </span><span class="lineCov">          2 :         return res;</span>
+<span class="lineNum">    1478 </span>            : }
+<span class="lineNum">    1479 </span>            : 
+<span class="lineNum">    1480 </span>            : /*!
+<span class="lineNum">    1481 </span>            :  * \brief Locate an extensions and optionally push the matching function on the
+<span class="lineNum">    1482 </span>            :  * stack
+<span class="lineNum">    1483 </span>            :  *
+<span class="lineNum">    1484 </span>            :  * \param L the lua_State to use
+<span class="lineNum">    1485 </span>            :  * \param context the context to look in
+<span class="lineNum">    1486 </span>            :  * \param exten the extension to look up
+<span class="lineNum">    1487 </span>            :  * \param priority the priority to check, '1' is the only valid priority
+<span class="lineNum">    1488 </span>            :  * \param func the calling func, used to adjust matching behavior between,
+<span class="lineNum">    1489 </span>            :  * match, canmatch, and matchmore
+<span class="lineNum">    1490 </span>            :  * \param push_func whether or not to push the lua function for the given
+<a name="1491"><span class="lineNum">    1491 </span>            :  * extension onto the stack</a>
+<span class="lineNum">    1492 </span>            :  */
+<span class="lineNum">    1493 </span><span class="lineCov">         15 : static int lua_find_extension(lua_State *L, const char *context, const char *exten, int priority, ast_switch_f *func, int push_func)</span>
+<span class="lineNum">    1494 </span>            : {
+<span class="lineNum">    1495 </span>            :         int context_table, context_order_table, i;
+<span class="lineNum">    1496 </span>            : 
+<span class="lineNum">    1497 </span><span class="lineCov">         15 :         ast_debug(2, &quot;Looking up %s@%s:%i\n&quot;, exten, context, priority);</span>
+<span class="lineNum">    1498 </span><span class="lineCov">         15 :         if (priority != 1)</span>
+<span class="lineNum">    1499 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1500 </span>            : 
+<span class="lineNum">    1501 </span>            :         /* load the 'extensions' table */
+<span class="lineNum">    1502 </span><span class="lineCov">         15 :         lua_getglobal(L, &quot;extensions&quot;);</span>
+<span class="lineNum">    1503 </span><span class="lineCov">         15 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">    1504 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to find 'extensions' table in extensions.lua\n&quot;);</span>
+<span class="lineNum">    1505 </span><span class="lineNoCov">          0 :                 lua_pop(L, 1);</span>
+<span class="lineNum">    1506 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1507 </span>            :         }
+<span class="lineNum">    1508 </span>            : 
+<span class="lineNum">    1509 </span>            :         /* load the given context */
+<span class="lineNum">    1510 </span><span class="lineCov">         15 :         lua_getfield(L, -1, context);</span>
+<span class="lineNum">    1511 </span><span class="lineCov">         15 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">    1512 </span><span class="lineNoCov">          0 :                 lua_pop(L, 2);</span>
+<span class="lineNum">    1513 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1514 </span>            :         }
+<span class="lineNum">    1515 </span>            : 
+<span class="lineNum">    1516 </span>            :         /* remove the extensions table */
+<span class="lineNum">    1517 </span><span class="lineCov">         15 :         lua_remove(L, -2);</span>
+<span class="lineNum">    1518 </span>            : 
+<span class="lineNum">    1519 </span><span class="lineCov">         15 :         context_table = lua_gettop(L);</span>
+<span class="lineNum">    1520 </span>            : 
+<span class="lineNum">    1521 </span>            :         /* load the extensions order table for this context */
+<span class="lineNum">    1522 </span><span class="lineCov">         15 :         lua_getfield(L, LUA_REGISTRYINDEX, &quot;extensions_order&quot;);</span>
+<span class="lineNum">    1523 </span><span class="lineCov">         15 :         lua_getfield(L, -1, context);</span>
+<span class="lineNum">    1524 </span>            : 
+<span class="lineNum">    1525 </span><span class="lineCov">         15 :         lua_remove(L, -2);  /* remove the extensions order table */</span>
+<span class="lineNum">    1526 </span>            : 
+<span class="lineNum">    1527 </span><span class="lineCov">         15 :         context_order_table = lua_gettop(L);</span>
+<span class="lineNum">    1528 </span>            : 
+<span class="lineNum">    1529 </span>            :         /* step through the extensions looking for a match */
+<span class="lineNum">    1530 </span>            : #if LUA_VERSION_NUM &lt; 502
+<span class="lineNum">    1531 </span>            :         for (i = 1; i &lt; lua_objlen(L, context_order_table) + 1; i++) {
+<span class="lineNum">    1532 </span>            : #else
+<span class="lineNum">    1533 </span><span class="lineCov">         23 :         for (i = 1; i &lt; lua_rawlen(L, context_order_table) + 1; i++) {</span>
+<span class="lineNum">    1534 </span>            : #endif
+<span class="lineNum">    1535 </span><span class="lineCov">         21 :                 int e_index_copy, match = 0;</span>
+<span class="lineNum">    1536 </span>            :                 const char *e;
+<span class="lineNum">    1537 </span>            : 
+<span class="lineNum">    1538 </span><span class="lineCov">         21 :                 lua_pushinteger(L, i);</span>
+<span class="lineNum">    1539 </span><span class="lineCov">         21 :                 lua_gettable(L, context_order_table);</span>
+<span class="lineNum">    1540 </span><span class="lineCov">         21 :                 lua_gettop(L);</span>
+<span class="lineNum">    1541 </span>            : 
+<span class="lineNum">    1542 </span>            :                 /* copy the key at the top of the stack for use later */
+<span class="lineNum">    1543 </span><span class="lineCov">         21 :                 lua_pushvalue(L, -1);</span>
+<span class="lineNum">    1544 </span><span class="lineCov">         21 :                 e_index_copy = lua_gettop(L);</span>
+<span class="lineNum">    1545 </span>            : 
+<span class="lineNum">    1546 </span><span class="lineCov">         21 :                 if (!(e = lua_tostring(L, e_index_copy))) {</span>
+<span class="lineNum">    1547 </span><span class="lineNoCov">          0 :                         lua_pop(L, 2);</span>
+<span class="lineNum">    1548 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1549 </span>            :                 }
+<span class="lineNum">    1550 </span>            : 
+<span class="lineNum">    1551 </span>            :                 /* make sure this is not the 'include' extension */
+<span class="lineNum">    1552 </span><span class="lineCov">         21 :                 if (!strcasecmp(e, &quot;include&quot;)) {</span>
+<span class="lineNum">    1553 </span><span class="lineNoCov">          0 :                         lua_pop(L, 2);</span>
+<span class="lineNum">    1554 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1555 </span>            :                 }
+<span class="lineNum">    1556 </span>            : 
+<span class="lineNum">    1557 </span><span class="lineCov">         21 :                 if (func == &amp;matchmore)</span>
+<span class="lineNum">    1558 </span><span class="lineCov">          8 :                         match = ast_extension_close(e, exten, E_MATCHMORE);</span>
+<span class="lineNum">    1559 </span><span class="lineCov">         13 :                 else if (func == &amp;canmatch)</span>
+<span class="lineNum">    1560 </span><span class="lineCov">          1 :                         match = ast_extension_close(e, exten, E_CANMATCH);</span>
+<span class="lineNum">    1561 </span>            :                 else
+<span class="lineNum">    1562 </span><span class="lineCov">         12 :                         match = ast_extension_match(e, exten);</span>
+<span class="lineNum">    1563 </span>            : 
+<span class="lineNum">    1564 </span>            :                 /* the extension matching functions return 0 on fail, 1 on
+<span class="lineNum">    1565 </span>            :                  * match, 2 on earlymatch */
+<span class="lineNum">    1566 </span>            : 
+<span class="lineNum">    1567 </span><span class="lineCov">         21 :                 if (!match) {</span>
+<span class="lineNum">    1568 </span>            :                         /* pop the copy and the extension */
+<span class="lineNum">    1569 </span><span class="lineCov">          8 :                         lua_pop(L, 2);</span>
+<span class="lineNum">    1570 </span><span class="lineCov">          8 :                         continue;       /* keep trying */</span>
+<span class="lineNum">    1571 </span>            :                 }
+<span class="lineNum">    1572 </span>            : 
+<span class="lineNum">    1573 </span><span class="lineCov">         13 :                 if (func == &amp;matchmore &amp;&amp; match == 2) {</span>
+<span class="lineNum">    1574 </span>            :                         /* We match an extension ending in '!'. The decision in
+<span class="lineNum">    1575 </span>            :                          * this case is final and counts as no match. */
+<span class="lineNum">    1576 </span><span class="lineNoCov">          0 :                         lua_pop(L, 4);</span>
+<span class="lineNum">    1577 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">    1578 </span>            :                 }
+<span class="lineNum">    1579 </span>            : 
+<span class="lineNum">    1580 </span>            :                 /* remove the context table, the context order table, the
+<span class="lineNum">    1581 </span>            :                  * extension, and the extension copy (or replace the extension
+<span class="lineNum">    1582 </span>            :                  * with the corresponding function) */
+<span class="lineNum">    1583 </span><span class="lineCov">         13 :                 if (push_func) {</span>
+<span class="lineNum">    1584 </span><span class="lineCov">          2 :                         lua_pop(L, 1);  /* pop the copy */</span>
+<span class="lineNum">    1585 </span><span class="lineCov">          2 :                         lua_gettable(L, context_table);</span>
+<span class="lineNum">    1586 </span><span class="lineCov">          2 :                         lua_insert(L, -3);</span>
+<span class="lineNum">    1587 </span><span class="lineCov">          2 :                         lua_pop(L, 2);</span>
+<span class="lineNum">    1588 </span>            :                 } else {
+<span class="lineNum">    1589 </span><span class="lineCov">         11 :                         lua_pop(L, 4);</span>
+<span class="lineNum">    1590 </span>            :                 }
+<span class="lineNum">    1591 </span>            : 
+<span class="lineNum">    1592 </span><span class="lineCov">         13 :                 return 1;</span>
+<span class="lineNum">    1593 </span>            :         }
+<span class="lineNum">    1594 </span>            : 
+<span class="lineNum">    1595 </span>            :         /* load the includes for this context */
+<span class="lineNum">    1596 </span><span class="lineCov">          2 :         lua_getfield(L, context_table, &quot;include&quot;);</span>
+<span class="lineNum">    1597 </span><span class="lineCov">          2 :         if (lua_isnil(L, -1)) {</span>
+<span class="lineNum">    1598 </span><span class="lineCov">          2 :                 lua_pop(L, 3);</span>
+<span class="lineNum">    1599 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">    1600 </span>            :         }
+<span class="lineNum">    1601 </span>            : 
+<span class="lineNum">    1602 </span>            :         /* remove the context and the order table*/
+<span class="lineNum">    1603 </span><span class="lineNoCov">          0 :         lua_remove(L, context_order_table);</span>
+<span class="lineNum">    1604 </span><span class="lineNoCov">          0 :         lua_remove(L, context_table);</span>
+<span class="lineNum">    1605 </span>            : 
+<span class="lineNum">    1606 </span>            :         /* Now try any includes we have in this context */
+<span class="lineNum">    1607 </span><span class="lineNoCov">          0 :         for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1)) {</span>
+<span class="lineNum">    1608 </span><span class="lineNoCov">          0 :                 const char *c = lua_tostring(L, -1);</span>
+<span class="lineNum">    1609 </span><span class="lineNoCov">          0 :                 if (!c)</span>
+<span class="lineNum">    1610 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1611 </span>            : 
+<span class="lineNum">    1612 </span><span class="lineNoCov">          0 :                 if (lua_find_extension(L, c, exten, priority, func, push_func)) {</span>
+<span class="lineNum">    1613 </span>            :                         /* remove the value, the key, and the includes table
+<span class="lineNum">    1614 </span>            :                          * from the stack.  Leave the function behind if
+<span class="lineNum">    1615 </span>            :                          * necessary */
+<span class="lineNum">    1616 </span>            : 
+<span class="lineNum">    1617 </span><span class="lineNoCov">          0 :                         if (push_func)</span>
+<span class="lineNum">    1618 </span><span class="lineNoCov">          0 :                                 lua_insert(L, -4);</span>
+<span class="lineNum">    1619 </span>            : 
+<span class="lineNum">    1620 </span><span class="lineNoCov">          0 :                         lua_pop(L, 3);</span>
+<span class="lineNum">    1621 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">    1622 </span>            :                 }
+<span class="lineNum">    1623 </span>            :         }
+<span class="lineNum">    1624 </span>            : 
+<span class="lineNum">    1625 </span>            :         /* pop the includes table */
+<span class="lineNum">    1626 </span><span class="lineNoCov">          0 :         lua_pop(L, 1);</span>
+<span class="lineNum">    1627 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1628 </span>            : }
+<span class="lineNum">    1629 </span>            : 
+<span class="lineNum">    1630 </span>            : static struct ast_switch lua_switch = {
+<span class="lineNum">    1631 </span>            :         .name           = &quot;Lua&quot;,
+<span class="lineNum">    1632 </span>            :         .description    = &quot;Lua PBX Switch&quot;,
+<span class="lineNum">    1633 </span>            :         .exists         = exists,
+<span class="lineNum">    1634 </span>            :         .canmatch       = canmatch,
+<span class="lineNum">    1635 </span>            :         .exec           = exec,
+<span class="lineNum">    1636 </span>            :         .matchmore      = matchmore,
+<span class="lineNum">    1637 </span>            : };
+<a name="1638"><span class="lineNum">    1638 </span>            : </a>
+<span class="lineNum">    1639 </span>            : 
+<span class="lineNum">    1640 </span><span class="lineCov">       1117 : static int load_or_reload_lua_stuff(void)</span>
+<span class="lineNum">    1641 </span>            : {
+<span class="lineNum">    1642 </span><span class="lineCov">       1117 :         int res = AST_MODULE_LOAD_SUCCESS;</span>
+<span class="lineNum">    1643 </span><span class="lineCov">       1117 :         int loaded = 0;</span>
+<span class="lineNum">    1644 </span>            : 
+<span class="lineNum">    1645 </span><span class="lineCov">       1117 :         lua_State *L = luaL_newstate();</span>
+<span class="lineNum">    1646 </span><span class="lineCov">       1117 :         if (!L) {</span>
+<span class="lineNum">    1647 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Error allocating lua_State, no memory\n&quot;);</span>
+<span class="lineNum">    1648 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">    1649 </span>            :         }
+<span class="lineNum">    1650 </span>            : 
+<span class="lineNum">    1651 </span><span class="lineCov">       1117 :         loaded = lua_reload_extensions(L);</span>
+<span class="lineNum">    1652 </span><span class="lineCov">       1117 :         if (loaded) {</span>
+<span class="lineNum">    1653 </span><span class="lineCov">       1115 :                 const char *error = lua_tostring(L, -1);</span>
+<span class="lineNum">    1654 </span><span class="lineCov">       1115 :                 ast_log(LOG_ERROR, &quot;Error loading extensions.lua: %s\n&quot;, error);</span>
+<span class="lineNum">    1655 </span>            : 
+<span class="lineNum">    1656 </span><span class="lineCov">       1115 :                 if (loaded &lt; 0) {</span>
+<span class="lineNum">    1657 </span><span class="lineCov">       1114 :                         res = AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">    1658 </span>            :                 } else {
+<span class="lineNum">    1659 </span><span class="lineCov">          1 :                         res = AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">    1660 </span>            :                 }
+<span class="lineNum">    1661 </span>            :         }
+<span class="lineNum">    1662 </span>            : 
+<span class="lineNum">    1663 </span><span class="lineCov">       1117 :         lua_close(L);</span>
+<span class="lineNum">    1664 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="1665"><span class="lineNum">    1665 </span>            : }</a>
+<span class="lineNum">    1666 </span>            : 
+<span class="lineNum">    1667 </span><span class="lineCov">          2 : static int unload_module(void)</span>
+<span class="lineNum">    1668 </span>            : {
+<span class="lineNum">    1669 </span><span class="lineCov">          2 :         ast_context_destroy(NULL, registrar);</span>
+<span class="lineNum">    1670 </span><span class="lineCov">          2 :         ast_unregister_switch(&amp;lua_switch);</span>
+<span class="lineNum">    1671 </span><span class="lineCov">          2 :         lua_free_extensions();</span>
+<span class="lineNum">    1672 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="1673"><span class="lineNum">    1673 </span>            : }</a>
+<span class="lineNum">    1674 </span>            : 
+<span class="lineNum">    1675 </span><span class="lineNoCov">          0 : static int reload(void)</span>
+<span class="lineNum">    1676 </span>            : {
+<span class="lineNum">    1677 </span><span class="lineNoCov">          0 :         return load_or_reload_lua_stuff();</span>
+<a name="1678"><span class="lineNum">    1678 </span>            : }</a>
+<span class="lineNum">    1679 </span>            : 
+<span class="lineNum">    1680 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">    1681 </span>            : {
+<span class="lineNum">    1682 </span>            :         int res;
+<span class="lineNum">    1683 </span>            : 
+<span class="lineNum">    1684 </span><span class="lineCov">       1117 :         if ((res = load_or_reload_lua_stuff()))</span>
+<span class="lineNum">    1685 </span><span class="lineCov">       1115 :                 return res;</span>
+<span class="lineNum">    1686 </span>            : 
+<span class="lineNum">    1687 </span><span class="lineCov">          2 :         if (ast_register_switch(&amp;lua_switch)) {</span>
+<span class="lineNum">    1688 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to register LUA PBX switch\n&quot;);</span>
+<span class="lineNum">    1689 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_FAILURE;</span>
+<span class="lineNum">    1690 </span>            :         }
+<span class="lineNum">    1691 </span>            : 
+<span class="lineNum">    1692 </span><span class="lineCov">          2 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="1693"><span class="lineNum">    1693 </span>            : }</a>
+<span class="lineNum">    1694 </span>            : 
+<span class="lineNum">    1695 </span><span class="lineCov">       4541 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS, &quot;Lua PBX Switch&quot;,</span>
+<span class="lineNum">    1696 </span>            :         .support_level = AST_MODULE_SUPPORT_EXTENDED,
+<span class="lineNum">    1697 </span>            :         .load = load_module,
+<span class="lineNum">    1698 </span>            :         .unload = unload_module,
+<span class="lineNum">    1699 </span>            :         .reload = reload,
+<span class="lineNum">    1700 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

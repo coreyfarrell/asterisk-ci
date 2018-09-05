@@ -1,0 +1,1701 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/translate.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - translate.c<span style="font-size: 80%;"> (source / <a href="translate.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">466</td>
+            <td class="headerCovTableEntry">775</td>
+            <td class="headerCovTableEntryLo">60.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">35</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntryMed">83.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Translate via the use of pseudo channels
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      33 </span>            : #include &lt;sys/resource.h&gt;
+<span class="lineNum">      34 </span>            : #include &lt;math.h&gt;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/lock.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/translate.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/sched.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/term.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/format.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/linkedlists.h&quot;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*! \todo
+<span class="lineNum">      48 </span>            :  * TODO: sample frames for each supported input format.
+<span class="lineNum">      49 </span>            :  * We build this on the fly, by taking an SLIN frame and using
+<span class="lineNum">      50 </span>            :  * the existing converter to play with it.
+<span class="lineNum">      51 </span>            :  */
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : /*! max sample recalc */
+<span class="lineNum">      54 </span>            : #define MAX_RECALC 1000
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : /*! \brief the list of translators */
+<span class="lineNum">      57 </span>            : static AST_RWLIST_HEAD_STATIC(translators, ast_translator);
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : struct translator_path {
+<span class="lineNum">      60 </span>            :         struct ast_translator *step;       /*!&lt; Next step translator */
+<span class="lineNum">      61 </span>            :         uint32_t table_cost;               /*!&lt; Complete table cost to destination */
+<span class="lineNum">      62 </span>            :         uint8_t multistep;                 /*!&lt; Multiple conversions required for this translation */
+<span class="lineNum">      63 </span>            : };
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : /*!
+<span class="lineNum">      66 </span>            :  * \brief a matrix that, for any pair of supported formats,
+<span class="lineNum">      67 </span>            :  * indicates the total cost of translation and the first step.
+<span class="lineNum">      68 </span>            :  * The full path can be reconstricted iterating on the matrix
+<span class="lineNum">      69 </span>            :  * until step-&gt;dstfmt == desired_format.
+<span class="lineNum">      70 </span>            :  *
+<span class="lineNum">      71 </span>            :  * Array indexes are 'src' and 'dest', in that order.
+<span class="lineNum">      72 </span>            :  *
+<span class="lineNum">      73 </span>            :  * Note: the lock in the 'translators' list is also used to protect
+<span class="lineNum">      74 </span>            :  * this structure.
+<span class="lineNum">      75 </span>            :  */
+<span class="lineNum">      76 </span>            : static struct translator_path **__matrix;
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : /*!
+<span class="lineNum">      79 </span>            :  * \brief table for converting index to format values.
+<span class="lineNum">      80 </span>            :  *
+<span class="lineNum">      81 </span>            :  * \note this table is protected by the table_lock.
+<span class="lineNum">      82 </span>            :  */
+<span class="lineNum">      83 </span>            : static unsigned int *__indextable;
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            : /*! protects the __indextable for resizing */
+<span class="lineNum">      86 </span>            : static ast_rwlock_t tablelock;
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span>            : /* index size starts at this*/
+<span class="lineNum">      89 </span>            : #define INIT_INDEX 32
+<span class="lineNum">      90 </span>            : /* index size grows by this as necessary */
+<span class="lineNum">      91 </span>            : #define GROW_INDEX 16
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : /*! the current largest index used by the __matrix and __indextable arrays*/
+<span class="lineNum">      94 </span>            : static int cur_max_index;
+<span class="lineNum">      95 </span>            : /*! the largest index that can be used in either the __indextable or __matrix before resize must occur */
+<span class="lineNum">      96 </span>            : static int index_size;
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            : static void matrix_rebuild(int samples);
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            : /*!
+<span class="lineNum">     101 </span>            :  * \internal
+<a name="102"><span class="lineNum">     102 </span>            :  * \brief converts codec id to index value.</a>
+<span class="lineNum">     103 </span>            :  */
+<span class="lineNum">     104 </span><span class="lineCov">     576050 : static int codec_to_index(unsigned int id)</span>
+<span class="lineNum">     105 </span>            : {
+<span class="lineNum">     106 </span>            :         int x;
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">     576050 :         ast_rwlock_rdlock(&amp;tablelock);</span>
+<span class="lineNum">     109 </span><span class="lineCov">    7645320 :         for (x = 0; x &lt; cur_max_index; x++) {</span>
+<span class="lineNum">     110 </span><span class="lineCov">    7611630 :                 if (__indextable[x] == id) {</span>
+<span class="lineNum">     111 </span>            :                         /* format already exists in index2format table */
+<span class="lineNum">     112 </span><span class="lineCov">     542360 :                         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     113 </span><span class="lineCov">     542360 :                         return x;</span>
+<span class="lineNum">     114 </span>            :                 }
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span><span class="lineCov">      33690 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     117 </span><span class="lineCov">      33690 :         return -1; /* not found */</span>
+<span class="lineNum">     118 </span>            : }
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : /*!
+<span class="lineNum">     121 </span>            :  * \internal
+<a name="122"><span class="lineNum">     122 </span>            :  * \brief converts codec to index value.</a>
+<span class="lineNum">     123 </span>            :  */
+<span class="lineNum">     124 </span><span class="lineCov">     530008 : static int codec2index(struct ast_codec *codec)</span>
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span><span class="lineCov">     530008 :         return codec_to_index(codec-&gt;id);</span>
+<span class="lineNum">     127 </span>            : }
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : /*!
+<span class="lineNum">     130 </span>            :  * \internal
+<a name="131"><span class="lineNum">     131 </span>            :  * \brief converts format to codec index value.</a>
+<span class="lineNum">     132 </span>            :  */
+<span class="lineNum">     133 </span><span class="lineCov">      46042 : static int format2index(struct ast_format *format)</span>
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span><span class="lineCov">      46042 :         return codec_to_index(ast_format_get_codec_id(format));</span>
+<span class="lineNum">     136 </span>            : }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : /*!
+<span class="lineNum">     139 </span>            :  * \internal
+<span class="lineNum">     140 </span>            :  * \brief add a new codec to the matrix and index table structures.
+<span class="lineNum">     141 </span>            :  *
+<span class="lineNum">     142 </span>            :  * \note it is perfectly safe to call this on codecs already indexed.
+<span class="lineNum">     143 </span>            :  *
+<span class="lineNum">     144 </span>            :  * \retval 0, success
+<a name="145"><span class="lineNum">     145 </span>            :  * \retval -1, matrix and index table need to be resized</a>
+<span class="lineNum">     146 </span>            :  */
+<span class="lineNum">     147 </span><span class="lineCov">     265004 : static int add_codec2index(struct ast_codec *codec)</span>
+<span class="lineNum">     148 </span>            : {
+<span class="lineNum">     149 </span><span class="lineCov">     265004 :         if (codec2index(codec) != -1) {</span>
+<span class="lineNum">     150 </span>            :                 /* format is already already indexed */
+<span class="lineNum">     151 </span><span class="lineCov">     231320 :                 return 0;</span>
+<span class="lineNum">     152 </span>            :         }
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">      33684 :         ast_rwlock_wrlock(&amp;tablelock);</span>
+<span class="lineNum">     155 </span><span class="lineCov">      33684 :         if (cur_max_index == (index_size)) {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                 ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 return -1; /* hit max length */</span>
+<span class="lineNum">     158 </span>            :         }
+<span class="lineNum">     159 </span><span class="lineCov">      33684 :         __indextable[cur_max_index] = codec-&gt;id;</span>
+<span class="lineNum">     160 </span><span class="lineCov">      33684 :         cur_max_index++;</span>
+<span class="lineNum">     161 </span><span class="lineCov">      33684 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineCov">      33684 :         return 0;</span>
+<span class="lineNum">     164 </span>            : }
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            : /*!
+<span class="lineNum">     167 </span>            :  * \internal
+<a name="168"><span class="lineNum">     168 </span>            :  * \brief converts index value back to codec</a>
+<span class="lineNum">     169 </span>            :  */
+<span class="lineNum">     170 </span><span class="lineCov">      17520 : static struct ast_codec *index2codec(int index)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span>            :         struct ast_codec *codec;
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span><span class="lineCov">      17520 :         if (index &gt;= cur_max_index) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     176 </span>            :         }
+<span class="lineNum">     177 </span><span class="lineCov">      17520 :         ast_rwlock_rdlock(&amp;tablelock);</span>
+<span class="lineNum">     178 </span><span class="lineCov">      17520 :         codec = ast_codec_get_by_id(__indextable[index]);</span>
+<span class="lineNum">     179 </span><span class="lineCov">      17520 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">      17520 :         return codec;</span>
+<span class="lineNum">     182 </span>            : }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            : /*!
+<span class="lineNum">     185 </span>            :  * \internal
+<span class="lineNum">     186 </span>            :  * \brief resize both the matrix and index table so they can represent
+<span class="lineNum">     187 </span>            :  * more translators
+<span class="lineNum">     188 </span>            :  *
+<span class="lineNum">     189 </span>            :  * \note _NO_ locks can be held prior to calling this function
+<span class="lineNum">     190 </span>            :  *
+<span class="lineNum">     191 </span>            :  * \retval 0, success
+<a name="192"><span class="lineNum">     192 </span>            :  * \retval -1, failure.  Old matrix and index table can still be used though</a>
+<span class="lineNum">     193 </span>            :  */
+<span class="lineNum">     194 </span><span class="lineCov">       1124 : static int matrix_resize(int init)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span><span class="lineCov">       1124 :         struct translator_path **tmp_matrix = NULL;</span>
+<span class="lineNum">     197 </span><span class="lineCov">       1124 :         unsigned int *tmp_table = NULL;</span>
+<span class="lineNum">     198 </span>            :         int old_index;
+<span class="lineNum">     199 </span>            :         int x;
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span><span class="lineCov">       1124 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">     202 </span><span class="lineCov">       1124 :         ast_rwlock_wrlock(&amp;tablelock);</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">       1124 :         old_index = index_size;</span>
+<span class="lineNum">     205 </span><span class="lineCov">       1124 :         if (init) {</span>
+<span class="lineNum">     206 </span><span class="lineCov">       1124 :                 index_size += INIT_INDEX;</span>
+<span class="lineNum">     207 </span>            :         } else {
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 index_size += GROW_INDEX;</span>
+<span class="lineNum">     209 </span>            :         }
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            :         /* make new 2d array of translator_path structures */
+<span class="lineNum">     212 </span><span class="lineCov">       1124 :         if (!(tmp_matrix = ast_calloc(1, sizeof(struct translator_path *) * (index_size)))) {</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 goto resize_cleanup;</span>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">      37092 :         for (x = 0; x &lt; index_size; x++) {</span>
+<span class="lineNum">     217 </span><span class="lineCov">      35968 :                 if (!(tmp_matrix[x] = ast_calloc(1, sizeof(struct translator_path) * (index_size)))) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                         goto resize_cleanup;</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            :         }
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span>            :         /* make new index table */
+<span class="lineNum">     223 </span><span class="lineCov">       1124 :         if (!(tmp_table = ast_calloc(1, sizeof(unsigned int) * index_size))) {</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 goto resize_cleanup;</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span>            :         /* if everything went well this far, free the old and use the new */
+<span class="lineNum">     228 </span><span class="lineCov">       1124 :         if (!init) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; old_index; x++) {</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                         ast_free(__matrix[x]);</span>
+<span class="lineNum">     231 </span>            :                 }
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 ast_free(__matrix);</span>
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 memcpy(tmp_table, __indextable, sizeof(unsigned int) * old_index);</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 ast_free(__indextable);</span>
+<span class="lineNum">     236 </span>            :         }
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            :         /* now copy them over */
+<span class="lineNum">     239 </span><span class="lineCov">       1124 :         __matrix = tmp_matrix;</span>
+<span class="lineNum">     240 </span><span class="lineCov">       1124 :         __indextable = tmp_table;</span>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineCov">       1124 :         matrix_rebuild(0);</span>
+<span class="lineNum">     243 </span><span class="lineCov">       1124 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     244 </span><span class="lineCov">       1124 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 : resize_cleanup:</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         if (tmp_matrix) {</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; index_size; x++) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_free(tmp_matrix[x]);</span>
+<span class="lineNum">     254 </span>            :                 }
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 ast_free(tmp_matrix);</span>
+<span class="lineNum">     256 </span>            :         }
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :         ast_free(tmp_table);</span>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">     260 </span>            : }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span>            : /*!
+<span class="lineNum">     263 </span>            :  * \internal
+<span class="lineNum">     264 </span>            :  * \brief reinitialize the __matrix during matrix rebuild
+<span class="lineNum">     265 </span>            :  *
+<a name="266"><span class="lineNum">     266 </span>            :  * \note must be protected by the translators list lock</a>
+<span class="lineNum">     267 </span>            :  */
+<span class="lineNum">     268 </span><span class="lineCov">     133626 : static void matrix_clear(void)</span>
+<span class="lineNum">     269 </span>            : {
+<span class="lineNum">     270 </span>            :         int x;
+<span class="lineNum">     271 </span><span class="lineCov">    4409658 :         for (x = 0; x &lt; index_size; x++) {</span>
+<span class="lineNum">     272 </span><span class="lineCov">    4276032 :                 memset(__matrix[x], '\0', sizeof(struct translator_path) * (index_size));</span>
+<span class="lineNum">     273 </span>            :         }
+<span class="lineNum">     274 </span><span class="lineCov">     133626 : }</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : /*!
+<span class="lineNum">     277 </span>            :  * \internal
+<span class="lineNum">     278 </span>            :  * \brief get a matrix entry
+<span class="lineNum">     279 </span>            :  *
+<a name="280"><span class="lineNum">     280 </span>            :  * \note This function must be protected by the translators list lock</a>
+<span class="lineNum">     281 </span>            :  */
+<span class="lineNum">     282 </span><span class="lineCov">23804644427 : static struct translator_path *matrix_get(unsigned int x, unsigned int y)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineCov">23804644427 :         return __matrix[x] + y;</span>
+<span class="lineNum">     285 </span>            : }
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            : /*
+<span class="lineNum">     288 </span>            :  * wrappers around the translator routines.
+<a name="289"><span class="lineNum">     289 </span>            :  */</a>
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span><span class="lineCov">      42580 : static void destroy(struct ast_trans_pvt *pvt)</span>
+<span class="lineNum">     292 </span>            : {
+<span class="lineNum">     293 </span><span class="lineCov">      42580 :         struct ast_translator *t = pvt-&gt;t;</span>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineCov">      42580 :         if (t-&gt;destroy) {</span>
+<span class="lineNum">     296 </span><span class="lineCov">      17702 :                 t-&gt;destroy(pvt);</span>
+<span class="lineNum">     297 </span>            :         }
+<span class="lineNum">     298 </span><span class="lineCov">      42580 :         ao2_cleanup(pvt-&gt;f.subclass.format);</span>
+<span class="lineNum">     299 </span><span class="lineCov">      42580 :         if (pvt-&gt;explicit_dst) {</span>
+<span class="lineNum">     300 </span><span class="lineCov">       4325 :                 ao2_ref(pvt-&gt;explicit_dst, -1);</span>
+<span class="lineNum">     301 </span><span class="lineCov">       4325 :                 pvt-&gt;explicit_dst = NULL;</span>
+<span class="lineNum">     302 </span>            :         }
+<span class="lineNum">     303 </span><span class="lineCov">      42580 :         ast_free(pvt);</span>
+<span class="lineNum">     304 </span><span class="lineCov">      42580 :         ast_module_unref(t-&gt;module);</span>
+<span class="lineNum">     305 </span><span class="lineCov">      42580 : }</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            : /*!
+<span class="lineNum">     308 </span>            :  * \brief Allocate the descriptor, required outbuf space,
+<a name="309"><span class="lineNum">     309 </span>            :  * and possibly desc.</a>
+<span class="lineNum">     310 </span>            :  */
+<span class="lineNum">     311 </span><span class="lineCov">      42580 : static struct ast_trans_pvt *newpvt(struct ast_translator *t, struct ast_format *explicit_dst)</span>
+<span class="lineNum">     312 </span>            : {
+<span class="lineNum">     313 </span>            :         struct ast_trans_pvt *pvt;
+<span class="lineNum">     314 </span>            :         int len;
+<span class="lineNum">     315 </span>            :         char *ofs;
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span>            :         /*
+<span class="lineNum">     318 </span>            :          * compute the required size adding private descriptor,
+<span class="lineNum">     319 </span>            :          * buffer, AST_FRIENDLY_OFFSET.
+<span class="lineNum">     320 </span>            :          */
+<span class="lineNum">     321 </span><span class="lineCov">      42580 :         len = sizeof(*pvt) + t-&gt;desc_size;</span>
+<span class="lineNum">     322 </span><span class="lineCov">      42580 :         if (t-&gt;buf_size)</span>
+<span class="lineNum">     323 </span><span class="lineCov">      42580 :                 len += AST_FRIENDLY_OFFSET + t-&gt;buf_size;</span>
+<span class="lineNum">     324 </span><span class="lineCov">      42580 :         pvt = ast_calloc(1, len);</span>
+<span class="lineNum">     325 </span><span class="lineCov">      42580 :         if (!pvt) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span><span class="lineCov">      42580 :         pvt-&gt;t = t;</span>
+<span class="lineNum">     329 </span><span class="lineCov">      42580 :         ofs = (char *)(pvt + 1);        /* pointer to data space */</span>
+<span class="lineNum">     330 </span><span class="lineCov">      42580 :         if (t-&gt;desc_size) {          /* first comes the descriptor */</span>
+<span class="lineNum">     331 </span><span class="lineCov">      31132 :                 pvt-&gt;pvt = ofs;</span>
+<span class="lineNum">     332 </span><span class="lineCov">      31132 :                 ofs += t-&gt;desc_size;</span>
+<span class="lineNum">     333 </span>            :         }
+<span class="lineNum">     334 </span><span class="lineCov">      42580 :         if (t-&gt;buf_size) {/* finally buffer and header */</span>
+<span class="lineNum">     335 </span><span class="lineCov">      42580 :                 pvt-&gt;outbuf.c = ofs + AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     336 </span>            :         }
+<span class="lineNum">     337 </span>            :         /*
+<span class="lineNum">     338 </span>            :          * If the format has an attribute module, explicit_dst includes the (joined)
+<span class="lineNum">     339 </span>            :          * result of the SDP negotiation. For example with the Opus Codec, the format
+<span class="lineNum">     340 </span>            :          * knows whether both parties want to do forward-error correction (FEC).
+<span class="lineNum">     341 </span>            :          */
+<span class="lineNum">     342 </span><span class="lineCov">      42580 :         pvt-&gt;explicit_dst = ao2_bump(explicit_dst);</span>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineCov">      42580 :         ast_module_ref(t-&gt;module);</span>
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span>            :         /* call local init routine, if present */
+<span class="lineNum">     347 </span><span class="lineCov">      42580 :         if (t-&gt;newpvt &amp;&amp; t-&gt;newpvt(pvt)) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 ast_free(pvt);</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 ast_module_unref(t-&gt;module);</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     351 </span>            :         }
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            :         /* Setup normal static translation frame. */
+<span class="lineNum">     354 </span><span class="lineCov">      42580 :         pvt-&gt;f.frametype = AST_FRAME_VOICE;</span>
+<span class="lineNum">     355 </span><span class="lineCov">      42580 :         pvt-&gt;f.mallocd = 0;</span>
+<span class="lineNum">     356 </span><span class="lineCov">      42580 :         pvt-&gt;f.offset = AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     357 </span><span class="lineCov">      42580 :         pvt-&gt;f.src = pvt-&gt;t-&gt;name;</span>
+<span class="lineNum">     358 </span><span class="lineCov">      42580 :         pvt-&gt;f.data.ptr = pvt-&gt;outbuf.c;</span>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span>            :         /*
+<span class="lineNum">     361 </span>            :          * If the translator has not provided a format
+<span class="lineNum">     362 </span>            :          * A) use the joined one,
+<span class="lineNum">     363 </span>            :          * B) use the cached one, or
+<span class="lineNum">     364 </span>            :          * C) create one.
+<span class="lineNum">     365 </span>            :          */
+<span class="lineNum">     366 </span><span class="lineCov">      42580 :         if (!pvt-&gt;f.subclass.format) {</span>
+<span class="lineNum">     367 </span><span class="lineCov">      42486 :                 pvt-&gt;f.subclass.format = ao2_bump(pvt-&gt;explicit_dst);</span>
+<span class="lineNum">     368 </span>            : 
+<span class="lineNum">     369 </span><span class="lineCov">      42486 :                 if (!pvt-&gt;f.subclass.format &amp;&amp; !ast_strlen_zero(pvt-&gt;t-&gt;format)) {</span>
+<span class="lineNum">     370 </span><span class="lineCov">      38255 :                         pvt-&gt;f.subclass.format = ast_format_cache_get(pvt-&gt;t-&gt;format);</span>
+<span class="lineNum">     371 </span>            :                 }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span><span class="lineCov">      42486 :                 if (!pvt-&gt;f.subclass.format) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                         struct ast_codec *codec = ast_codec_get(t-&gt;dst_codec.name,</span>
+<span class="lineNum">     375 </span>            :                                 t-&gt;dst_codec.type, t-&gt;dst_codec.sample_rate);
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                         if (!codec) {</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Unable to get destination codec\n&quot;);</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                                 destroy(pvt);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">     380 </span>            :                         }
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                         pvt-&gt;f.subclass.format = ast_format_create(codec);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                         ao2_ref(codec, -1);</span>
+<span class="lineNum">     383 </span>            :                 }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">      42486 :                 if (!pvt-&gt;f.subclass.format) {</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to create format\n&quot;);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         destroy(pvt);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     389 </span>            :                 }
+<span class="lineNum">     390 </span>            :         }
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">      42580 :         return pvt;</span>
+<span class="lineNum">     393 </span>            : }
+<a name="394"><span class="lineNum">     394 </span>            : </a>
+<span class="lineNum">     395 </span>            : /*! \brief framein wrapper, deals with bound checks.  */
+<span class="lineNum">     396 </span><span class="lineCov">    3853653 : static int framein(struct ast_trans_pvt *pvt, struct ast_frame *f)</span>
+<span class="lineNum">     397 </span>            : {
+<span class="lineNum">     398 </span>            :         /* Copy the last in jb timing info to the pvt */
+<span class="lineNum">     399 </span><span class="lineCov">    3853653 :         ast_copy_flags(&amp;pvt-&gt;f, f, AST_FRFLAG_HAS_TIMING_INFO);</span>
+<span class="lineNum">     400 </span><span class="lineCov">    3853653 :         pvt-&gt;f.ts = f-&gt;ts;</span>
+<span class="lineNum">     401 </span><span class="lineCov">    3853653 :         pvt-&gt;f.len = f-&gt;len;</span>
+<span class="lineNum">     402 </span><span class="lineCov">    3853653 :         pvt-&gt;f.seqno = f-&gt;seqno;</span>
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">    3853653 :         if (f-&gt;samples == 0) {</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;no samples for %s\n&quot;, pvt-&gt;t-&gt;name);</span>
+<span class="lineNum">     406 </span>            :         }
+<span class="lineNum">     407 </span><span class="lineCov">    3853653 :         if (pvt-&gt;t-&gt;buffer_samples) {     /* do not pass empty frames to callback */</span>
+<span class="lineNum">     408 </span><span class="lineCov">    3317842 :                 if (f-&gt;datalen == 0) { /* perform native PLC if available */</span>
+<span class="lineNum">     409 </span>            :                         /* If the codec has native PLC, then do that */
+<span class="lineNum">     410 </span><span class="lineCov">        312 :                         if (!pvt-&gt;t-&gt;native_plc)</span>
+<span class="lineNum">     411 </span><span class="lineCov">          6 :                                 return 0;</span>
+<span class="lineNum">     412 </span>            :                 }
+<span class="lineNum">     413 </span><span class="lineCov">    3317836 :                 if (pvt-&gt;samples + f-&gt;samples &gt; pvt-&gt;t-&gt;buffer_samples) {</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Out of buffer space\n&quot;);</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     416 </span>            :                 }
+<span class="lineNum">     417 </span>            :         }
+<span class="lineNum">     418 </span>            :         /* we require a framein routine, wouldn't know how to do
+<span class="lineNum">     419 </span>            :          * it otherwise.
+<span class="lineNum">     420 </span>            :          */
+<span class="lineNum">     421 </span><span class="lineCov">    3853647 :         return pvt-&gt;t-&gt;framein(pvt, f);</span>
+<span class="lineNum">     422 </span>            : }
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span>            : /*! \brief generic frameout routine.
+<span class="lineNum">     425 </span>            :  * If samples and datalen are 0, take whatever is in pvt
+<span class="lineNum">     426 </span>            :  * and reset them, otherwise take the values in the caller and
+<a name="427"><span class="lineNum">     427 </span>            :  * leave alone the pvt values.</a>
+<span class="lineNum">     428 </span>            :  */
+<span class="lineNum">     429 </span><span class="lineCov">    6084855 : struct ast_frame *ast_trans_frameout(struct ast_trans_pvt *pvt,</span>
+<span class="lineNum">     430 </span>            :         int datalen, int samples)
+<span class="lineNum">     431 </span>            : {
+<span class="lineNum">     432 </span><span class="lineCov">    6084855 :         struct ast_frame *f = &amp;pvt-&gt;f;</span>
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineCov">    6084855 :         if (samples) {</span>
+<span class="lineNum">     435 </span><span class="lineCov">     545913 :                 f-&gt;samples = samples;</span>
+<span class="lineNum">     436 </span>            :         } else {
+<span class="lineNum">     437 </span><span class="lineCov">    5538942 :                 if (pvt-&gt;samples == 0) {</span>
+<span class="lineNum">     438 </span><span class="lineCov">    2485088 :                         return NULL;</span>
+<span class="lineNum">     439 </span>            :                 }
+<span class="lineNum">     440 </span><span class="lineCov">    3053854 :                 f-&gt;samples = pvt-&gt;samples;</span>
+<span class="lineNum">     441 </span><span class="lineCov">    3053854 :                 pvt-&gt;samples = 0;</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span><span class="lineCov">    3599767 :         if (datalen) {</span>
+<span class="lineNum">     444 </span><span class="lineCov">     658213 :                 f-&gt;datalen = datalen;</span>
+<span class="lineNum">     445 </span><span class="lineCov">     658213 :                 f-&gt;data.ptr = pvt-&gt;outbuf.c;</span>
+<span class="lineNum">     446 </span>            :         } else {
+<span class="lineNum">     447 </span><span class="lineCov">    2941554 :                 f-&gt;datalen = pvt-&gt;datalen;</span>
+<span class="lineNum">     448 </span><span class="lineCov">    2941554 :                 if (!f-&gt;datalen) {</span>
+<span class="lineNum">     449 </span><span class="lineCov">     150415 :                         f-&gt;data.ptr = NULL;</span>
+<span class="lineNum">     450 </span>            :                 } else {
+<span class="lineNum">     451 </span><span class="lineCov">    2791139 :                         f-&gt;data.ptr = pvt-&gt;outbuf.c;</span>
+<span class="lineNum">     452 </span>            :                 }
+<span class="lineNum">     453 </span><span class="lineCov">    2941554 :                 pvt-&gt;datalen = 0;</span>
+<span class="lineNum">     454 </span>            :         }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">    3599767 :         return ast_frisolate(f);</span>
+<a name="457"><span class="lineNum">     457 </span>            : }</a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">    5003799 : static struct ast_frame *default_frameout(struct ast_trans_pvt *pvt)</span>
+<span class="lineNum">     460 </span>            : {
+<span class="lineNum">     461 </span><span class="lineCov">    5003799 :         return ast_trans_frameout(pvt, 0, 0);</span>
+<span class="lineNum">     462 </span>            : }
+<span class="lineNum">     463 </span>            : 
+<a name="464"><span class="lineNum">     464 </span>            : /* end of callback wrappers and helpers */</a>
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineCov">       3097 : void ast_translator_free_path(struct ast_trans_pvt *p)</span>
+<span class="lineNum">     467 </span>            : {
+<span class="lineNum">     468 </span><span class="lineCov">       3097 :         struct ast_trans_pvt *pn = p;</span>
+<span class="lineNum">     469 </span><span class="lineCov">       7497 :         while ( (p = pn) ) {</span>
+<span class="lineNum">     470 </span><span class="lineCov">       4400 :                 pn = p-&gt;next;</span>
+<span class="lineNum">     471 </span><span class="lineCov">       4400 :                 destroy(p);</span>
+<span class="lineNum">     472 </span>            :         }
+<span class="lineNum">     473 </span><span class="lineCov">       3097 : }</span>
+<a name="474"><span class="lineNum">     474 </span>            : </a>
+<span class="lineNum">     475 </span>            : /*! \brief Build a chain of translators based upon the given source and dest formats */
+<span class="lineNum">     476 </span><span class="lineCov">      17553 : struct ast_trans_pvt *ast_translator_build_path(struct ast_format *dst, struct ast_format *src)</span>
+<span class="lineNum">     477 </span>            : {
+<span class="lineNum">     478 </span><span class="lineCov">      17553 :         struct ast_trans_pvt *head = NULL, *tail = NULL;</span>
+<span class="lineNum">     479 </span>            :         int src_index, dst_index;
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">      17553 :         src_index = format2index(src);</span>
+<span class="lineNum">     482 </span><span class="lineCov">      17553 :         dst_index = format2index(dst);</span>
+<span class="lineNum">     483 </span>            : 
+<span class="lineNum">     484 </span><span class="lineCov">      17553 :         if (src_index &lt; 0 || dst_index &lt; 0) {</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No translator path: (%s codec is not valid)\n&quot;, src_index &lt; 0 ? &quot;starting&quot; : &quot;ending&quot;);</span>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     487 </span>            :         }
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">      17553 :         AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">      21953 :         while (src_index != dst_index) {</span>
+<span class="lineNum">     492 </span>            :                 struct ast_trans_pvt *cur;
+<span class="lineNum">     493 </span><span class="lineCov">       4400 :                 struct ast_format *explicit_dst = NULL;</span>
+<span class="lineNum">     494 </span><span class="lineCov">       4400 :                 struct ast_translator *t = matrix_get(src_index, dst_index)-&gt;step;</span>
+<span class="lineNum">     495 </span><span class="lineCov">       4400 :                 if (!t) {</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;No translator path from %s to %s\n&quot;,</span>
+<span class="lineNum">     497 </span>            :                                 ast_format_get_name(src), ast_format_get_name(dst));
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :                         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :                         ast_translator_free_path(head);</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     501 </span>            :                 }
+<span class="lineNum">     502 </span><span class="lineCov">       4400 :                 if ((t-&gt;dst_codec.sample_rate == ast_format_get_sample_rate(dst)) &amp;&amp; (t-&gt;dst_codec.type == ast_format_get_type(dst))) {</span>
+<span class="lineNum">     503 </span><span class="lineCov">       4325 :                         explicit_dst = dst;</span>
+<span class="lineNum">     504 </span>            :                 }
+<span class="lineNum">     505 </span><span class="lineCov">       4400 :                 if (!(cur = newpvt(t, explicit_dst))) {</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Failed to build translator step from %s to %s\n&quot;,</span>
+<span class="lineNum">     507 </span>            :                                 ast_format_get_name(src), ast_format_get_name(dst));
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :                         ast_translator_free_path(head);</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :                         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     511 </span>            :                 }
+<span class="lineNum">     512 </span><span class="lineCov">       4400 :                 if (!head) {</span>
+<span class="lineNum">     513 </span><span class="lineCov">       3097 :                         head = cur;</span>
+<span class="lineNum">     514 </span>            :                 } else {
+<span class="lineNum">     515 </span><span class="lineCov">       1303 :                         tail-&gt;next = cur;</span>
+<span class="lineNum">     516 </span>            :                 }
+<span class="lineNum">     517 </span><span class="lineCov">       4400 :                 tail = cur;</span>
+<span class="lineNum">     518 </span><span class="lineCov">       4400 :                 cur-&gt;nextin = cur-&gt;nextout = ast_tv(0, 0);</span>
+<span class="lineNum">     519 </span>            :                 /* Keep going if this isn't the final destination */
+<span class="lineNum">     520 </span><span class="lineCov">       4400 :                 src_index = cur-&gt;t-&gt;dst_fmt_index;</span>
+<span class="lineNum">     521 </span>            :         }
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span><span class="lineCov">      17553 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">     524 </span><span class="lineCov">      17553 :         return head;</span>
+<a name="525"><span class="lineNum">     525 </span>            : }</a>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineCov">        335 : static struct ast_frame *generate_interpolated_slin(struct ast_trans_pvt *p, struct ast_frame *f)</span>
+<span class="lineNum">     528 </span>            : {
+<span class="lineNum">     529 </span><span class="lineCov">        335 :         struct ast_frame res = { AST_FRAME_VOICE };</span>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span>            :         /*
+<span class="lineNum">     532 </span>            :          * If we've gotten here then we should have an interpolated frame that was not handled
+<span class="lineNum">     533 </span>            :          * by the translation codec. So create an interpolated frame in the appropriate format
+<span class="lineNum">     534 </span>            :          * that was going to be written. This frame might be handled later by other resources.
+<span class="lineNum">     535 </span>            :          * For instance, generic plc.
+<span class="lineNum">     536 </span>            :          *
+<span class="lineNum">     537 </span>            :          * Note, generic plc is currently only available for the format type 'slin' (8KHz only -
+<span class="lineNum">     538 </span>            :          * The generic plc code appears to have been based around that). Generic plc is filled
+<span class="lineNum">     539 </span>            :          * in later on frame write.
+<span class="lineNum">     540 </span>            :          */
+<span class="lineNum">     541 </span><span class="lineCov">        342 :         if (!ast_opt_generic_plc || f-&gt;datalen != 0 ||</span>
+<span class="lineNum">     542 </span><span class="lineCov">          7 :                 ast_format_cmp(p-&gt;explicit_dst, ast_format_slin) == AST_FORMAT_CMP_NOT_EQUAL) {</span>
+<span class="lineNum">     543 </span><span class="lineCov">        329 :                 return NULL;</span>
+<span class="lineNum">     544 </span>            :         }
+<span class="lineNum">     545 </span>            : 
+<span class="lineNum">     546 </span><span class="lineCov">          6 :         res.subclass.format = ast_format_cache_get_slin_by_rate(8000); /* ref bumped on dup */</span>
+<span class="lineNum">     547 </span><span class="lineCov">          6 :         res.samples = f-&gt;samples;</span>
+<span class="lineNum">     548 </span><span class="lineCov">          6 :         res.datalen = 0;</span>
+<span class="lineNum">     549 </span><span class="lineCov">          6 :         res.data.ptr = NULL;</span>
+<span class="lineNum">     550 </span><span class="lineCov">          6 :         res.offset = AST_FRIENDLY_OFFSET;</span>
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineCov">          6 :         return ast_frdup(&amp;res);</span>
+<span class="lineNum">     553 </span>            : }
+<a name="554"><span class="lineNum">     554 </span>            : </a>
+<span class="lineNum">     555 </span>            : /*! \brief do the actual translation */
+<span class="lineNum">     556 </span><span class="lineCov">     460088 : struct ast_frame *ast_translate(struct ast_trans_pvt *path, struct ast_frame *f, int consume)</span>
+<span class="lineNum">     557 </span>            : {
+<span class="lineNum">     558 </span><span class="lineCov">     460088 :         struct ast_trans_pvt *p = path;</span>
+<span class="lineNum">     559 </span>            :         struct ast_frame *out;
+<span class="lineNum">     560 </span>            :         struct timeval delivery;
+<span class="lineNum">     561 </span>            :         int has_timing_info;
+<span class="lineNum">     562 </span>            :         long ts;
+<span class="lineNum">     563 </span>            :         long len;
+<span class="lineNum">     564 </span>            :         int seqno;
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span><span class="lineCov">     460088 :         if (f-&gt;frametype == AST_FRAME_RTCP) {</span>
+<span class="lineNum">     567 </span>            :                 /* Just pass the feedback to the right callback, if it exists.
+<span class="lineNum">     568 </span>            :                  * This &quot;translation&quot; does nothing so return a null frame. */
+<span class="lineNum">     569 </span>            :                 struct ast_trans_pvt *tp;
+<span class="lineNum">     570 </span><span class="lineCov">       1831 :                 for (tp = p; tp; tp = tp-&gt;next) {</span>
+<span class="lineNum">     571 </span><span class="lineCov">       1044 :                         if (tp-&gt;t-&gt;feedback)</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :                                 tp-&gt;t-&gt;feedback(tp, f);</span>
+<span class="lineNum">     573 </span>            :                 }
+<span class="lineNum">     574 </span><span class="lineCov">        787 :                 return &amp;ast_null_frame;</span>
+<span class="lineNum">     575 </span>            :         }
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineCov">     459301 :         has_timing_info = ast_test_flag(f, AST_FRFLAG_HAS_TIMING_INFO);</span>
+<span class="lineNum">     578 </span><span class="lineCov">     459301 :         ts = f-&gt;ts;</span>
+<span class="lineNum">     579 </span><span class="lineCov">     459301 :         len = f-&gt;len;</span>
+<span class="lineNum">     580 </span><span class="lineCov">     459301 :         seqno = f-&gt;seqno;</span>
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">     459301 :         if (!ast_tvzero(f-&gt;delivery)) {</span>
+<span class="lineNum">     583 </span><span class="lineCov">     151894 :                 if (!ast_tvzero(path-&gt;nextin)) {</span>
+<span class="lineNum">     584 </span>            :                         /* Make sure this is in line with what we were expecting */
+<span class="lineNum">     585 </span><span class="lineCov">     151465 :                         if (!ast_tveq(path-&gt;nextin, f-&gt;delivery)) {</span>
+<span class="lineNum">     586 </span>            :                                 /* The time has changed between what we expected and this
+<span class="lineNum">     587 </span>            :                                    most recent time on the new packet.  If we have a
+<span class="lineNum">     588 </span>            :                                    valid prediction adjust our output time appropriately */
+<span class="lineNum">     589 </span><span class="lineCov">       1483 :                                 if (!ast_tvzero(path-&gt;nextout)) {</span>
+<span class="lineNum">     590 </span><span class="lineCov">       1483 :                                         path-&gt;nextout = ast_tvadd(path-&gt;nextout,</span>
+<span class="lineNum">     591 </span>            :                                                                   ast_tvsub(f-&gt;delivery, path-&gt;nextin));
+<span class="lineNum">     592 </span>            :                                 }
+<span class="lineNum">     593 </span><span class="lineCov">       1483 :                                 path-&gt;nextin = f-&gt;delivery;</span>
+<span class="lineNum">     594 </span>            :                         }
+<span class="lineNum">     595 </span>            :                 } else {
+<span class="lineNum">     596 </span>            :                         /* This is our first pass.  Make sure the timing looks good */
+<span class="lineNum">     597 </span><span class="lineCov">        429 :                         path-&gt;nextin = f-&gt;delivery;</span>
+<span class="lineNum">     598 </span><span class="lineCov">        429 :                         path-&gt;nextout = f-&gt;delivery;</span>
+<span class="lineNum">     599 </span>            :                 }
+<span class="lineNum">     600 </span>            :                 /* Predict next incoming sample */
+<span class="lineNum">     601 </span><span class="lineCov">     151894 :                 path-&gt;nextin = ast_tvadd(path-&gt;nextin, ast_samp2tv(</span>
+<span class="lineNum">     602 </span><span class="lineCov">     151894 :                          f-&gt;samples, ast_format_get_sample_rate(f-&gt;subclass.format)));</span>
+<span class="lineNum">     603 </span>            :         }
+<span class="lineNum">     604 </span><span class="lineCov">     459301 :         delivery = f-&gt;delivery;</span>
+<span class="lineNum">     605 </span><span class="lineCov">    1037280 :         for (out = f; out &amp;&amp; p ; p = p-&gt;next) {</span>
+<span class="lineNum">     606 </span><span class="lineCov">     577979 :                 struct ast_frame *current = out;</span>
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span>            :                 do {
+<span class="lineNum">     609 </span><span class="lineCov">     577979 :                         framein(p, current);</span>
+<span class="lineNum">     610 </span><span class="lineCov">     577979 :                         current = AST_LIST_NEXT(current, frame_list);</span>
+<span class="lineNum">     611 </span><span class="lineCov">     577979 :                 } while (current);</span>
+<span class="lineNum">     612 </span><span class="lineCov">     577979 :                 if (out != f) {</span>
+<span class="lineNum">     613 </span><span class="lineCov">     118678 :                         ast_frfree(out);</span>
+<span class="lineNum">     614 </span>            :                 }
+<span class="lineNum">     615 </span><span class="lineCov">     577979 :                 out = p-&gt;t-&gt;frameout(p);</span>
+<span class="lineNum">     616 </span>            :         }
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span><span class="lineCov">     459301 :         if (!out) {</span>
+<span class="lineNum">     619 </span><span class="lineCov">        335 :                 out = generate_interpolated_slin(path, f);</span>
+<span class="lineNum">     620 </span>            :         }
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span><span class="lineCov">     459301 :         if (out) {</span>
+<span class="lineNum">     623 </span>            :                 /* we have a frame, play with times */
+<span class="lineNum">     624 </span><span class="lineCov">     458972 :                 if (!ast_tvzero(delivery)) {</span>
+<span class="lineNum">     625 </span><span class="lineCov">     151566 :                         struct ast_frame *current = out;</span>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span>            :                         do {
+<span class="lineNum">     628 </span>            :                                 /* Regenerate prediction after a discontinuity */
+<span class="lineNum">     629 </span><span class="lineCov">     151653 :                                 if (ast_tvzero(path-&gt;nextout)) {</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                                         path-&gt;nextout = ast_tvnow();</span>
+<span class="lineNum">     631 </span>            :                                 }
+<span class="lineNum">     632 </span>            : 
+<span class="lineNum">     633 </span>            :                                 /* Use next predicted outgoing timestamp */
+<span class="lineNum">     634 </span><span class="lineCov">     151653 :                                 current-&gt;delivery = path-&gt;nextout;</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span>            :                                 /* Invalidate prediction if we're entering a silence period */
+<span class="lineNum">     637 </span><span class="lineCov">     151653 :                                 if (current-&gt;frametype == AST_FRAME_CNG) {</span>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                                         path-&gt;nextout = ast_tv(0, 0);</span>
+<span class="lineNum">     639 </span>            :                                 /* Predict next outgoing timestamp from samples in this
+<span class="lineNum">     640 </span>            :                                    frame. */
+<span class="lineNum">     641 </span>            :                                 } else {
+<span class="lineNum">     642 </span><span class="lineCov">     151653 :                                         path-&gt;nextout = ast_tvadd(path-&gt;nextout, ast_samp2tv(</span>
+<span class="lineNum">     643 </span><span class="lineCov">     151653 :                                                 current-&gt;samples, ast_format_get_sample_rate(current-&gt;subclass.format)));</span>
+<span class="lineNum">     644 </span>            :                                 }
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span><span class="lineCov">     151653 :                                 if (f-&gt;samples != current-&gt;samples &amp;&amp; ast_test_flag(current, AST_FRFLAG_HAS_TIMING_INFO)) {</span>
+<span class="lineNum">     647 </span><span class="lineCov">      14428 :                                         ast_debug(4, &quot;Sample size different %d vs %d\n&quot;, f-&gt;samples, current-&gt;samples);</span>
+<span class="lineNum">     648 </span><span class="lineCov">      14428 :                                         ast_clear_flag(current, AST_FRFLAG_HAS_TIMING_INFO);</span>
+<span class="lineNum">     649 </span>            :                                 }
+<span class="lineNum">     650 </span><span class="lineCov">     151653 :                                 current = AST_LIST_NEXT(current, frame_list);</span>
+<span class="lineNum">     651 </span><span class="lineCov">     151653 :                         } while (current);</span>
+<span class="lineNum">     652 </span>            :                 } else {
+<span class="lineNum">     653 </span><span class="lineCov">     307406 :                         out-&gt;delivery = ast_tv(0, 0);</span>
+<span class="lineNum">     654 </span><span class="lineCov">     307406 :                         ast_set2_flag(out, has_timing_info, AST_FRFLAG_HAS_TIMING_INFO);</span>
+<span class="lineNum">     655 </span><span class="lineCov">     307406 :                         if (has_timing_info) {</span>
+<span class="lineNum">     656 </span><span class="lineCov">       1168 :                                 out-&gt;ts = ts;</span>
+<span class="lineNum">     657 </span><span class="lineCov">       1168 :                                 out-&gt;len = len;</span>
+<span class="lineNum">     658 </span><span class="lineCov">       1168 :                                 out-&gt;seqno = seqno;</span>
+<span class="lineNum">     659 </span>            :                         }
+<span class="lineNum">     660 </span>            :                         /* Invalidate prediction if we're entering a silence period */
+<span class="lineNum">     661 </span><span class="lineCov">     307406 :                         if (out-&gt;frametype == AST_FRAME_CNG) {</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                                 path-&gt;nextout = ast_tv(0, 0);</span>
+<span class="lineNum">     663 </span>            :                         }
+<span class="lineNum">     664 </span>            :                 }
+<span class="lineNum">     665 </span>            :         }
+<span class="lineNum">     666 </span><span class="lineCov">     459301 :         if (consume) {</span>
+<span class="lineNum">     667 </span><span class="lineCov">     118306 :                 ast_frfree(f);</span>
+<span class="lineNum">     668 </span>            :         }
+<span class="lineNum">     669 </span><span class="lineCov">     459301 :         return out;</span>
+<span class="lineNum">     670 </span>            : }
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span>            : /*!
+<span class="lineNum">     673 </span>            :  * \internal
+<span class="lineNum">     674 </span>            :  * \brief Compute the computational cost of a single translation step.
+<span class="lineNum">     675 </span>            :  *
+<span class="lineNum">     676 </span>            :  * \note This function is only used to decide which translation path to
+<span class="lineNum">     677 </span>            :  * use between two translators with identical src and dst formats.  Computational
+<span class="lineNum">     678 </span>            :  * cost acts only as a tie breaker. This is done so hardware translators
+<a name="679"><span class="lineNum">     679 </span>            :  * can naturally have precedence over software translators.</a>
+<span class="lineNum">     680 </span>            :  */
+<span class="lineNum">     681 </span><span class="lineCov">     132502 : static void generate_computational_cost(struct ast_translator *t, int seconds)</span>
+<span class="lineNum">     682 </span>            : {
+<span class="lineNum">     683 </span><span class="lineCov">     132502 :         int num_samples = 0;</span>
+<span class="lineNum">     684 </span>            :         struct ast_trans_pvt *pvt;
+<span class="lineNum">     685 </span>            :         struct rusage start;
+<span class="lineNum">     686 </span>            :         struct rusage end;
+<span class="lineNum">     687 </span>            :         int cost;
+<span class="lineNum">     688 </span><span class="lineCov">     132502 :         int out_rate = t-&gt;dst_codec.sample_rate;</span>
+<span class="lineNum">     689 </span>            : 
+<span class="lineNum">     690 </span><span class="lineCov">     132502 :         if (!seconds) {</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                 seconds = 1;</span>
+<span class="lineNum">     692 </span>            :         }
+<span class="lineNum">     693 </span>            : 
+<span class="lineNum">     694 </span>            :         /* If they don't make samples, give them a terrible score */
+<span class="lineNum">     695 </span><span class="lineCov">     132502 :         if (!t-&gt;sample) {</span>
+<span class="lineNum">     696 </span><span class="lineCov">      94322 :                 ast_debug(3, &quot;Translator '%s' does not produce sample frames.\n&quot;, t-&gt;name);</span>
+<span class="lineNum">     697 </span><span class="lineCov">      94322 :                 t-&gt;comp_cost = 999999;</span>
+<span class="lineNum">     698 </span><span class="lineCov">      94322 :                 return;</span>
+<span class="lineNum">     699 </span>            :         }
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">      38180 :         pvt = newpvt(t, NULL);</span>
+<span class="lineNum">     702 </span><span class="lineCov">      38180 :         if (!pvt) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Translator '%s' appears to be broken and will probably fail.\n&quot;, t-&gt;name);</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :                 t-&gt;comp_cost = 999999;</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     706 </span>            :         }
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineCov">      38180 :         getrusage(RUSAGE_SELF, &amp;start);</span>
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span>            :         /* Call the encoder until we've processed the required number of samples */
+<span class="lineNum">     711 </span><span class="lineCov">    3313854 :         while (num_samples &lt; seconds * out_rate) {</span>
+<span class="lineNum">     712 </span><span class="lineCov">    3275674 :                 struct ast_frame *f = t-&gt;sample();</span>
+<span class="lineNum">     713 </span><span class="lineCov">    3275674 :                 if (!f) {</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Translator '%s' failed to produce a sample frame.\n&quot;, t-&gt;name);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :                         destroy(pvt);</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                         t-&gt;comp_cost = 999999;</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     718 </span>            :                 }
+<span class="lineNum">     719 </span><span class="lineCov">    3275674 :                 framein(pvt, f);</span>
+<span class="lineNum">     720 </span><span class="lineCov">    3275674 :                 ast_frfree(f);</span>
+<span class="lineNum">     721 </span><span class="lineCov">    6298623 :                 while ((f = t-&gt;frameout(pvt))) {</span>
+<span class="lineNum">     722 </span><span class="lineCov">    3022949 :                         num_samples += f-&gt;samples;</span>
+<span class="lineNum">     723 </span><span class="lineCov">    3022949 :                         ast_frfree(f);</span>
+<span class="lineNum">     724 </span>            :                 }
+<span class="lineNum">     725 </span>            :         }
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">      38180 :         getrusage(RUSAGE_SELF, &amp;end);</span>
+<span class="lineNum">     728 </span>            : 
+<span class="lineNum">     729 </span><span class="lineCov">      38180 :         cost = ((end.ru_utime.tv_sec - start.ru_utime.tv_sec) * 1000000) + end.ru_utime.tv_usec - start.ru_utime.tv_usec;</span>
+<span class="lineNum">     730 </span><span class="lineCov">      38180 :         cost += ((end.ru_stime.tv_sec - start.ru_stime.tv_sec) * 1000000) + end.ru_stime.tv_usec - start.ru_stime.tv_usec;</span>
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span><span class="lineCov">      38180 :         destroy(pvt);</span>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineCov">      38180 :         t-&gt;comp_cost = cost / seconds;</span>
+<span class="lineNum">     735 </span>            : 
+<span class="lineNum">     736 </span><span class="lineCov">      38180 :         if (!t-&gt;comp_cost) {</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :                 t-&gt;comp_cost = 1;</span>
+<span class="lineNum">     738 </span>            :         }
+<span class="lineNum">     739 </span>            : }
+<span class="lineNum">     740 </span>            : 
+<span class="lineNum">     741 </span>            : /*!
+<span class="lineNum">     742 </span>            :  * \internal
+<span class="lineNum">     743 </span>            :  *
+<span class="lineNum">     744 </span>            :  * \brief If no table cost value was pre set by the translator.  An attempt is made to
+<span class="lineNum">     745 </span>            :  * automatically generate that cost value from the cost table based on our src and
+<span class="lineNum">     746 </span>            :  * dst formats.
+<span class="lineNum">     747 </span>            :  *
+<span class="lineNum">     748 </span>            :  * \note This function allows older translators built before the translation cost
+<span class="lineNum">     749 </span>            :  * changed away from using onely computational time to continue to be registered
+<span class="lineNum">     750 </span>            :  * correctly.  It is expected that translators built after the introduction of this
+<span class="lineNum">     751 </span>            :  * function will manually assign their own table cost value.
+<span class="lineNum">     752 </span>            :  *
+<span class="lineNum">     753 </span>            :  * \note This function is safe to use on any audio formats that used to be defined in the
+<span class="lineNum">     754 </span>            :  * first 64 bits of the old bit field codec representation.
+<span class="lineNum">     755 </span>            :  *
+<span class="lineNum">     756 </span>            :  * \retval Table Cost value greater than 0.
+<a name="757"><span class="lineNum">     757 </span>            :  * \retval 0 on error.</a>
+<span class="lineNum">     758 </span>            :  */
+<span class="lineNum">     759 </span><span class="lineCov">     132502 : static int generate_table_cost(struct ast_codec *src, struct ast_codec *dst)</span>
+<span class="lineNum">     760 </span>            : {
+<span class="lineNum">     761 </span><span class="lineCov">     132502 :         int src_rate = src-&gt;sample_rate;</span>
+<span class="lineNum">     762 </span><span class="lineCov">     132502 :         int src_ll = 0;</span>
+<span class="lineNum">     763 </span><span class="lineCov">     132502 :         int dst_rate = dst-&gt;sample_rate;</span>
+<span class="lineNum">     764 </span><span class="lineCov">     132502 :         int dst_ll = 0;</span>
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span><span class="lineCov">     132502 :         if ((src-&gt;type != AST_MEDIA_TYPE_AUDIO) ||</span>
+<span class="lineNum">     767 </span><span class="lineCov">     132502 :             (dst-&gt;type != AST_MEDIA_TYPE_AUDIO)) {</span>
+<span class="lineNum">     768 </span>            :                 /* This method of generating table cost is limited to audio.
+<span class="lineNum">     769 </span>            :                  * Translators for media other than audio must manually set their
+<span class="lineNum">     770 </span>            :                  * table cost. */
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     772 </span>            :         }
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span><span class="lineCov">     132502 :         src_ll = !strcmp(src-&gt;name, &quot;slin&quot;);</span>
+<span class="lineNum">     775 </span><span class="lineCov">     132502 :         dst_ll = !strcmp(dst-&gt;name, &quot;slin&quot;);</span>
+<span class="lineNum">     776 </span><span class="lineCov">     132502 :         if (src_ll) {</span>
+<span class="lineNum">     777 </span><span class="lineCov">     105556 :                 if (dst_ll &amp;&amp; (src_rate == dst_rate)) {</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LL_LL_ORIGSAMP;</span>
+<span class="lineNum">     779 </span><span class="lineCov">     105556 :                 } else if (!dst_ll &amp;&amp; (src_rate == dst_rate)) {</span>
+<span class="lineNum">     780 </span><span class="lineCov">      23577 :                         return AST_TRANS_COST_LL_LY_ORIGSAMP;</span>
+<span class="lineNum">     781 </span><span class="lineCov">      81979 :                 } else if (dst_ll &amp;&amp; (src_rate &lt; dst_rate)) {</span>
+<span class="lineNum">     782 </span><span class="lineCov">      40428 :                         return AST_TRANS_COST_LL_LL_UPSAMP;</span>
+<span class="lineNum">     783 </span><span class="lineCov">      41551 :                 } else if (!dst_ll &amp;&amp; (src_rate &lt; dst_rate)) {</span>
+<span class="lineNum">     784 </span><span class="lineCov">       1123 :                         return AST_TRANS_COST_LL_LY_UPSAMP;</span>
+<span class="lineNum">     785 </span><span class="lineCov">      40428 :                 } else if (dst_ll &amp;&amp; (src_rate &gt; dst_rate)) {</span>
+<span class="lineNum">     786 </span><span class="lineCov">      40428 :                         return AST_TRANS_COST_LL_LL_DOWNSAMP;</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :                 } else if (!dst_ll &amp;&amp; (src_rate &gt; dst_rate)) {</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LL_LY_DOWNSAMP;</span>
+<span class="lineNum">     789 </span>            :                 } else {
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LL_UNKNOWN;</span>
+<span class="lineNum">     791 </span>            :                 }
+<span class="lineNum">     792 </span>            :         } else {
+<span class="lineNum">     793 </span><span class="lineCov">      26946 :                 if (dst_ll &amp;&amp; (src_rate == dst_rate)) {</span>
+<span class="lineNum">     794 </span><span class="lineCov">      23577 :                         return AST_TRANS_COST_LY_LL_ORIGSAMP;</span>
+<span class="lineNum">     795 </span><span class="lineCov">       3369 :                 } else if (!dst_ll &amp;&amp; (src_rate == dst_rate)) {</span>
+<span class="lineNum">     796 </span><span class="lineCov">       2246 :                         return AST_TRANS_COST_LY_LY_ORIGSAMP;</span>
+<span class="lineNum">     797 </span><span class="lineCov">       1123 :                 } else if (dst_ll &amp;&amp; (src_rate &lt; dst_rate)) {</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LY_LL_UPSAMP;</span>
+<span class="lineNum">     799 </span><span class="lineCov">       1123 :                 } else if (!dst_ll &amp;&amp; (src_rate &lt; dst_rate)) {</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LY_LY_UPSAMP;</span>
+<span class="lineNum">     801 </span><span class="lineCov">       1123 :                 } else if (dst_ll &amp;&amp; (src_rate &gt; dst_rate)) {</span>
+<span class="lineNum">     802 </span><span class="lineCov">       1123 :                         return AST_TRANS_COST_LY_LL_DOWNSAMP;</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :                 } else if (!dst_ll &amp;&amp; (src_rate &gt; dst_rate)) {</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LY_LY_DOWNSAMP;</span>
+<span class="lineNum">     805 </span>            :                 } else {
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :                         return AST_TRANS_COST_LY_UNKNOWN;</span>
+<span class="lineNum">     807 </span>            :                 }
+<span class="lineNum">     808 </span>            :         }
+<span class="lineNum">     809 </span>            : }
+<span class="lineNum">     810 </span>            : 
+<span class="lineNum">     811 </span>            : /*!
+<span class="lineNum">     812 </span>            :  * \brief rebuild a translation matrix.
+<a name="813"><span class="lineNum">     813 </span>            :  * \note This function expects the list of translators to be locked</a>
+<span class="lineNum">     814 </span>            : */
+<span class="lineNum">     815 </span><span class="lineCov">     133626 : static void matrix_rebuild(int samples)</span>
+<span class="lineNum">     816 </span>            : {
+<span class="lineNum">     817 </span>            :         struct ast_translator *t;
+<span class="lineNum">     818 </span>            :         int newtablecost;
+<span class="lineNum">     819 </span>            :         int x;      /* source format index */
+<span class="lineNum">     820 </span>            :         int y;      /* intermediate format index */
+<span class="lineNum">     821 </span>            :         int z;      /* destination format index */
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineCov">     133626 :         ast_debug(1, &quot;Resetting translation matrix\n&quot;);</span>
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span><span class="lineCov">     133626 :         matrix_clear();</span>
+<span class="lineNum">     826 </span>            : 
+<span class="lineNum">     827 </span>            :         /* first, compute all direct costs */
+<span class="lineNum">     828 </span><span class="lineCov">    8016859 :         AST_RWLIST_TRAVERSE(&amp;translators, t, list) {</span>
+<span class="lineNum">     829 </span><span class="lineCov">    7883233 :                 if (!t-&gt;active) {</span>
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     831 </span>            :                 }
+<span class="lineNum">     832 </span>            : 
+<span class="lineNum">     833 </span><span class="lineCov">    7883233 :                 x = t-&gt;src_fmt_index;</span>
+<span class="lineNum">     834 </span><span class="lineCov">    7883233 :                 z = t-&gt;dst_fmt_index;</span>
+<span class="lineNum">     835 </span>            : 
+<span class="lineNum">     836 </span><span class="lineCov">    7883233 :                 if (samples) {</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">          0 :                         generate_computational_cost(t, samples);</span>
+<span class="lineNum">     838 </span>            :                 }
+<span class="lineNum">     839 </span>            : 
+<span class="lineNum">     840 </span>            :                 /* This new translator is the best choice if any of the below are true.
+<span class="lineNum">     841 </span>            :                  * 1. no translation path is set between x and z yet.
+<span class="lineNum">     842 </span>            :                  * 2. the new table cost is less.
+<span class="lineNum">     843 </span>            :                  * 3. the new computational cost is less.  Computational cost is only used
+<span class="lineNum">     844 </span>            :                  *    to break a tie between two identical translation paths.
+<span class="lineNum">     845 </span>            :                  */
+<span class="lineNum">     846 </span><span class="lineCov">    7883233 :                 if (!matrix_get(x, z)-&gt;step ||</span>
+<span class="lineNum">     847 </span><span class="lineNoCov">          0 :                         (t-&gt;table_cost &lt; matrix_get(x, z)-&gt;step-&gt;table_cost) ||</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">          0 :                         (t-&gt;comp_cost &lt; matrix_get(x, z)-&gt;step-&gt;comp_cost)) {</span>
+<span class="lineNum">     849 </span>            : 
+<span class="lineNum">     850 </span><span class="lineCov">    7883233 :                         matrix_get(x, z)-&gt;step = t;</span>
+<span class="lineNum">     851 </span><span class="lineCov">    7883233 :                         matrix_get(x, z)-&gt;table_cost = t-&gt;table_cost;</span>
+<span class="lineNum">     852 </span>            :                 }
+<span class="lineNum">     853 </span>            :         }
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span>            :         /*
+<span class="lineNum">     856 </span>            :          * For each triple x, y, z of distinct formats, check if there is
+<span class="lineNum">     857 </span>            :          * a path from x to z through y which is cheaper than what is
+<span class="lineNum">     858 </span>            :          * currently known, and in case, update the matrix.
+<span class="lineNum">     859 </span>            :          * Repeat until the matrix is stable.
+<span class="lineNum">     860 </span>            :          */
+<span class="lineNum">     861 </span><span class="lineCov">     206622 :         for (;;) {</span>
+<span class="lineNum">     862 </span><span class="lineCov">     340248 :                 int changed = 0;</span>
+<span class="lineNum">     863 </span><span class="lineCov">    9347992 :                 for (x = 0; x &lt; cur_max_index; x++) {      /* source format */</span>
+<span class="lineNum">     864 </span><span class="lineCov">  261412296 :                         for (y = 0; y &lt; cur_max_index; y++) {  /* intermediate format */</span>
+<span class="lineNum">     865 </span><span class="lineCov">  252404552 :                                 if (x == y) {                      /* skip ourselves */</span>
+<span class="lineNum">     866 </span><span class="lineCov">    9007744 :                                         continue;</span>
+<span class="lineNum">     867 </span>            :                                 }
+<span class="lineNum">     868 </span><span class="lineCov"> 7230665982 :                                 for (z = 0; z &lt; cur_max_index; z++) {  /* dst format */</span>
+<span class="lineNum">     869 </span><span class="lineCov"> 6987269174 :                                         if ((z == x || z == y) ||        /* skip null conversions */</span>
+<span class="lineNum">     870 </span><span class="lineCov"> 6500475558 :                                                 !matrix_get(x, y)-&gt;step ||   /* no path from x to y */</span>
+<span class="lineNum">     871 </span><span class="lineCov"> 4593143819 :                                                 !matrix_get(y, z)-&gt;step) {   /* no path from y to z */</span>
+<span class="lineNum">     872 </span><span class="lineCov"> 3863519565 :                                                 continue;</span>
+<span class="lineNum">     873 </span>            :                                         }
+<span class="lineNum">     874 </span>            : 
+<span class="lineNum">     875 </span>            :                                         /* calculate table cost from x-&gt;y-&gt;z */
+<span class="lineNum">     876 </span><span class="lineCov"> 3123749609 :                                         newtablecost = matrix_get(x, y)-&gt;table_cost + matrix_get(y, z)-&gt;table_cost;</span>
+<span class="lineNum">     877 </span>            : 
+<span class="lineNum">     878 </span>            :                                         /* if no step already exists between x and z OR the new cost of using the intermediate
+<span class="lineNum">     879 </span>            :                                          * step is cheaper, use this step. */
+<span class="lineNum">     880 </span><span class="lineCov"> 3123749609 :                                         if (!matrix_get(x, z)-&gt;step || (newtablecost &lt; matrix_get(x, z)-&gt;table_cost)) {</span>
+<span class="lineNum">     881 </span><span class="lineCov">   61338691 :                                                 matrix_get(x, z)-&gt;step = matrix_get(x, y)-&gt;step;</span>
+<span class="lineNum">     882 </span><span class="lineCov">   61338691 :                                                 matrix_get(x, z)-&gt;table_cost = newtablecost;</span>
+<span class="lineNum">     883 </span><span class="lineCov">   61338691 :                                                 matrix_get(x, z)-&gt;multistep = 1;</span>
+<span class="lineNum">     884 </span><span class="lineCov">   61338691 :                                                 changed++;</span>
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span><span class="lineCov">   61338691 :                                                 if (DEBUG_ATLEAST(10)) {</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :                                                         struct ast_codec *x_codec = index2codec(x);</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                                                         struct ast_codec *y_codec = index2codec(y);</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">          0 :                                                         struct ast_codec *z_codec = index2codec(z);</span>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                                                         ast_log(LOG_DEBUG,</span>
+<span class="lineNum">     892 </span>            :                                                                 &quot;Discovered %u cost path from %s to %s, via %s\n&quot;,
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                                                                 matrix_get(x, z)-&gt;table_cost, x_codec-&gt;name,</span>
+<span class="lineNum">     894 </span>            :                                                                 y_codec-&gt;name, z_codec-&gt;name);
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                                                         ao2_ref(x_codec, -1);</span>
+<span class="lineNum">     897 </span><span class="lineNoCov">          0 :                                                         ao2_ref(y_codec, -1);</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :                                                         ao2_ref(z_codec, -1);</span>
+<span class="lineNum">     899 </span>            :                                                 }
+<span class="lineNum">     900 </span>            :                                         }
+<span class="lineNum">     901 </span>            :                                 }
+<span class="lineNum">     902 </span>            :                         }
+<span class="lineNum">     903 </span>            :                 }
+<span class="lineNum">     904 </span><span class="lineCov">     340248 :                 if (!changed) {</span>
+<span class="lineNum">     905 </span><span class="lineCov">     133626 :                         break;</span>
+<span class="lineNum">     906 </span>            :                 }
+<span class="lineNum">     907 </span>            :         }
+<a name="908"><span class="lineNum">     908 </span><span class="lineCov">     133626 : }</span></a>
+<span class="lineNum">     909 </span>            : 
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 : static void codec_append_name(const struct ast_codec *codec, struct ast_str **buf)</span>
+<span class="lineNum">     911 </span>            : {
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :         if (codec) {</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">          0 :                 ast_str_append(buf, 0, &quot;(%s@%u)&quot;, codec-&gt;name, codec-&gt;sample_rate);</span>
+<span class="lineNum">     914 </span>            :         } else {
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                 ast_str_append(buf, 0, &quot;(nothing)&quot;);</span>
+<span class="lineNum">     916 </span>            :         }
+<a name="917"><span class="lineNum">     917 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineCov">         42 : const char *ast_translate_path_to_str(struct ast_trans_pvt *p, struct ast_str **str)</span>
+<span class="lineNum">     920 </span>            : {
+<span class="lineNum">     921 </span><span class="lineCov">         42 :         if (!p || !p-&gt;t) {</span>
+<span class="lineNum">     922 </span><span class="lineCov">         42 :                 return &quot;&quot;;</span>
+<span class="lineNum">     923 </span>            :         }
+<span class="lineNum">     924 </span>            : 
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :         ast_str_reset(*str);</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :         codec_append_name(&amp;p-&gt;t-&gt;src_codec, str);</span>
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :         while (p) {</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                 ast_str_append(str, 0, &quot;-&gt;&quot;);</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">          0 :                 codec_append_name(&amp;p-&gt;t-&gt;dst_codec, str);</span>
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :                 p = p-&gt;next;</span>
+<span class="lineNum">     931 </span>            :         }
+<span class="lineNum">     932 </span>            : 
+<span class="lineNum">     933 </span><span class="lineNoCov">          0 :         return ast_str_buffer(*str);</span>
+<a name="934"><span class="lineNum">     934 </span>            : }</a>
+<span class="lineNum">     935 </span>            : 
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 : static char *complete_trans_path_choice(const char *word)</span>
+<span class="lineNum">     937 </span>            : {
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :         int i = 1;</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">          0 :         int wordlen = strlen(word);</span>
+<span class="lineNum">     940 </span>            :         struct ast_codec *codec;
+<span class="lineNum">     941 </span>            : 
+<span class="lineNum">     942 </span><span class="lineNoCov">          0 :         while ((codec = ast_codec_get_by_id(i))) {</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                 ++i;</span>
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 if (codec-&gt;type != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">     945 </span><span class="lineNoCov">          0 :                         ao2_ref(codec, -1);</span>
+<span class="lineNum">     946 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     947 </span>            :                 }
+<span class="lineNum">     948 </span><span class="lineNoCov">          0 :                 if (!strncasecmp(word, codec-&gt;name, wordlen)) {</span>
+<span class="lineNum">     949 </span><span class="lineNoCov">          0 :                         if (ast_cli_completion_add(ast_strdup(codec-&gt;name))) {</span>
+<span class="lineNum">     950 </span><span class="lineNoCov">          0 :                                 ao2_ref(codec, -1);</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     952 </span>            :                         }
+<span class="lineNum">     953 </span>            :                 }
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                 ao2_ref(codec, -1);</span>
+<span class="lineNum">     955 </span>            :         }
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="958"><span class="lineNum">     958 </span>            : }</a>
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 : static void handle_cli_recalc(struct ast_cli_args *a)</span>
+<span class="lineNum">     961 </span>            : {
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :         int time = a-&gt;argv[4] ? atoi(a-&gt;argv[4]) : 1;</span>
+<span class="lineNum">     963 </span>            : 
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 :         if (time &lt;= 0) {</span>
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;         Recalc must be greater than 0.  Defaulting to 1.\n&quot;);</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :                 time = 1;</span>
+<span class="lineNum">     967 </span>            :         }
+<span class="lineNum">     968 </span>            : 
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :         if (time &gt; MAX_RECALC) {</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;         Maximum limit of recalc exceeded by %d, truncating value to %d\n&quot;, time - MAX_RECALC, MAX_RECALC);</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :                 time = MAX_RECALC;</span>
+<span class="lineNum">     972 </span>            :         }
+<span class="lineNum">     973 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;         Recalculating Codec Translation (number of sample seconds: %d)\n\n&quot;, time);</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :         matrix_rebuild(time);</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<a name="977"><span class="lineNum">     977 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 : static char *handle_show_translation_table(struct ast_cli_args *a)</span>
+<span class="lineNum">     980 </span>            : {
+<span class="lineNum">     981 </span>            :         int x, y, i, k;
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :         int longest = 7; /* slin192 */</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :         int num_codecs = 0, curlen = 0;</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :         struct ast_str *out = ast_str_create(1024);</span>
+<span class="lineNum">     985 </span>            :         struct ast_codec *codec;
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span>            :         /* Get the length of the longest (usable?) codec name,
+<span class="lineNum">     988 </span>            :            so we know how wide the left side should be */
+<span class="lineNum">     989 </span><span class="lineNoCov">          0 :         for (i = 1; (codec = ast_codec_get_by_id(i)); ao2_ref(codec, -1), ++i) {</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                 ++num_codecs;</span>
+<span class="lineNum">     991 </span><span class="lineNoCov">          0 :                 if (codec-&gt;type != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     993 </span>            :                 }
+<span class="lineNum">     994 </span><span class="lineNoCov">          0 :                 curlen = strlen(codec-&gt;name);</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                 if (curlen &gt; longest) {</span>
+<span class="lineNum">     996 </span><span class="lineNoCov">          0 :                         longest = curlen;</span>
+<span class="lineNum">     997 </span>            :                 }
+<span class="lineNum">     998 </span>            :         }
+<span class="lineNum">     999 </span>            : 
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :         AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">    1001 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;         Translation times between formats (in microseconds) for one second of data\n&quot;);</span>
+<span class="lineNum">    1002 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;          Source Format (Rows) Destination Format (Columns)\n\n&quot;);</span>
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; num_codecs; i++) {</span>
+<span class="lineNum">    1005 </span><span class="lineNoCov">          0 :                 struct ast_codec *row = i ? ast_codec_get_by_id(i) : NULL;</span>
+<span class="lineNum">    1006 </span>            : 
+<span class="lineNum">    1007 </span><span class="lineNoCov">          0 :                 x = -1;</span>
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :                 if ((i &gt; 0) &amp;&amp; (row-&gt;type != AST_MEDIA_TYPE_AUDIO)) {</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :                         ao2_ref(row, -1);</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1011 </span>            :                 }
+<span class="lineNum">    1012 </span>            : 
+<span class="lineNum">    1013 </span><span class="lineNoCov">          0 :                 if ((i &gt; 0) &amp;&amp; (x = codec2index(row)) == -1) {</span>
+<span class="lineNum">    1014 </span><span class="lineNoCov">          0 :                         ao2_ref(row, -1);</span>
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1016 </span>            :                 }
+<span class="lineNum">    1017 </span>            : 
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :                 ast_str_set(&amp;out, 0, &quot; &quot;);</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :                 for (k = 0; k &lt; num_codecs; k++) {</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :                         int adjust = 0;</span>
+<span class="lineNum">    1021 </span><span class="lineNoCov">          0 :                         struct ast_codec *col = k ? ast_codec_get_by_id(k) : NULL;</span>
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                         y = -1;</span>
+<span class="lineNum">    1024 </span><span class="lineNoCov">          0 :                         if ((k &gt; 0) &amp;&amp; (col-&gt;type != AST_MEDIA_TYPE_AUDIO)) {</span>
+<span class="lineNum">    1025 </span><span class="lineNoCov">          0 :                                 ao2_ref(col, -1);</span>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1027 </span>            :                         }
+<span class="lineNum">    1028 </span>            : 
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                         if ((k &gt; 0) &amp;&amp; (y = codec2index(col)) == -1) {</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                                 ao2_ref(col, -1);</span>
+<span class="lineNum">    1031 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1032 </span>            :                         }
+<span class="lineNum">    1033 </span>            : 
+<span class="lineNum">    1034 </span><span class="lineNoCov">          0 :                         if (k &gt; 0) {</span>
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                                 curlen = strlen(col-&gt;name);</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                                 if (!strcmp(col-&gt;name, &quot;slin&quot;) ||</span>
+<span class="lineNum">    1037 </span><span class="lineNoCov">          0 :                                         !strcmp(col-&gt;name, &quot;speex&quot;) ||</span>
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                                         !strcmp(col-&gt;name, &quot;silk&quot;)) {</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                                         adjust = log10(col-&gt;sample_rate / 1000) + 1;</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :                                         curlen = curlen + adjust;</span>
+<span class="lineNum">    1041 </span>            :                                 }
+<span class="lineNum">    1042 </span>            :                         }
+<span class="lineNum">    1043 </span>            : 
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                         if (curlen &lt; 5) {</span>
+<span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                                 curlen = 5;</span>
+<span class="lineNum">    1046 </span>            :                         }
+<span class="lineNum">    1047 </span>            : 
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 :                         if (x &gt;= 0 &amp;&amp; y &gt;= 0 &amp;&amp; matrix_get(x, y)-&gt;step) {</span>
+<span class="lineNum">    1049 </span>            :                                 /* Actual codec output */
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                                 ast_str_append(&amp;out, 0, &quot;%*u&quot;, curlen + 1, (matrix_get(x, y)-&gt;table_cost/100));</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">          0 :                         } else if (i == 0 &amp;&amp; k &gt; 0) {</span>
+<span class="lineNum">    1052 </span>            :                                 /* Top row - use a dynamic size */
+<span class="lineNum">    1053 </span><span class="lineNoCov">          0 :                                 if (!strcmp(col-&gt;name, &quot;slin&quot;) ||</span>
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :                                         !strcmp(col-&gt;name, &quot;speex&quot;) ||</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :                                         !strcmp(col-&gt;name, &quot;silk&quot;)) {</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :                                         ast_str_append(&amp;out, 0, &quot;%*s%u&quot;, curlen - adjust + 1,</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                                                 col-&gt;name, col-&gt;sample_rate / 1000);</span>
+<span class="lineNum">    1058 </span>            :                                 } else {
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                                         ast_str_append(&amp;out, 0, &quot;%*s&quot;, curlen + 1, col-&gt;name);</span>
+<span class="lineNum">    1060 </span>            :                                 }
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                         } else if (k == 0 &amp;&amp; i &gt; 0) {</span>
+<span class="lineNum">    1062 </span>            :                                 /* Left column - use a static size. */
+<span class="lineNum">    1063 </span><span class="lineNoCov">          0 :                                 if (!strcmp(row-&gt;name, &quot;slin&quot;) ||</span>
+<span class="lineNum">    1064 </span><span class="lineNoCov">          0 :                                         !strcmp(row-&gt;name, &quot;speex&quot;) ||</span>
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :                                         !strcmp(row-&gt;name, &quot;silk&quot;)) {</span>
+<span class="lineNum">    1066 </span><span class="lineNoCov">          0 :                                         int adjust_row = log10(row-&gt;sample_rate / 1000) + 1;</span>
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :                                         ast_str_append(&amp;out, 0, &quot;%*s%u&quot;, longest - adjust_row,</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 :                                                 row-&gt;name, row-&gt;sample_rate / 1000);</span>
+<span class="lineNum">    1069 </span>            :                                 } else {
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :                                         ast_str_append(&amp;out, 0, &quot;%*s&quot;, longest, row-&gt;name);</span>
+<span class="lineNum">    1071 </span>            :                                 }
+<span class="lineNum">    1072 </span><span class="lineNoCov">          0 :                         } else if (x &gt;= 0 &amp;&amp; y &gt;= 0) {</span>
+<span class="lineNum">    1073 </span>            :                                 /* Codec not supported */
+<span class="lineNum">    1074 </span><span class="lineNoCov">          0 :                                 ast_str_append(&amp;out, 0, &quot;%*s&quot;, curlen + 1, &quot;-&quot;);</span>
+<span class="lineNum">    1075 </span>            :                         } else {
+<span class="lineNum">    1076 </span>            :                                 /* Upper left hand corner */
+<span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                                 ast_str_append(&amp;out, 0, &quot;%*s&quot;, longest, &quot;&quot;);</span>
+<span class="lineNum">    1078 </span>            :                         }
+<span class="lineNum">    1079 </span><span class="lineNoCov">          0 :                         ao2_cleanup(col);</span>
+<span class="lineNum">    1080 </span>            :                 }
+<span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                 ast_str_append(&amp;out, 0, &quot;\n&quot;);</span>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%s&quot;, ast_str_buffer(out));</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">          0 :                 ao2_cleanup(row);</span>
+<span class="lineNum">    1084 </span>            :         }
+<span class="lineNum">    1085 </span><span class="lineNoCov">          0 :         ast_free(out);</span>
+<span class="lineNum">    1086 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1087 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="1088"><span class="lineNum">    1088 </span>            : }</a>
+<span class="lineNum">    1089 </span>            : 
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 : static char *handle_show_translation_path(struct ast_cli_args *a, const char *codec_name, unsigned int sample_rate)</span>
+<span class="lineNum">    1091 </span>            : {
+<span class="lineNum">    1092 </span><span class="lineNoCov">          0 :         int i = 1;</span>
+<span class="lineNum">    1093 </span><span class="lineNoCov">          0 :         struct ast_str *str = ast_str_alloca(1024);</span>
+<span class="lineNum">    1094 </span>            :         struct ast_translator *step;
+<span class="lineNum">    1095 </span>            :         struct ast_codec *dst_codec;
+<span class="lineNum">    1096 </span><span class="lineNoCov">          0 :         struct ast_codec *src_codec = ast_codec_get(codec_name, AST_MEDIA_TYPE_AUDIO, sample_rate);</span>
+<span class="lineNum">    1097 </span>            : 
+<span class="lineNum">    1098 </span><span class="lineNoCov">          0 :         if (!src_codec) {</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Source codec \&quot;%s\&quot; is not found.\n&quot;, codec_name);</span>
+<span class="lineNum">    1100 </span><span class="lineNoCov">          0 :                 return CLI_FAILURE;</span>
+<span class="lineNum">    1101 </span>            :         }
+<span class="lineNum">    1102 </span>            : 
+<span class="lineNum">    1103 </span><span class="lineNoCov">          0 :         AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">    1104 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;--- Translation paths SRC Codec \&quot;%s\&quot; sample rate %u ---\n&quot;,</span>
+<span class="lineNum">    1105 </span>            :                 codec_name, src_codec-&gt;sample_rate);
+<span class="lineNum">    1106 </span>            : 
+<span class="lineNum">    1107 </span><span class="lineNoCov">          0 :         while ((dst_codec = ast_codec_get_by_id(i))) {</span>
+<span class="lineNum">    1108 </span>            :                 int src, dst;
+<span class="lineNum">    1109 </span>            :                 char src_buffer[64];
+<span class="lineNum">    1110 </span>            :                 char dst_buffer[64];
+<span class="lineNum">    1111 </span>            : 
+<span class="lineNum">    1112 </span><span class="lineNoCov">          0 :                 ++i;</span>
+<span class="lineNum">    1113 </span><span class="lineNoCov">          0 :                 if (src_codec == dst_codec ||</span>
+<span class="lineNum">    1114 </span><span class="lineNoCov">          0 :                     dst_codec-&gt;type != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                         ao2_ref(dst_codec, -1);</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1117 </span>            :                 }
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span><span class="lineNoCov">          0 :                 dst = codec2index(dst_codec);</span>
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :                 src = codec2index(src_codec);</span>
+<span class="lineNum">    1121 </span>            : 
+<span class="lineNum">    1122 </span><span class="lineNoCov">          0 :                 if (src &lt; 0 || dst &lt; 0) {</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 :                         ast_str_set(&amp;str, 0, &quot;No Translation Path&quot;);</span>
+<span class="lineNum">    1124 </span>            :                 } else {
+<span class="lineNum">    1125 </span><span class="lineNoCov">          0 :                         step = matrix_get(src, dst)-&gt;step;</span>
+<span class="lineNum">    1126 </span>            : 
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                         if (step) {</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :                                 codec_append_name(&amp;step-&gt;src_codec, &amp;str);</span>
+<span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                                 while (src != dst) {</span>
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 :                                         src = step-&gt;dst_fmt_index;</span>
+<span class="lineNum">    1131 </span><span class="lineNoCov">          0 :                                         step = matrix_get(src, dst)-&gt;step;</span>
+<span class="lineNum">    1132 </span><span class="lineNoCov">          0 :                                         if (!step) {</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :                                                 ast_str_append(&amp;str, 0, &quot;-&gt;&quot;);</span>
+<span class="lineNum">    1134 </span><span class="lineNoCov">          0 :                                                 codec_append_name(dst_codec, &amp;str);</span>
+<span class="lineNum">    1135 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">    1136 </span>            :                                         }
+<span class="lineNum">    1137 </span><span class="lineNoCov">          0 :                                         ast_str_append(&amp;str, 0, &quot;-&gt;&quot;);</span>
+<span class="lineNum">    1138 </span><span class="lineNoCov">          0 :                                         codec_append_name(&amp;step-&gt;src_codec, &amp;str);</span>
+<span class="lineNum">    1139 </span>            :                                 }
+<span class="lineNum">    1140 </span>            :                         }
+<span class="lineNum">    1141 </span>            :                 }
+<span class="lineNum">    1142 </span>            : 
+<span class="lineNum">    1143 </span><span class="lineNoCov">          0 :                 snprintf(src_buffer, sizeof(src_buffer), &quot;%s:%u&quot;, src_codec-&gt;name, src_codec-&gt;sample_rate);</span>
+<span class="lineNum">    1144 </span><span class="lineNoCov">          0 :                 snprintf(dst_buffer, sizeof(dst_buffer), &quot;%s:%u&quot;, dst_codec-&gt;name, dst_codec-&gt;sample_rate);</span>
+<span class="lineNum">    1145 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;\t%-16.16s To %-16.16s: %-60.60s\n&quot;,</span>
+<span class="lineNum">    1146 </span>            :                         src_buffer, dst_buffer, ast_str_buffer(str));
+<span class="lineNum">    1147 </span><span class="lineNoCov">          0 :                 ast_str_reset(str);</span>
+<span class="lineNum">    1148 </span><span class="lineNoCov">          0 :                 ao2_ref(dst_codec, -1);</span>
+<span class="lineNum">    1149 </span>            :         }
+<span class="lineNum">    1150 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1151 </span><span class="lineNoCov">          0 :         ao2_ref(src_codec, -1);</span>
+<span class="lineNum">    1152 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="1153"><span class="lineNum">    1153 </span>            : }</a>
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span><span class="lineCov">       1124 : static char *handle_cli_core_show_translation(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">    1156 </span>            : {
+<span class="lineNum">    1157 </span>            :         static const char * const option[] = { &quot;recalc&quot;, &quot;paths&quot;, NULL };
+<span class="lineNum">    1158 </span>            : 
+<span class="lineNum">    1159 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">    1160 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">    1161 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show translation&quot;;</span>
+<span class="lineNum">    1162 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">    1163 </span>            :                         &quot;Usage: 'core show translation' can be used in two ways.\n&quot;
+<span class="lineNum">    1164 </span>            :                         &quot;       1. 'core show translation [recalc [&lt;recalc seconds&gt;]]\n&quot;
+<span class="lineNum">    1165 </span>            :                         &quot;          Displays known codec translators and the cost associated\n&quot;
+<span class="lineNum">    1166 </span>            :                         &quot;          with each conversion.  If the argument 'recalc' is supplied along\n&quot;
+<span class="lineNum">    1167 </span>            :                         &quot;          with optional number of seconds to test a new test will be performed\n&quot;
+<span class="lineNum">    1168 </span>            :                         &quot;          as the chart is being displayed.\n&quot;
+<span class="lineNum">    1169 </span>            :                         &quot;       2. 'core show translation paths [codec [sample_rate]]'\n&quot;
+<span class="lineNum">    1170 </span>            :                         &quot;           This will display all the translation paths associated with a codec.\n&quot;
+<span class="lineNum">    1171 </span>            :                         &quot;           If a codec has multiple sample rates, the sample rate must be\n&quot;
+<span class="lineNum">    1172 </span>            :                         &quot;           provided as well.\n&quot;;
+<span class="lineNum">    1173 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">    1175 </span><span class="lineNoCov">          0 :                 if (a-&gt;pos == 3) {</span>
+<span class="lineNum">    1176 </span><span class="lineNoCov">          0 :                         return ast_cli_complete(a-&gt;word, option, -1);</span>
+<span class="lineNum">    1177 </span>            :                 }
+<span class="lineNum">    1178 </span><span class="lineNoCov">          0 :                 if (a-&gt;pos == 4 &amp;&amp; !strcasecmp(a-&gt;argv[3], option[1])) {</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :                         return complete_trans_path_choice(a-&gt;word);</span>
+<span class="lineNum">    1180 </span>            :                 }
+<span class="lineNum">    1181 </span>            :                 /* BUGBUG - add tab completion for sample rates */
+<span class="lineNum">    1182 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1183 </span>            :         }
+<span class="lineNum">    1184 </span>            : 
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :         if (a-&gt;argc &gt; 6)</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1187 </span>            : 
+<span class="lineNum">    1188 </span><span class="lineNoCov">          0 :         if (a-&gt;argv[3] &amp;&amp; !strcasecmp(a-&gt;argv[3], option[1]) &amp;&amp; a-&gt;argc == 5) { /* show paths */</span>
+<span class="lineNum">    1189 </span><span class="lineNoCov">          0 :                 return handle_show_translation_path(a, a-&gt;argv[4], 0);</span>
+<span class="lineNum">    1190 </span><span class="lineNoCov">          0 :         } else if (a-&gt;argv[3] &amp;&amp; !strcasecmp(a-&gt;argv[3], option[1]) &amp;&amp; a-&gt;argc == 6) {</span>
+<span class="lineNum">    1191 </span>            :                 unsigned int sample_rate;
+<span class="lineNum">    1192 </span><span class="lineNoCov">          0 :                 if (sscanf(a-&gt;argv[5], &quot;%30u&quot;, &amp;sample_rate) != 1) {</span>
+<span class="lineNum">    1193 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;Invalid sample rate: %s.\n&quot;, a-&gt;argv[5]);</span>
+<span class="lineNum">    1194 </span><span class="lineNoCov">          0 :                         return CLI_FAILURE;</span>
+<span class="lineNum">    1195 </span>            :                 }
+<span class="lineNum">    1196 </span><span class="lineNoCov">          0 :                 return handle_show_translation_path(a, a-&gt;argv[4], sample_rate);</span>
+<span class="lineNum">    1197 </span><span class="lineNoCov">          0 :         } else if (a-&gt;argv[3] &amp;&amp; !strcasecmp(a-&gt;argv[3], option[0])) { /* recalc and then fall through to show table */</span>
+<span class="lineNum">    1198 </span><span class="lineNoCov">          0 :                 handle_cli_recalc(a);</span>
+<span class="lineNum">    1199 </span><span class="lineNoCov">          0 :         } else if (a-&gt;argc &gt; 3) { /* wrong input */</span>
+<span class="lineNum">    1200 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">    1201 </span>            :         }
+<span class="lineNum">    1202 </span>            : 
+<span class="lineNum">    1203 </span><span class="lineNoCov">          0 :         return handle_show_translation_table(a);</span>
+<span class="lineNum">    1204 </span>            : }
+<span class="lineNum">    1205 </span>            : 
+<span class="lineNum">    1206 </span>            : static struct ast_cli_entry cli_translate[] = {
+<span class="lineNum">    1207 </span>            :         AST_CLI_DEFINE(handle_cli_core_show_translation, &quot;Display translation matrix&quot;)
+<span class="lineNum">    1208 </span>            : };
+<a name="1209"><span class="lineNum">    1209 </span>            : </a>
+<span class="lineNum">    1210 </span>            : /*! \brief register codec translator */
+<span class="lineNum">    1211 </span><span class="lineCov">     132502 : int __ast_register_translator(struct ast_translator *t, struct ast_module *mod)</span>
+<span class="lineNum">    1212 </span>            : {
+<a name="1213"><span class="lineNum">    1213 </span>            :         struct ast_translator *u;</a>
+<a name="1214"><span class="lineNum">    1214 </span>            :         char tmp[80];</a>
+<span class="lineNum">    1215 </span><span class="lineCov">     265004 :         RAII_VAR(struct ast_codec *, src_codec, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1216 </span><span class="lineCov">     265004 :         RAII_VAR(struct ast_codec *, dst_codec, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1217 </span>            : 
+<span class="lineNum">    1218 </span><span class="lineCov">     132502 :         src_codec = ast_codec_get(t-&gt;src_codec.name, t-&gt;src_codec.type, t-&gt;src_codec.sample_rate);</span>
+<span class="lineNum">    1219 </span><span class="lineCov">     132502 :         if (!src_codec) {</span>
+<span class="lineNum">    1220 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">    1221 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to register translator: unknown source codec %s\n&quot;, t-&gt;src_codec.name);</span>
+<span class="lineNum">    1222 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1223 </span>            :         }
+<span class="lineNum">    1224 </span>            : 
+<span class="lineNum">    1225 </span><span class="lineCov">     132502 :         dst_codec = ast_codec_get(t-&gt;dst_codec.name, t-&gt;dst_codec.type, t-&gt;dst_codec.sample_rate);</span>
+<span class="lineNum">    1226 </span><span class="lineCov">     132502 :         if (!dst_codec) {</span>
+<span class="lineNum">    1227 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to register translator: unknown destination codec %s\n&quot;, t-&gt;dst_codec.name);</span>
+<span class="lineNum">    1228 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1229 </span>            :         }
+<span class="lineNum">    1230 </span>            : 
+<span class="lineNum">    1231 </span><span class="lineCov">     132502 :         if (add_codec2index(src_codec) || add_codec2index(dst_codec)) {</span>
+<span class="lineNum">    1232 </span><span class="lineNoCov">          0 :                 if (matrix_resize(0)) {</span>
+<span class="lineNum">    1233 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Translator matrix can not represent any more translators.  Out of resources.\n&quot;);</span>
+<span class="lineNum">    1234 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1235 </span>            :                 }
+<span class="lineNum">    1236 </span><span class="lineNoCov">          0 :                 add_codec2index(src_codec);</span>
+<span class="lineNum">    1237 </span><span class="lineNoCov">          0 :                 add_codec2index(dst_codec);</span>
+<span class="lineNum">    1238 </span>            :         }
+<span class="lineNum">    1239 </span>            : 
+<span class="lineNum">    1240 </span><span class="lineCov">     132502 :         if (!mod) {</span>
+<span class="lineNum">    1241 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Missing module pointer, you need to supply one\n&quot;);</span>
+<span class="lineNum">    1242 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1243 </span>            :         }
+<span class="lineNum">    1244 </span>            : 
+<span class="lineNum">    1245 </span><span class="lineCov">     132502 :         if (!t-&gt;buf_size) {</span>
+<span class="lineNum">    1246 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;empty buf size, you need to supply one\n&quot;);</span>
+<span class="lineNum">    1247 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1248 </span>            :         }
+<span class="lineNum">    1249 </span><span class="lineCov">     132502 :         if (!t-&gt;table_cost &amp;&amp; !(t-&gt;table_cost = generate_table_cost(src_codec, dst_codec))) {</span>
+<span class="lineNum">    1250 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Table cost could not be generated for %s, &quot;</span>
+<span class="lineNum">    1251 </span><span class="lineNoCov">          0 :                         &quot;Please set table_cost variable on translator.\n&quot;, t-&gt;name);</span>
+<span class="lineNum">    1252 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1253 </span>            :         }
+<span class="lineNum">    1254 </span>            : 
+<span class="lineNum">    1255 </span><span class="lineCov">     132502 :         t-&gt;module = mod;</span>
+<span class="lineNum">    1256 </span><span class="lineCov">     132502 :         t-&gt;src_fmt_index = codec2index(src_codec);</span>
+<span class="lineNum">    1257 </span><span class="lineCov">     132502 :         t-&gt;dst_fmt_index = codec2index(dst_codec);</span>
+<span class="lineNum">    1258 </span><span class="lineCov">     132502 :         t-&gt;active = 1;</span>
+<span class="lineNum">    1259 </span>            : 
+<span class="lineNum">    1260 </span><span class="lineCov">     132502 :         if (t-&gt;src_fmt_index &lt; 0 || t-&gt;dst_fmt_index &lt; 0) {</span>
+<span class="lineNum">    1261 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Invalid translator path: (%s codec is not valid)\n&quot;, t-&gt;src_fmt_index &lt; 0 ? &quot;starting&quot; : &quot;ending&quot;);</span>
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1263 </span>            :         }
+<span class="lineNum">    1264 </span><span class="lineCov">     132502 :         if (t-&gt;src_fmt_index &gt;= cur_max_index) {</span>
+<span class="lineNum">    1265 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Source codec %s is larger than cur_max_index\n&quot;, t-&gt;src_codec.name);</span>
+<span class="lineNum">    1266 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1267 </span>            :         }
+<span class="lineNum">    1268 </span>            : 
+<span class="lineNum">    1269 </span><span class="lineCov">     132502 :         if (t-&gt;dst_fmt_index &gt;= cur_max_index) {</span>
+<span class="lineNum">    1270 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Destination codec %s is larger than cur_max_index\n&quot;, t-&gt;dst_codec.name);</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1272 </span>            :         }
+<span class="lineNum">    1273 </span>            : 
+<span class="lineNum">    1274 </span><span class="lineCov">     132502 :         if (t-&gt;buf_size) {</span>
+<span class="lineNum">    1275 </span>            :                 /*
+<span class="lineNum">    1276 </span>            :                  * Align buf_size properly, rounding up to the machine-specific
+<span class="lineNum">    1277 </span>            :                  * alignment for pointers.
+<span class="lineNum">    1278 </span>            :                  */
+<span class="lineNum">    1279 </span>            :                 struct _test_align { void *a, *b; } p;
+<span class="lineNum">    1280 </span><span class="lineCov">     132502 :                 int align = (char *)&amp;p.b - (char *)&amp;p.a;</span>
+<span class="lineNum">    1281 </span>            : 
+<span class="lineNum">    1282 </span><span class="lineCov">     132502 :                 t-&gt;buf_size = ((t-&gt;buf_size + align - 1) / align) * align;</span>
+<span class="lineNum">    1283 </span>            :         }
+<span class="lineNum">    1284 </span>            : 
+<span class="lineNum">    1285 </span><span class="lineCov">     132502 :         if (t-&gt;frameout == NULL) {</span>
+<span class="lineNum">    1286 </span><span class="lineCov">     112296 :                 t-&gt;frameout = default_frameout;</span>
+<span class="lineNum">    1287 </span>            :         }
+<span class="lineNum">    1288 </span>            : 
+<span class="lineNum">    1289 </span><span class="lineCov">     132502 :         generate_computational_cost(t, 1);</span>
+<span class="lineNum">    1290 </span>            : 
+<span class="lineNum">    1291 </span><span class="lineCov">     132502 :         ast_verb(2, &quot;Registered translator '%s' from codec %s to %s, table cost, %d, computational cost %d\n&quot;,</span>
+<span class="lineNum">    1292 </span>            :                  term_color(tmp, t-&gt;name, COLOR_MAGENTA, COLOR_BLACK, sizeof(tmp)),
+<span class="lineNum">    1293 </span>            :                  t-&gt;src_codec.name, t-&gt;dst_codec.name, t-&gt;table_cost, t-&gt;comp_cost);
+<span class="lineNum">    1294 </span>            : 
+<span class="lineNum">    1295 </span><span class="lineCov">     132502 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">    1296 </span>            : 
+<span class="lineNum">    1297 </span>            :         /* find any existing translators that provide this same srcfmt/dstfmt,
+<span class="lineNum">    1298 </span>            :            and put this one in order based on computational cost */
+<span class="lineNum">    1299 </span><span class="lineCov">    7883233 :         AST_RWLIST_TRAVERSE_SAFE_BEGIN(&amp;translators, u, list) {</span>
+<span class="lineNum">    1300 </span><span class="lineCov">    7750731 :                 if ((u-&gt;src_fmt_index == t-&gt;src_fmt_index) &amp;&amp;</span>
+<span class="lineNum">    1301 </span><span class="lineCov">     579403 :                     (u-&gt;dst_fmt_index == t-&gt;dst_fmt_index) &amp;&amp;</span>
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :                     (u-&gt;comp_cost &gt; t-&gt;comp_cost)) {</span>
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                         AST_RWLIST_INSERT_BEFORE_CURRENT(t, list);</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">          0 :                         t = NULL;</span>
+<span class="lineNum">    1305 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1306 </span>            :                 }
+<span class="lineNum">    1307 </span>            :         }
+<span class="lineNum">    1308 </span>            :         AST_RWLIST_TRAVERSE_SAFE_END;
+<span class="lineNum">    1309 </span>            : 
+<span class="lineNum">    1310 </span>            :         /* if no existing translator was found for this codec combination,
+<span class="lineNum">    1311 </span>            :            add it to the beginning of the list */
+<span class="lineNum">    1312 </span><span class="lineCov">     132502 :         if (t) {</span>
+<span class="lineNum">    1313 </span><span class="lineCov">     132502 :                 AST_RWLIST_INSERT_HEAD(&amp;translators, t, list);</span>
+<span class="lineNum">    1314 </span>            :         }
+<span class="lineNum">    1315 </span>            : 
+<span class="lineNum">    1316 </span><span class="lineCov">     132502 :         matrix_rebuild(0);</span>
+<span class="lineNum">    1317 </span>            : 
+<span class="lineNum">    1318 </span><span class="lineCov">     132502 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1319 </span>            : 
+<span class="lineNum">    1320 </span><span class="lineCov">     132502 :         return 0;</span>
+<span class="lineNum">    1321 </span>            : }
+<a name="1322"><span class="lineNum">    1322 </span>            : </a>
+<span class="lineNum">    1323 </span>            : /*! \brief unregister codec translator */
+<span class="lineNum">    1324 </span><span class="lineCov">     134506 : int ast_unregister_translator(struct ast_translator *t)</span>
+<span class="lineNum">    1325 </span>            : {
+<span class="lineNum">    1326 </span>            :         char tmp[80];
+<span class="lineNum">    1327 </span>            :         struct ast_translator *u;
+<span class="lineNum">    1328 </span><span class="lineCov">     134506 :         int found = 0;</span>
+<span class="lineNum">    1329 </span>            : 
+<span class="lineNum">    1330 </span><span class="lineCov">     134506 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">    1331 </span><span class="lineCov">    3137573 :         AST_RWLIST_TRAVERSE_SAFE_BEGIN(&amp;translators, u, list) {</span>
+<span class="lineNum">    1332 </span><span class="lineCov">    3135333 :                 if (u == t) {</span>
+<span class="lineNum">    1333 </span><span class="lineCov">     132266 :                         AST_RWLIST_REMOVE_CURRENT(list);</span>
+<span class="lineNum">    1334 </span><span class="lineCov">     132266 :                         ast_verb(2, &quot;Unregistered translator '%s' from codec %s to %s\n&quot;,</span>
+<span class="lineNum">    1335 </span>            :                                 term_color(tmp, t-&gt;name, COLOR_MAGENTA, COLOR_BLACK, sizeof(tmp)),
+<span class="lineNum">    1336 </span>            :                                 t-&gt;src_codec.name, t-&gt;dst_codec.name);
+<span class="lineNum">    1337 </span><span class="lineCov">     132266 :                         found = 1;</span>
+<span class="lineNum">    1338 </span><span class="lineCov">     132266 :                         break;</span>
+<span class="lineNum">    1339 </span>            :                 }
+<span class="lineNum">    1340 </span>            :         }
+<span class="lineNum">    1341 </span>            :         AST_RWLIST_TRAVERSE_SAFE_END;
+<span class="lineNum">    1342 </span>            : 
+<span class="lineNum">    1343 </span><span class="lineCov">     134506 :         if (found &amp;&amp; !ast_shutting_down()) {</span>
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :                 matrix_rebuild(0);</span>
+<span class="lineNum">    1345 </span>            :         }
+<span class="lineNum">    1346 </span>            : 
+<span class="lineNum">    1347 </span><span class="lineCov">     134506 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1348 </span>            : 
+<span class="lineNum">    1349 </span><span class="lineCov">     134506 :         return (u ? 0 : -1);</span>
+<a name="1350"><span class="lineNum">    1350 </span>            : }</a>
+<span class="lineNum">    1351 </span>            : 
+<span class="lineNum">    1352 </span><span class="lineNoCov">          0 : void ast_translator_activate(struct ast_translator *t)</span>
+<span class="lineNum">    1353 </span>            : {
+<span class="lineNum">    1354 </span><span class="lineNoCov">          0 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">    1355 </span><span class="lineNoCov">          0 :         t-&gt;active = 1;</span>
+<span class="lineNum">    1356 </span><span class="lineNoCov">          0 :         matrix_rebuild(0);</span>
+<span class="lineNum">    1357 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<a name="1358"><span class="lineNum">    1358 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1359 </span>            : 
+<span class="lineNum">    1360 </span><span class="lineNoCov">          0 : void ast_translator_deactivate(struct ast_translator *t)</span>
+<span class="lineNum">    1361 </span>            : {
+<span class="lineNum">    1362 </span><span class="lineNoCov">          0 :         AST_RWLIST_WRLOCK(&amp;translators);</span>
+<span class="lineNum">    1363 </span><span class="lineNoCov">          0 :         t-&gt;active = 0;</span>
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :         matrix_rebuild(0);</span>
+<span class="lineNum">    1365 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1366 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span>            : /*! Calculate the absolute difference between sample rate of two formats. */
+<span class="lineNum">    1369 </span>            : #define format_sample_rate_absdiff(fmt1, fmt2) ({ \
+<span class="lineNum">    1370 </span>            :         unsigned int rate1 = ast_format_get_sample_rate(fmt1); \
+<span class="lineNum">    1371 </span>            :         unsigned int rate2 = ast_format_get_sample_rate(fmt2); \
+<span class="lineNum">    1372 </span>            :         (rate1 &gt; rate2 ? rate1 - rate2 : rate2 - rate1); \
+<span class="lineNum">    1373 </span>            : })
+<a name="1374"><span class="lineNum">    1374 </span>            : </a>
+<span class="lineNum">    1375 </span>            : /*! \brief Calculate our best translator source format, given costs, and a desired destination */
+<span class="lineNum">    1376 </span><span class="lineCov">      24259 : int ast_translator_best_choice(struct ast_format_cap *dst_cap,</span>
+<span class="lineNum">    1377 </span>            :         struct ast_format_cap *src_cap,
+<span class="lineNum">    1378 </span>            :         struct ast_format **dst_fmt_out,
+<span class="lineNum">    1379 </span>            :         struct ast_format **src_fmt_out)
+<span class="lineNum">    1380 </span>            : {
+<span class="lineNum">    1381 </span><span class="lineCov">      24259 :         unsigned int besttablecost = INT_MAX;</span>
+<span class="lineNum">    1382 </span><span class="lineCov">      24259 :         unsigned int beststeps = INT_MAX;</span>
+<span class="lineNum">    1383 </span>            :         struct ast_format *fmt;
+<a name="1384"><span class="lineNum">    1384 </span>            :         struct ast_format *dst;</a>
+<a name="1385"><span class="lineNum">    1385 </span>            :         struct ast_format *src;</a>
+<span class="lineNum">    1386 </span><span class="lineCov">      48518 :         RAII_VAR(struct ast_format *, best, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1387 </span><span class="lineCov">      48518 :         RAII_VAR(struct ast_format *, bestdst, NULL, ao2_cleanup);</span>
+<span class="lineNum">    1388 </span>            :         struct ast_format_cap *joint_cap;
+<span class="lineNum">    1389 </span>            :         int i;
+<span class="lineNum">    1390 </span>            :         int j;
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span><span class="lineCov">      24259 :         if (ast_format_cap_empty(dst_cap) || ast_format_cap_empty(src_cap)) {</span>
+<span class="lineNum">    1393 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Cannot determine best translation path since one capability supports no formats\n&quot;);</span>
+<span class="lineNum">    1394 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1395 </span>            :         }
+<span class="lineNum">    1396 </span>            : 
+<span class="lineNum">    1397 </span><span class="lineCov">      24259 :         joint_cap = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT);</span>
+<span class="lineNum">    1398 </span><span class="lineCov">      24259 :         if (!joint_cap) {</span>
+<span class="lineNum">    1399 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1400 </span>            :         }
+<span class="lineNum">    1401 </span><span class="lineCov">      24259 :         ast_format_cap_get_compatible(dst_cap, src_cap, joint_cap);</span>
+<span class="lineNum">    1402 </span>            : 
+<span class="lineNum">    1403 </span><span class="lineCov">      48256 :         for (i = 0; i &lt; ast_format_cap_count(joint_cap); ++i, ao2_cleanup(fmt)) {</span>
+<span class="lineNum">    1404 </span><span class="lineCov">      23997 :                 fmt = ast_format_cap_get_format(joint_cap, i);</span>
+<span class="lineNum">    1405 </span><span class="lineCov">      23997 :                 if (!fmt</span>
+<span class="lineNum">    1406 </span><span class="lineCov">      23997 :                         || ast_format_get_type(fmt) != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">    1407 </span><span class="lineCov">         32 :                         continue;</span>
+<span class="lineNum">    1408 </span>            :                 }
+<span class="lineNum">    1409 </span>            : 
+<span class="lineNum">    1410 </span><span class="lineCov">      23965 :                 if (!best</span>
+<span class="lineNum">    1411 </span><span class="lineCov">       4367 :                         || ast_format_get_sample_rate(best) &lt; ast_format_get_sample_rate(fmt)) {</span>
+<span class="lineNum">    1412 </span><span class="lineCov">      20686 :                         ao2_replace(best, fmt);</span>
+<span class="lineNum">    1413 </span>            :                 }
+<span class="lineNum">    1414 </span>            :         }
+<span class="lineNum">    1415 </span><span class="lineCov">      24259 :         ao2_ref(joint_cap, -1);</span>
+<span class="lineNum">    1416 </span>            : 
+<span class="lineNum">    1417 </span><span class="lineCov">      24259 :         if (best) {</span>
+<span class="lineNum">    1418 </span><span class="lineCov">      19598 :                 ao2_replace(*dst_fmt_out, best);</span>
+<span class="lineNum">    1419 </span><span class="lineCov">      19598 :                 ao2_replace(*src_fmt_out, best);</span>
+<span class="lineNum">    1420 </span><span class="lineCov">      19598 :                 return 0;</span>
+<span class="lineNum">    1421 </span>            :         }
+<span class="lineNum">    1422 </span>            : 
+<span class="lineNum">    1423 </span>            :         /* need to translate */
+<span class="lineNum">    1424 </span><span class="lineCov">       4661 :         AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">    1425 </span><span class="lineCov">       9604 :         for (i = 0; i &lt; ast_format_cap_count(dst_cap); ++i, ao2_cleanup(dst)) {</span>
+<span class="lineNum">    1426 </span><span class="lineCov">       4943 :                 dst = ast_format_cap_get_format(dst_cap, i);</span>
+<span class="lineNum">    1427 </span><span class="lineCov">       4943 :                 if (!dst</span>
+<span class="lineNum">    1428 </span><span class="lineCov">       4943 :                         || ast_format_get_type(dst) != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">    1429 </span><span class="lineCov">        100 :                         continue;</span>
+<span class="lineNum">    1430 </span>            :                 }
+<span class="lineNum">    1431 </span>            : 
+<span class="lineNum">    1432 </span><span class="lineCov">      10058 :                 for (j = 0; j &lt; ast_format_cap_count(src_cap); ++j, ao2_cleanup(src)) {</span>
+<span class="lineNum">    1433 </span>            :                         int x;
+<span class="lineNum">    1434 </span>            :                         int y;
+<span class="lineNum">    1435 </span>            : 
+<span class="lineNum">    1436 </span><span class="lineCov">       5215 :                         src = ast_format_cap_get_format(src_cap, j);</span>
+<span class="lineNum">    1437 </span><span class="lineCov">       5215 :                         if (!src</span>
+<span class="lineNum">    1438 </span><span class="lineCov">       5215 :                                 || ast_format_get_type(src) != AST_MEDIA_TYPE_AUDIO) {</span>
+<span class="lineNum">    1439 </span><span class="lineCov">        100 :                                 continue;</span>
+<span class="lineNum">    1440 </span>            :                         }
+<span class="lineNum">    1441 </span>            : 
+<span class="lineNum">    1442 </span><span class="lineCov">       5115 :                         x = format2index(src);</span>
+<span class="lineNum">    1443 </span><span class="lineCov">       5115 :                         y = format2index(dst);</span>
+<span class="lineNum">    1444 </span><span class="lineCov">       5115 :                         if (x &lt; 0 || y &lt; 0) {</span>
+<span class="lineNum">    1445 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1446 </span>            :                         }
+<span class="lineNum">    1447 </span><span class="lineCov">       5115 :                         if (!matrix_get(x, y) || !(matrix_get(x, y)-&gt;step)) {</span>
+<span class="lineNum">    1448 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">    1449 </span>            :                         }
+<span class="lineNum">    1450 </span><span class="lineCov">       5115 :                         if (matrix_get(x, y)-&gt;table_cost &lt; besttablecost</span>
+<span class="lineNum">    1451 </span><span class="lineCov">        356 :                                 || matrix_get(x, y)-&gt;multistep &lt; beststeps) {</span>
+<span class="lineNum">    1452 </span>            :                                 /* better than what we have so far */
+<span class="lineNum">    1453 </span><span class="lineCov">       4759 :                                 ao2_replace(best, src);</span>
+<span class="lineNum">    1454 </span><span class="lineCov">       4759 :                                 ao2_replace(bestdst, dst);</span>
+<span class="lineNum">    1455 </span><span class="lineCov">       4759 :                                 besttablecost = matrix_get(x, y)-&gt;table_cost;</span>
+<span class="lineNum">    1456 </span><span class="lineCov">       4759 :                                 beststeps = matrix_get(x, y)-&gt;multistep;</span>
+<span class="lineNum">    1457 </span><span class="lineCov">        356 :                         } else if (matrix_get(x, y)-&gt;table_cost == besttablecost</span>
+<span class="lineNum">    1458 </span><span class="lineCov">        252 :                                         &amp;&amp; matrix_get(x, y)-&gt;multistep == beststeps) {</span>
+<span class="lineNum">    1459 </span><span class="lineCov">        252 :                                 unsigned int gap_selected = format_sample_rate_absdiff(best, bestdst);</span>
+<span class="lineNum">    1460 </span><span class="lineCov">        252 :                                 unsigned int gap_current = format_sample_rate_absdiff(src, dst);</span>
+<span class="lineNum">    1461 </span>            : 
+<span class="lineNum">    1462 </span><span class="lineCov">        252 :                                 if (gap_current &lt; gap_selected) {</span>
+<span class="lineNum">    1463 </span>            :                                         /* better than what we have so far */
+<span class="lineNum">    1464 </span><span class="lineNoCov">          0 :                                         ao2_replace(best, src);</span>
+<span class="lineNum">    1465 </span><span class="lineNoCov">          0 :                                         ao2_replace(bestdst, dst);</span>
+<span class="lineNum">    1466 </span><span class="lineNoCov">          0 :                                         besttablecost = matrix_get(x, y)-&gt;table_cost;</span>
+<span class="lineNum">    1467 </span><span class="lineNoCov">          0 :                                         beststeps = matrix_get(x, y)-&gt;multistep;</span>
+<span class="lineNum">    1468 </span>            :                                 }
+<span class="lineNum">    1469 </span>            :                         }
+<span class="lineNum">    1470 </span>            :                 }
+<span class="lineNum">    1471 </span>            :         }
+<span class="lineNum">    1472 </span><span class="lineCov">       4661 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1473 </span>            : 
+<span class="lineNum">    1474 </span><span class="lineCov">       4661 :         if (!best) {</span>
+<span class="lineNum">    1475 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1476 </span>            :         }
+<span class="lineNum">    1477 </span><span class="lineCov">       4661 :         ao2_replace(*dst_fmt_out, bestdst);</span>
+<span class="lineNum">    1478 </span><span class="lineCov">       4661 :         ao2_replace(*src_fmt_out, best);</span>
+<span class="lineNum">    1479 </span><span class="lineCov">       4661 :         return 0;</span>
+<a name="1480"><span class="lineNum">    1480 </span>            : }</a>
+<span class="lineNum">    1481 </span>            : 
+<span class="lineNum">    1482 </span><span class="lineCov">         58 : unsigned int ast_translate_path_steps(struct ast_format *dst_format, struct ast_format *src_format)</span>
+<span class="lineNum">    1483 </span>            : {
+<span class="lineNum">    1484 </span><span class="lineCov">         58 :         unsigned int res = -1;</span>
+<span class="lineNum">    1485 </span>            :         /* convert bitwise format numbers into array indices */
+<span class="lineNum">    1486 </span><span class="lineCov">         58 :         int src = format2index(src_format);</span>
+<span class="lineNum">    1487 </span><span class="lineCov">         58 :         int dest = format2index(dst_format);</span>
+<span class="lineNum">    1488 </span>            : 
+<span class="lineNum">    1489 </span><span class="lineCov">         58 :         if (src &lt; 0 || dest &lt; 0) {</span>
+<span class="lineNum">    1490 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No translator path: (%s codec is not valid)\n&quot;, src &lt; 0 ? &quot;starting&quot; : &quot;ending&quot;);</span>
+<span class="lineNum">    1491 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1492 </span>            :         }
+<span class="lineNum">    1493 </span><span class="lineCov">         58 :         AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">    1494 </span>            : 
+<span class="lineNum">    1495 </span><span class="lineCov">         58 :         if (matrix_get(src, dest)-&gt;step) {</span>
+<span class="lineNum">    1496 </span><span class="lineCov">         58 :                 res = matrix_get(src, dest)-&gt;multistep + 1;</span>
+<span class="lineNum">    1497 </span>            :         }
+<span class="lineNum">    1498 </span>            : 
+<span class="lineNum">    1499 </span><span class="lineCov">         58 :         AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1500 </span>            : 
+<span class="lineNum">    1501 </span><span class="lineCov">         58 :         return res;</span>
+<a name="1502"><span class="lineNum">    1502 </span>            : }</a>
+<span class="lineNum">    1503 </span>            : 
+<span class="lineNum">    1504 </span><span class="lineCov">        590 : static void check_translation_path(</span>
+<span class="lineNum">    1505 </span>            :         struct ast_format_cap *dest, struct ast_format_cap *src,
+<span class="lineNum">    1506 </span>            :         struct ast_format_cap *result, struct ast_format *src_fmt,
+<span class="lineNum">    1507 </span>            :         enum ast_media_type type)
+<span class="lineNum">    1508 </span>            : {
+<span class="lineNum">    1509 </span><span class="lineCov">        590 :         int index, src_index = format2index(src_fmt);</span>
+<span class="lineNum">    1510 </span>            :         /* For a given source format, traverse the list of
+<span class="lineNum">    1511 </span>            :            known formats to determine whether there exists
+<span class="lineNum">    1512 </span>            :            a translation path from the source format to the
+<span class="lineNum">    1513 </span>            :            destination format. */
+<a name="1514"><span class="lineNum">    1514 </span><span class="lineCov">      18110 :         for (index = 0; (src_index &gt;= 0) &amp;&amp; index &lt; cur_max_index; index++) {</span></a>
+<span class="lineNum">    1515 </span><span class="lineCov">      17520 :                 struct ast_codec *codec = index2codec(index);</span>
+<span class="lineNum">    1516 </span><span class="lineCov">      52560 :                 RAII_VAR(struct ast_format *, fmt, ast_format_create(codec), ao2_cleanup);</span>
+<span class="lineNum">    1517 </span>            : 
+<span class="lineNum">    1518 </span><span class="lineCov">      17520 :                 ao2_ref(codec, -1);</span>
+<span class="lineNum">    1519 </span>            : 
+<span class="lineNum">    1520 </span><span class="lineCov">      17520 :                 if (ast_format_get_type(fmt) != type) {</span>
+<span class="lineNum">    1521 </span><span class="lineCov">       8760 :                         continue;</span>
+<span class="lineNum">    1522 </span>            :                 }
+<span class="lineNum">    1523 </span>            : 
+<span class="lineNum">    1524 </span>            :                 /* if this is not a desired format, nothing to do */
+<span class="lineNum">    1525 </span><span class="lineCov">       8760 :                 if (ast_format_cap_iscompatible_format(dest, fmt) == AST_FORMAT_CMP_NOT_EQUAL) {</span>
+<span class="lineNum">    1526 </span><span class="lineCov">       8067 :                         continue;</span>
+<span class="lineNum">    1527 </span>            :                 }
+<span class="lineNum">    1528 </span>            : 
+<span class="lineNum">    1529 </span>            :                 /* if the source is supplying this format, then
+<span class="lineNum">    1530 </span>            :                    we can leave it in the result */
+<span class="lineNum">    1531 </span><span class="lineCov">        693 :                 if (ast_format_cap_iscompatible_format(src, fmt) == AST_FORMAT_CMP_EQUAL) {</span>
+<span class="lineNum">    1532 </span><span class="lineCov">        140 :                         continue;</span>
+<span class="lineNum">    1533 </span>            :                 }
+<span class="lineNum">    1534 </span>            : 
+<span class="lineNum">    1535 </span>            :                 /* if we don't have a translation path from the src
+<span class="lineNum">    1536 </span>            :                    to this format, remove it from the result */
+<span class="lineNum">    1537 </span><span class="lineCov">        553 :                 if (!matrix_get(src_index, index)-&gt;step) {</span>
+<span class="lineNum">    1538 </span><span class="lineNoCov">          0 :                         ast_format_cap_remove(result, fmt);</span>
+<span class="lineNum">    1539 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1540 </span>            :                 }
+<span class="lineNum">    1541 </span>            : 
+<span class="lineNum">    1542 </span>            :                 /* now check the opposite direction */
+<span class="lineNum">    1543 </span><span class="lineCov">        553 :                 if (!matrix_get(index, src_index)-&gt;step) {</span>
+<span class="lineNum">    1544 </span><span class="lineNoCov">          0 :                         ast_format_cap_remove(result, fmt);</span>
+<span class="lineNum">    1545 </span>            :                 }
+<span class="lineNum">    1546 </span>            :         }
+<span class="lineNum">    1547 </span>            : 
+<a name="1548"><span class="lineNum">    1548 </span><span class="lineCov">        590 : }</span></a>
+<span class="lineNum">    1549 </span>            : 
+<span class="lineNum">    1550 </span><span class="lineCov">        292 : void ast_translate_available_formats(struct ast_format_cap *dest, struct ast_format_cap *src, struct ast_format_cap *result)</span>
+<span class="lineNum">    1551 </span>            : {
+<span class="lineNum">    1552 </span>            :         struct ast_format *cur_dest, *cur_src;
+<span class="lineNum">    1553 </span>            :         int index;
+<span class="lineNum">    1554 </span>            : 
+<span class="lineNum">    1555 </span><span class="lineCov">       1186 :         for (index = 0; index &lt; ast_format_cap_count(dest); ++index) {</span>
+<span class="lineNum">    1556 </span><span class="lineCov">        894 :                 if (!(cur_dest = ast_format_cap_get_format(dest, index))) {</span>
+<span class="lineNum">    1557 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1558 </span>            :                 }
+<span class="lineNum">    1559 </span>            : 
+<span class="lineNum">    1560 </span>            :                 /* We give preference to a joint format structure if possible */
+<span class="lineNum">    1561 </span><span class="lineCov">        894 :                 if ((cur_src = ast_format_cap_get_compatible_format(src, cur_dest))) {</span>
+<span class="lineNum">    1562 </span><span class="lineCov">        143 :                         ast_format_cap_append(result, cur_src, 0);</span>
+<span class="lineNum">    1563 </span><span class="lineCov">        143 :                         ao2_ref(cur_src, -1);</span>
+<span class="lineNum">    1564 </span>            :                 } else {
+<span class="lineNum">    1565 </span>            :                         /* Otherwise we just use the destination format */
+<span class="lineNum">    1566 </span><span class="lineCov">        751 :                         ast_format_cap_append(result, cur_dest, 0);</span>
+<span class="lineNum">    1567 </span>            :                 }
+<span class="lineNum">    1568 </span><span class="lineCov">        894 :                 ao2_ref(cur_dest, -1);</span>
+<span class="lineNum">    1569 </span>            :         }
+<span class="lineNum">    1570 </span>            : 
+<span class="lineNum">    1571 </span>            :         /* if we don't have a source format, we just have to try all
+<span class="lineNum">    1572 </span>            :            possible destination formats */
+<span class="lineNum">    1573 </span><span class="lineCov">        292 :         if (!src) {</span>
+<span class="lineNum">    1574 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1575 </span>            :         }
+<span class="lineNum">    1576 </span>            : 
+<span class="lineNum">    1577 </span><span class="lineCov">        587 :         for (index = 0; index &lt; ast_format_cap_count(src); ++index) {</span>
+<span class="lineNum">    1578 </span><span class="lineCov">        295 :                 if (!(cur_src = ast_format_cap_get_format(src, index))) {</span>
+<span class="lineNum">    1579 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">    1580 </span>            :                 }
+<span class="lineNum">    1581 </span>            : 
+<span class="lineNum">    1582 </span><span class="lineCov">        295 :                 AST_RWLIST_RDLOCK(&amp;translators);</span>
+<span class="lineNum">    1583 </span><span class="lineCov">        295 :                 check_translation_path(dest, src, result,</span>
+<span class="lineNum">    1584 </span>            :                                        cur_src, AST_MEDIA_TYPE_AUDIO);
+<span class="lineNum">    1585 </span><span class="lineCov">        295 :                 check_translation_path(dest, src, result,</span>
+<span class="lineNum">    1586 </span>            :                                        cur_src, AST_MEDIA_TYPE_VIDEO);
+<span class="lineNum">    1587 </span><span class="lineCov">        295 :                 AST_RWLIST_UNLOCK(&amp;translators);</span>
+<span class="lineNum">    1588 </span><span class="lineCov">        295 :                 ao2_ref(cur_src, -1);</span>
+<span class="lineNum">    1589 </span>            :         }
+<a name="1590"><span class="lineNum">    1590 </span>            : }</a>
+<span class="lineNum">    1591 </span>            : 
+<span class="lineNum">    1592 </span><span class="lineCov">       1015 : static void translate_shutdown(void)</span>
+<span class="lineNum">    1593 </span>            : {
+<span class="lineNum">    1594 </span>            :         int x;
+<span class="lineNum">    1595 </span><span class="lineCov">       1015 :         ast_cli_unregister_multiple(cli_translate, ARRAY_LEN(cli_translate));</span>
+<span class="lineNum">    1596 </span>            : 
+<span class="lineNum">    1597 </span><span class="lineCov">       1015 :         ast_rwlock_wrlock(&amp;tablelock);</span>
+<span class="lineNum">    1598 </span><span class="lineCov">      33495 :         for (x = 0; x &lt; index_size; x++) {</span>
+<span class="lineNum">    1599 </span><span class="lineCov">      32480 :                 ast_free(__matrix[x]);</span>
+<span class="lineNum">    1600 </span>            :         }
+<span class="lineNum">    1601 </span><span class="lineCov">       1015 :         ast_free(__matrix);</span>
+<span class="lineNum">    1602 </span><span class="lineCov">       1015 :         __matrix = NULL;</span>
+<span class="lineNum">    1603 </span><span class="lineCov">       1015 :         ast_free(__indextable);</span>
+<span class="lineNum">    1604 </span><span class="lineCov">       1015 :         __indextable = NULL;</span>
+<span class="lineNum">    1605 </span><span class="lineCov">       1015 :         ast_rwlock_unlock(&amp;tablelock);</span>
+<span class="lineNum">    1606 </span><span class="lineCov">       1015 :         ast_rwlock_destroy(&amp;tablelock);</span>
+<a name="1607"><span class="lineNum">    1607 </span><span class="lineCov">       1015 : }</span></a>
+<span class="lineNum">    1608 </span>            : 
+<span class="lineNum">    1609 </span><span class="lineCov">       1124 : int ast_translate_init(void)</span>
+<span class="lineNum">    1610 </span>            : {
+<span class="lineNum">    1611 </span><span class="lineCov">       1124 :         int res = 0;</span>
+<span class="lineNum">    1612 </span><span class="lineCov">       1124 :         ast_rwlock_init(&amp;tablelock);</span>
+<span class="lineNum">    1613 </span><span class="lineCov">       1124 :         res = matrix_resize(1);</span>
+<span class="lineNum">    1614 </span><span class="lineCov">       1124 :         res |= ast_cli_register_multiple(cli_translate, ARRAY_LEN(cli_translate));</span>
+<span class="lineNum">    1615 </span><span class="lineCov">       1124 :         ast_register_cleanup(translate_shutdown);</span>
+<span class="lineNum">    1616 </span><span class="lineCov">       1124 :         return res;</span>
+<span class="lineNum">    1617 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

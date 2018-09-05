@@ -1,0 +1,1169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/core_local.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - core_local.c<span style="font-size: 80%;"> (source / <a href="core_local.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">390</td>
+            <td class="headerCovTableEntry">470</td>
+            <td class="headerCovTableEntryMed">83.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013 Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Richard Mudgett &lt;rmudgett@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \brief Local proxy channel driver.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Richard Mudgett &lt;rmudgett@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * See Also:
+<span class="lineNum">      26 </span>            :  * \arg \ref AstCREDITS
+<span class="lineNum">      27 </span>            :  */
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : /*** MODULEINFO
+<span class="lineNum">      30 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      31 </span>            :  ***/
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : /* ------------------------------------------------------------------- */
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/devicestate.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;asterisk/bridge.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;asterisk/core_unreal.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/core_local.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/stasis.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      53 </span>            :         &lt;manager name=&quot;LocalOptimizeAway&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      54 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      55 </span>            :                         Optimize away a local channel when possible.
+<span class="lineNum">      56 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      57 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      58 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      59 </span>            :                         &lt;parameter name=&quot;Channel&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      60 </span>            :                                 &lt;para&gt;The channel name to optimize away.&lt;/para&gt;
+<span class="lineNum">      61 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      62 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      63 </span>            :                 &lt;description&gt;
+<span class="lineNum">      64 </span>            :                         &lt;para&gt;A local channel created with &quot;/n&quot; will not automatically optimize away.
+<span class="lineNum">      65 </span>            :                         Calling this command on the local channel will clear that flag and allow
+<span class="lineNum">      66 </span>            :                         it to optimize away if it's bridged or when it becomes bridged.&lt;/para&gt;
+<span class="lineNum">      67 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      68 </span>            :         &lt;/manager&gt;
+<span class="lineNum">      69 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;LocalBridge&quot;&gt;
+<span class="lineNum">      70 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_CALL&quot;&gt;
+<span class="lineNum">      71 </span>            :                         &lt;synopsis&gt;Raised when two halves of a Local Channel form a bridge.&lt;/synopsis&gt;
+<span class="lineNum">      72 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalOne&quot;/&gt;
+<span class="lineNum">      74 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalTwo&quot;/&gt;
+<span class="lineNum">      75 </span>            :                                 &lt;parameter name=&quot;Context&quot;&gt;
+<span class="lineNum">      76 </span>            :                                         &lt;para&gt;The context in the dialplan that Channel2 starts in.&lt;/para&gt;
+<span class="lineNum">      77 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      78 </span>            :                                 &lt;parameter name=&quot;Exten&quot;&gt;
+<span class="lineNum">      79 </span>            :                                         &lt;para&gt;The extension in the dialplan that Channel2 starts in.&lt;/para&gt;
+<span class="lineNum">      80 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      81 </span>            :                                 &lt;parameter name=&quot;LocalOptimization&quot;&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;enumlist&gt;
+<span class="lineNum">      83 </span>            :                                                 &lt;enum name=&quot;Yes&quot;/&gt;
+<span class="lineNum">      84 </span>            :                                                 &lt;enum name=&quot;No&quot;/&gt;
+<span class="lineNum">      85 </span>            :                                         &lt;/enumlist&gt;
+<span class="lineNum">      86 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">      87 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">      88 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">      89 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">      90 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;LocalOptimizationBegin&quot;&gt;
+<span class="lineNum">      91 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_CALL&quot;&gt;
+<span class="lineNum">      92 </span>            :                         &lt;synopsis&gt;Raised when two halves of a Local Channel begin to optimize
+<span class="lineNum">      93 </span>            :                         themselves out of the media path.&lt;/synopsis&gt;
+<span class="lineNum">      94 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">      95 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalOne&quot;/&gt;
+<span class="lineNum">      96 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalTwo&quot;/&gt;
+<span class="lineNum">      97 </span>            :                                 &lt;channel_snapshot prefix=&quot;Source&quot;/&gt;
+<span class="lineNum">      98 </span>            :                                 &lt;parameter name=&quot;DestUniqueId&quot;&gt;
+<span class="lineNum">      99 </span>            :                                         &lt;para&gt;The unique ID of the bridge into which the local channel is optimizing.&lt;/para&gt;
+<span class="lineNum">     100 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">     101 </span>            :                                 &lt;parameter name=&quot;Id&quot;&gt;
+<span class="lineNum">     102 </span>            :                                         &lt;para&gt;Identification for the optimization operation.&lt;/para&gt;
+<span class="lineNum">     103 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">     104 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">     105 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">     106 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;LocalOptimizationEnd&lt;/ref&gt;
+<span class="lineNum">     107 </span>            :                                 &lt;ref type=&quot;manager&quot;&gt;LocalOptimizeAway&lt;/ref&gt;
+<span class="lineNum">     108 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">     109 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">     110 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">     111 </span>            :         &lt;managerEvent language=&quot;en_US&quot; name=&quot;LocalOptimizationEnd&quot;&gt;
+<span class="lineNum">     112 </span>            :                 &lt;managerEventInstance class=&quot;EVENT_FLAG_CALL&quot;&gt;
+<span class="lineNum">     113 </span>            :                         &lt;synopsis&gt;Raised when two halves of a Local Channel have finished optimizing
+<span class="lineNum">     114 </span>            :                         themselves out of the media path.&lt;/synopsis&gt;
+<span class="lineNum">     115 </span>            :                         &lt;syntax&gt;
+<span class="lineNum">     116 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalOne&quot;/&gt;
+<span class="lineNum">     117 </span>            :                                 &lt;channel_snapshot prefix=&quot;LocalTwo&quot;/&gt;
+<span class="lineNum">     118 </span>            :                                 &lt;parameter name=&quot;Success&quot;&gt;
+<span class="lineNum">     119 </span>            :                                         &lt;para&gt;Indicates whether the local optimization succeeded.&lt;/para&gt;
+<span class="lineNum">     120 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">     121 </span>            :                                 &lt;parameter name=&quot;Id&quot;&gt;
+<span class="lineNum">     122 </span>            :                                         &lt;para&gt;Identification for the optimization operation. Matches the &lt;replaceable&gt;Id&lt;/replaceable&gt;
+<span class="lineNum">     123 </span>            :                                         from a previous &lt;literal&gt;LocalOptimizationBegin&lt;/literal&gt;&lt;/para&gt;
+<span class="lineNum">     124 </span>            :                                 &lt;/parameter&gt;
+<span class="lineNum">     125 </span>            :                         &lt;/syntax&gt;
+<span class="lineNum">     126 </span>            :                         &lt;see-also&gt;
+<span class="lineNum">     127 </span>            :                                 &lt;ref type=&quot;managerEvent&quot;&gt;LocalOptimizationBegin&lt;/ref&gt;
+<span class="lineNum">     128 </span>            :                                 &lt;ref type=&quot;manager&quot;&gt;LocalOptimizeAway&lt;/ref&gt;
+<span class="lineNum">     129 </span>            :                         &lt;/see-also&gt;
+<span class="lineNum">     130 </span>            :                 &lt;/managerEventInstance&gt;
+<span class="lineNum">     131 </span>            :         &lt;/managerEvent&gt;
+<span class="lineNum">     132 </span>            :  ***/
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            : static const char tdesc[] = &quot;Local Proxy Channel Driver&quot;;
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : static struct ao2_container *locals;
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : static struct ast_channel *local_request(const char *type, struct ast_format_cap *cap, const struct ast_assigned_ids *assignedids, const struct ast_channel *requestor, const char *data, int *cause);
+<span class="lineNum">     139 </span>            : static int local_call(struct ast_channel *ast, const char *dest, int timeout);
+<span class="lineNum">     140 </span>            : static int local_hangup(struct ast_channel *ast);
+<span class="lineNum">     141 </span>            : static int local_devicestate(const char *data);
+<span class="lineNum">     142 </span>            : static void local_optimization_started_cb(struct ast_unreal_pvt *base, struct ast_channel *source,
+<span class="lineNum">     143 </span>            :                 enum ast_unreal_channel_indicator dest, unsigned int id);
+<span class="lineNum">     144 </span>            : static void local_optimization_finished_cb(struct ast_unreal_pvt *base, int success, unsigned int id);
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            : static struct ast_manager_event_blob *local_message_to_ami(struct stasis_message *msg);
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span>            : /*!
+<a name="149"><span class="lineNum">     149 </span>            :  * @{ \brief Define local channel message types.</a>
+<span class="lineNum">     150 </span>            :  */
+<span class="lineNum">     151 </span><span class="lineCov">       3708 : STASIS_MESSAGE_TYPE_DEFN(ast_local_bridge_type,</span>
+<a name="152"><span class="lineNum">     152 </span>            :         .to_ami = local_message_to_ami,</a>
+<span class="lineNum">     153 </span>            :         );
+<span class="lineNum">     154 </span><span class="lineCov">       2085 : STASIS_MESSAGE_TYPE_DEFN(ast_local_optimization_begin_type,</span>
+<a name="155"><span class="lineNum">     155 </span>            :         .to_ami = local_message_to_ami,</a>
+<span class="lineNum">     156 </span>            :         );
+<span class="lineNum">     157 </span><span class="lineCov">       3020 : STASIS_MESSAGE_TYPE_DEFN(ast_local_optimization_end_type,</span>
+<span class="lineNum">     158 </span>            :         .to_ami = local_message_to_ami,
+<span class="lineNum">     159 </span>            :         );
+<span class="lineNum">     160 </span>            : /*! @} */
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span>            : /*! \brief Callbacks from the unreal core when channel optimization occurs */
+<span class="lineNum">     163 </span>            : struct ast_unreal_pvt_callbacks local_unreal_callbacks = {
+<span class="lineNum">     164 </span>            :         .optimization_started = local_optimization_started_cb,
+<span class="lineNum">     165 </span>            :         .optimization_finished = local_optimization_finished_cb,
+<span class="lineNum">     166 </span>            : };
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span>            : /* PBX interface structure for channel registration */
+<span class="lineNum">     169 </span>            : static struct ast_channel_tech local_tech = {
+<span class="lineNum">     170 </span>            :         .type = &quot;Local&quot;,
+<span class="lineNum">     171 </span>            :         .description = tdesc,
+<span class="lineNum">     172 </span>            :         .requester = local_request,
+<span class="lineNum">     173 </span>            :         .send_digit_begin = ast_unreal_digit_begin,
+<span class="lineNum">     174 </span>            :         .send_digit_end = ast_unreal_digit_end,
+<span class="lineNum">     175 </span>            :         .call = local_call,
+<span class="lineNum">     176 </span>            :         .hangup = local_hangup,
+<span class="lineNum">     177 </span>            :         .answer = ast_unreal_answer,
+<span class="lineNum">     178 </span>            :         .read = ast_unreal_read,
+<span class="lineNum">     179 </span>            :         .write = ast_unreal_write,
+<span class="lineNum">     180 </span>            :         .write_video = ast_unreal_write,
+<span class="lineNum">     181 </span>            :         .exception = ast_unreal_read,
+<span class="lineNum">     182 </span>            :         .indicate = ast_unreal_indicate,
+<span class="lineNum">     183 </span>            :         .fixup = ast_unreal_fixup,
+<span class="lineNum">     184 </span>            :         .send_html = ast_unreal_sendhtml,
+<span class="lineNum">     185 </span>            :         .send_text = ast_unreal_sendtext,
+<span class="lineNum">     186 </span>            :         .devicestate = local_devicestate,
+<span class="lineNum">     187 </span>            :         .queryoption = ast_unreal_queryoption,
+<span class="lineNum">     188 </span>            :         .setoption = ast_unreal_setoption,
+<span class="lineNum">     189 </span>            : };
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            : /*! What to do with the ;2 channel when ast_call() happens. */
+<span class="lineNum">     192 </span>            : enum local_call_action {
+<span class="lineNum">     193 </span>            :         /* The ast_call() will run dialplan on the ;2 channel. */
+<span class="lineNum">     194 </span>            :         LOCAL_CALL_ACTION_DIALPLAN,
+<span class="lineNum">     195 </span>            :         /* The ast_call() will impart the ;2 channel into a bridge. */
+<span class="lineNum">     196 </span>            :         LOCAL_CALL_ACTION_BRIDGE,
+<span class="lineNum">     197 </span>            :         /* The ast_call() will masquerade the ;2 channel into a channel. */
+<span class="lineNum">     198 </span>            :         LOCAL_CALL_ACTION_MASQUERADE,
+<span class="lineNum">     199 </span>            : };
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            : /*! Join a bridge on ast_call() parameters. */
+<span class="lineNum">     202 </span>            : struct local_bridge {
+<span class="lineNum">     203 </span>            :         /*! Bridge to join. */
+<span class="lineNum">     204 </span>            :         struct ast_bridge *join;
+<span class="lineNum">     205 </span>            :         /*! Channel to swap with when joining bridge. */
+<span class="lineNum">     206 </span>            :         struct ast_channel *swap;
+<span class="lineNum">     207 </span>            :         /*! Features that are specific to this channel when pushed into the bridge. */
+<span class="lineNum">     208 </span>            :         struct ast_bridge_features *features;
+<span class="lineNum">     209 </span>            : };
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            : /*!
+<span class="lineNum">     212 </span>            :  * \brief the local pvt structure for all channels
+<span class="lineNum">     213 </span>            :  *
+<span class="lineNum">     214 </span>            :  * The local channel pvt has two ast_chan objects - the &quot;owner&quot; and the &quot;next channel&quot;, the outbound channel
+<span class="lineNum">     215 </span>            :  *
+<span class="lineNum">     216 </span>            :  * ast_chan owner -&gt; local_pvt -&gt; ast_chan chan
+<span class="lineNum">     217 </span>            :  */
+<span class="lineNum">     218 </span>            : struct local_pvt {
+<span class="lineNum">     219 </span>            :         /*! Unreal channel driver base class values. */
+<span class="lineNum">     220 </span>            :         struct ast_unreal_pvt base;
+<span class="lineNum">     221 </span>            :         /*! Additional action arguments */
+<span class="lineNum">     222 </span>            :         union {
+<span class="lineNum">     223 </span>            :                 /*! Make ;2 join a bridge on ast_call(). */
+<span class="lineNum">     224 </span>            :                 struct local_bridge bridge;
+<span class="lineNum">     225 </span>            :                 /*! Make ;2 masquerade into this channel on ast_call(). */
+<span class="lineNum">     226 </span>            :                 struct ast_channel *masq;
+<span class="lineNum">     227 </span>            :         } action;
+<span class="lineNum">     228 </span>            :         /*! What to do with the ;2 channel on ast_call(). */
+<span class="lineNum">     229 </span>            :         enum local_call_action type;
+<span class="lineNum">     230 </span>            :         /*! Context to call */
+<span class="lineNum">     231 </span>            :         char context[AST_MAX_CONTEXT];
+<span class="lineNum">     232 </span>            :         /*! Extension to call */
+<span class="lineNum">     233 </span>            :         char exten[AST_MAX_EXTENSION];
+<a name="234"><span class="lineNum">     234 </span>            : };</a>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">          4 : void ast_local_lock_all(struct ast_channel *chan, void **tech_pvt,</span>
+<span class="lineNum">     237 </span>            :         struct ast_channel **base_chan, struct ast_channel **base_owner)
+<span class="lineNum">     238 </span>            : {
+<span class="lineNum">     239 </span><span class="lineCov">          4 :         struct local_pvt *p = ast_channel_tech_pvt(chan);</span>
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineCov">          4 :         *tech_pvt = NULL;</span>
+<span class="lineNum">     242 </span><span class="lineCov">          4 :         *base_chan = NULL;</span>
+<span class="lineNum">     243 </span><span class="lineCov">          4 :         *base_owner = NULL;</span>
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span><span class="lineCov">          4 :         if (p) {</span>
+<span class="lineNum">     246 </span><span class="lineCov">          4 :                 *tech_pvt = ao2_bump(p);</span>
+<span class="lineNum">     247 </span><span class="lineCov">          4 :                 ast_unreal_lock_all(&amp;p-&gt;base, base_chan, base_owner);</span>
+<span class="lineNum">     248 </span>            :         }
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">          4 : void ast_local_unlock_all(void *tech_pvt, struct ast_channel *base_chan,</span>
+<span class="lineNum">     252 </span>            :         struct ast_channel *base_owner)
+<span class="lineNum">     253 </span>            : {
+<span class="lineNum">     254 </span><span class="lineCov">          4 :         if (base_chan) {</span>
+<span class="lineNum">     255 </span><span class="lineCov">          4 :                 ast_channel_unlock(base_chan);</span>
+<span class="lineNum">     256 </span><span class="lineCov">          4 :                 ast_channel_unref(base_chan);</span>
+<span class="lineNum">     257 </span>            :         }
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">          4 :         if (base_owner) {</span>
+<span class="lineNum">     260 </span><span class="lineCov">          4 :                 ast_channel_unlock(base_owner);</span>
+<span class="lineNum">     261 </span><span class="lineCov">          4 :                 ast_channel_unref(base_owner);</span>
+<span class="lineNum">     262 </span>            :         }
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineCov">          4 :         if (tech_pvt) {</span>
+<span class="lineNum">     265 </span><span class="lineCov">          4 :                 struct local_pvt *p = tech_pvt;</span>
+<span class="lineNum">     266 </span><span class="lineCov">          4 :                 ao2_unlock(&amp;p-&gt;base);</span>
+<span class="lineNum">     267 </span><span class="lineCov">          4 :                 ao2_ref(tech_pvt, -1);</span>
+<span class="lineNum">     268 </span>            :         }
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineCov">        100 : struct ast_channel *ast_local_get_peer(struct ast_channel *ast)</span>
+<span class="lineNum">     272 </span>            : {
+<span class="lineNum">     273 </span><span class="lineCov">        100 :         struct local_pvt *p = ast_channel_tech_pvt(ast);</span>
+<span class="lineNum">     274 </span>            :         struct local_pvt *found;
+<span class="lineNum">     275 </span>            :         struct ast_channel *peer;
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">        100 :         if (!p) {</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">        100 :         found = p ? ao2_find(locals, p, 0) : NULL;</span>
+<span class="lineNum">     282 </span><span class="lineCov">        100 :         if (!found) {</span>
+<span class="lineNum">     283 </span>            :                 /* ast is either not a local channel or it has alredy been hungup */
+<span class="lineNum">     284 </span><span class="lineCov">         22 :                 return NULL;</span>
+<span class="lineNum">     285 </span>            :         }
+<span class="lineNum">     286 </span><span class="lineCov">         78 :         ao2_lock(found);</span>
+<span class="lineNum">     287 </span><span class="lineCov">         78 :         if (ast == p-&gt;base.owner) {</span>
+<span class="lineNum">     288 </span><span class="lineCov">         78 :                 peer = p-&gt;base.chan;</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :         } else if (ast == p-&gt;base.chan) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 peer = p-&gt;base.owner;</span>
+<span class="lineNum">     291 </span>            :         } else {
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 peer = NULL;</span>
+<span class="lineNum">     293 </span>            :         }
+<span class="lineNum">     294 </span><span class="lineCov">         78 :         if (peer) {</span>
+<span class="lineNum">     295 </span><span class="lineCov">         78 :                 ast_channel_ref(peer);</span>
+<span class="lineNum">     296 </span>            :         }
+<span class="lineNum">     297 </span><span class="lineCov">         78 :         ao2_unlock(found);</span>
+<span class="lineNum">     298 </span><span class="lineCov">         78 :         ao2_ref(found, -1);</span>
+<span class="lineNum">     299 </span><span class="lineCov">         78 :         return peer;</span>
+<span class="lineNum">     300 </span>            : }
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span>            : /*! \brief Adds devicestate to local channels */
+<span class="lineNum">     303 </span><span class="lineCov">       4798 : static int local_devicestate(const char *data)</span>
+<span class="lineNum">     304 </span>            : {
+<span class="lineNum">     305 </span><span class="lineCov">       4798 :         int is_inuse = 0;</span>
+<span class="lineNum">     306 </span><span class="lineCov">       4798 :         int res = AST_DEVICE_INVALID;</span>
+<span class="lineNum">     307 </span><span class="lineCov">       4798 :         char *exten = ast_strdupa(data);</span>
+<span class="lineNum">     308 </span>            :         char *context;
+<span class="lineNum">     309 </span>            :         char *opts;
+<span class="lineNum">     310 </span>            :         struct local_pvt *lp;
+<span class="lineNum">     311 </span>            :         struct ao2_iterator it;
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span>            :         /* Strip options if they exist */
+<span class="lineNum">     314 </span><span class="lineCov">       4798 :         opts = strchr(exten, '/');</span>
+<span class="lineNum">     315 </span><span class="lineCov">       4798 :         if (opts) {</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 *opts = '\0';</span>
+<span class="lineNum">     317 </span>            :         }
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineCov">       4798 :         context = strchr(exten, '@');</span>
+<span class="lineNum">     320 </span><span class="lineCov">       4798 :         if (!context) {</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">     322 </span>            :                         &quot;Someone used Local/%s somewhere without a @context. This is bad.\n&quot;, data);
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return AST_DEVICE_INVALID;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span><span class="lineCov">       4798 :         *context++ = '\0';</span>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineCov">       4798 :         it = ao2_iterator_init(locals, 0);</span>
+<span class="lineNum">     328 </span><span class="lineCov">      87499 :         for (; (lp = ao2_iterator_next(&amp;it)); ao2_ref(lp, -1)) {</span>
+<span class="lineNum">     329 </span><span class="lineCov">      85067 :                 ao2_lock(lp);</span>
+<span class="lineNum">     330 </span><span class="lineCov">      85067 :                 if (!strcmp(exten, lp-&gt;exten)</span>
+<span class="lineNum">     331 </span><span class="lineCov">       3283 :                         &amp;&amp; !strcmp(context, lp-&gt;context)) {</span>
+<span class="lineNum">     332 </span><span class="lineCov">       2990 :                         res = AST_DEVICE_NOT_INUSE;</span>
+<span class="lineNum">     333 </span><span class="lineCov">       2990 :                         if (lp-&gt;base.owner</span>
+<span class="lineNum">     334 </span><span class="lineCov">       2589 :                                 &amp;&amp; ast_test_flag(&amp;lp-&gt;base, AST_UNREAL_CARETAKER_THREAD)) {</span>
+<span class="lineNum">     335 </span><span class="lineCov">       2366 :                                 is_inuse = 1;</span>
+<span class="lineNum">     336 </span>            :                         }
+<span class="lineNum">     337 </span>            :                 }
+<span class="lineNum">     338 </span><span class="lineCov">      85067 :                 ao2_unlock(lp);</span>
+<span class="lineNum">     339 </span><span class="lineCov">      85067 :                 if (is_inuse) {</span>
+<span class="lineNum">     340 </span><span class="lineCov">       2366 :                         res = AST_DEVICE_INUSE;</span>
+<span class="lineNum">     341 </span><span class="lineCov">       2366 :                         ao2_ref(lp, -1);</span>
+<span class="lineNum">     342 </span><span class="lineCov">       2366 :                         break;</span>
+<span class="lineNum">     343 </span>            :                 }
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span><span class="lineCov">       4798 :         ao2_iterator_destroy(&amp;it);</span>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">       4798 :         if (res == AST_DEVICE_INVALID) {</span>
+<span class="lineNum">     348 </span><span class="lineCov">       1847 :                 ast_debug(3, &quot;Checking if extension %s@%s exists (devicestate)\n&quot;, exten, context);</span>
+<span class="lineNum">     349 </span><span class="lineCov">       1847 :                 if (ast_exists_extension(NULL, context, exten, 1, NULL)) {</span>
+<span class="lineNum">     350 </span><span class="lineCov">       1809 :                         res = AST_DEVICE_NOT_INUSE;</span>
+<span class="lineNum">     351 </span>            :                 }
+<span class="lineNum">     352 </span>            :         }
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineCov">       4798 :         return res;</span>
+<a name="355"><span class="lineNum">     355 </span>            : }</a>
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">        418 : static struct ast_multi_channel_blob *local_channel_optimization_blob(struct local_pvt *p,</span>
+<span class="lineNum">     358 </span>            :                 struct ast_json *json_object)
+<a name="359"><span class="lineNum">     359 </span>            : {</a>
+<a name="360"><span class="lineNum">     360 </span>            :         struct ast_multi_channel_blob *payload;</a>
+<span class="lineNum">     361 </span><span class="lineCov">        836 :         RAII_VAR(struct ast_channel_snapshot *, local_one_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     362 </span><span class="lineCov">        836 :         RAII_VAR(struct ast_channel_snapshot *, local_two_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineCov">        418 :         local_one_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(p-&gt;base.owner));</span>
+<span class="lineNum">     365 </span><span class="lineCov">        418 :         if (!local_one_snapshot) {</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     367 </span>            :         }
+<span class="lineNum">     368 </span>            : 
+<span class="lineNum">     369 </span><span class="lineCov">        418 :         local_two_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(p-&gt;base.chan));</span>
+<span class="lineNum">     370 </span><span class="lineCov">        418 :         if (!local_two_snapshot) {</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     372 </span>            :         }
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">        418 :         payload = ast_multi_channel_blob_create(json_object);</span>
+<span class="lineNum">     375 </span><span class="lineCov">        418 :         if (!payload) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     377 </span>            :         }
+<span class="lineNum">     378 </span><span class="lineCov">        418 :         ast_multi_channel_blob_add_channel(payload, &quot;1&quot;, local_one_snapshot);</span>
+<span class="lineNum">     379 </span><span class="lineCov">        418 :         ast_multi_channel_blob_add_channel(payload, &quot;2&quot;, local_two_snapshot);</span>
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineCov">        418 :         return payload;</span>
+<span class="lineNum">     382 </span>            : }
+<a name="383"><span class="lineNum">     383 </span>            : </a>
+<span class="lineNum">     384 </span>            : /*! \brief Callback for \ref ast_unreal_pvt_callbacks \ref optimization_started_cb */
+<span class="lineNum">     385 </span><span class="lineCov">        209 : static void local_optimization_started_cb(struct ast_unreal_pvt *base, struct ast_channel *source,</span>
+<a name="386"><span class="lineNum">     386 </span>            :                 enum ast_unreal_channel_indicator dest, unsigned int id)</a>
+<a name="387"><span class="lineNum">     387 </span>            : {</a>
+<a name="388"><span class="lineNum">     388 </span><span class="lineCov">        627 :         RAII_VAR(struct ast_json *, json_object, ast_json_null(), ast_json_unref);</span></a>
+<span class="lineNum">     389 </span><span class="lineCov">        418 :         RAII_VAR(struct ast_multi_channel_blob *, payload, NULL, ao2_cleanup);</span>
+<span class="lineNum">     390 </span><span class="lineCov">        418 :         RAII_VAR(struct stasis_message *, msg, NULL, ao2_cleanup);</span>
+<span class="lineNum">     391 </span><span class="lineCov">        209 :         struct local_pvt *p = (struct local_pvt *)base;</span>
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span><span class="lineCov">        209 :         if (!ast_local_optimization_begin_type()) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     395 </span>            :         }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineCov">        209 :         json_object = ast_json_pack(&quot;{s: i, s: i}&quot;,</span>
+<span class="lineNum">     398 </span>            :                         &quot;dest&quot;, dest, &quot;id&quot;, id);
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">        209 :         if (!json_object) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">        209 :         payload = local_channel_optimization_blob(p, json_object);</span>
+<span class="lineNum">     405 </span><span class="lineCov">        209 :         if (!payload) {</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     407 </span>            :         }
+<a name="408"><span class="lineNum">     408 </span>            : </a>
+<span class="lineNum">     409 </span><span class="lineCov">        209 :         if (source) {</span>
+<span class="lineNum">     410 </span><span class="lineCov">        418 :                 RAII_VAR(struct ast_channel_snapshot *, source_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     411 </span><span class="lineCov">        209 :                 source_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(source));</span>
+<span class="lineNum">     412 </span><span class="lineCov">        209 :                 if (!source_snapshot) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     414 </span>            :                 }
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineCov">        209 :                 ast_multi_channel_blob_add_channel(payload, &quot;source&quot;, source_snapshot);</span>
+<span class="lineNum">     417 </span>            :         }
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">        209 :         msg = stasis_message_create(ast_local_optimization_begin_type(), payload);</span>
+<span class="lineNum">     420 </span><span class="lineCov">        209 :         if (!msg) {</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     422 </span>            :         }
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">        209 :         stasis_publish(ast_channel_topic(p-&gt;base.owner), msg);</span>
+<span class="lineNum">     425 </span>            : }
+<a name="426"><span class="lineNum">     426 </span>            : </a>
+<span class="lineNum">     427 </span>            : /*! \brief Callback for \ref ast_unreal_pvt_callbacks \ref optimization_finished_cb */
+<a name="428"><span class="lineNum">     428 </span><span class="lineCov">        209 : static void local_optimization_finished_cb(struct ast_unreal_pvt *base, int success, unsigned int id)</span></a>
+<a name="429"><span class="lineNum">     429 </span>            : {</a>
+<a name="430"><span class="lineNum">     430 </span><span class="lineCov">        627 :         RAII_VAR(struct ast_json *, json_object, ast_json_null(), ast_json_unref);</span></a>
+<span class="lineNum">     431 </span><span class="lineCov">        418 :         RAII_VAR(struct ast_multi_channel_blob *, payload, NULL, ao2_cleanup);</span>
+<span class="lineNum">     432 </span><span class="lineCov">        418 :         RAII_VAR(struct stasis_message *, msg, NULL, ao2_cleanup);</span>
+<span class="lineNum">     433 </span><span class="lineCov">        209 :         struct local_pvt *p = (struct local_pvt *)base;</span>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineCov">        209 :         if (!ast_local_optimization_end_type()) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     437 </span>            :         }
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">        209 :         json_object = ast_json_pack(&quot;{s: i, s: i}&quot;, &quot;success&quot;, success, &quot;id&quot;, id);</span>
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineCov">        209 :         if (!json_object) {</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     443 </span>            :         }
+<span class="lineNum">     444 </span>            : 
+<span class="lineNum">     445 </span><span class="lineCov">        209 :         payload = local_channel_optimization_blob(p, json_object);</span>
+<span class="lineNum">     446 </span><span class="lineCov">        209 :         if (!payload) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     448 </span>            :         }
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineCov">        209 :         msg = stasis_message_create(ast_local_optimization_end_type(), payload);</span>
+<span class="lineNum">     451 </span><span class="lineCov">        209 :         if (!msg) {</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     453 </span>            :         }
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">        209 :         stasis_publish(ast_channel_topic(p-&gt;base.owner), msg);</span>
+<a name="456"><span class="lineNum">     456 </span>            : }</a>
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineCov">       1656 : static struct ast_manager_event_blob *local_message_to_ami(struct stasis_message *message)</span>
+<span class="lineNum">     459 </span>            : {
+<span class="lineNum">     460 </span><span class="lineCov">       1656 :         struct ast_multi_channel_blob *obj = stasis_message_data(message);</span>
+<span class="lineNum">     461 </span><span class="lineCov">       1656 :         struct ast_json *blob = ast_multi_channel_blob_get_json(obj);</span>
+<a name="462"><span class="lineNum">     462 </span>            :         struct ast_channel_snapshot *local_snapshot_one;</a>
+<a name="463"><span class="lineNum">     463 </span>            :         struct ast_channel_snapshot *local_snapshot_two;</a>
+<a name="464"><span class="lineNum">     464 </span><span class="lineCov">       3312 :         RAII_VAR(struct ast_str *, local_channel_one, NULL, ast_free);</span></a>
+<span class="lineNum">     465 </span><span class="lineCov">       3312 :         RAII_VAR(struct ast_str *, local_channel_two, NULL, ast_free);</span>
+<span class="lineNum">     466 </span><span class="lineCov">       3312 :         RAII_VAR(struct ast_str *, event_buffer, NULL, ast_free);</span>
+<span class="lineNum">     467 </span>            :         const char *event;
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span><span class="lineCov">       1656 :         local_snapshot_one = ast_multi_channel_blob_get_channel(obj, &quot;1&quot;);</span>
+<span class="lineNum">     470 </span><span class="lineCov">       1656 :         local_snapshot_two = ast_multi_channel_blob_get_channel(obj, &quot;2&quot;);</span>
+<span class="lineNum">     471 </span><span class="lineCov">       1656 :         if (!local_snapshot_one || !local_snapshot_two) {</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     473 </span>            :         }
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineCov">       1656 :         event_buffer = ast_str_create(1024);</span>
+<span class="lineNum">     476 </span><span class="lineCov">       1656 :         local_channel_one = ast_manager_build_channel_state_string_prefix(local_snapshot_one, &quot;LocalOne&quot;);</span>
+<span class="lineNum">     477 </span><span class="lineCov">       1656 :         local_channel_two = ast_manager_build_channel_state_string_prefix(local_snapshot_two, &quot;LocalTwo&quot;);</span>
+<span class="lineNum">     478 </span><span class="lineCov">       1656 :         if (!event_buffer || !local_channel_one || !local_channel_two) {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     480 </span>            :         }
+<span class="lineNum">     481 </span>            : 
+<a name="482"><span class="lineNum">     482 </span><span class="lineCov">       1656 :         if (stasis_message_type(message) == ast_local_optimization_begin_type()) {</span></a>
+<span class="lineNum">     483 </span>            :                 struct ast_channel_snapshot *source_snapshot;
+<span class="lineNum">     484 </span><span class="lineCov">        420 :                 RAII_VAR(struct ast_str *, source_str, NULL, ast_free);</span>
+<span class="lineNum">     485 </span>            :                 const char *dest_uniqueid;
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">        210 :                 source_snapshot = ast_multi_channel_blob_get_channel(obj, &quot;source&quot;);</span>
+<span class="lineNum">     488 </span><span class="lineCov">        210 :                 if (source_snapshot) {</span>
+<span class="lineNum">     489 </span><span class="lineCov">        209 :                         source_str = ast_manager_build_channel_state_string_prefix(source_snapshot, &quot;Source&quot;);</span>
+<span class="lineNum">     490 </span><span class="lineCov">        209 :                         if (!source_str) {</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                                 return NULL;</span>
+<span class="lineNum">     492 </span>            :                         }
+<span class="lineNum">     493 </span>            :                 }
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineCov">        210 :                 dest_uniqueid = ast_json_object_get(blob, &quot;dest&quot;) == AST_UNREAL_OWNER ?</span>
+<span class="lineNum">     496 </span><span class="lineCov">        210 :                                 local_snapshot_one-&gt;uniqueid : local_snapshot_two-&gt;uniqueid;</span>
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span><span class="lineCov">        210 :                 event = &quot;LocalOptimizationBegin&quot;;</span>
+<span class="lineNum">     499 </span><span class="lineCov">        210 :                 if (source_str) {</span>
+<span class="lineNum">     500 </span><span class="lineCov">        209 :                         ast_str_append(&amp;event_buffer, 0, &quot;%s&quot;, ast_str_buffer(source_str));</span>
+<span class="lineNum">     501 </span>            :                 }
+<span class="lineNum">     502 </span><span class="lineCov">        210 :                 ast_str_append(&amp;event_buffer, 0, &quot;DestUniqueId: %s\r\n&quot;, dest_uniqueid);</span>
+<span class="lineNum">     503 </span><span class="lineCov">        210 :                 ast_str_append(&amp;event_buffer, 0, &quot;Id: %u\r\n&quot;, (unsigned int) ast_json_integer_get(ast_json_object_get(blob, &quot;id&quot;)));</span>
+<span class="lineNum">     504 </span><span class="lineCov">       1446 :         } else if (stasis_message_type(message) == ast_local_optimization_end_type()) {</span>
+<span class="lineNum">     505 </span><span class="lineCov">        210 :                 event = &quot;LocalOptimizationEnd&quot;;</span>
+<span class="lineNum">     506 </span><span class="lineCov">        210 :                 ast_str_append(&amp;event_buffer, 0, &quot;Success: %s\r\n&quot;, ast_json_integer_get(ast_json_object_get(blob, &quot;success&quot;)) ? &quot;Yes&quot; : &quot;No&quot;);</span>
+<span class="lineNum">     507 </span><span class="lineCov">        210 :                 ast_str_append(&amp;event_buffer, 0, &quot;Id: %u\r\n&quot;, (unsigned int) ast_json_integer_get(ast_json_object_get(blob, &quot;id&quot;)));</span>
+<span class="lineNum">     508 </span><span class="lineCov">       1236 :         } else if (stasis_message_type(message) == ast_local_bridge_type()) {</span>
+<span class="lineNum">     509 </span><span class="lineCov">       1236 :                 event = &quot;LocalBridge&quot;;</span>
+<span class="lineNum">     510 </span><span class="lineCov">       1236 :                 ast_str_append(&amp;event_buffer, 0, &quot;Context: %s\r\n&quot;, ast_json_string_get(ast_json_object_get(blob, &quot;context&quot;)));</span>
+<span class="lineNum">     511 </span><span class="lineCov">       1236 :                 ast_str_append(&amp;event_buffer, 0, &quot;Exten: %s\r\n&quot;, ast_json_string_get(ast_json_object_get(blob, &quot;exten&quot;)));</span>
+<span class="lineNum">     512 </span><span class="lineCov">       1236 :                 ast_str_append(&amp;event_buffer, 0, &quot;LocalOptimization: %s\r\n&quot;, ast_json_is_true(ast_json_object_get(blob, &quot;can_optimize&quot;)) ? &quot;Yes&quot; : &quot;No&quot;);</span>
+<span class="lineNum">     513 </span>            :         } else {
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     515 </span>            :         }
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span><span class="lineCov">       1656 :         return ast_manager_event_blob_create(EVENT_FLAG_CALL, event,</span>
+<span class="lineNum">     518 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     519 </span>            :                 &quot;%s&quot;
+<span class="lineNum">     520 </span>            :                 &quot;%s&quot;,
+<span class="lineNum">     521 </span>            :                 ast_str_buffer(local_channel_one),
+<span class="lineNum">     522 </span>            :                 ast_str_buffer(local_channel_two),
+<span class="lineNum">     523 </span>            :                 ast_str_buffer(event_buffer));
+<span class="lineNum">     524 </span>            : }
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span>            : /*!
+<span class="lineNum">     527 </span>            :  * \internal
+<span class="lineNum">     528 </span>            :  * \brief Post the \ref ast_local_bridge_type \ref stasis message
+<span class="lineNum">     529 </span>            :  * \since 12.0.0
+<span class="lineNum">     530 </span>            :  *
+<span class="lineNum">     531 </span>            :  * \param p local_pvt to raise the local bridge message
+<span class="lineNum">     532 </span>            :  *
+<a name="533"><span class="lineNum">     533 </span>            :  * \return Nothing</a>
+<span class="lineNum">     534 </span>            :  */
+<a name="535"><span class="lineNum">     535 </span><span class="lineCov">       1236 : static void publish_local_bridge_message(struct local_pvt *p)</span></a>
+<a name="536"><span class="lineNum">     536 </span>            : {</a>
+<a name="537"><span class="lineNum">     537 </span><span class="lineCov">       2472 :         RAII_VAR(struct ast_multi_channel_blob *, multi_blob, NULL, ao2_cleanup);</span></a>
+<a name="538"><span class="lineNum">     538 </span><span class="lineCov">       2472 :         RAII_VAR(struct ast_json *, blob, NULL, ast_json_unref);</span></a>
+<a name="539"><span class="lineNum">     539 </span><span class="lineCov">       2472 :         RAII_VAR(struct stasis_message *, msg, NULL, ao2_cleanup);</span></a>
+<span class="lineNum">     540 </span><span class="lineCov">       2472 :         RAII_VAR(struct ast_channel_snapshot *, one_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     541 </span><span class="lineCov">       2472 :         RAII_VAR(struct ast_channel_snapshot *, two_snapshot, NULL, ao2_cleanup);</span>
+<span class="lineNum">     542 </span>            :         struct ast_channel *owner;
+<span class="lineNum">     543 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineCov">       1236 :         if (!ast_local_bridge_type()) {</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     547 </span>            :         }
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span><span class="lineCov">       1236 :         ast_unreal_lock_all(&amp;p-&gt;base, &amp;chan, &amp;owner);</span>
+<span class="lineNum">     550 </span>            : 
+<span class="lineNum">     551 </span><span class="lineCov">       3708 :         blob = ast_json_pack(&quot;{s: s, s: s, s: b}&quot;,</span>
+<span class="lineNum">     552 </span><span class="lineCov">       1236 :                 &quot;context&quot;, p-&gt;context,</span>
+<span class="lineNum">     553 </span><span class="lineCov">       1236 :                 &quot;exten&quot;, p-&gt;exten,</span>
+<span class="lineNum">     554 </span><span class="lineCov">       1236 :                 &quot;can_optimize&quot;, !ast_test_flag(&amp;p-&gt;base, AST_UNREAL_NO_OPTIMIZATION));</span>
+<span class="lineNum">     555 </span><span class="lineCov">       1236 :         if (!blob) {</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                 goto end;</span>
+<span class="lineNum">     557 </span>            :         }
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineCov">       1236 :         multi_blob = ast_multi_channel_blob_create(blob);</span>
+<span class="lineNum">     560 </span><span class="lineCov">       1236 :         if (!multi_blob) {</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 goto end;</span>
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">       1236 :         one_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(owner));</span>
+<span class="lineNum">     565 </span><span class="lineCov">       1236 :         if (!one_snapshot) {</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                 goto end;</span>
+<span class="lineNum">     567 </span>            :         }
+<span class="lineNum">     568 </span>            : 
+<span class="lineNum">     569 </span><span class="lineCov">       1236 :         two_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(chan));</span>
+<span class="lineNum">     570 </span><span class="lineCov">       1236 :         if (!two_snapshot) {</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                 goto end;</span>
+<span class="lineNum">     572 </span>            :         }
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span><span class="lineCov">       1236 :         ast_multi_channel_blob_add_channel(multi_blob, &quot;1&quot;, one_snapshot);</span>
+<span class="lineNum">     575 </span><span class="lineCov">       1236 :         ast_multi_channel_blob_add_channel(multi_blob, &quot;2&quot;, two_snapshot);</span>
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineCov">       1236 :         msg = stasis_message_create(ast_local_bridge_type(), multi_blob);</span>
+<span class="lineNum">     578 </span><span class="lineCov">       1236 :         if (!msg) {</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 goto end;</span>
+<span class="lineNum">     580 </span>            :         }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">       1236 :         stasis_publish(ast_channel_topic(owner), msg);</span>
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineCov">       1236 : end:</span>
+<span class="lineNum">     585 </span><span class="lineCov">       1236 :         ast_channel_unlock(owner);</span>
+<span class="lineNum">     586 </span><span class="lineCov">       1236 :         ast_channel_unref(owner);</span>
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span><span class="lineCov">       1236 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     589 </span><span class="lineCov">       1236 :         ast_channel_unref(chan);</span>
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">       1236 :         ao2_unlock(&amp;p-&gt;base);</span>
+<a name="592"><span class="lineNum">     592 </span>            : }</a>
+<span class="lineNum">     593 </span>            : 
+<span class="lineNum">     594 </span><span class="lineCov">          4 : int ast_local_setup_bridge(struct ast_channel *ast, struct ast_bridge *bridge, struct ast_channel *swap, struct ast_bridge_features *features)</span>
+<span class="lineNum">     595 </span>            : {
+<span class="lineNum">     596 </span>            :         struct local_pvt *p;
+<span class="lineNum">     597 </span>            :         struct local_pvt *found;
+<span class="lineNum">     598 </span><span class="lineCov">          4 :         int res = -1;</span>
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span>            :         /* Sanity checks. */
+<span class="lineNum">     601 </span><span class="lineCov">          4 :         if (!ast || !bridge) {</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                 ast_bridge_features_destroy(features);</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     604 </span>            :         }
+<span class="lineNum">     605 </span>            : 
+<span class="lineNum">     606 </span><span class="lineCov">          4 :         ast_channel_lock(ast);</span>
+<span class="lineNum">     607 </span><span class="lineCov">          4 :         p = ast_channel_tech_pvt(ast);</span>
+<span class="lineNum">     608 </span><span class="lineCov">          4 :         ast_channel_unlock(ast);</span>
+<span class="lineNum">     609 </span>            : 
+<span class="lineNum">     610 </span><span class="lineCov">          4 :         found = p ? ao2_find(locals, p, 0) : NULL;</span>
+<span class="lineNum">     611 </span><span class="lineCov">          4 :         if (found) {</span>
+<span class="lineNum">     612 </span><span class="lineCov">          4 :                 ao2_lock(found);</span>
+<span class="lineNum">     613 </span><span class="lineCov">          4 :                 if (found-&gt;type == LOCAL_CALL_ACTION_DIALPLAN</span>
+<span class="lineNum">     614 </span><span class="lineCov">          4 :                         &amp;&amp; found-&gt;base.owner</span>
+<span class="lineNum">     615 </span><span class="lineCov">          4 :                         &amp;&amp; found-&gt;base.chan</span>
+<span class="lineNum">     616 </span><span class="lineCov">          4 :                         &amp;&amp; !ast_test_flag(&amp;found-&gt;base, AST_UNREAL_CARETAKER_THREAD)) {</span>
+<span class="lineNum">     617 </span><span class="lineCov">          4 :                         ao2_ref(bridge, +1);</span>
+<span class="lineNum">     618 </span><span class="lineCov">          4 :                         if (swap) {</span>
+<span class="lineNum">     619 </span><span class="lineCov">          4 :                                 ast_channel_ref(swap);</span>
+<span class="lineNum">     620 </span>            :                         }
+<span class="lineNum">     621 </span><span class="lineCov">          4 :                         found-&gt;type = LOCAL_CALL_ACTION_BRIDGE;</span>
+<span class="lineNum">     622 </span><span class="lineCov">          4 :                         found-&gt;action.bridge.join = bridge;</span>
+<span class="lineNum">     623 </span><span class="lineCov">          4 :                         found-&gt;action.bridge.swap = swap;</span>
+<span class="lineNum">     624 </span><span class="lineCov">          4 :                         found-&gt;action.bridge.features = features;</span>
+<span class="lineNum">     625 </span><span class="lineCov">          4 :                         res = 0;</span>
+<span class="lineNum">     626 </span>            :                 } else {
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :                         ast_bridge_features_destroy(features);</span>
+<span class="lineNum">     628 </span>            :                 }
+<span class="lineNum">     629 </span><span class="lineCov">          4 :                 ao2_unlock(found);</span>
+<span class="lineNum">     630 </span><span class="lineCov">          4 :                 ao2_ref(found, -1);</span>
+<span class="lineNum">     631 </span>            :         }
+<span class="lineNum">     632 </span>            : 
+<span class="lineNum">     633 </span><span class="lineCov">          4 :         return res;</span>
+<a name="634"><span class="lineNum">     634 </span>            : }</a>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineCov">          3 : int ast_local_setup_masquerade(struct ast_channel *ast, struct ast_channel *masq)</span>
+<span class="lineNum">     637 </span>            : {
+<span class="lineNum">     638 </span>            :         struct local_pvt *p;
+<span class="lineNum">     639 </span>            :         struct local_pvt *found;
+<span class="lineNum">     640 </span><span class="lineCov">          3 :         int res = -1;</span>
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span>            :         /* Sanity checks. */
+<span class="lineNum">     643 </span><span class="lineCov">          3 :         if (!ast || !masq) {</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     645 </span>            :         }
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineCov">          3 :         ast_channel_lock(ast);</span>
+<span class="lineNum">     648 </span><span class="lineCov">          3 :         p = ast_channel_tech_pvt(ast);</span>
+<span class="lineNum">     649 </span><span class="lineCov">          3 :         ast_channel_unlock(ast);</span>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineCov">          3 :         found = p ? ao2_find(locals, p, 0) : NULL;</span>
+<span class="lineNum">     652 </span><span class="lineCov">          3 :         if (found) {</span>
+<span class="lineNum">     653 </span><span class="lineCov">          3 :                 ao2_lock(found);</span>
+<span class="lineNum">     654 </span><span class="lineCov">          3 :                 if (found-&gt;type == LOCAL_CALL_ACTION_DIALPLAN</span>
+<span class="lineNum">     655 </span><span class="lineCov">          3 :                         &amp;&amp; found-&gt;base.owner</span>
+<span class="lineNum">     656 </span><span class="lineCov">          3 :                         &amp;&amp; found-&gt;base.chan</span>
+<span class="lineNum">     657 </span><span class="lineCov">          3 :                         &amp;&amp; !ast_test_flag(&amp;found-&gt;base, AST_UNREAL_CARETAKER_THREAD)) {</span>
+<span class="lineNum">     658 </span><span class="lineCov">          3 :                         ast_channel_ref(masq);</span>
+<span class="lineNum">     659 </span><span class="lineCov">          3 :                         found-&gt;type = LOCAL_CALL_ACTION_MASQUERADE;</span>
+<span class="lineNum">     660 </span><span class="lineCov">          3 :                         found-&gt;action.masq = masq;</span>
+<span class="lineNum">     661 </span><span class="lineCov">          3 :                         res = 0;</span>
+<span class="lineNum">     662 </span>            :                 }
+<span class="lineNum">     663 </span><span class="lineCov">          3 :                 ao2_unlock(found);</span>
+<span class="lineNum">     664 </span><span class="lineCov">          3 :                 ao2_ref(found, -1);</span>
+<span class="lineNum">     665 </span>            :         }
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineCov">          3 :         return res;</span>
+<span class="lineNum">     668 </span>            : }
+<span class="lineNum">     669 </span>            : 
+<a name="670"><span class="lineNum">     670 </span>            : /*! \brief Initiate new call, part of PBX interface</a>
+<span class="lineNum">     671 </span>            :  *         dest is the dial string */
+<span class="lineNum">     672 </span><span class="lineCov">       1237 : static int local_call(struct ast_channel *ast, const char *dest, int timeout)</span>
+<span class="lineNum">     673 </span>            : {
+<span class="lineNum">     674 </span><span class="lineCov">       1237 :         struct local_pvt *p = ast_channel_tech_pvt(ast);</span>
+<span class="lineNum">     675 </span><span class="lineCov">       1237 :         int pvt_locked = 0;</span>
+<span class="lineNum">     676 </span>            : 
+<span class="lineNum">     677 </span><span class="lineCov">       1237 :         struct ast_channel *owner = NULL;</span>
+<span class="lineNum">     678 </span><span class="lineCov">       1237 :         struct ast_channel *chan = NULL;</span>
+<span class="lineNum">     679 </span>            :         int res;
+<span class="lineNum">     680 </span><span class="lineCov">       1237 :         char *reduced_dest = ast_strdupa(dest);</span>
+<span class="lineNum">     681 </span>            :         char *slash;
+<span class="lineNum">     682 </span>            :         const char *chan_cid;
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span><span class="lineCov">       1237 :         if (!p) {</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     686 </span>            :         }
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span>            :         /* since we are letting go of channel locks that were locked coming into
+<span class="lineNum">     689 </span>            :          * this function, then we need to give the tech pvt a ref */
+<span class="lineNum">     690 </span><span class="lineCov">       1237 :         ao2_ref(p, 1);</span>
+<span class="lineNum">     691 </span><span class="lineCov">       1237 :         ast_channel_unlock(ast);</span>
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span><span class="lineCov">       1237 :         ast_unreal_lock_all(&amp;p-&gt;base, &amp;chan, &amp;owner);</span>
+<span class="lineNum">     694 </span><span class="lineCov">       1237 :         pvt_locked = 1;</span>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">       1237 :         if (owner != ast) {</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     699 </span>            :         }
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">       1237 :         if (!owner || !chan) {</span>
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 goto return_cleanup;</span>
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span>            : 
+<span class="lineNum">     706 </span><span class="lineCov">       1237 :         ast_unreal_call_setup(owner, chan);</span>
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span>            :         /*
+<span class="lineNum">     709 </span>            :          * If the local channel has /n on the end of it, we need to lop
+<span class="lineNum">     710 </span>            :          * that off for our argument to setting up the CC_INTERFACES
+<span class="lineNum">     711 </span>            :          * variable.
+<span class="lineNum">     712 </span>            :          */
+<span class="lineNum">     713 </span><span class="lineCov">       1237 :         if ((slash = strrchr(reduced_dest, '/'))) {</span>
+<span class="lineNum">     714 </span><span class="lineCov">         48 :                 *slash = '\0';</span>
+<span class="lineNum">     715 </span>            :         }
+<span class="lineNum">     716 </span><span class="lineCov">       1237 :         ast_set_cc_interfaces_chanvar(chan, reduced_dest);</span>
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">       1237 :         ao2_unlock(p);</span>
+<span class="lineNum">     719 </span><span class="lineCov">       1237 :         pvt_locked = 0;</span>
+<span class="lineNum">     720 </span>            : 
+<span class="lineNum">     721 </span><span class="lineCov">       1237 :         ast_channel_unlock(owner);</span>
+<span class="lineNum">     722 </span>            : 
+<span class="lineNum">     723 </span><span class="lineCov">       1237 :         chan_cid = S_COR(ast_channel_caller(chan)-&gt;id.number.valid,</span>
+<span class="lineNum">     724 </span>            :                 ast_channel_caller(chan)-&gt;id.number.str, NULL);
+<span class="lineNum">     725 </span><span class="lineCov">       1237 :         if (chan_cid) {</span>
+<span class="lineNum">     726 </span><span class="lineCov">         58 :                 chan_cid = ast_strdupa(chan_cid);</span>
+<span class="lineNum">     727 </span>            :         }
+<span class="lineNum">     728 </span><span class="lineCov">       1237 :         ast_channel_unlock(chan);</span>
+<span class="lineNum">     729 </span>            : 
+<span class="lineNum">     730 </span><span class="lineCov">       1237 :         res = -1;</span>
+<span class="lineNum">     731 </span><span class="lineCov">       1237 :         switch (p-&gt;type) {</span>
+<span class="lineNum">     732 </span><span class="lineCov">       1230 :         case LOCAL_CALL_ACTION_DIALPLAN:</span>
+<span class="lineNum">     733 </span><span class="lineCov">       1230 :                 if (!ast_exists_extension(NULL, p-&gt;context, p-&gt;exten, 1, chan_cid)) {</span>
+<span class="lineNum">     734 </span><span class="lineCov">          1 :                         ast_log(LOG_NOTICE, &quot;No such extension/context %s@%s while calling Local channel\n&quot;,</span>
+<span class="lineNum">     735 </span><span class="lineCov">          1 :                                 p-&gt;exten, p-&gt;context);</span>
+<span class="lineNum">     736 </span>            :                 } else {
+<span class="lineNum">     737 </span><span class="lineCov">       1229 :                         publish_local_bridge_message(p);</span>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span>            :                         /* Start switch on sub channel */
+<span class="lineNum">     740 </span><span class="lineCov">       1229 :                         res = ast_pbx_start(chan);</span>
+<span class="lineNum">     741 </span>            :                 }
+<span class="lineNum">     742 </span><span class="lineCov">       1230 :                 break;</span>
+<span class="lineNum">     743 </span><span class="lineCov">          4 :         case LOCAL_CALL_ACTION_BRIDGE:</span>
+<span class="lineNum">     744 </span><span class="lineCov">          4 :                 publish_local_bridge_message(p);</span>
+<span class="lineNum">     745 </span><span class="lineCov">          4 :                 ast_answer(chan);</span>
+<span class="lineNum">     746 </span><span class="lineCov">          4 :                 res = ast_bridge_impart(p-&gt;action.bridge.join, chan, p-&gt;action.bridge.swap,</span>
+<span class="lineNum">     747 </span>            :                         p-&gt;action.bridge.features, AST_BRIDGE_IMPART_CHAN_INDEPENDENT);
+<span class="lineNum">     748 </span><span class="lineCov">          4 :                 ao2_ref(p-&gt;action.bridge.join, -1);</span>
+<span class="lineNum">     749 </span><span class="lineCov">          4 :                 p-&gt;action.bridge.join = NULL;</span>
+<span class="lineNum">     750 </span><span class="lineCov">          4 :                 ao2_cleanup(p-&gt;action.bridge.swap);</span>
+<span class="lineNum">     751 </span><span class="lineCov">          4 :                 p-&gt;action.bridge.swap = NULL;</span>
+<span class="lineNum">     752 </span><span class="lineCov">          4 :                 p-&gt;action.bridge.features = NULL;</span>
+<span class="lineNum">     753 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">     754 </span><span class="lineCov">          3 :         case LOCAL_CALL_ACTION_MASQUERADE:</span>
+<span class="lineNum">     755 </span><span class="lineCov">          3 :                 publish_local_bridge_message(p);</span>
+<span class="lineNum">     756 </span><span class="lineCov">          3 :                 ast_answer(chan);</span>
+<span class="lineNum">     757 </span><span class="lineCov">          3 :                 res = ast_channel_move(p-&gt;action.masq, chan);</span>
+<span class="lineNum">     758 </span><span class="lineCov">          3 :                 if (!res) {</span>
+<span class="lineNum">     759 </span>            :                         /* Chan is now an orphaned zombie.  Destroy it. */
+<span class="lineNum">     760 </span><span class="lineCov">          3 :                         ast_hangup(chan);</span>
+<span class="lineNum">     761 </span>            :                 }
+<span class="lineNum">     762 </span><span class="lineCov">          3 :                 p-&gt;action.masq = ast_channel_unref(p-&gt;action.masq);</span>
+<span class="lineNum">     763 </span><span class="lineCov">          3 :                 break;</span>
+<span class="lineNum">     764 </span>            :         }
+<span class="lineNum">     765 </span><span class="lineCov">       1237 :         if (!res) {</span>
+<span class="lineNum">     766 </span><span class="lineCov">       1236 :                 ao2_lock(p);</span>
+<span class="lineNum">     767 </span><span class="lineCov">       1236 :                 ast_set_flag(&amp;p-&gt;base, AST_UNREAL_CARETAKER_THREAD);</span>
+<span class="lineNum">     768 </span><span class="lineCov">       1236 :                 ao2_unlock(p);</span>
+<span class="lineNum">     769 </span>            :         }
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span>            :         /* we already unlocked them, clear them here so the cleanup label won't touch them. */
+<span class="lineNum">     772 </span><span class="lineCov">       1237 :         owner = ast_channel_unref(owner);</span>
+<span class="lineNum">     773 </span><span class="lineCov">       1237 :         chan = ast_channel_unref(chan);</span>
+<span class="lineNum">     774 </span>            : 
+<span class="lineNum">     775 </span><span class="lineCov">       1237 : return_cleanup:</span>
+<span class="lineNum">     776 </span><span class="lineCov">       1237 :         if (p) {</span>
+<span class="lineNum">     777 </span><span class="lineCov">       1237 :                 if (pvt_locked) {</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                         ao2_unlock(p);</span>
+<span class="lineNum">     779 </span>            :                 }
+<span class="lineNum">     780 </span><span class="lineCov">       1237 :                 ao2_ref(p, -1);</span>
+<span class="lineNum">     781 </span>            :         }
+<span class="lineNum">     782 </span><span class="lineCov">       1237 :         if (chan) {</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                 ast_channel_unlock(chan);</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                 ast_channel_unref(chan);</span>
+<span class="lineNum">     785 </span>            :         }
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span>            :         /*
+<span class="lineNum">     788 </span>            :          * owner is supposed to be == to ast, if it is, don't unlock it
+<span class="lineNum">     789 </span>            :          * because ast must exit locked
+<span class="lineNum">     790 </span>            :          */
+<span class="lineNum">     791 </span><span class="lineCov">       1237 :         if (owner) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :                 if (owner != ast) {</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(owner);</span>
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                         ast_channel_lock(ast);</span>
+<span class="lineNum">     795 </span>            :                 }
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :                 ast_channel_unref(owner);</span>
+<span class="lineNum">     797 </span>            :         } else {
+<span class="lineNum">     798 </span>            :                 /* we have to exit with ast locked */
+<span class="lineNum">     799 </span><span class="lineCov">       1237 :                 ast_channel_lock(ast);</span>
+<span class="lineNum">     800 </span>            :         }
+<span class="lineNum">     801 </span>            : 
+<span class="lineNum">     802 </span><span class="lineCov">       1237 :         return res;</span>
+<span class="lineNum">     803 </span>            : }
+<a name="804"><span class="lineNum">     804 </span>            : </a>
+<span class="lineNum">     805 </span>            : /*! \brief Hangup a call through the local proxy channel */
+<span class="lineNum">     806 </span><span class="lineCov">       2478 : static int local_hangup(struct ast_channel *ast)</span>
+<span class="lineNum">     807 </span>            : {
+<span class="lineNum">     808 </span><span class="lineCov">       2478 :         struct local_pvt *p = ast_channel_tech_pvt(ast);</span>
+<span class="lineNum">     809 </span>            :         int res;
+<span class="lineNum">     810 </span>            : 
+<span class="lineNum">     811 </span><span class="lineCov">       2478 :         if (!p) {</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     813 </span>            :         }
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span>            :         /* give the pvt a ref to fulfill calling requirements. */
+<span class="lineNum">     816 </span><span class="lineCov">       2478 :         ao2_ref(p, +1);</span>
+<span class="lineNum">     817 </span><span class="lineCov">       2478 :         res = ast_unreal_hangup(&amp;p-&gt;base, ast);</span>
+<span class="lineNum">     818 </span><span class="lineCov">       2478 :         if (!res) {</span>
+<span class="lineNum">     819 </span>            :                 int unlink;
+<span class="lineNum">     820 </span>            : 
+<span class="lineNum">     821 </span><span class="lineCov">       2478 :                 ao2_lock(p);</span>
+<span class="lineNum">     822 </span><span class="lineCov">       2478 :                 unlink = !p-&gt;base.owner &amp;&amp; !p-&gt;base.chan;</span>
+<span class="lineNum">     823 </span><span class="lineCov">       2478 :                 ao2_unlock(p);</span>
+<span class="lineNum">     824 </span><span class="lineCov">       2478 :                 if (unlink) {</span>
+<span class="lineNum">     825 </span><span class="lineCov">       1324 :                         ao2_unlink(locals, p);</span>
+<span class="lineNum">     826 </span>            :                 }
+<span class="lineNum">     827 </span>            :         }
+<span class="lineNum">     828 </span><span class="lineCov">       2478 :         ao2_ref(p, -1);</span>
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span><span class="lineCov">       2478 :         return res;</span>
+<span class="lineNum">     831 </span>            : }
+<span class="lineNum">     832 </span>            : 
+<span class="lineNum">     833 </span>            : /*!
+<span class="lineNum">     834 </span>            :  * \internal
+<span class="lineNum">     835 </span>            :  * \brief struct local_pvt destructor.
+<span class="lineNum">     836 </span>            :  *
+<span class="lineNum">     837 </span>            :  * \param vdoomed Object to destroy.
+<span class="lineNum">     838 </span>            :  *
+<a name="839"><span class="lineNum">     839 </span>            :  * \return Nothing</a>
+<span class="lineNum">     840 </span>            :  */
+<span class="lineNum">     841 </span><span class="lineCov">       1239 : static void local_pvt_destructor(void *vdoomed)</span>
+<span class="lineNum">     842 </span>            : {
+<span class="lineNum">     843 </span><span class="lineCov">       1239 :         struct local_pvt *doomed = vdoomed;</span>
+<span class="lineNum">     844 </span>            : 
+<span class="lineNum">     845 </span><span class="lineCov">       1239 :         switch (doomed-&gt;type) {</span>
+<span class="lineNum">     846 </span><span class="lineCov">       1232 :         case LOCAL_CALL_ACTION_DIALPLAN:</span>
+<span class="lineNum">     847 </span><span class="lineCov">       1232 :                 break;</span>
+<span class="lineNum">     848 </span><span class="lineCov">          4 :         case LOCAL_CALL_ACTION_BRIDGE:</span>
+<span class="lineNum">     849 </span><span class="lineCov">          4 :                 ao2_cleanup(doomed-&gt;action.bridge.join);</span>
+<span class="lineNum">     850 </span><span class="lineCov">          4 :                 ao2_cleanup(doomed-&gt;action.bridge.swap);</span>
+<span class="lineNum">     851 </span><span class="lineCov">          4 :                 ast_bridge_features_destroy(doomed-&gt;action.bridge.features);</span>
+<span class="lineNum">     852 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">     853 </span><span class="lineCov">          3 :         case LOCAL_CALL_ACTION_MASQUERADE:</span>
+<span class="lineNum">     854 </span><span class="lineCov">          3 :                 ao2_cleanup(doomed-&gt;action.masq);</span>
+<span class="lineNum">     855 </span><span class="lineCov">          3 :                 break;</span>
+<span class="lineNum">     856 </span>            :         }
+<span class="lineNum">     857 </span><span class="lineCov">       1239 :         ast_unreal_destructor(&amp;doomed-&gt;base);</span>
+<span class="lineNum">     858 </span><span class="lineCov">       1239 : }</span>
+<a name="859"><span class="lineNum">     859 </span>            : </a>
+<span class="lineNum">     860 </span>            : /*! \brief Create a call structure */
+<span class="lineNum">     861 </span><span class="lineCov">       1239 : static struct local_pvt *local_alloc(const char *data, struct ast_format_cap *cap)</span>
+<span class="lineNum">     862 </span>            : {
+<span class="lineNum">     863 </span>            :         struct local_pvt *pvt;
+<span class="lineNum">     864 </span>            :         char *parse;
+<span class="lineNum">     865 </span>            :         char *context;
+<span class="lineNum">     866 </span>            :         char *opts;
+<span class="lineNum">     867 </span>            : 
+<span class="lineNum">     868 </span><span class="lineCov">       1239 :         pvt = (struct local_pvt *) ast_unreal_alloc(sizeof(*pvt), local_pvt_destructor, cap);</span>
+<span class="lineNum">     869 </span><span class="lineCov">       1239 :         if (!pvt) {</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     871 </span>            :         }
+<span class="lineNum">     872 </span><span class="lineCov">       1239 :         pvt-&gt;base.callbacks = &amp;local_unreal_callbacks;</span>
+<span class="lineNum">     873 </span>            : 
+<span class="lineNum">     874 </span><span class="lineCov">       1239 :         parse = ast_strdupa(data);</span>
+<span class="lineNum">     875 </span>            : 
+<span class="lineNum">     876 </span>            :         /*
+<span class="lineNum">     877 </span>            :          * Local channels intercept MOH by default.
+<span class="lineNum">     878 </span>            :          *
+<span class="lineNum">     879 </span>            :          * This is a silly default because it represents state held by
+<span class="lineNum">     880 </span>            :          * the local channels.  Unless local channel optimization is
+<span class="lineNum">     881 </span>            :          * disabled, the state will dissapear when the local channels
+<span class="lineNum">     882 </span>            :          * optimize out.
+<span class="lineNum">     883 </span>            :          */
+<span class="lineNum">     884 </span><span class="lineCov">       1239 :         ast_set_flag(&amp;pvt-&gt;base, AST_UNREAL_MOH_INTERCEPT);</span>
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span>            :         /* Look for options */
+<span class="lineNum">     887 </span><span class="lineCov">       1239 :         if ((opts = strchr(parse, '/'))) {</span>
+<span class="lineNum">     888 </span><span class="lineCov">         48 :                 *opts++ = '\0';</span>
+<span class="lineNum">     889 </span><span class="lineCov">         48 :                 if (strchr(opts, 'n')) {</span>
+<span class="lineNum">     890 </span><span class="lineCov">         23 :                         ast_set_flag(&amp;pvt-&gt;base, AST_UNREAL_NO_OPTIMIZATION);</span>
+<span class="lineNum">     891 </span>            :                 }
+<span class="lineNum">     892 </span><span class="lineCov">         48 :                 if (strchr(opts, 'j')) {</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                         if (ast_test_flag(&amp;pvt-&gt;base, AST_UNREAL_NO_OPTIMIZATION)) {</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                                 ast_set_flag(&amp;pvt-&gt;base.jb_conf, AST_JB_ENABLED);</span>
+<span class="lineNum">     895 </span>            :                         } else {
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;You must use the 'n' option with the 'j' option to enable the jitter buffer\n&quot;);</span>
+<span class="lineNum">     897 </span>            :                         }
+<span class="lineNum">     898 </span>            :                 }
+<span class="lineNum">     899 </span><span class="lineCov">         48 :                 if (strchr(opts, 'm')) {</span>
+<span class="lineNum">     900 </span><span class="lineCov">         25 :                         ast_clear_flag(&amp;pvt-&gt;base, AST_UNREAL_MOH_INTERCEPT);</span>
+<span class="lineNum">     901 </span>            :                 }
+<span class="lineNum">     902 </span>            :         }
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span>            :         /* Look for a context */
+<span class="lineNum">     905 </span><span class="lineCov">       1239 :         if ((context = strchr(parse, '@'))) {</span>
+<span class="lineNum">     906 </span><span class="lineCov">       1226 :                 *context++ = '\0';</span>
+<span class="lineNum">     907 </span>            :         }
+<span class="lineNum">     908 </span>            : 
+<span class="lineNum">     909 </span><span class="lineCov">       1239 :         ast_copy_string(pvt-&gt;context, S_OR(context, &quot;default&quot;), sizeof(pvt-&gt;context));</span>
+<span class="lineNum">     910 </span><span class="lineCov">       1239 :         ast_copy_string(pvt-&gt;exten, parse, sizeof(pvt-&gt;exten));</span>
+<span class="lineNum">     911 </span><span class="lineCov">       1239 :         snprintf(pvt-&gt;base.name, sizeof(pvt-&gt;base.name), &quot;%s@%s&quot;, pvt-&gt;exten, pvt-&gt;context);</span>
+<span class="lineNum">     912 </span>            : 
+<span class="lineNum">     913 </span><span class="lineCov">       1239 :         return pvt; /* this is returned with a ref */</span>
+<span class="lineNum">     914 </span>            : }
+<a name="915"><span class="lineNum">     915 </span>            : </a>
+<span class="lineNum">     916 </span>            : /*! \brief Part of PBX interface */
+<span class="lineNum">     917 </span><span class="lineCov">       1239 : static struct ast_channel *local_request(const char *type, struct ast_format_cap *cap, const struct ast_assigned_ids *assignedids, const struct ast_channel *requestor, const char *data, int *cause)</span>
+<span class="lineNum">     918 </span>            : {
+<span class="lineNum">     919 </span>            :         struct local_pvt *p;
+<span class="lineNum">     920 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     921 </span>            :         ast_callid callid;
+<span class="lineNum">     922 </span>            : 
+<span class="lineNum">     923 </span>            :         /* Allocate a new private structure and then Asterisk channels */
+<span class="lineNum">     924 </span><span class="lineCov">       1239 :         p = local_alloc(data, cap);</span>
+<span class="lineNum">     925 </span><span class="lineCov">       1239 :         if (!p) {</span>
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     927 </span>            :         }
+<span class="lineNum">     928 </span><span class="lineCov">       1239 :         callid = ast_read_threadstorage_callid();</span>
+<span class="lineNum">     929 </span><span class="lineCov">       1239 :         chan = ast_unreal_new_channels(&amp;p-&gt;base, &amp;local_tech, AST_STATE_DOWN, AST_STATE_RING,</span>
+<span class="lineNum">     930 </span><span class="lineCov">       1239 :                 p-&gt;exten, p-&gt;context, assignedids, requestor, callid);</span>
+<span class="lineNum">     931 </span><span class="lineCov">       1239 :         if (chan) {</span>
+<span class="lineNum">     932 </span><span class="lineCov">       1239 :                 ao2_link(locals, p);</span>
+<span class="lineNum">     933 </span>            :         }
+<span class="lineNum">     934 </span><span class="lineCov">       1239 :         ao2_ref(p, -1); /* kill the ref from the alloc */</span>
+<span class="lineNum">     935 </span>            : 
+<span class="lineNum">     936 </span><span class="lineCov">       1239 :         return chan;</span>
+<span class="lineNum">     937 </span>            : }
+<a name="938"><span class="lineNum">     938 </span>            : </a>
+<span class="lineNum">     939 </span>            : /*! \brief CLI command &quot;local show channels&quot; */
+<span class="lineNum">     940 </span><span class="lineCov">       1124 : static char *locals_show(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     941 </span>            : {
+<span class="lineNum">     942 </span>            :         struct local_pvt *p;
+<span class="lineNum">     943 </span>            :         struct ao2_iterator it;
+<span class="lineNum">     944 </span>            : 
+<span class="lineNum">     945 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     946 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     947 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;local show channels&quot;;</span>
+<span class="lineNum">     948 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     949 </span>            :                         &quot;Usage: local show channels\n&quot;
+<span class="lineNum">     950 </span>            :                         &quot;       Provides summary information on active local proxy channels.\n&quot;;
+<span class="lineNum">     951 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     954 </span>            :         }
+<span class="lineNum">     955 </span>            : 
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 3) {</span>
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     958 </span>            :         }
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :         if (ao2_container_count(locals) == 0) {</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;No local channels in use\n&quot;);</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                 return RESULT_SUCCESS;</span>
+<span class="lineNum">     963 </span>            :         }
+<span class="lineNum">     964 </span>            : 
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :         it = ao2_iterator_init(locals, 0);</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :         while ((p = ao2_iterator_next(&amp;it))) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                 ao2_lock(p);</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%s -- %s\n&quot;,</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         p-&gt;base.owner ? ast_channel_name(p-&gt;base.owner) : &quot;&lt;unowned&gt;&quot;,</span>
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                         p-&gt;base.name);</span>
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :                 ao2_unlock(p);</span>
+<span class="lineNum">     972 </span><span class="lineNoCov">          0 :                 ao2_ref(p, -1);</span>
+<span class="lineNum">     973 </span>            :         }
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;it);</span>
+<span class="lineNum">     975 </span>            : 
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     977 </span>            : }
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span>            : static struct ast_cli_entry cli_local[] = {
+<span class="lineNum">     980 </span>            :         AST_CLI_DEFINE(locals_show, &quot;List status of local channels&quot;),
+<a name="981"><span class="lineNum">     981 </span>            : };</a>
+<span class="lineNum">     982 </span>            : 
+<span class="lineNum">     983 </span><span class="lineCov">          1 : static int manager_optimize_away(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     984 </span>            : {
+<span class="lineNum">     985 </span>            :         const char *channel;
+<span class="lineNum">     986 </span>            :         struct local_pvt *p;
+<span class="lineNum">     987 </span>            :         struct local_pvt *found;
+<span class="lineNum">     988 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     989 </span>            : 
+<span class="lineNum">     990 </span><span class="lineCov">          1 :         channel = astman_get_header(m, &quot;Channel&quot;);</span>
+<span class="lineNum">     991 </span><span class="lineCov">          1 :         if (ast_strlen_zero(channel)) {</span>
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;'Channel' not specified.&quot;);</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     994 </span>            :         }
+<span class="lineNum">     995 </span>            : 
+<span class="lineNum">     996 </span><span class="lineCov">          1 :         chan = ast_channel_get_by_name(channel);</span>
+<span class="lineNum">     997 </span><span class="lineCov">          1 :         if (!chan) {</span>
+<span class="lineNum">     998 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Channel does not exist.&quot;);</span>
+<span class="lineNum">     999 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1000 </span>            :         }
+<span class="lineNum">    1001 </span>            : 
+<span class="lineNum">    1002 </span><span class="lineCov">          1 :         p = ast_channel_tech_pvt(chan);</span>
+<span class="lineNum">    1003 </span><span class="lineCov">          1 :         ast_channel_unref(chan);</span>
+<span class="lineNum">    1004 </span>            : 
+<span class="lineNum">    1005 </span><span class="lineCov">          1 :         found = p ? ao2_find(locals, p, 0) : NULL;</span>
+<span class="lineNum">    1006 </span><span class="lineCov">          1 :         if (found) {</span>
+<span class="lineNum">    1007 </span><span class="lineCov">          1 :                 ao2_lock(found);</span>
+<span class="lineNum">    1008 </span><span class="lineCov">          1 :                 ast_clear_flag(&amp;found-&gt;base, AST_UNREAL_NO_OPTIMIZATION);</span>
+<span class="lineNum">    1009 </span><span class="lineCov">          1 :                 ao2_unlock(found);</span>
+<span class="lineNum">    1010 </span><span class="lineCov">          1 :                 ao2_ref(found, -1);</span>
+<span class="lineNum">    1011 </span><span class="lineCov">          1 :                 astman_send_ack(s, m, &quot;Queued channel to be optimized away&quot;);</span>
+<span class="lineNum">    1012 </span>            :         } else {
+<span class="lineNum">    1013 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Unable to find channel&quot;);</span>
+<span class="lineNum">    1014 </span>            :         }
+<span class="lineNum">    1015 </span>            : 
+<span class="lineNum">    1016 </span><span class="lineCov">          1 :         return 0;</span>
+<span class="lineNum">    1017 </span>            : }
+<a name="1018"><span class="lineNum">    1018 </span>            : </a>
+<span class="lineNum">    1019 </span>            : 
+<span class="lineNum">    1020 </span><span class="lineCov">        323 : static int locals_cmp_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1021 </span>            : {
+<span class="lineNum">    1022 </span><span class="lineCov">        323 :         return (obj == arg) ? CMP_MATCH : 0;</span>
+<span class="lineNum">    1023 </span>            : }
+<span class="lineNum">    1024 </span>            : 
+<span class="lineNum">    1025 </span>            : /*!
+<span class="lineNum">    1026 </span>            :  * \internal
+<span class="lineNum">    1027 </span>            :  * \brief Shutdown the local proxy channel.
+<span class="lineNum">    1028 </span>            :  * \since 12.0.0
+<span class="lineNum">    1029 </span>            :  *
+<a name="1030"><span class="lineNum">    1030 </span>            :  * \return Nothing</a>
+<span class="lineNum">    1031 </span>            :  */
+<span class="lineNum">    1032 </span><span class="lineCov">       1015 : static void local_shutdown(void)</span>
+<span class="lineNum">    1033 </span>            : {
+<span class="lineNum">    1034 </span>            :         /* First, take us out of the channel loop */
+<span class="lineNum">    1035 </span><span class="lineCov">       1015 :         ast_cli_unregister_multiple(cli_local, ARRAY_LEN(cli_local));</span>
+<span class="lineNum">    1036 </span><span class="lineCov">       1015 :         ast_manager_unregister(&quot;LocalOptimizeAway&quot;);</span>
+<span class="lineNum">    1037 </span><span class="lineCov">       1015 :         ast_channel_unregister(&amp;local_tech);</span>
+<span class="lineNum">    1038 </span>            : 
+<span class="lineNum">    1039 </span><span class="lineCov">       1015 :         ao2_ref(locals, -1);</span>
+<span class="lineNum">    1040 </span><span class="lineCov">       1015 :         locals = NULL;</span>
+<span class="lineNum">    1041 </span>            : 
+<span class="lineNum">    1042 </span><span class="lineCov">       1015 :         ao2_cleanup(local_tech.capabilities);</span>
+<span class="lineNum">    1043 </span><span class="lineCov">       1015 :         local_tech.capabilities = NULL;</span>
+<span class="lineNum">    1044 </span>            : 
+<span class="lineNum">    1045 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_local_optimization_begin_type);</span>
+<span class="lineNum">    1046 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_local_optimization_end_type);</span>
+<span class="lineNum">    1047 </span><span class="lineCov">       1015 :         STASIS_MESSAGE_TYPE_CLEANUP(ast_local_bridge_type);</span>
+<a name="1048"><span class="lineNum">    1048 </span><span class="lineCov">       1015 : }</span></a>
+<span class="lineNum">    1049 </span>            : 
+<span class="lineNum">    1050 </span><span class="lineCov">       1124 : int ast_local_init(void)</span>
+<span class="lineNum">    1051 </span>            : {
+<span class="lineNum">    1052 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(ast_local_optimization_begin_type)) {</span>
+<span class="lineNum">    1053 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1054 </span>            :         }
+<span class="lineNum">    1055 </span>            : 
+<span class="lineNum">    1056 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(ast_local_optimization_end_type)) {</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1058 </span>            :         }
+<span class="lineNum">    1059 </span>            : 
+<span class="lineNum">    1060 </span><span class="lineCov">       1124 :         if (STASIS_MESSAGE_TYPE_INIT(ast_local_bridge_type)) {</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1062 </span>            :         }
+<span class="lineNum">    1063 </span>            : 
+<span class="lineNum">    1064 </span><span class="lineCov">       1124 :         if (!(local_tech.capabilities = ast_format_cap_alloc(AST_FORMAT_CAP_FLAG_DEFAULT))) {</span>
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1066 </span>            :         }
+<span class="lineNum">    1067 </span><span class="lineCov">       1124 :         ast_format_cap_append_by_type(local_tech.capabilities, AST_MEDIA_TYPE_UNKNOWN);</span>
+<span class="lineNum">    1068 </span>            : 
+<span class="lineNum">    1069 </span><span class="lineCov">       1124 :         locals = ao2_container_alloc_list(AO2_ALLOC_OPT_LOCK_MUTEX, 0, NULL, locals_cmp_cb);</span>
+<span class="lineNum">    1070 </span><span class="lineCov">       1124 :         if (!locals) {</span>
+<span class="lineNum">    1071 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1072 </span>            :         }
+<span class="lineNum">    1073 </span>            : 
+<span class="lineNum">    1074 </span>            :         /* Make sure we can register our channel type */
+<span class="lineNum">    1075 </span><span class="lineCov">       1124 :         if (ast_channel_register(&amp;local_tech)) {</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to register channel class 'Local'\n&quot;);</span>
+<span class="lineNum">    1077 </span>            : 
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1079 </span>            :         }
+<span class="lineNum">    1080 </span><span class="lineCov">       1124 :         ast_cli_register_multiple(cli_local, ARRAY_LEN(cli_local));</span>
+<span class="lineNum">    1081 </span><span class="lineCov">       1124 :         ast_manager_register_xml_core(&quot;LocalOptimizeAway&quot;, EVENT_FLAG_SYSTEM|EVENT_FLAG_CALL, manager_optimize_away);</span>
+<span class="lineNum">    1082 </span>            : 
+<span class="lineNum">    1083 </span><span class="lineCov">       1124 :         ast_register_cleanup(local_shutdown);</span>
+<span class="lineNum">    1084 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">    1085 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_stasis_device_state.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_stasis_device_state.c<span style="font-size: 80%;"> (source / <a href="res_stasis_device_state.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">163</td>
+            <td class="headerCovTableEntry">199</td>
+            <td class="headerCovTableEntryMed">81.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntryHi">96.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Kevin Harwell &lt;kharwell@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*** MODULEINFO
+<span class="lineNum">      20 </span>            :         &lt;depend type=&quot;module&quot;&gt;res_stasis&lt;/depend&gt;
+<span class="lineNum">      21 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      22 </span>            :  ***/
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk/astdb.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/stasis_app_impl.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;asterisk/stasis_app_device_state.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #define DEVICE_STATE_SIZE 64
+<span class="lineNum">      33 </span>            : /*! astdb family name */
+<span class="lineNum">      34 </span>            : #define DEVICE_STATE_FAMILY &quot;StasisDeviceState&quot;
+<span class="lineNum">      35 </span>            : /*! Stasis device state provider */
+<span class="lineNum">      36 </span>            : #define DEVICE_STATE_PROVIDER_STASIS &quot;Stasis&quot;
+<span class="lineNum">      37 </span>            : /*! Scheme for custom device states */
+<span class="lineNum">      38 </span>            : #define DEVICE_STATE_SCHEME_STASIS &quot;Stasis:&quot;
+<span class="lineNum">      39 </span>            : /*! Scheme for device state subscriptions */
+<span class="lineNum">      40 </span>            : #define DEVICE_STATE_SCHEME_SUB &quot;deviceState:&quot;
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : /*! Number of hash buckets for device state subscriptions */
+<span class="lineNum">      43 </span>            : #define DEVICE_STATE_BUCKETS 37
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /*! The key used for tracking a subscription to all device states */
+<span class="lineNum">      46 </span>            : #define DEVICE_STATE_ALL &quot;__AST_DEVICE_STATE_ALL_TOPIC&quot;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : /*! Container for subscribed device states */
+<span class="lineNum">      49 </span>            : static struct ao2_container *device_state_subscriptions;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : /*!
+<span class="lineNum">      52 </span>            :  * \brief Device state subscription object.
+<span class="lineNum">      53 </span>            :  */
+<span class="lineNum">      54 </span>            : struct device_state_subscription {
+<span class="lineNum">      55 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">      56 </span>            :                 AST_STRING_FIELD(app_name);
+<span class="lineNum">      57 </span>            :                 AST_STRING_FIELD(device_name);
+<span class="lineNum">      58 </span>            :         );
+<span class="lineNum">      59 </span>            :         /*! The subscription object */
+<span class="lineNum">      60 </span>            :         struct stasis_subscription *sub;
+<a name="61"><span class="lineNum">      61 </span>            : };</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineCov">         22 : static int device_state_subscriptions_hash(const void *obj, const int flags)</span>
+<span class="lineNum">      64 </span>            : {
+<span class="lineNum">      65 </span>            :         const struct device_state_subscription *object;
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineCov">         22 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">      68 </span><span class="lineCov">         22 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">      69 </span><span class="lineCov">         22 :                 object = obj;</span>
+<span class="lineNum">      70 </span><span class="lineCov">         22 :                 return ast_str_hash(object-&gt;device_name);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">      72 </span>            :         default:
+<span class="lineNum">      73 </span>            :                 /* Hash can only work on something with a full key. */
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">      76 </span>            :         }
+<a name="77"><span class="lineNum">      77 </span>            : }</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineCov">          5 : static int device_state_subscriptions_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">      80 </span>            : {
+<span class="lineNum">      81 </span><span class="lineCov">          5 :         const struct device_state_subscription *object_left = obj;</span>
+<span class="lineNum">      82 </span><span class="lineCov">          5 :         const struct device_state_subscription *object_right = arg;</span>
+<span class="lineNum">      83 </span>            :         int cmp;
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineCov">          5 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">      86 </span><span class="lineCov">          5 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">      87 </span>            :                 /* find objects matching both device and app names */
+<span class="lineNum">      88 </span><span class="lineCov">          5 :                 if (strcmp(object_left-&gt;device_name,</span>
+<span class="lineNum">      89 </span>            :                            object_right-&gt;device_name)) {
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">      91 </span>            :                 }
+<span class="lineNum">      92 </span><span class="lineCov">          5 :                 cmp = strcmp(object_left-&gt;app_name, object_right-&gt;app_name);</span>
+<span class="lineNum">      93 </span><span class="lineCov">          5 :                 break;</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">      95 </span>            :         case OBJ_SEARCH_PARTIAL_KEY:
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                 ast_assert(0); /* not supported by container */</span>
+<span class="lineNum">      97 </span>            :                 /* fall through */
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     101 </span>            :         }
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineCov">          5 :         return cmp ? 0 : CMP_MATCH | CMP_STOP;</span>
+<a name="104"><span class="lineNum">     104 </span>            : }</a>
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">          3 : static void device_state_subscription_destroy(void *obj)</span>
+<span class="lineNum">     107 </span>            : {
+<span class="lineNum">     108 </span><span class="lineCov">          3 :         struct device_state_subscription *sub = obj;</span>
+<span class="lineNum">     109 </span><span class="lineCov">          3 :         ast_string_field_free_memory(sub);</span>
+<a name="110"><span class="lineNum">     110 </span><span class="lineCov">          3 : }</span></a>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">          5 : static struct device_state_subscription *device_state_subscription_create(</span>
+<span class="lineNum">     113 </span>            :         const struct stasis_app *app, const char *device_name)
+<span class="lineNum">     114 </span>            : {
+<span class="lineNum">     115 </span>            :         struct device_state_subscription *sub;
+<span class="lineNum">     116 </span><span class="lineCov">          5 :         const char *app_name = stasis_app_name(app);</span>
+<span class="lineNum">     117 </span>            :         size_t size;
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">          5 :         if (ast_strlen_zero(device_name)) {</span>
+<span class="lineNum">     120 </span><span class="lineCov">          2 :                 device_name = DEVICE_STATE_ALL;</span>
+<span class="lineNum">     121 </span>            :         }
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineCov">          5 :         size = strlen(device_name) + strlen(app_name) + 2;</span>
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineCov">          5 :         sub = ao2_alloc(sizeof(*sub), device_state_subscription_destroy);</span>
+<span class="lineNum">     126 </span><span class="lineCov">          5 :         if (!sub) {</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     128 </span>            :         }
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span><span class="lineCov">          5 :         if (ast_string_field_init(sub, size)) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     133 </span>            :         }
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineCov">          5 :         ast_string_field_set(sub, app_name, app_name);</span>
+<span class="lineNum">     136 </span><span class="lineCov">          5 :         ast_string_field_set(sub, device_name, device_name);</span>
+<span class="lineNum">     137 </span><span class="lineCov">          5 :         return sub;</span>
+<a name="138"><span class="lineNum">     138 </span>            : }</a>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">         16 : static struct device_state_subscription *find_device_state_subscription(</span>
+<span class="lineNum">     141 </span>            :         struct stasis_app *app, const char *name)
+<span class="lineNum">     142 </span>            : {
+<span class="lineNum">     143 </span><span class="lineCov">         32 :         struct device_state_subscription dummy_sub = {</span>
+<span class="lineNum">     144 </span><span class="lineCov">         16 :                 .app_name = stasis_app_name(app),</span>
+<span class="lineNum">     145 </span>            :                 .device_name = name
+<span class="lineNum">     146 </span>            :         };
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">         16 :         return ao2_find(device_state_subscriptions, &amp;dummy_sub, OBJ_SEARCH_OBJECT | OBJ_NOLOCK);</span>
+<a name="149"><span class="lineNum">     149 </span>            : }</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">          2 : static void remove_device_state_subscription(</span>
+<span class="lineNum">     152 </span>            :         struct device_state_subscription *sub)
+<span class="lineNum">     153 </span>            : {
+<span class="lineNum">     154 </span><span class="lineCov">          2 :         if (sub-&gt;sub) {</span>
+<span class="lineNum">     155 </span><span class="lineCov">          2 :                 sub-&gt;sub = stasis_unsubscribe_and_join(sub-&gt;sub);</span>
+<span class="lineNum">     156 </span>            :         }
+<span class="lineNum">     157 </span><span class="lineCov">          2 :         ao2_unlink_flags(device_state_subscriptions, sub, OBJ_NOLOCK);</span>
+<a name="158"><span class="lineNum">     158 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">         22 : struct ast_json *stasis_app_device_state_to_json(</span>
+<span class="lineNum">     161 </span>            :         const char *name, enum ast_device_state state)
+<span class="lineNum">     162 </span>            : {
+<span class="lineNum">     163 </span><span class="lineCov">         22 :         return ast_json_pack(&quot;{s: s, s: s}&quot;,</span>
+<span class="lineNum">     164 </span>            :                              &quot;name&quot;, name,
+<span class="lineNum">     165 </span>            :                              &quot;state&quot;, ast_devstate_str(state));
+<a name="166"><span class="lineNum">     166 </span>            : }</a>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">          1 : struct ast_json *stasis_app_device_states_to_json(void)</span>
+<span class="lineNum">     169 </span>            : {
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         struct ast_json *array = ast_json_array_create();</span>
+<span class="lineNum">     171 </span>            :         struct ast_db_entry *tree;
+<span class="lineNum">     172 </span>            :         struct ast_db_entry *entry;
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span><span class="lineCov">          1 :         tree = ast_db_gettree(DEVICE_STATE_FAMILY, NULL);</span>
+<span class="lineNum">     175 </span><span class="lineCov">          3 :         for (entry = tree; entry; entry = entry-&gt;next) {</span>
+<span class="lineNum">     176 </span><span class="lineCov">          2 :                 const char *name = strrchr(entry-&gt;key, '/');</span>
+<span class="lineNum">     177 </span>            : 
+<span class="lineNum">     178 </span><span class="lineCov">          2 :                 if (!ast_strlen_zero(name)) {</span>
+<span class="lineNum">     179 </span>            :                         char device[DEVICE_STATE_SIZE];
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">          2 :                         snprintf(device, sizeof(device), &quot;%s%s&quot;, DEVICE_STATE_SCHEME_STASIS, ++name);</span>
+<span class="lineNum">     182 </span><span class="lineCov">          2 :                         ast_json_array_append(array,</span>
+<span class="lineNum">     183 </span>            :                                 stasis_app_device_state_to_json(device, ast_device_state(device)));
+<span class="lineNum">     184 </span>            :                 }
+<span class="lineNum">     185 </span>            :         }
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         ast_db_freetree(tree);</span>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineCov">          1 :         return array;</span>
+<a name="189"><span class="lineNum">     189 </span>            : }</a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">         16 : static void send_device_state(struct device_state_subscription *sub,</span>
+<a name="192"><span class="lineNum">     192 </span>            :                               const char *name, enum ast_device_state state)</a>
+<span class="lineNum">     193 </span>            : {
+<span class="lineNum">     194 </span><span class="lineCov">         32 :         RAII_VAR(struct ast_json *, json, NULL, ast_json_unref);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">         16 :         json = ast_json_pack(&quot;{s:s, s:s, s:o, s:o}&quot;,</span>
+<span class="lineNum">     197 </span>            :                              &quot;type&quot;, &quot;DeviceStateChanged&quot;,
+<span class="lineNum">     198 </span>            :                              &quot;application&quot;, sub-&gt;app_name,
+<span class="lineNum">     199 </span>            :                              &quot;timestamp&quot;, ast_json_timeval(ast_tvnow(), NULL),
+<span class="lineNum">     200 </span>            :                              &quot;device_state&quot;, stasis_app_device_state_to_json(
+<span class="lineNum">     201 </span>            :                                      name, state));
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">         16 :         if (!json) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to create device state json object\n&quot;);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     206 </span>            :         }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">         16 :         stasis_app_send(sub-&gt;app_name, json);</span>
+<a name="209"><span class="lineNum">     209 </span>            : }</a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">         11 : enum stasis_device_state_result stasis_app_device_state_update(</span>
+<span class="lineNum">     212 </span>            :         const char *name, const char *value)
+<span class="lineNum">     213 </span>            : {
+<span class="lineNum">     214 </span><span class="lineCov">         11 :         size_t size = strlen(DEVICE_STATE_SCHEME_STASIS);</span>
+<span class="lineNum">     215 </span>            :         enum ast_device_state state;
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">         11 :         ast_debug(3, &quot;Updating device name = %s, value = %s&quot;, name, value);</span>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">         11 :         if (strncasecmp(name, DEVICE_STATE_SCHEME_STASIS, size)) {</span>
+<span class="lineNum">     220 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;Update can only be used to set &quot;</span>
+<span class="lineNum">     221 </span>            :                         &quot;'%s' device state!\n&quot;, DEVICE_STATE_SCHEME_STASIS);
+<span class="lineNum">     222 </span><span class="lineCov">          1 :                 return STASIS_DEVICE_STATE_NOT_CONTROLLED;</span>
+<span class="lineNum">     223 </span>            :         }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">         10 :         name += size;</span>
+<span class="lineNum">     226 </span><span class="lineCov">         10 :         if (ast_strlen_zero(name)) {</span>
+<span class="lineNum">     227 </span><span class="lineCov">          1 :                 ast_log(LOG_ERROR, &quot;Update requires custom device name!\n&quot;);</span>
+<span class="lineNum">     228 </span><span class="lineCov">          1 :                 return STASIS_DEVICE_STATE_MISSING;</span>
+<span class="lineNum">     229 </span>            :         }
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">          9 :         if (!value || (state = ast_devstate_val(value)) == AST_DEVICE_UNKNOWN) {</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unknown device state &quot;</span>
+<span class="lineNum">     233 </span>            :                         &quot;value '%s'\n&quot;, value);
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 return STASIS_DEVICE_STATE_UNKNOWN;</span>
+<span class="lineNum">     235 </span>            :         }
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineCov">          9 :         ast_db_put(DEVICE_STATE_FAMILY, name, value);</span>
+<span class="lineNum">     238 </span><span class="lineCov">          9 :         ast_devstate_changed(state, AST_DEVSTATE_CACHABLE, &quot;%s%s&quot;,</span>
+<span class="lineNum">     239 </span>            :                              DEVICE_STATE_SCHEME_STASIS, name);
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineCov">          9 :         return STASIS_DEVICE_STATE_OK;</span>
+<a name="242"><span class="lineNum">     242 </span>            : }</a>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">          6 : enum stasis_device_state_result stasis_app_device_state_delete(const char *name)</span>
+<span class="lineNum">     245 </span>            : {
+<span class="lineNum">     246 </span><span class="lineCov">          6 :         const char *full_name = name;</span>
+<span class="lineNum">     247 </span><span class="lineCov">          6 :         size_t size = strlen(DEVICE_STATE_SCHEME_STASIS);</span>
+<span class="lineNum">     248 </span>            : 
+<span class="lineNum">     249 </span><span class="lineCov">          6 :         if (strncasecmp(name, DEVICE_STATE_SCHEME_STASIS, size)) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Can only delete '%s' device states!\n&quot;,</span>
+<span class="lineNum">     251 </span>            :                         DEVICE_STATE_SCHEME_STASIS);
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 return STASIS_DEVICE_STATE_NOT_CONTROLLED;</span>
+<span class="lineNum">     253 </span>            :         }
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">          6 :         name += size;</span>
+<span class="lineNum">     256 </span><span class="lineCov">          6 :         if (ast_strlen_zero(name)) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Delete requires a device name!\n&quot;);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 return STASIS_DEVICE_STATE_MISSING;</span>
+<span class="lineNum">     259 </span>            :         }
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">          6 :         if (ast_device_state_clear_cache(full_name)) {</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 return STASIS_DEVICE_STATE_UNKNOWN;</span>
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">          6 :         ast_db_del(DEVICE_STATE_FAMILY, name);</span>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            :         /* send state change for delete */
+<span class="lineNum">     268 </span><span class="lineCov">          6 :         ast_devstate_changed(</span>
+<span class="lineNum">     269 </span>            :                 AST_DEVICE_UNKNOWN, AST_DEVSTATE_CACHABLE, &quot;%s%s&quot;,
+<span class="lineNum">     270 </span>            :                 DEVICE_STATE_SCHEME_STASIS, name);
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          6 :         return STASIS_DEVICE_STATE_OK;</span>
+<a name="273"><span class="lineNum">     273 </span>            : }</a>
+<span class="lineNum">     274 </span>            : 
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">       1118 : static void populate_cache(void)</span></a>
+<span class="lineNum">     276 </span>            : {
+<span class="lineNum">     277 </span><span class="lineCov">       3354 :         RAII_VAR(struct ast_db_entry *, tree,</span>
+<span class="lineNum">     278 </span>            :                  ast_db_gettree(DEVICE_STATE_FAMILY, NULL), ast_db_freetree);
+<span class="lineNum">     279 </span>            :         struct ast_db_entry *entry;
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineCov">       1118 :         for (entry = tree; entry; entry = entry-&gt;next) {</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 const char *name = strrchr(entry-&gt;key, '/');</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                 if (!ast_strlen_zero(name)) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                         ast_devstate_changed(</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                                 ast_devstate_val(entry-&gt;data),</span>
+<span class="lineNum">     286 </span>            :                                 AST_DEVSTATE_CACHABLE, &quot;%s%s\n&quot;,
+<span class="lineNum">     287 </span>            :                                 DEVICE_STATE_SCHEME_STASIS, name + 1);
+<span class="lineNum">     288 </span>            :                 }
+<span class="lineNum">     289 </span>            :         }
+<a name="290"><span class="lineNum">     290 </span><span class="lineCov">       1118 : }</span></a>
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          7 : static enum ast_device_state stasis_device_state_cb(const char *data)</span>
+<span class="lineNum">     293 </span>            : {
+<span class="lineNum">     294 </span>            :         char buf[DEVICE_STATE_SIZE];
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">          7 :         ast_db_get(DEVICE_STATE_FAMILY, data, buf, sizeof(buf));</span>
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineCov">          7 :         return ast_devstate_val(buf);</span>
+<a name="299"><span class="lineNum">     299 </span>            : }</a>
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span><span class="lineCov">         48 : static void device_state_cb(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     302 </span>            :                             struct stasis_message *msg)
+<span class="lineNum">     303 </span>            : {
+<span class="lineNum">     304 </span>            :         struct ast_device_state_message *device_state;
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">         48 :         if (stasis_subscription_final_message(sub, msg)) {</span>
+<span class="lineNum">     307 </span>            :                 /* Remove stasis subscription's reference to device_state_subscription */
+<span class="lineNum">     308 </span><span class="lineCov">          2 :                 ao2_ref(data, -1);</span>
+<span class="lineNum">     309 </span><span class="lineCov">          2 :                 return;</span>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">         46 :         if (ast_device_state_message_type() != stasis_message_type(msg)) {</span>
+<span class="lineNum">     313 </span><span class="lineCov">         12 :                 return;</span>
+<span class="lineNum">     314 </span>            :         }
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineCov">         34 :         device_state = stasis_message_data(msg);</span>
+<span class="lineNum">     317 </span><span class="lineCov">         34 :         if (device_state-&gt;eid) {</span>
+<span class="lineNum">     318 </span>            :                 /* ignore non-aggregate states */
+<span class="lineNum">     319 </span><span class="lineCov">         18 :                 return;</span>
+<span class="lineNum">     320 </span>            :         }
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">         16 :         send_device_state(data, device_state-&gt;device, device_state-&gt;state);</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineCov">          3 : static void *find_device_state(const struct stasis_app *app, const char *name)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineCov">          3 :         return device_state_subscription_create(app, name);</span>
+<a name="328"><span class="lineNum">     328 </span>            : }</a>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">          7 : static int is_subscribed_device_state(struct stasis_app *app, const char *name)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         struct device_state_subscription *sub;
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">          7 :         sub = find_device_state_subscription(app, DEVICE_STATE_ALL);</span>
+<span class="lineNum">     335 </span><span class="lineCov">          7 :         if (sub) {</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">          7 :         sub = find_device_state_subscription(app, name);</span>
+<span class="lineNum">     341 </span><span class="lineCov">          7 :         if (sub) {</span>
+<span class="lineNum">     342 </span><span class="lineCov">          3 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     343 </span><span class="lineCov">          3 :                 return 1;</span>
+<span class="lineNum">     344 </span>            :         }
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span><span class="lineCov">          4 :         return 0;</span>
+<a name="347"><span class="lineNum">     347 </span>            : }</a>
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span><span class="lineCov">          2 : static int is_subscribed_device_state_lock(struct stasis_app *app, const char *name)</span>
+<span class="lineNum">     350 </span>            : {
+<span class="lineNum">     351 </span>            :         int is_subscribed;
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span><span class="lineCov">          2 :         ao2_lock(device_state_subscriptions);</span>
+<span class="lineNum">     354 </span><span class="lineCov">          2 :         is_subscribed = is_subscribed_device_state(app, name);</span>
+<span class="lineNum">     355 </span><span class="lineCov">          2 :         ao2_unlock(device_state_subscriptions);</span>
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span><span class="lineCov">          2 :         return is_subscribed;</span>
+<a name="358"><span class="lineNum">     358 </span>            : }</a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">          5 : static int subscribe_device_state(struct stasis_app *app, void *obj)</span>
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span><span class="lineCov">          5 :         struct device_state_subscription *sub = obj;</span>
+<span class="lineNum">     363 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineCov">          5 :         if (!sub) {</span>
+<span class="lineNum">     366 </span><span class="lineCov">          2 :                 sub = device_state_subscription_create(app, NULL);</span>
+<span class="lineNum">     367 </span><span class="lineCov">          2 :                 if (!sub) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     369 </span>            :                 }
+<span class="lineNum">     370 </span>            :         }
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineCov">          5 :         if (strcmp(sub-&gt;device_name, DEVICE_STATE_ALL)) {</span>
+<span class="lineNum">     373 </span><span class="lineCov">          3 :                 topic = ast_device_state_topic(sub-&gt;device_name);</span>
+<span class="lineNum">     374 </span>            :         } else {
+<span class="lineNum">     375 </span><span class="lineCov">          2 :                 topic = ast_device_state_topic_all();</span>
+<span class="lineNum">     376 </span>            :         }
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineCov">          5 :         ao2_lock(device_state_subscriptions);</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">          5 :         if (is_subscribed_device_state(app, sub-&gt;device_name)) {</span>
+<span class="lineNum">     381 </span><span class="lineCov">          1 :                 ao2_unlock(device_state_subscriptions);</span>
+<span class="lineNum">     382 </span><span class="lineCov">          1 :                 ast_debug(3, &quot;App %s is already subscribed to %s\n&quot;, stasis_app_name(app), sub-&gt;device_name);</span>
+<span class="lineNum">     383 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">     384 </span>            :         }
+<span class="lineNum">     385 </span>            : 
+<span class="lineNum">     386 </span><span class="lineCov">          4 :         ast_debug(3, &quot;Subscribing to device %s\n&quot;, sub-&gt;device_name);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">          4 :         sub-&gt;sub = stasis_subscribe_pool(topic, device_state_cb, ao2_bump(sub));</span>
+<span class="lineNum">     389 </span><span class="lineCov">          4 :         if (!sub-&gt;sub) {</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 ao2_unlock(device_state_subscriptions);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to subscribe to device %s\n&quot;,</span>
+<span class="lineNum">     392 </span>            :                         sub-&gt;device_name);
+<span class="lineNum">     393 </span>            :                 /* Reference we added when attempting to stasis_subscribe_pool */
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 ao2_ref(sub, -1);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     396 </span>            :         }
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span><span class="lineCov">          4 :         ao2_link_flags(device_state_subscriptions, sub, OBJ_NOLOCK);</span>
+<span class="lineNum">     399 </span><span class="lineCov">          4 :         ao2_unlock(device_state_subscriptions);</span>
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span><span class="lineCov">          4 :         return 0;</span>
+<a name="402"><span class="lineNum">     402 </span>            : }</a>
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">          2 : static int unsubscribe_device_state(struct stasis_app *app, const char *name)</span>
+<span class="lineNum">     405 </span>            : {
+<span class="lineNum">     406 </span>            :         struct device_state_subscription *sub;
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">          2 :         ao2_lock(device_state_subscriptions);</span>
+<span class="lineNum">     409 </span><span class="lineCov">          2 :         sub = find_device_state_subscription(app, name);</span>
+<span class="lineNum">     410 </span><span class="lineCov">          2 :         if (sub) {</span>
+<span class="lineNum">     411 </span><span class="lineCov">          2 :                 remove_device_state_subscription(sub);</span>
+<span class="lineNum">     412 </span>            :         }
+<span class="lineNum">     413 </span><span class="lineCov">          2 :         ao2_unlock(device_state_subscriptions);</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">          2 :         ao2_cleanup(sub);</span>
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="418"><span class="lineNum">     418 </span>            : }</a>
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineCov">          4 : static int device_to_json_cb(void *obj, void *arg, void *data, int flags)</span>
+<span class="lineNum">     421 </span>            : {
+<span class="lineNum">     422 </span><span class="lineCov">          4 :         struct device_state_subscription *sub = obj;</span>
+<span class="lineNum">     423 </span><span class="lineCov">          4 :         const char *app_name = arg;</span>
+<span class="lineNum">     424 </span><span class="lineCov">          4 :         struct ast_json *array = data;</span>
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">          4 :         if (strcmp(sub-&gt;app_name, app_name)) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     428 </span>            :         }
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineCov">          4 :         ast_json_array_append(</span>
+<span class="lineNum">     431 </span>            :                 array, ast_json_string_create(sub-&gt;device_name));
+<span class="lineNum">     432 </span><span class="lineCov">          4 :         return 0;</span>
+<span class="lineNum">     433 </span>            : 
+<a name="434"><span class="lineNum">     434 </span>            : }</a>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineCov">         26 : static void devices_to_json(const struct stasis_app *app, struct ast_json *json)</span>
+<span class="lineNum">     437 </span>            : {
+<span class="lineNum">     438 </span><span class="lineCov">         26 :         struct ast_json *array = ast_json_array_create();</span>
+<span class="lineNum">     439 </span><span class="lineCov">         26 :         ao2_callback_data(device_state_subscriptions, OBJ_NODATA,</span>
+<span class="lineNum">     440 </span>            :                           device_to_json_cb, (void *)stasis_app_name(app), array);
+<span class="lineNum">     441 </span><span class="lineCov">         26 :         ast_json_object_set(json, &quot;device_names&quot;, array);</span>
+<span class="lineNum">     442 </span><span class="lineCov">         26 : }</span>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            : struct stasis_app_event_source device_state_event_source = {
+<span class="lineNum">     445 </span>            :         .scheme = DEVICE_STATE_SCHEME_SUB,
+<span class="lineNum">     446 </span>            :         .find = find_device_state,
+<span class="lineNum">     447 </span>            :         .subscribe = subscribe_device_state,
+<span class="lineNum">     448 </span>            :         .unsubscribe = unsubscribe_device_state,
+<span class="lineNum">     449 </span>            :         .is_subscribed = is_subscribed_device_state_lock,
+<span class="lineNum">     450 </span>            :         .to_json = devices_to_json
+<a name="451"><span class="lineNum">     451 </span>            : };</a>
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">       1118 : static int load_module(void)</span>
+<span class="lineNum">     454 </span>            : {
+<span class="lineNum">     455 </span><span class="lineCov">       1118 :         populate_cache();</span>
+<span class="lineNum">     456 </span><span class="lineCov">       1118 :         if (ast_devstate_prov_add(DEVICE_STATE_PROVIDER_STASIS,</span>
+<span class="lineNum">     457 </span>            :                                   stasis_device_state_cb)) {
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     459 </span>            :         }
+<span class="lineNum">     460 </span>            : 
+<span class="lineNum">     461 </span><span class="lineCov">       1118 :         if (!(device_state_subscriptions = ao2_container_alloc(</span>
+<span class="lineNum">     462 </span>            :                       DEVICE_STATE_BUCKETS, device_state_subscriptions_hash,
+<span class="lineNum">     463 </span>            :                       device_state_subscriptions_cmp))) {
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 ast_devstate_prov_del(DEVICE_STATE_PROVIDER_STASIS);</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     466 </span>            :         }
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineCov">       1118 :         stasis_app_register_event_source(&amp;device_state_event_source);</span>
+<span class="lineNum">     469 </span><span class="lineCov">       1118 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="470"><span class="lineNum">     470 </span>            : }</a>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">       1116 : static int unload_module(void)</span>
+<span class="lineNum">     473 </span>            : {
+<span class="lineNum">     474 </span><span class="lineCov">       1116 :         ast_devstate_prov_del(DEVICE_STATE_PROVIDER_STASIS);</span>
+<span class="lineNum">     475 </span><span class="lineCov">       1116 :         stasis_app_unregister_event_source(&amp;device_state_event_source);</span>
+<span class="lineNum">     476 </span><span class="lineCov">       1116 :         ao2_cleanup(device_state_subscriptions);</span>
+<span class="lineNum">     477 </span><span class="lineCov">       1116 :         device_state_subscriptions = NULL;</span>
+<span class="lineNum">     478 </span><span class="lineCov">       1116 :         return 0;</span>
+<a name="479"><span class="lineNum">     479 </span>            : }</a>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span><span class="lineCov">       4514 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS, &quot;Stasis application device state support&quot;,</span>
+<span class="lineNum">     482 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">     483 </span>            :         .load = load_module,
+<span class="lineNum">     484 </span>            :         .unload = unload_module,
+<span class="lineNum">     485 </span>            :         .requires = &quot;res_stasis&quot;,
+<span class="lineNum">     486 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

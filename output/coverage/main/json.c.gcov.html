@@ -1,0 +1,895 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/json.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - json.c<span style="font-size: 80%;"> (source / <a href="json.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">287</td>
+            <td class="headerCovTableEntry">384</td>
+            <td class="headerCovTableEntryLo">74.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">78</td>
+            <td class="headerCovTableEntry">85</td>
+            <td class="headerCovTableEntryHi">91.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2012 - 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief JSON abstraction layer.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * This is a very thin wrapper around the Jansson API. For more details on it,
+<span class="lineNum">      24 </span>            :  * see its docs at http://www.digip.org/jansson/doc/2.4/apiref.html.
+<span class="lineNum">      25 </span>            :  *
+<span class="lineNum">      26 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      27 </span>            :  */
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : /*** MODULEINFO
+<span class="lineNum">      30 </span>            :         &lt;depend&gt;jansson&lt;/depend&gt;
+<span class="lineNum">      31 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      32 </span>            :  ***/
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/json.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/localtime.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/callerid.h&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #include &lt;jansson.h&gt;
+<a name="45"><span class="lineNum">      45 </span>            : #include &lt;time.h&gt;</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineCov">    2170094 : void *ast_json_malloc(size_t size)</span>
+<span class="lineNum">      48 </span>            : {
+<span class="lineNum">      49 </span><span class="lineCov">    2170094 :         return ast_malloc(size);</span>
+<a name="50"><span class="lineNum">      50 </span>            : }</a>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">    2188015 : void ast_json_free(void *p)</span>
+<span class="lineNum">      53 </span>            : {
+<span class="lineNum">      54 </span><span class="lineCov">    2188015 :         ast_free(p);</span>
+<a name="55"><span class="lineNum">      55 </span><span class="lineCov">    2188015 : }</span></a>
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span><span class="lineCov">         51 : void ast_json_set_alloc_funcs(void *(*malloc_fn)(size_t), void (*free_fn)(void*))</span>
+<span class="lineNum">      58 </span>            : {
+<span class="lineNum">      59 </span><span class="lineCov">         51 :         json_set_alloc_funcs(malloc_fn, free_fn);</span>
+<a name="60"><span class="lineNum">      60 </span><span class="lineCov">         51 : }</span></a>
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span><span class="lineCov">       1175 : void ast_json_reset_alloc_funcs(void)</span>
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span><span class="lineCov">       1175 :         json_set_alloc_funcs(ast_json_malloc, ast_json_free);</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">       1175 : }</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineCov">     221592 : struct ast_json *ast_json_ref(struct ast_json *json)</span>
+<span class="lineNum">      68 </span>            : {
+<span class="lineNum">      69 </span><span class="lineCov">     221592 :         json_incref((json_t *)json);</span>
+<span class="lineNum">      70 </span><span class="lineCov">     221592 :         return json;</span>
+<a name="71"><span class="lineNum">      71 </span>            : }</a>
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span><span class="lineCov">     523522 : void ast_json_unref(struct ast_json *json)</span>
+<span class="lineNum">      74 </span>            : {
+<span class="lineNum">      75 </span><span class="lineCov">     523522 :         json_decref((json_t *) json);</span>
+<a name="76"><span class="lineNum">      76 </span><span class="lineCov">     523522 : }</span></a>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">     108797 : enum ast_json_type ast_json_typeof(const struct ast_json *json)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span><span class="lineCov">     108797 :         int r = json_typeof((json_t*)json);</span>
+<span class="lineNum">      81 </span><span class="lineCov">     108797 :         switch(r) {</span>
+<span class="lineNum">      82 </span><span class="lineCov">       7759 :         case JSON_OBJECT: return AST_JSON_OBJECT;</span>
+<span class="lineNum">      83 </span><span class="lineCov">        763 :         case JSON_ARRAY: return AST_JSON_ARRAY;</span>
+<span class="lineNum">      84 </span><span class="lineCov">      87379 :         case JSON_STRING: return AST_JSON_STRING;</span>
+<span class="lineNum">      85 </span><span class="lineCov">      12206 :         case JSON_INTEGER: return AST_JSON_INTEGER;</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         case JSON_REAL: return AST_JSON_REAL;</span>
+<span class="lineNum">      87 </span><span class="lineCov">        208 :         case JSON_TRUE: return AST_JSON_TRUE;</span>
+<span class="lineNum">      88 </span><span class="lineCov">         11 :         case JSON_FALSE: return AST_JSON_FALSE;</span>
+<span class="lineNum">      89 </span><span class="lineCov">        471 :         case JSON_NULL: return AST_JSON_NULL;</span>
+<span class="lineNum">      90 </span>            :         }
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         ast_assert(0); /* Unexpect return from json_typeof */</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         return r;</span>
+<a name="93"><span class="lineNum">      93 </span>            : }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineCov">         34 : const char *ast_json_typename(enum ast_json_type type)</span>
+<span class="lineNum">      96 </span>            : {
+<span class="lineNum">      97 </span><span class="lineCov">         34 :         switch (type) {</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         case AST_JSON_OBJECT: return &quot;object&quot;;</span>
+<span class="lineNum">      99 </span><span class="lineCov">          1 :         case AST_JSON_ARRAY: return &quot;array&quot;;</span>
+<span class="lineNum">     100 </span><span class="lineCov">         14 :         case AST_JSON_STRING: return &quot;string&quot;;</span>
+<span class="lineNum">     101 </span><span class="lineCov">         12 :         case AST_JSON_INTEGER: return &quot;integer&quot;;</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         case AST_JSON_REAL: return &quot;real&quot;;</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         case AST_JSON_TRUE: return &quot;boolean&quot;;</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         case AST_JSON_FALSE: return &quot;boolean&quot;;</span>
+<span class="lineNum">     105 </span><span class="lineCov">          7 :         case AST_JSON_NULL: return &quot;null&quot;;</span>
+<span class="lineNum">     106 </span>            :         }
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         ast_assert(0);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         return &quot;?&quot;;</span>
+<span class="lineNum">     109 </span>            : }
+<a name="110"><span class="lineNum">     110 </span>            : </a>
+<span class="lineNum">     111 </span>            : /* Ported from libjansson utf.c:utf8_check_first() */
+<span class="lineNum">     112 </span><span class="lineCov">       6940 : static size_t json_utf8_check_first(char byte)</span>
+<span class="lineNum">     113 </span>            : {
+<span class="lineNum">     114 </span><span class="lineCov">       6940 :         unsigned char ch = (unsigned char) byte;</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">       6940 :         if (ch &lt; 0x80) {</span>
+<span class="lineNum">     117 </span><span class="lineCov">       6940 :                 return 1;</span>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         if (0x80 &lt;= ch &amp;&amp; ch &lt;= 0xBF) {</span>
+<span class="lineNum">     121 </span>            :                 /* second, third or fourth byte of a multi-byte
+<span class="lineNum">     122 </span>            :                    sequence, i.e. a &quot;continuation byte&quot; */
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         } else if (ch == 0xC0 || ch == 0xC1) {</span>
+<span class="lineNum">     125 </span>            :                 /* overlong encoding of an ASCII byte */
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         } else if (0xC2 &lt;= ch &amp;&amp; ch &lt;= 0xDF) {</span>
+<span class="lineNum">     128 </span>            :                 /* 2-byte sequence */
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 return 2;</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         } else if (0xE0 &lt;= ch &amp;&amp; ch &lt;= 0xEF) {</span>
+<span class="lineNum">     131 </span>            :                 /* 3-byte sequence */
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 return 3;</span>
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :         } else if (0xF0 &lt;= ch &amp;&amp; ch &lt;= 0xF4) {</span>
+<span class="lineNum">     134 </span>            :                 /* 4-byte sequence */
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 return 4;</span>
+<span class="lineNum">     136 </span>            :         } else { /* ch &gt;= 0xF5 */
+<span class="lineNum">     137 </span>            :                 /* Restricted (start of 4-, 5- or 6-byte sequence) or invalid
+<span class="lineNum">     138 </span>            :                    UTF-8 */
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span>            : }
+<a name="142"><span class="lineNum">     142 </span>            : </a>
+<span class="lineNum">     143 </span>            : /* Ported from libjansson utf.c:utf8_check_full() */
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 : static size_t json_utf8_check_full(const char *str, size_t len)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span>            :         size_t pos;
+<span class="lineNum">     147 </span>            :         int32_t value;
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         unsigned char ch = (unsigned char) str[0];</span>
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         if (len == 2) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                 value = ch &amp; 0x1F;</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         } else if (len == 3) {</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 value = ch &amp; 0xF;</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         } else if (len == 4) {</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 value = ch &amp; 0x7;</span>
+<span class="lineNum">     156 </span>            :         } else {
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     158 </span>            :         }
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         for (pos = 1; pos &lt; len; ++pos) {</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 ch = (unsigned char) str[pos];</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 if (ch &lt; 0x80 || ch &gt; 0xBF) {</span>
+<span class="lineNum">     163 </span>            :                         /* not a continuation byte */
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     165 </span>            :                 }
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 value = (value &lt;&lt; 6) + (ch &amp; 0x3F);</span>
+<span class="lineNum">     168 </span>            :         }
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         if (value &gt; 0x10FFFF) {</span>
+<span class="lineNum">     171 </span>            :                 /* not in Unicode range */
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :         } else if (0xD800 &lt;= value &amp;&amp; value &lt;= 0xDFFF) {</span>
+<span class="lineNum">     174 </span>            :                 /* invalid code point (UTF-16 surrogate halves) */
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         } else if ((len == 2 &amp;&amp; value &lt; 0x80)</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 || (len == 3 &amp;&amp; value &lt; 0x800)</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 || (len == 4 &amp;&amp; value &lt; 0x10000)) {</span>
+<span class="lineNum">     179 </span>            :                 /* overlong encoding */
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     181 </span>            :         }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="184"><span class="lineNum">     184 </span>            : }</a>
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">      12994 : int ast_json_utf8_check_len(const char *str, size_t len)</span>
+<span class="lineNum">     187 </span>            : {
+<span class="lineNum">     188 </span>            :         size_t pos;
+<span class="lineNum">     189 </span>            :         size_t count;
+<span class="lineNum">     190 </span><span class="lineCov">      12994 :         int res = 1;</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">      12994 :         if (!str) {</span>
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     194 </span>            :         }
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :         /*
+<span class="lineNum">     197 </span>            :          * Since the json library does not make the check function
+<span class="lineNum">     198 </span>            :          * public we recreate/copy the function in our interface
+<span class="lineNum">     199 </span>            :          * module.
+<span class="lineNum">     200 </span>            :          *
+<span class="lineNum">     201 </span>            :          * Loop ported from libjansson utf.c:utf8_check_string()
+<span class="lineNum">     202 </span>            :          */
+<span class="lineNum">     203 </span><span class="lineCov">      19934 :         for (pos = 0; pos &lt; len; pos += count) {</span>
+<span class="lineNum">     204 </span><span class="lineCov">       6940 :                 count = json_utf8_check_first(str[pos]);</span>
+<span class="lineNum">     205 </span><span class="lineCov">       6940 :                 if (count == 0) {</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                         res = 0;</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     208 </span><span class="lineCov">       6940 :                 } else if (count &gt; 1) {</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :                         if (count &gt; len - pos) {</span>
+<span class="lineNum">     210 </span>            :                                 /* UTF-8 needs more than we have left in the string. */
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                 res = 0;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     213 </span>            :                         }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         if (!json_utf8_check_full(&amp;str[pos], count)) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                                 res = 0;</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     218 </span>            :                         }
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            :         }
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span><span class="lineCov">      12994 :         if (!res) {</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;String '%.*s' is not UTF-8 for json conversion\n&quot;, (int) len, str);</span>
+<span class="lineNum">     224 </span>            :         }
+<span class="lineNum">     225 </span><span class="lineCov">      12994 :         return res;</span>
+<a name="226"><span class="lineNum">     226 </span>            : }</a>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">      12998 : int ast_json_utf8_check(const char *str)</span>
+<span class="lineNum">     229 </span>            : {
+<span class="lineNum">     230 </span><span class="lineCov">      12998 :         return str ? ast_json_utf8_check_len(str, strlen(str)) : 0;</span>
+<a name="231"><span class="lineNum">     231 </span>            : }</a>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span><span class="lineCov">          7 : struct ast_json *ast_json_true(void)</span>
+<span class="lineNum">     234 </span>            : {
+<span class="lineNum">     235 </span><span class="lineCov">          7 :         return (struct ast_json *)json_true();</span>
+<a name="236"><span class="lineNum">     236 </span>            : }</a>
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span><span class="lineCov">          6 : struct ast_json *ast_json_false(void)</span>
+<span class="lineNum">     239 </span>            : {
+<span class="lineNum">     240 </span><span class="lineCov">          6 :         return (struct ast_json *)json_false();</span>
+<a name="241"><span class="lineNum">     241 </span>            : }</a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">         13 : struct ast_json *ast_json_boolean(int value)</span>
+<span class="lineNum">     244 </span>            : {
+<span class="lineNum">     245 </span><span class="lineCov">         13 :         return (struct ast_json *)json_boolean(value);</span>
+<a name="246"><span class="lineNum">     246 </span>            : }</a>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">       2949 : struct ast_json *ast_json_null(void)</span>
+<span class="lineNum">     249 </span>            : {
+<span class="lineNum">     250 </span><span class="lineCov">       2949 :         return (struct ast_json *)json_null();</span>
+<a name="251"><span class="lineNum">     251 </span>            : }</a>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span><span class="lineCov">       6654 : int ast_json_is_true(const struct ast_json *json)</span>
+<span class="lineNum">     254 </span>            : {
+<span class="lineNum">     255 </span><span class="lineCov">       6654 :         return json_is_true((const json_t *)json);</span>
+<a name="256"><span class="lineNum">     256 </span>            : }</a>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">          6 : int ast_json_is_false(const struct ast_json *json)</span>
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineCov">          6 :         return json_is_false((const json_t *)json);</span>
+<a name="261"><span class="lineNum">     261 </span>            : }</a>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">       5931 : int ast_json_is_null(const struct ast_json *json)</span>
+<span class="lineNum">     264 </span>            : {
+<span class="lineNum">     265 </span><span class="lineCov">       5931 :         return json_is_null((const json_t *)json);</span>
+<a name="266"><span class="lineNum">     266 </span>            : }</a>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineCov">     146011 : struct ast_json *ast_json_string_create(const char *value)</span>
+<span class="lineNum">     269 </span>            : {
+<span class="lineNum">     270 </span><span class="lineCov">     146011 :         return (struct ast_json *)json_string(value);</span>
+<a name="271"><span class="lineNum">     271 </span>            : }</a>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineCov">     256877 : const char *ast_json_string_get(const struct ast_json *string)</span>
+<span class="lineNum">     274 </span>            : {
+<span class="lineNum">     275 </span><span class="lineCov">     256877 :         return json_string_value((json_t *)string);</span>
+<a name="276"><span class="lineNum">     276 </span>            : }</a>
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span><span class="lineCov">         53 : int ast_json_string_set(struct ast_json *string, const char *value)</span>
+<span class="lineNum">     279 </span>            : {
+<span class="lineNum">     280 </span><span class="lineCov">         53 :         return json_string_set((json_t *)string, value);</span>
+<a name="281"><span class="lineNum">     281 </span>            : }</a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">       5429 : struct ast_json *ast_json_stringf(const char *format, ...)</span>
+<span class="lineNum">     284 </span>            : {
+<span class="lineNum">     285 </span>            :         struct ast_json *ret;
+<span class="lineNum">     286 </span>            :         va_list args;
+<span class="lineNum">     287 </span><span class="lineCov">       5429 :         va_start(args, format);</span>
+<span class="lineNum">     288 </span><span class="lineCov">       5429 :         ret = ast_json_vstringf(format, args);</span>
+<span class="lineNum">     289 </span><span class="lineCov">       5429 :         va_end(args);</span>
+<span class="lineNum">     290 </span><span class="lineCov">       5429 :         return ret;</span>
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineCov">       5616 : struct ast_json *ast_json_vstringf(const char *format, va_list args)</span>
+<span class="lineNum">     294 </span>            : {
+<span class="lineNum">     295 </span><span class="lineCov">       5616 :         if (!format) {</span>
+<span class="lineNum">     296 </span><span class="lineCov">          1 :                 return NULL;</span>
+<span class="lineNum">     297 </span>            :         }
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineCov">       5615 :         return (struct ast_json *)json_vsprintf(format, args);</span>
+<a name="300"><span class="lineNum">     300 </span>            : }</a>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">       5139 : struct ast_json *ast_json_integer_create(intmax_t value)</span>
+<span class="lineNum">     303 </span>            : {
+<span class="lineNum">     304 </span><span class="lineCov">       5139 :         return (struct ast_json *)json_integer(value);</span>
+<a name="305"><span class="lineNum">     305 </span>            : }</a>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineCov">      31217 : intmax_t ast_json_integer_get(const struct ast_json *integer)</span>
+<span class="lineNum">     308 </span>            : {
+<span class="lineNum">     309 </span><span class="lineCov">      31217 :         return json_integer_value((json_t *)integer);</span>
+<a name="310"><span class="lineNum">     310 </span>            : }</a>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">         14 : int ast_json_integer_set(struct ast_json *integer, intmax_t value)</span>
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span><span class="lineCov">         14 :         return json_integer_set((json_t *)integer, value);</span>
+<a name="315"><span class="lineNum">     315 </span>            : }</a>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 : struct ast_json *ast_json_real_create(double value)</span>
+<span class="lineNum">     318 </span>            : {
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         return (struct ast_json *)json_real(value);</span>
+<a name="320"><span class="lineNum">     320 </span>            : }</a>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">       1538 : double ast_json_real_get(const struct ast_json *real)</span>
+<span class="lineNum">     323 </span>            : {
+<span class="lineNum">     324 </span><span class="lineCov">       1538 :         return json_real_value((json_t *)real);</span>
+<a name="325"><span class="lineNum">     325 </span>            : }</a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 : int ast_json_real_set(struct ast_json *real, double value)</span>
+<span class="lineNum">     328 </span>            : {
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :         return json_real_set((json_t *)real, value);</span>
+<a name="330"><span class="lineNum">     330 </span>            : }</a>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">         38 : int ast_json_equal(const struct ast_json *lhs, const struct ast_json *rhs)</span>
+<span class="lineNum">     333 </span>            : {
+<span class="lineNum">     334 </span><span class="lineCov">         38 :         return json_equal((json_t *)lhs, (json_t *)rhs);</span>
+<a name="335"><span class="lineNum">     335 </span>            : }</a>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineCov">      79155 : struct ast_json *ast_json_array_create(void)</span>
+<span class="lineNum">     338 </span>            : {
+<a name="339"><span class="lineNum">     339 </span><span class="lineCov">      79155 :         return (struct ast_json *)json_array();</span></a>
+<span class="lineNum">     340 </span>            : }
+<span class="lineNum">     341 </span><span class="lineCov">       3303 : size_t ast_json_array_size(const struct ast_json *array)</span>
+<span class="lineNum">     342 </span>            : {
+<a name="343"><span class="lineNum">     343 </span><span class="lineCov">       3303 :         return json_array_size((json_t *)array);</span></a>
+<span class="lineNum">     344 </span>            : }
+<span class="lineNum">     345 </span><span class="lineCov">       2516 : struct ast_json *ast_json_array_get(const struct ast_json *array, size_t index)</span>
+<span class="lineNum">     346 </span>            : {
+<a name="347"><span class="lineNum">     347 </span><span class="lineCov">       2516 :         return (struct ast_json *)json_array_get((json_t *)array, index);</span></a>
+<span class="lineNum">     348 </span>            : }
+<span class="lineNum">     349 </span><span class="lineCov">          2 : int ast_json_array_set(struct ast_json *array, size_t index, struct ast_json *value)</span>
+<span class="lineNum">     350 </span>            : {
+<a name="351"><span class="lineNum">     351 </span><span class="lineCov">          2 :         return json_array_set_new((json_t *)array, index, (json_t *)value);</span></a>
+<span class="lineNum">     352 </span>            : }
+<span class="lineNum">     353 </span><span class="lineCov">     101240 : int ast_json_array_append(struct ast_json *array, struct ast_json *value)</span>
+<span class="lineNum">     354 </span>            : {
+<a name="355"><span class="lineNum">     355 </span><span class="lineCov">     101240 :         return json_array_append_new((json_t *)array, (json_t *)value);</span></a>
+<span class="lineNum">     356 </span>            : }
+<span class="lineNum">     357 </span><span class="lineCov">          2 : int ast_json_array_insert(struct ast_json *array, size_t index, struct ast_json *value)</span>
+<span class="lineNum">     358 </span>            : {
+<a name="359"><span class="lineNum">     359 </span><span class="lineCov">          2 :         return json_array_insert_new((json_t *)array, index, (json_t *)value);</span></a>
+<span class="lineNum">     360 </span>            : }
+<span class="lineNum">     361 </span><span class="lineCov">          2 : int ast_json_array_remove(struct ast_json *array, size_t index)</span>
+<span class="lineNum">     362 </span>            : {
+<a name="363"><span class="lineNum">     363 </span><span class="lineCov">          2 :         return json_array_remove((json_t *)array, index);</span></a>
+<span class="lineNum">     364 </span>            : }
+<span class="lineNum">     365 </span><span class="lineCov">          2 : int ast_json_array_clear(struct ast_json *array)</span>
+<span class="lineNum">     366 </span>            : {
+<a name="367"><span class="lineNum">     367 </span><span class="lineCov">          2 :         return json_array_clear((json_t *)array);</span></a>
+<span class="lineNum">     368 </span>            : }
+<span class="lineNum">     369 </span><span class="lineCov">          4 : int ast_json_array_extend(struct ast_json *array, struct ast_json *tail)</span>
+<span class="lineNum">     370 </span>            : {
+<span class="lineNum">     371 </span><span class="lineCov">          4 :         return json_array_extend((json_t *)array, (json_t *)tail);</span>
+<a name="372"><span class="lineNum">     372 </span>            : }</a>
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">       2628 : struct ast_json *ast_json_object_create(void)</span>
+<span class="lineNum">     375 </span>            : {
+<a name="376"><span class="lineNum">     376 </span><span class="lineCov">       2628 :         return (struct ast_json *)json_object();</span></a>
+<span class="lineNum">     377 </span>            : }
+<span class="lineNum">     378 </span><span class="lineCov">          7 : size_t ast_json_object_size(struct ast_json *object)</span>
+<span class="lineNum">     379 </span>            : {
+<a name="380"><span class="lineNum">     380 </span><span class="lineCov">          7 :         return json_object_size((json_t *)object);</span></a>
+<span class="lineNum">     381 </span>            : }
+<span class="lineNum">     382 </span><span class="lineCov">     286512 : struct ast_json *ast_json_object_get(struct ast_json *object, const char *key)</span>
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span><span class="lineCov">     286512 :         if (!key) {</span>
+<span class="lineNum">     385 </span><span class="lineCov">          1 :                 return NULL;</span>
+<span class="lineNum">     386 </span>            :         }
+<a name="387"><span class="lineNum">     387 </span><span class="lineCov">     286511 :         return (struct ast_json *)json_object_get((json_t *)object, key);</span></a>
+<span class="lineNum">     388 </span>            : }
+<span class="lineNum">     389 </span><span class="lineCov">      44233 : int ast_json_object_set(struct ast_json *object, const char *key, struct ast_json *value)</span>
+<span class="lineNum">     390 </span>            : {
+<a name="391"><span class="lineNum">     391 </span><span class="lineCov">      44233 :         return json_object_set_new((json_t *)object, key, (json_t *)value);</span></a>
+<span class="lineNum">     392 </span>            : }
+<span class="lineNum">     393 </span><span class="lineCov">          4 : int ast_json_object_del(struct ast_json *object, const char *key)</span>
+<span class="lineNum">     394 </span>            : {
+<a name="395"><span class="lineNum">     395 </span><span class="lineCov">          4 :         return json_object_del((json_t *)object, key);</span></a>
+<span class="lineNum">     396 </span>            : }
+<span class="lineNum">     397 </span><span class="lineCov">          3 : int ast_json_object_clear(struct ast_json *object)</span>
+<span class="lineNum">     398 </span>            : {
+<a name="399"><span class="lineNum">     399 </span><span class="lineCov">          3 :         return json_object_clear((json_t *)object);</span></a>
+<span class="lineNum">     400 </span>            : }
+<span class="lineNum">     401 </span><span class="lineCov">        175 : int ast_json_object_update(struct ast_json *object, struct ast_json *other)</span>
+<span class="lineNum">     402 </span>            : {
+<a name="403"><span class="lineNum">     403 </span><span class="lineCov">        175 :         return json_object_update((json_t *)object, (json_t *)other);</span></a>
+<span class="lineNum">     404 </span>            : }
+<span class="lineNum">     405 </span><span class="lineCov">          4 : int ast_json_object_update_existing(struct ast_json *object, struct ast_json *other)</span>
+<span class="lineNum">     406 </span>            : {
+<a name="407"><span class="lineNum">     407 </span><span class="lineCov">          4 :         return json_object_update_existing((json_t *)object, (json_t *)other);</span></a>
+<span class="lineNum">     408 </span>            : }
+<span class="lineNum">     409 </span><span class="lineCov">          4 : int ast_json_object_update_missing(struct ast_json *object, struct ast_json *other)</span>
+<span class="lineNum">     410 </span>            : {
+<span class="lineNum">     411 </span><span class="lineCov">          4 :         return json_object_update_missing((json_t *)object, (json_t *)other);</span>
+<a name="412"><span class="lineNum">     412 </span>            : }</a>
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span><span class="lineCov">      22456 : struct ast_json_iter *ast_json_object_iter(struct ast_json *object)</span>
+<span class="lineNum">     415 </span>            : {
+<a name="416"><span class="lineNum">     416 </span><span class="lineCov">      22456 :         return json_object_iter((json_t *)object);</span></a>
+<span class="lineNum">     417 </span>            : }
+<span class="lineNum">     418 </span><span class="lineCov">          4 : struct ast_json_iter *ast_json_object_iter_at(struct ast_json *object, const char *key)</span>
+<span class="lineNum">     419 </span>            : {
+<a name="420"><span class="lineNum">     420 </span><span class="lineCov">          4 :         return json_object_iter_at((json_t *)object, key);</span></a>
+<span class="lineNum">     421 </span>            : }
+<span class="lineNum">     422 </span><span class="lineCov">      95702 : struct ast_json_iter *ast_json_object_iter_next(struct ast_json *object, struct ast_json_iter *iter)</span>
+<span class="lineNum">     423 </span>            : {
+<a name="424"><span class="lineNum">     424 </span><span class="lineCov">      95702 :         return json_object_iter_next((json_t *)object, iter);</span></a>
+<span class="lineNum">     425 </span>            : }
+<span class="lineNum">     426 </span><span class="lineCov">     315103 : const char *ast_json_object_iter_key(struct ast_json_iter *iter)</span>
+<span class="lineNum">     427 </span>            : {
+<a name="428"><span class="lineNum">     428 </span><span class="lineCov">     315103 :         return json_object_iter_key(iter);</span></a>
+<span class="lineNum">     429 </span>            : }
+<span class="lineNum">     430 </span><span class="lineCov">      95702 : struct ast_json *ast_json_object_iter_value(struct ast_json_iter *iter)</span>
+<span class="lineNum">     431 </span>            : {
+<a name="432"><span class="lineNum">     432 </span><span class="lineCov">      95702 :         return (struct ast_json *)json_object_iter_value(iter);</span></a>
+<span class="lineNum">     433 </span>            : }
+<span class="lineNum">     434 </span><span class="lineCov">          3 : int ast_json_object_iter_set(struct ast_json *object, struct ast_json_iter *iter, struct ast_json *value)</span>
+<span class="lineNum">     435 </span>            : {
+<span class="lineNum">     436 </span><span class="lineCov">          3 :         return json_object_iter_set_new((json_t *)object, iter, (json_t *)value);</span>
+<span class="lineNum">     437 </span>            : }
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            : /*!
+<a name="440"><span class="lineNum">     440 </span>            :  * \brief Default flags for JSON encoding.</a>
+<span class="lineNum">     441 </span>            :  */
+<span class="lineNum">     442 </span><span class="lineCov">      13485 : static size_t dump_flags(enum ast_json_encoding_format format)</span>
+<span class="lineNum">     443 </span>            : {
+<span class="lineNum">     444 </span>            :         return format == AST_JSON_PRETTY ?
+<span class="lineNum">     445 </span><span class="lineCov">      13485 :                 JSON_INDENT(2) | JSON_PRESERVE_ORDER : JSON_COMPACT;</span>
+<a name="446"><span class="lineNum">     446 </span>            : }</a>
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">      12946 : char *ast_json_dump_string_format(struct ast_json *root, enum ast_json_encoding_format format)</span>
+<span class="lineNum">     449 </span>            : {
+<span class="lineNum">     450 </span><span class="lineCov">      12946 :         return json_dumps((json_t *)root, dump_flags(format));</span>
+<a name="451"><span class="lineNum">     451 </span>            : }</a>
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">      88441 : static int write_to_ast_str(const char *buffer, size_t size, void *data)</span>
+<span class="lineNum">     454 </span>            : {
+<span class="lineNum">     455 </span><span class="lineCov">      88441 :         struct ast_str **dst = data;</span>
+<span class="lineNum">     456 </span><span class="lineCov">      88441 :         size_t str_size = ast_str_size(*dst);</span>
+<span class="lineNum">     457 </span><span class="lineCov">      88441 :         size_t remaining = str_size - ast_str_strlen(*dst);</span>
+<span class="lineNum">     458 </span>            :         int ret;
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span>            :         /* While ast_str_append will grow the ast_str, it won't report
+<span class="lineNum">     461 </span>            :          * allocation errors. Fortunately, it's not that hard.
+<span class="lineNum">     462 </span>            :          */
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span>            :         /* Remaining needs to be big enough for buffer, plus null char */
+<span class="lineNum">     465 </span><span class="lineCov">      88537 :         while (remaining &lt; size + 1) {</span>
+<span class="lineNum">     466 </span>            :                 /* doubling the size of the buffer gives us 'amortized
+<span class="lineNum">     467 </span>            :                  * constant' time.
+<span class="lineNum">     468 </span>            :                  * See http://stackoverflow.com/a/249695/115478 for info.
+<span class="lineNum">     469 </span>            :                  */
+<span class="lineNum">     470 </span><span class="lineCov">         96 :                 str_size *= 2;</span>
+<span class="lineNum">     471 </span><span class="lineCov">         96 :                 remaining = str_size - ast_str_strlen(*dst);</span>
+<span class="lineNum">     472 </span>            :         }
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineCov">      88441 :         ret = ast_str_make_space(dst, str_size);</span>
+<span class="lineNum">     475 </span><span class="lineCov">      88441 :         if (ret == -1) {</span>
+<span class="lineNum">     476 </span>            :                 /* Could not alloc; fail */
+<span class="lineNum">     477 </span><span class="lineCov">          1 :                 return -1;</span>
+<span class="lineNum">     478 </span>            :         }
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineCov">      88440 :         ast_str_append_substr(dst, -1, buffer, size);</span>
+<span class="lineNum">     481 </span><span class="lineCov">      88440 :         return 0;</span>
+<a name="482"><span class="lineNum">     482 </span>            : }</a>
+<span class="lineNum">     483 </span>            : 
+<span class="lineNum">     484 </span><span class="lineCov">        537 : int ast_json_dump_str_format(struct ast_json *root, struct ast_str **dst, enum ast_json_encoding_format format)</span>
+<span class="lineNum">     485 </span>            : {
+<span class="lineNum">     486 </span><span class="lineCov">        537 :         return json_dump_callback((json_t *)root, write_to_ast_str, dst, dump_flags(format));</span>
+<span class="lineNum">     487 </span>            : }
+<a name="488"><span class="lineNum">     488 </span>            : </a>
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span><span class="lineCov">          4 : int ast_json_dump_file_format(struct ast_json *root, FILE *output, enum ast_json_encoding_format format)</span>
+<span class="lineNum">     491 </span>            : {
+<span class="lineNum">     492 </span><span class="lineCov">          4 :         if (!root || !output) {</span>
+<span class="lineNum">     493 </span><span class="lineCov">          3 :                 return -1;</span>
+<span class="lineNum">     494 </span>            :         }
+<a name="495"><span class="lineNum">     495 </span><span class="lineCov">          1 :         return json_dumpf((json_t *)root, output, dump_flags(format));</span></a>
+<span class="lineNum">     496 </span>            : }
+<span class="lineNum">     497 </span><span class="lineCov">          4 : int ast_json_dump_new_file_format(struct ast_json *root, const char *path, enum ast_json_encoding_format format)</span>
+<span class="lineNum">     498 </span>            : {
+<span class="lineNum">     499 </span><span class="lineCov">          4 :         if (!root || !path) {</span>
+<span class="lineNum">     500 </span><span class="lineCov">          3 :                 return -1;</span>
+<span class="lineNum">     501 </span>            :         }
+<span class="lineNum">     502 </span><span class="lineCov">          1 :         return json_dump_file((json_t *)root, path, dump_flags(format));</span>
+<span class="lineNum">     503 </span>            : }
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span>            : /*!
+<a name="506"><span class="lineNum">     506 </span>            :  * \brief Copy Jansson error struct to ours.</a>
+<span class="lineNum">     507 </span>            :  */
+<span class="lineNum">     508 </span><span class="lineCov">        730 : static void copy_error(struct ast_json_error *error, const json_error_t *jansson_error)</span>
+<span class="lineNum">     509 </span>            : {
+<span class="lineNum">     510 </span><span class="lineCov">        730 :         if (error &amp;&amp; jansson_error) {</span>
+<span class="lineNum">     511 </span><span class="lineCov">        631 :                 error-&gt;line = jansson_error-&gt;line;</span>
+<span class="lineNum">     512 </span><span class="lineCov">        631 :                 error-&gt;column = jansson_error-&gt;column;</span>
+<span class="lineNum">     513 </span><span class="lineCov">        631 :                 error-&gt;position = jansson_error-&gt;position;</span>
+<span class="lineNum">     514 </span><span class="lineCov">        631 :                 ast_copy_string(error-&gt;text, jansson_error-&gt;text, sizeof(error-&gt;text));</span>
+<span class="lineNum">     515 </span><span class="lineCov">        631 :                 ast_copy_string(error-&gt;source, jansson_error-&gt;source, sizeof(error-&gt;source));</span>
+<span class="lineNum">     516 </span>            :         }
+<span class="lineNum">     517 </span>            : 
+<a name="518"><span class="lineNum">     518 </span><span class="lineCov">        730 : }</span></a>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineCov">          2 : static void parse_error(struct ast_json_error *error, const char *text, const char *source)</span>
+<span class="lineNum">     521 </span>            : {
+<span class="lineNum">     522 </span><span class="lineCov">          2 :         if (error != NULL) {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 error-&gt;line = 0;</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 error-&gt;column = 0;</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                 error-&gt;position = 0;</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                 strncpy(error-&gt;text, text, sizeof(error-&gt;text));</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                 strncpy(error-&gt;source, source, sizeof(error-&gt;text));</span>
+<span class="lineNum">     528 </span>            :         }
+<a name="529"><span class="lineNum">     529 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineCov">        642 : struct ast_json *ast_json_load_string(const char *input, struct ast_json_error *error)</span>
+<span class="lineNum">     532 </span>            : {
+<span class="lineNum">     533 </span><span class="lineCov">        642 :         json_error_t jansson_error = {};</span>
+<span class="lineNum">     534 </span><span class="lineCov">        642 :         struct ast_json *r = NULL;</span>
+<span class="lineNum">     535 </span><span class="lineCov">        642 :         if (input != NULL) {</span>
+<span class="lineNum">     536 </span><span class="lineCov">        641 :                 r = (struct ast_json *)json_loads(input, 0, &amp;jansson_error);</span>
+<span class="lineNum">     537 </span><span class="lineCov">        641 :                 copy_error(error, &amp;jansson_error);</span>
+<span class="lineNum">     538 </span>            :         } else {
+<span class="lineNum">     539 </span><span class="lineCov">          1 :                 parse_error(error, &quot;NULL input string&quot;, &quot;&lt;null&gt;&quot;);</span>
+<span class="lineNum">     540 </span>            :         }
+<span class="lineNum">     541 </span><span class="lineCov">        642 :         return r;</span>
+<a name="542"><span class="lineNum">     542 </span>            : }</a>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">          1 : struct ast_json *ast_json_load_str(const struct ast_str *input, struct ast_json_error *error)</span>
+<span class="lineNum">     545 </span>            : {
+<span class="lineNum">     546 </span><span class="lineCov">          1 :         return ast_json_load_string(ast_str_buffer(input), error);</span>
+<a name="547"><span class="lineNum">     547 </span>            : }</a>
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span><span class="lineCov">         84 : struct ast_json *ast_json_load_buf(const char *buffer, size_t buflen, struct ast_json_error *error)</span>
+<span class="lineNum">     550 </span>            : {
+<span class="lineNum">     551 </span><span class="lineCov">         84 :         json_error_t jansson_error = {};</span>
+<span class="lineNum">     552 </span><span class="lineCov">         84 :         struct ast_json *r = (struct ast_json *)json_loadb(buffer, buflen, 0, &amp;jansson_error);</span>
+<span class="lineNum">     553 </span><span class="lineCov">         84 :         copy_error(error, &amp;jansson_error);</span>
+<a name="554"><span class="lineNum">     554 </span><span class="lineCov">         84 :         return r;</span></a>
+<span class="lineNum">     555 </span>            : }
+<span class="lineNum">     556 </span><span class="lineCov">          2 : struct ast_json *ast_json_load_file(FILE *input, struct ast_json_error *error)</span>
+<span class="lineNum">     557 </span>            : {
+<span class="lineNum">     558 </span><span class="lineCov">          2 :         json_error_t jansson_error = {};</span>
+<span class="lineNum">     559 </span><span class="lineCov">          2 :         struct ast_json *r = NULL;</span>
+<span class="lineNum">     560 </span><span class="lineCov">          2 :         if (input != NULL) {</span>
+<span class="lineNum">     561 </span><span class="lineCov">          1 :                 r = (struct ast_json *)json_loadf(input, 0, &amp;jansson_error);</span>
+<span class="lineNum">     562 </span><span class="lineCov">          1 :                 copy_error(error, &amp;jansson_error);</span>
+<span class="lineNum">     563 </span>            :         } else {
+<span class="lineNum">     564 </span><span class="lineCov">          1 :                 parse_error(error, &quot;NULL input file&quot;, &quot;&lt;null&gt;&quot;);</span>
+<span class="lineNum">     565 </span>            :         }
+<a name="566"><span class="lineNum">     566 </span><span class="lineCov">          2 :         return r;</span></a>
+<span class="lineNum">     567 </span>            : }
+<span class="lineNum">     568 </span><span class="lineCov">          4 : struct ast_json *ast_json_load_new_file(const char *path, struct ast_json_error *error)</span>
+<span class="lineNum">     569 </span>            : {
+<span class="lineNum">     570 </span><span class="lineCov">          4 :         json_error_t jansson_error = {};</span>
+<span class="lineNum">     571 </span><span class="lineCov">          4 :         struct ast_json *r = (struct ast_json *)json_load_file(path, 0, &amp;jansson_error);</span>
+<span class="lineNum">     572 </span><span class="lineCov">          4 :         copy_error(error, &amp;jansson_error);</span>
+<span class="lineNum">     573 </span><span class="lineCov">          4 :         return r;</span>
+<a name="574"><span class="lineNum">     574 </span>            : }</a>
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineCov">     180288 : struct ast_json *ast_json_pack(char const *format, ...)</span>
+<span class="lineNum">     577 </span>            : {
+<span class="lineNum">     578 </span>            :         struct ast_json *ret;
+<span class="lineNum">     579 </span>            :         va_list args;
+<span class="lineNum">     580 </span><span class="lineCov">     180288 :         va_start(args, format);</span>
+<span class="lineNum">     581 </span><span class="lineCov">     180288 :         ret = ast_json_vpack(format, args);</span>
+<span class="lineNum">     582 </span><span class="lineCov">     180288 :         va_end(args);</span>
+<a name="583"><span class="lineNum">     583 </span><span class="lineCov">     180288 :         return ret;</span></a>
+<span class="lineNum">     584 </span>            : }
+<span class="lineNum">     585 </span><span class="lineCov">     180288 : struct ast_json *ast_json_vpack(char const *format, va_list ap)</span>
+<span class="lineNum">     586 </span>            : {
+<span class="lineNum">     587 </span>            :         json_error_t error;
+<span class="lineNum">     588 </span><span class="lineCov">     180288 :         struct ast_json *r = NULL;</span>
+<span class="lineNum">     589 </span><span class="lineCov">     180288 :         if (format) {</span>
+<span class="lineNum">     590 </span><span class="lineCov">     180287 :                 r = (struct ast_json *)json_vpack_ex(&amp;error, 0, format, ap);</span>
+<span class="lineNum">     591 </span><span class="lineCov">     180287 :                 if (!r &amp;&amp; !ast_strlen_zero(error.text)) {</span>
+<span class="lineNum">     592 </span><span class="lineCov">          2 :                         ast_log(LOG_ERROR,</span>
+<span class="lineNum">     593 </span>            :                                 &quot;Error building JSON from '%s': %s.\n&quot;,
+<span class="lineNum">     594 </span>            :                                 format, error.text);
+<span class="lineNum">     595 </span><span class="lineCov">          2 :                         ast_log_backtrace();</span>
+<span class="lineNum">     596 </span>            :                 }
+<span class="lineNum">     597 </span>            :         }
+<span class="lineNum">     598 </span><span class="lineCov">     180288 :         return r;</span>
+<a name="599"><span class="lineNum">     599 </span>            : }</a>
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineCov">       1318 : struct ast_json *ast_json_copy(const struct ast_json *value)</span>
+<span class="lineNum">     602 </span>            : {
+<a name="603"><span class="lineNum">     603 </span><span class="lineCov">       1318 :         return (struct ast_json *)json_copy((json_t *)value);</span></a>
+<span class="lineNum">     604 </span>            : }
+<span class="lineNum">     605 </span><span class="lineCov">        460 : struct ast_json *ast_json_deep_copy(const struct ast_json *value)</span>
+<span class="lineNum">     606 </span>            : {
+<span class="lineNum">     607 </span><span class="lineCov">        460 :         return (struct ast_json *)json_deep_copy((json_t *)value);</span>
+<a name="608"><span class="lineNum">     608 </span>            : }</a>
+<span class="lineNum">     609 </span>            : 
+<span class="lineNum">     610 </span><span class="lineCov">       6276 : struct ast_json *ast_json_name_number(const char *name, const char *number)</span>
+<span class="lineNum">     611 </span>            : {
+<span class="lineNum">     612 </span><span class="lineCov">      12552 :         return ast_json_pack(&quot;{s: s, s: s}&quot;,</span>
+<span class="lineNum">     613 </span><span class="lineCov">       6276 :                 &quot;name&quot;, AST_JSON_UTF8_VALIDATE(name),</span>
+<span class="lineNum">     614 </span><span class="lineCov">       6276 :                 &quot;number&quot;, AST_JSON_UTF8_VALIDATE(number));</span>
+<a name="615"><span class="lineNum">     615 </span>            : }</a>
+<span class="lineNum">     616 </span>            : 
+<span class="lineNum">     617 </span><span class="lineCov">       3138 : struct ast_json *ast_json_dialplan_cep(const char *context, const char *exten, int priority)</span>
+<span class="lineNum">     618 </span>            : {
+<span class="lineNum">     619 </span><span class="lineCov">      12552 :         return ast_json_pack(&quot;{s: o, s: o, s: o}&quot;,</span>
+<span class="lineNum">     620 </span><span class="lineCov">       3138 :                 &quot;context&quot;, context ? ast_json_string_create(context) : ast_json_null(),</span>
+<span class="lineNum">     621 </span><span class="lineCov">       3138 :                 &quot;exten&quot;, exten ? ast_json_string_create(exten) : ast_json_null(),</span>
+<span class="lineNum">     622 </span><span class="lineCov">       3138 :                 &quot;priority&quot;, priority != -1 ? ast_json_integer_create(priority) : ast_json_null());</span>
+<a name="623"><span class="lineNum">     623 </span>            : }</a>
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span><span class="lineCov">       9081 : struct ast_json *ast_json_timeval(const struct timeval tv, const char *zone)</span>
+<span class="lineNum">     626 </span>            : {
+<span class="lineNum">     627 </span>            :         char buf[AST_ISO8601_LEN];
+<span class="lineNum">     628 </span><span class="lineCov">       9081 :         struct ast_tm tm = {};</span>
+<span class="lineNum">     629 </span>            : 
+<span class="lineNum">     630 </span><span class="lineCov">       9081 :         ast_localtime(&amp;tv, &amp;tm, zone);</span>
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">       9081 :         ast_strftime(buf, sizeof(buf),AST_ISO8601_FORMAT, &amp;tm);</span>
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">       9081 :         return ast_json_string_create(buf);</span>
+<a name="635"><span class="lineNum">     635 </span>            : }</a>
+<span class="lineNum">     636 </span>            : 
+<span class="lineNum">     637 </span><span class="lineCov">       3870 : struct ast_json *ast_json_ipaddr(const struct ast_sockaddr *addr, enum ast_transport transport_type)</span>
+<span class="lineNum">     638 </span>            : {
+<span class="lineNum">     639 </span><span class="lineCov">       3870 :         struct ast_str *string = ast_str_alloca(64);</span>
+<span class="lineNum">     640 </span>            : 
+<span class="lineNum">     641 </span><span class="lineCov">       3870 :         if (!string) {</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     643 </span>            :         }
+<span class="lineNum">     644 </span>            : 
+<span class="lineNum">     645 </span><span class="lineCov">       4296 :         ast_str_set(&amp;string, 0, (ast_sockaddr_is_ipv4(addr) ||</span>
+<span class="lineNum">     646 </span><span class="lineCov">        426 :                 ast_sockaddr_is_ipv4_mapped(addr)) ? &quot;IPV4/&quot; : &quot;IPV6/&quot;);</span>
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span><span class="lineCov">       3870 :         if (transport_type) {</span>
+<span class="lineNum">     649 </span><span class="lineCov">       3870 :                 char *transport_string = NULL;</span>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span>            :                 /* NOTE: None will be applied if multiple transport types are specified in transport_type */
+<span class="lineNum">     652 </span><span class="lineCov">       3870 :                 switch(transport_type) {</span>
+<span class="lineNum">     653 </span><span class="lineCov">       1330 :                 case AST_TRANSPORT_UDP:</span>
+<span class="lineNum">     654 </span><span class="lineCov">       1330 :                         transport_string = &quot;UDP&quot;;</span>
+<span class="lineNum">     655 </span><span class="lineCov">       1330 :                         break;</span>
+<span class="lineNum">     656 </span><span class="lineCov">       2536 :                 case AST_TRANSPORT_TCP:</span>
+<span class="lineNum">     657 </span><span class="lineCov">       2536 :                         transport_string = &quot;TCP&quot;;</span>
+<span class="lineNum">     658 </span><span class="lineCov">       2536 :                         break;</span>
+<span class="lineNum">     659 </span><span class="lineCov">          4 :                 case AST_TRANSPORT_TLS:</span>
+<span class="lineNum">     660 </span><span class="lineCov">          4 :                         transport_string = &quot;TLS&quot;;</span>
+<span class="lineNum">     661 </span><span class="lineCov">          4 :                         break;</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 case AST_TRANSPORT_WS:</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                         transport_string = &quot;WS&quot;;</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">          0 :                 case AST_TRANSPORT_WSS:</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                         transport_string = &quot;WSS&quot;;</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     668 </span>            :                 }
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineCov">       3870 :                 if (transport_string) {</span>
+<span class="lineNum">     671 </span><span class="lineCov">       3870 :                         ast_str_append(&amp;string, 0, &quot;%s/&quot;, transport_string);</span>
+<span class="lineNum">     672 </span>            :                 }
+<span class="lineNum">     673 </span>            :         }
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineCov">       3870 :         ast_str_append(&amp;string, 0, &quot;%s&quot;, ast_sockaddr_stringify_addr(addr));</span>
+<span class="lineNum">     676 </span><span class="lineCov">       3870 :         ast_str_append(&amp;string, 0, &quot;/%s&quot;, ast_sockaddr_stringify_port(addr));</span>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span><span class="lineCov">       3870 :         return ast_json_string_create(ast_str_buffer(string));</span>
+<a name="679"><span class="lineNum">     679 </span>            : }</a>
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span><span class="lineCov">       1124 : void ast_json_init(void)</span>
+<span class="lineNum">     682 </span>            : {
+<span class="lineNum">     683 </span>            :         /* Setup to use Asterisk custom allocators */
+<span class="lineNum">     684 </span><span class="lineCov">       1124 :         ast_json_reset_alloc_funcs();</span>
+<a name="685"><span class="lineNum">     685 </span><span class="lineCov">       1124 : }</span></a>
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span><span class="lineCov">      82807 : static void json_payload_destructor(void *obj)</span>
+<span class="lineNum">     688 </span>            : {
+<span class="lineNum">     689 </span><span class="lineCov">      82807 :         struct ast_json_payload *payload = obj;</span>
+<span class="lineNum">     690 </span><span class="lineCov">      82807 :         ast_json_unref(payload-&gt;json);</span>
+<a name="691"><span class="lineNum">     691 </span><span class="lineCov">      82807 : }</span></a>
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span><span class="lineCov">      82807 : struct ast_json_payload *ast_json_payload_create(struct ast_json *json)</span>
+<span class="lineNum">     694 </span>            : {
+<span class="lineNum">     695 </span>            :         struct ast_json_payload *payload;
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span><span class="lineCov">      82807 :         if (!(payload = ao2_alloc(sizeof(*payload), json_payload_destructor))) {</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     699 </span>            :         }
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">      82807 :         ast_json_ref(json);</span>
+<span class="lineNum">     702 </span><span class="lineCov">      82807 :         payload-&gt;json = json;</span>
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineCov">      82807 :         return payload;</span>
+<a name="705"><span class="lineNum">     705 </span>            : }</a>
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 : static struct ast_json *json_party_number(struct ast_party_number *number)</span>
+<span class="lineNum">     708 </span>            : {
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :         if (!number-&gt;valid) {</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     711 </span>            :         }
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :         return ast_json_pack(&quot;{s: s, s: i, s: i, s: s}&quot;,</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :                 &quot;number&quot;, AST_JSON_UTF8_VALIDATE(number-&gt;str),</span>
+<span class="lineNum">     714 </span>            :                 &quot;plan&quot;, number-&gt;plan,
+<span class="lineNum">     715 </span>            :                 &quot;presentation&quot;, number-&gt;presentation,
+<span class="lineNum">     716 </span>            :                 &quot;presentation_txt&quot;, ast_describe_caller_presentation(number-&gt;presentation));
+<a name="717"><span class="lineNum">     717 </span>            : }</a>
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 : static struct ast_json *json_party_name(struct ast_party_name *name)</span>
+<span class="lineNum">     720 </span>            : {
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :         if (!name-&gt;valid) {</span>
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     723 </span>            :         }
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         return ast_json_pack(&quot;{s: s, s: s, s: i, s: s}&quot;,</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :                 &quot;name&quot;, AST_JSON_UTF8_VALIDATE(name-&gt;str),</span>
+<span class="lineNum">     726 </span>            :                 &quot;character_set&quot;, ast_party_name_charset_describe(name-&gt;char_set),
+<span class="lineNum">     727 </span>            :                 &quot;presentation&quot;, name-&gt;presentation,
+<span class="lineNum">     728 </span>            :                 &quot;presentation_txt&quot;, ast_describe_caller_presentation(name-&gt;presentation));
+<a name="729"><span class="lineNum">     729 </span>            : }</a>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 : static struct ast_json *json_party_subaddress(struct ast_party_subaddress *subaddress)</span>
+<span class="lineNum">     732 </span>            : {
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :         if (!subaddress-&gt;valid) {</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     735 </span>            :         }
+<span class="lineNum">     736 </span><span class="lineNoCov">          0 :         return ast_json_pack(&quot;{s: s, s: i, s: b}&quot;,</span>
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :                 &quot;subaddress&quot;, AST_JSON_UTF8_VALIDATE(subaddress-&gt;str),</span>
+<span class="lineNum">     738 </span>            :                 &quot;type&quot;, subaddress-&gt;type,
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :                 &quot;odd&quot;, subaddress-&gt;odd_even_indicator);</span>
+<a name="740"><span class="lineNum">     740 </span>            : }</a>
+<span class="lineNum">     741 </span>            : 
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 : struct ast_json *ast_json_party_id(struct ast_party_id *party)</span>
+<span class="lineNum">     743 </span>            : {
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :         int pres = ast_party_id_presentation(party);</span>
+<span class="lineNum">     745 </span>            : 
+<span class="lineNum">     746 </span>            :         /* Combined party presentation */
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :         return ast_json_pack(&quot;{s: i, s: s, s: o*, s: o*, s: o*}&quot;,</span>
+<span class="lineNum">     748 </span>            :                 &quot;presentation&quot;, pres,
+<span class="lineNum">     749 </span>            :                 &quot;presentation_txt&quot;, ast_describe_caller_presentation(pres),
+<span class="lineNum">     750 </span>            :                 &quot;number&quot;, json_party_number(&amp;party-&gt;number),
+<span class="lineNum">     751 </span>            :                 &quot;name&quot;, json_party_name(&amp;party-&gt;name),
+<span class="lineNum">     752 </span>            :                 &quot;subaddress&quot;, json_party_subaddress(&amp;party-&gt;subaddress));
+<a name="753"><span class="lineNum">     753 </span>            : }</a>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span><span class="lineCov">        657 : enum ast_json_to_ast_vars_code ast_json_to_ast_variables(struct ast_json *json_variables, struct ast_variable **variables)</span>
+<span class="lineNum">     756 </span>            : {
+<span class="lineNum">     757 </span>            :         struct ast_json_iter *it_json_var;
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">        657 :         *variables = NULL;</span>
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span><span class="lineCov">       8734 :         for (it_json_var = ast_json_object_iter(json_variables); it_json_var;</span>
+<span class="lineNum">     762 </span><span class="lineCov">       8077 :                 it_json_var = ast_json_object_iter_next(json_variables, it_json_var)) {</span>
+<span class="lineNum">     763 </span>            :                 struct ast_variable *new_var;
+<span class="lineNum">     764 </span><span class="lineCov">       8077 :                 const char *key = ast_json_object_iter_key(it_json_var);</span>
+<span class="lineNum">     765 </span>            :                 const char *value;
+<span class="lineNum">     766 </span>            :                 struct ast_json *json_value;
+<span class="lineNum">     767 </span>            : 
+<span class="lineNum">     768 </span><span class="lineCov">       8077 :                 if (ast_strlen_zero(key)) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     770 </span>            :                 }
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineCov">       8077 :                 json_value = ast_json_object_iter_value(it_json_var);</span>
+<span class="lineNum">     773 </span><span class="lineCov">       8077 :                 if (ast_json_typeof(json_value) != AST_JSON_STRING) {</span>
+<span class="lineNum">     774 </span>            :                         /* Error: Only strings allowed */
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                         ast_variables_destroy(*variables);</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                         *variables = NULL;</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :                         return AST_JSON_TO_AST_VARS_CODE_INVALID_TYPE;</span>
+<span class="lineNum">     778 </span>            :                 }
+<span class="lineNum">     779 </span><span class="lineCov">       8077 :                 value = ast_json_string_get(json_value);</span>
+<span class="lineNum">     780 </span>            :                 /* Should never be NULL.  Otherwise, how could it be a string type? */
+<span class="lineNum">     781 </span><span class="lineCov">       8077 :                 ast_assert(value != NULL);</span>
+<span class="lineNum">     782 </span><span class="lineCov">       8077 :                 if (!value) {</span>
+<span class="lineNum">     783 </span>            :                         /* To be safe. */
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     785 </span>            :                 }
+<span class="lineNum">     786 </span><span class="lineCov">       8077 :                 new_var = ast_variable_new(key, value, &quot;&quot;);</span>
+<span class="lineNum">     787 </span><span class="lineCov">       8077 :                 if (!new_var) {</span>
+<span class="lineNum">     788 </span>            :                         /* Error: OOM */
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 :                         ast_variables_destroy(*variables);</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                         *variables = NULL;</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :                         return AST_JSON_TO_AST_VARS_CODE_OOM;</span>
+<span class="lineNum">     792 </span>            :                 }
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span><span class="lineCov">       8077 :                 ast_variable_list_append(variables, new_var);</span>
+<span class="lineNum">     795 </span>            :         }
+<span class="lineNum">     796 </span>            : 
+<span class="lineNum">     797 </span><span class="lineCov">        657 :         return AST_JSON_TO_AST_VARS_CODE_SUCCESS;</span>
+<a name="798"><span class="lineNum">     798 </span>            : }</a>
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineCov">         19 : struct ast_json *ast_json_channel_vars(struct varshead *channelvars)</span>
+<span class="lineNum">     801 </span>            : {
+<span class="lineNum">     802 </span>            :         struct ast_json *ret;
+<span class="lineNum">     803 </span>            :         struct ast_var_t *var;
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span><span class="lineCov">         19 :         ret = ast_json_object_create();</span>
+<span class="lineNum">     806 </span><span class="lineCov">         57 :         AST_LIST_TRAVERSE(channelvars, var, entries) {</span>
+<span class="lineNum">     807 </span><span class="lineCov">         38 :                 ast_json_object_set(ret, var-&gt;name, ast_json_string_create(var-&gt;value));</span>
+<span class="lineNum">     808 </span>            :         }
+<span class="lineNum">     809 </span>            : 
+<span class="lineNum">     810 </span><span class="lineCov">         19 :         return ret;</span>
+<span class="lineNum">     811 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/stringfields.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - stringfields.c<span style="font-size: 80%;"> (source / <a href="stringfields.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">177</td>
+            <td class="headerCovTableEntry">192</td>
+            <td class="headerCovTableEntryHi">92.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief String fields
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Kevin P. Fleming &lt;kpfleming@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;asterisk/stringfields.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : /* this is a little complex... string fields are stored with their
+<span class="lineNum">      32 </span>            :    allocated size in the bytes preceding the string; even the
+<span class="lineNum">      33 </span>            :    constant 'empty' string has to be this way, so the code that
+<span class="lineNum">      34 </span>            :    checks to see if there is enough room for a new string doesn't
+<span class="lineNum">      35 </span>            :    have to have any special case checks
+<span class="lineNum">      36 </span>            : */
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : static const struct {
+<span class="lineNum">      39 </span>            :         ast_string_field_allocation allocation;
+<span class="lineNum">      40 </span>            :         char string[1];
+<span class="lineNum">      41 </span>            : } __ast_string_field_empty_buffer;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : ast_string_field __ast_string_field_empty = __ast_string_field_empty_buffer.string;
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span>            : #define ALLOCATOR_OVERHEAD 48</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineCov">   10707355 : static size_t optimal_alloc_size(size_t size)</span>
+<span class="lineNum">      48 </span>            : {
+<span class="lineNum">      49 </span>            :         unsigned int count;
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineCov">   10707355 :         size += ALLOCATOR_OVERHEAD;</span>
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineCov">  101059779 :         for (count = 1; size; size &gt;&gt;= 1, count++);</span>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">   10707355 :         return (1 &lt;&lt; count) - ALLOCATOR_OVERHEAD;</span>
+<span class="lineNum">      56 </span>            : }
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /*! \brief add a new block to the pool.
+<span class="lineNum">      59 </span>            :  * We can only allocate from the topmost pool, so the
+<a name="60"><span class="lineNum">      60 </span>            :  * fields in *mgr reflect the size of that only.</a>
+<span class="lineNum">      61 </span>            :  */
+<span class="lineNum">      62 </span><span class="lineCov">    4487780 : static int add_string_pool(struct ast_string_field_mgr *mgr, struct ast_string_field_pool **pool_head,</span>
+<span class="lineNum">      63 </span>            :         size_t size, const char *file, int lineno, const char *func)
+<span class="lineNum">      64 </span>            : {
+<span class="lineNum">      65 </span>            :         struct ast_string_field_pool *pool;
+<span class="lineNum">      66 </span><span class="lineCov">    4487780 :         size_t alloc_size = optimal_alloc_size(sizeof(*pool) + size);</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineCov">    4487780 :         pool = __ast_calloc(1, alloc_size, file, lineno, func);</span>
+<span class="lineNum">      69 </span><span class="lineCov">    4487780 :         if (!pool) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      71 </span>            :         }
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span><span class="lineCov">    4487780 :         pool-&gt;prev = *pool_head;</span>
+<span class="lineNum">      74 </span><span class="lineCov">    4487780 :         pool-&gt;size = alloc_size - sizeof(*pool);</span>
+<span class="lineNum">      75 </span><span class="lineCov">    4487780 :         *pool_head = pool;</span>
+<span class="lineNum">      76 </span><span class="lineCov">    4487780 :         mgr-&gt;last_alloc = NULL;</span>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">    4487780 :         return 0;</span>
+<a name="79"><span class="lineNum">      79 </span>            : }</a>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span><span class="lineCov">   40550532 : static void reset_field(const char **p)</span>
+<span class="lineNum">      82 </span>            : {
+<span class="lineNum">      83 </span><span class="lineCov">   40550532 :         *p = __ast_string_field_empty;</span>
+<span class="lineNum">      84 </span><span class="lineCov">   40550532 : }</span>
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span>            : /*!
+<span class="lineNum">      87 </span>            :  * \brief Internal cleanup function
+<span class="lineNum">      88 </span>            :  * \internal
+<span class="lineNum">      89 </span>            :  * \param mgr
+<span class="lineNum">      90 </span>            :  * \param pool_head
+<span class="lineNum">      91 </span>            :  * \param cleanup_type
+<span class="lineNum">      92 </span>            :  *           0: Reset all string fields and free all pools except the last or embedded pool.
+<span class="lineNum">      93 </span>            :  *              Keep the internal management structures so the structure can be reused.
+<span class="lineNum">      94 </span>            :  *          -1: Reset all string fields and free all pools except the embedded pool.
+<span class="lineNum">      95 </span>            :  *              Free the internal management structures.
+<span class="lineNum">      96 </span>            :  * \param file
+<span class="lineNum">      97 </span>            :  * \param lineno
+<span class="lineNum">      98 </span>            :  * \param func
+<span class="lineNum">      99 </span>            :  *
+<span class="lineNum">     100 </span>            :  * \retval 0 Success
+<a name="101"><span class="lineNum">     101 </span>            :  * \retval -1 Failure</a>
+<span class="lineNum">     102 </span>            :  */
+<span class="lineNum">     103 </span><span class="lineCov">   10268619 : int __ast_string_field_free_memory(struct ast_string_field_mgr *mgr,</span>
+<span class="lineNum">     104 </span>            :         struct ast_string_field_pool **pool_head, enum ast_stringfield_cleanup_type cleanup_type,
+<span class="lineNum">     105 </span>            :         const char *file, int lineno, const char *func)
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineCov">   10268619 :         struct ast_string_field_pool *cur = NULL;</span>
+<span class="lineNum">     108 </span><span class="lineCov">   10268619 :         struct ast_string_field_pool *preserve = NULL;</span>
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            :         /* reset all the fields regardless of cleanup type */
+<span class="lineNum">     111 </span><span class="lineCov">   50819151 :         AST_VECTOR_CALLBACK_VOID(&amp;mgr-&gt;string_fields, reset_field);</span>
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">   10268619 :         switch (cleanup_type) {</span>
+<span class="lineNum">     114 </span><span class="lineCov">   10268613 :         case AST_STRINGFIELD_DESTROY:</span>
+<span class="lineNum">     115 </span><span class="lineCov">   10268613 :                 AST_VECTOR_FREE(&amp;mgr-&gt;string_fields);</span>
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">   10268613 :                 if (mgr-&gt;embedded_pool) { /* ALWAYS preserve the embedded pool if there is one */</span>
+<span class="lineNum">     118 </span><span class="lineCov">    6219235 :                         preserve = mgr-&gt;embedded_pool;</span>
+<span class="lineNum">     119 </span><span class="lineCov">    6219235 :                         preserve-&gt;used = preserve-&gt;active = 0;</span>
+<span class="lineNum">     120 </span>            :                 }
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">   10268613 :                 break;</span>
+<span class="lineNum">     123 </span><span class="lineCov">          6 :         case AST_STRINGFIELD_RESET:</span>
+<span class="lineNum">     124 </span>            :                 /* Preserve the embedded pool if there is one, otherwise the last pool */
+<span class="lineNum">     125 </span><span class="lineCov">          6 :                 if (mgr-&gt;embedded_pool) {</span>
+<span class="lineNum">     126 </span><span class="lineCov">          4 :                         preserve = mgr-&gt;embedded_pool;</span>
+<span class="lineNum">     127 </span>            :                 } else {
+<span class="lineNum">     128 </span><span class="lineCov">          2 :                         if (*pool_head == NULL) {</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;trying to reset empty pool\n&quot;);</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                                 return -1;</span>
+<span class="lineNum">     131 </span>            :                         }
+<span class="lineNum">     132 </span><span class="lineCov">          2 :                         preserve = *pool_head;</span>
+<span class="lineNum">     133 </span>            :                 }
+<span class="lineNum">     134 </span><span class="lineCov">          6 :                 preserve-&gt;used = preserve-&gt;active = 0;</span>
+<span class="lineNum">     135 </span><span class="lineCov">          6 :                 break;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">   10268619 :         cur = *pool_head;</span>
+<span class="lineNum">     141 </span><span class="lineCov">   20856792 :         while (cur) {</span>
+<span class="lineNum">     142 </span><span class="lineCov">   10588173 :                 struct ast_string_field_pool *prev = cur-&gt;prev;</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">   10588173 :                 if (cur != preserve) {</span>
+<span class="lineNum">     145 </span><span class="lineCov">    4368932 :                         ast_free(cur);</span>
+<span class="lineNum">     146 </span>            :                 }
+<span class="lineNum">     147 </span><span class="lineCov">   10588173 :                 cur = prev;</span>
+<span class="lineNum">     148 </span>            :         }
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span><span class="lineCov">   10268619 :         *pool_head = preserve;</span>
+<span class="lineNum">     151 </span><span class="lineCov">   10268619 :         if (preserve) {</span>
+<span class="lineNum">     152 </span><span class="lineCov">    6219241 :                 preserve-&gt;prev = NULL;</span>
+<span class="lineNum">     153 </span>            :         }
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">   10268619 :         return 0;</span>
+<span class="lineNum">     156 </span>            : }
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : /*!
+<span class="lineNum">     159 </span>            :  * \brief Internal initialization function
+<span class="lineNum">     160 </span>            :  * \internal
+<span class="lineNum">     161 </span>            :  * \param mgr
+<span class="lineNum">     162 </span>            :  * \param pool_head
+<span class="lineNum">     163 </span>            :  * \param needed
+<span class="lineNum">     164 </span>            :  * \param file
+<span class="lineNum">     165 </span>            :  * \param lineno
+<span class="lineNum">     166 </span>            :  * \param func
+<span class="lineNum">     167 </span>            :  *
+<span class="lineNum">     168 </span>            :  * \retval 0 Success
+<a name="169"><span class="lineNum">     169 </span>            :  * \retval -1 Failure</a>
+<span class="lineNum">     170 </span>            :  */
+<span class="lineNum">     171 </span><span class="lineCov">    4159082 : int __ast_string_field_init(struct ast_string_field_mgr *mgr, struct ast_string_field_pool **pool_head,</span>
+<span class="lineNum">     172 </span>            :         int needed, const char *file, int lineno, const char *func)
+<span class="lineNum">     173 </span>            : {
+<span class="lineNum">     174 </span><span class="lineCov">    4159082 :         const char **p = (const char **) pool_head + 1;</span>
+<span class="lineNum">     175 </span><span class="lineCov">    4159082 :         size_t initial_vector_size = ((size_t) (((char *)mgr) - ((char *)p))) / sizeof(*p);</span>
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineCov">    4159082 :         if (needed &lt;= 0) {</span>
+<span class="lineNum">     178 </span><span class="lineCov">          6 :                 return __ast_string_field_free_memory(mgr, pool_head, needed, file, lineno, func);</span>
+<span class="lineNum">     179 </span>            :         }
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">    4159076 :         mgr-&gt;last_alloc = NULL;</span>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">    4159076 :         if (AST_VECTOR_INIT(&amp;mgr-&gt;string_fields, initial_vector_size)) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     185 </span>            :         }
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">   14172037 :         while ((struct ast_string_field_mgr *) p != mgr) {</span>
+<span class="lineNum">     188 </span><span class="lineCov">   10012961 :                 AST_VECTOR_APPEND(&amp;mgr-&gt;string_fields, p);</span>
+<span class="lineNum">     189 </span><span class="lineCov">   10012961 :                 *p++ = __ast_string_field_empty;</span>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">    4159076 :         *pool_head = NULL;</span>
+<span class="lineNum">     193 </span><span class="lineCov">    4159076 :         mgr-&gt;embedded_pool = NULL;</span>
+<span class="lineNum">     194 </span><span class="lineCov">    4159076 :         if (add_string_pool(mgr, pool_head, needed, file, lineno, func)) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 AST_VECTOR_FREE(&amp;mgr-&gt;string_fields);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     197 </span>            :         }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">    4159076 :         return 0;</span>
+<a name="200"><span class="lineNum">     200 </span>            : }</a>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">   38487661 : ast_string_field __ast_string_field_alloc_space(struct ast_string_field_mgr *mgr,</span>
+<span class="lineNum">     203 </span>            :         struct ast_string_field_pool **pool_head, size_t needed,
+<span class="lineNum">     204 </span>            :         const char *file, int lineno, const char *func)
+<span class="lineNum">     205 </span>            : {
+<span class="lineNum">     206 </span><span class="lineCov">   38487661 :         char *result = NULL;</span>
+<span class="lineNum">     207 </span><span class="lineCov">   38487661 :         size_t space = (*pool_head)-&gt;size - (*pool_head)-&gt;used;</span>
+<span class="lineNum">     208 </span>            :         size_t to_alloc;
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            :         /* Make room for ast_string_field_allocation and make it a multiple of that. */
+<span class="lineNum">     211 </span><span class="lineCov">   38487661 :         to_alloc = ast_make_room_for(needed, ast_string_field_allocation);</span>
+<span class="lineNum">     212 </span><span class="lineCov">   38487661 :         ast_assert(to_alloc % ast_alignof(ast_string_field_allocation) == 0);</span>
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineCov">   38487661 :         if (__builtin_expect(to_alloc &gt; space, 0)) {</span>
+<span class="lineNum">     215 </span><span class="lineCov">     328704 :                 size_t new_size = (*pool_head)-&gt;size;</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">     670303 :                 while (new_size &lt; to_alloc) {</span>
+<span class="lineNum">     218 </span><span class="lineCov">     341599 :                         new_size *= 2;</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">     328704 :                 if (add_string_pool(mgr, pool_head, new_size, file, lineno, func)) {</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     223 </span>            :                 }
+<span class="lineNum">     224 </span>            :         }
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            :         /* pool-&gt;base is always aligned (gcc aligned attribute). We ensure that
+<span class="lineNum">     227 </span>            :          * to_alloc is also a multiple of ast_alignof(ast_string_field_allocation)
+<span class="lineNum">     228 </span>            :          * causing result to always be aligned as well; which in turn fixes that
+<span class="lineNum">     229 </span>            :          * AST_STRING_FIELD_ALLOCATION(result) is aligned. */
+<span class="lineNum">     230 </span><span class="lineCov">   38487661 :         result = (*pool_head)-&gt;base + (*pool_head)-&gt;used;</span>
+<span class="lineNum">     231 </span><span class="lineCov">   38487661 :         (*pool_head)-&gt;used += to_alloc;</span>
+<span class="lineNum">     232 </span><span class="lineCov">   38487661 :         (*pool_head)-&gt;active += needed;</span>
+<span class="lineNum">     233 </span><span class="lineCov">   38487661 :         result += ast_alignof(ast_string_field_allocation);</span>
+<span class="lineNum">     234 </span><span class="lineCov">   38487661 :         AST_STRING_FIELD_ALLOCATION(result) = needed;</span>
+<span class="lineNum">     235 </span><span class="lineCov">   38487661 :         mgr-&gt;last_alloc = result;</span>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineCov">   38487661 :         return result;</span>
+<a name="238"><span class="lineNum">     238 </span>            : }</a>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineCov">   38438686 : int __ast_string_field_ptr_grow(struct ast_string_field_mgr *mgr,</span>
+<span class="lineNum">     241 </span>            :         struct ast_string_field_pool **pool_head, size_t needed, const ast_string_field *ptr)
+<span class="lineNum">     242 </span>            : {
+<span class="lineNum">     243 </span><span class="lineCov">   38438686 :         ssize_t grow = needed - AST_STRING_FIELD_ALLOCATION(*ptr);</span>
+<span class="lineNum">     244 </span><span class="lineCov">   38438686 :         size_t space = (*pool_head)-&gt;size - (*pool_head)-&gt;used;</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineCov">   38438686 :         if (*ptr != mgr-&gt;last_alloc) {</span>
+<span class="lineNum">     247 </span><span class="lineCov">   38435111 :                 return 1;</span>
+<span class="lineNum">     248 </span>            :         }
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">       3575 :         if (space &lt; grow) {</span>
+<span class="lineNum">     251 </span><span class="lineCov">          6 :                 return 1;</span>
+<span class="lineNum">     252 </span>            :         }
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span><span class="lineCov">       3569 :         (*pool_head)-&gt;used += grow;</span>
+<span class="lineNum">     255 </span><span class="lineCov">       3569 :         (*pool_head)-&gt;active += grow;</span>
+<span class="lineNum">     256 </span><span class="lineCov">       3569 :         AST_STRING_FIELD_ALLOCATION(*ptr) += grow;</span>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">       3569 :         return 0;</span>
+<a name="259"><span class="lineNum">     259 </span>            : }</a>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineCov">   39937046 : void __ast_string_field_release_active(struct ast_string_field_pool *pool_head,</span>
+<span class="lineNum">     262 </span>            :         const ast_string_field ptr)
+<span class="lineNum">     263 </span>            : {
+<span class="lineNum">     264 </span>            :         struct ast_string_field_pool *pool, *prev;
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">   39937046 :         if (ptr == __ast_string_field_empty) {</span>
+<span class="lineNum">     267 </span><span class="lineCov">   39924441 :                 return;</span>
+<span class="lineNum">     268 </span>            :         }
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineCov">      12628 :         for (pool = pool_head, prev = NULL; pool; prev = pool, pool = pool-&gt;prev) {</span>
+<span class="lineNum">     271 </span><span class="lineCov">      12628 :                 if ((ptr &gt;= pool-&gt;base) &amp;&amp; (ptr &lt;= (pool-&gt;base + pool-&gt;size))) {</span>
+<span class="lineNum">     272 </span><span class="lineCov">      12605 :                         pool-&gt;active -= AST_STRING_FIELD_ALLOCATION(ptr);</span>
+<span class="lineNum">     273 </span><span class="lineCov">      12605 :                         if (pool-&gt;active == 0) {</span>
+<span class="lineNum">     274 </span><span class="lineCov">        537 :                                 if (prev) {</span>
+<span class="lineNum">     275 </span><span class="lineCov">          2 :                                         prev-&gt;prev = pool-&gt;prev;</span>
+<span class="lineNum">     276 </span><span class="lineCov">          2 :                                         ast_free(pool);</span>
+<span class="lineNum">     277 </span>            :                                 } else {
+<span class="lineNum">     278 </span><span class="lineCov">        535 :                                         pool-&gt;used = 0;</span>
+<span class="lineNum">     279 </span>            :                                 }
+<span class="lineNum">     280 </span>            :                         }
+<span class="lineNum">     281 </span><span class="lineCov">      12605 :                         break;</span>
+<span class="lineNum">     282 </span>            :                 }
+<span class="lineNum">     283 </span>            :         }
+<a name="284"><span class="lineNum">     284 </span>            : }</a>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">     203984 : void __ast_string_field_ptr_build_va(struct ast_string_field_mgr *mgr,</span>
+<span class="lineNum">     287 </span>            :         struct ast_string_field_pool **pool_head, ast_string_field *ptr,
+<span class="lineNum">     288 </span>            :         const char *format, va_list ap,
+<span class="lineNum">     289 </span>            :         const char *file, int lineno, const char *func)
+<span class="lineNum">     290 </span>            : {
+<span class="lineNum">     291 </span>            :         size_t needed;
+<span class="lineNum">     292 </span>            :         size_t available;
+<span class="lineNum">     293 </span><span class="lineCov">     203984 :         size_t space = (*pool_head)-&gt;size - (*pool_head)-&gt;used;</span>
+<span class="lineNum">     294 </span>            :         int res;
+<span class="lineNum">     295 </span>            :         ssize_t grow;
+<span class="lineNum">     296 </span>            :         char *target;
+<span class="lineNum">     297 </span>            :         va_list ap2;
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span>            :         /* if the field already has space allocated, try to reuse it;
+<span class="lineNum">     300 </span>            :            otherwise, try to use the empty space at the end of the current
+<span class="lineNum">     301 </span>            :            pool
+<span class="lineNum">     302 </span>            :         */
+<span class="lineNum">     303 </span><span class="lineCov">     203984 :         if (*ptr != __ast_string_field_empty) {</span>
+<span class="lineNum">     304 </span><span class="lineCov">       1120 :                 target = (char *) *ptr;</span>
+<span class="lineNum">     305 </span><span class="lineCov">       1120 :                 available = AST_STRING_FIELD_ALLOCATION(*ptr);</span>
+<span class="lineNum">     306 </span><span class="lineCov">       1120 :                 if (*ptr == mgr-&gt;last_alloc) {</span>
+<span class="lineNum">     307 </span><span class="lineCov">         28 :                         available += space;</span>
+<span class="lineNum">     308 </span>            :                 }
+<span class="lineNum">     309 </span>            :         } else {
+<span class="lineNum">     310 </span>            :                 /* pool-&gt;used is always a multiple of ast_alignof(ast_string_field_allocation)
+<span class="lineNum">     311 </span>            :                  * so we don't need to re-align anything here.
+<span class="lineNum">     312 </span>            :                  */
+<span class="lineNum">     313 </span><span class="lineCov">     202864 :                 target = (*pool_head)-&gt;base + (*pool_head)-&gt;used + ast_alignof(ast_string_field_allocation);</span>
+<span class="lineNum">     314 </span><span class="lineCov">     202864 :                 if (space &gt; ast_alignof(ast_string_field_allocation)) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">     202864 :                         available = space - ast_alignof(ast_string_field_allocation);</span>
+<span class="lineNum">     316 </span>            :                 } else {
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                         available = 0;</span>
+<span class="lineNum">     318 </span>            :                 }
+<span class="lineNum">     319 </span>            :         }
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineCov">     203984 :         va_copy(ap2, ap);</span>
+<span class="lineNum">     322 </span><span class="lineCov">     203984 :         res = vsnprintf(target, available, format, ap2);</span>
+<span class="lineNum">     323 </span><span class="lineCov">     203984 :         va_end(ap2);</span>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineCov">     203984 :         if (res &lt; 0) {</span>
+<span class="lineNum">     326 </span>            :                 /* Are we out of memory? */
+<span class="lineNum">     327 </span><span class="lineCov">      11629 :                 return;</span>
+<span class="lineNum">     328 </span>            :         }
+<span class="lineNum">     329 </span><span class="lineCov">     203979 :         if (res == 0) {</span>
+<span class="lineNum">     330 </span><span class="lineCov">      11624 :                 __ast_string_field_release_active(*pool_head, *ptr);</span>
+<span class="lineNum">     331 </span><span class="lineCov">      11624 :                 *ptr = __ast_string_field_empty;</span>
+<span class="lineNum">     332 </span><span class="lineCov">      11624 :                 return;</span>
+<span class="lineNum">     333 </span>            :         }
+<span class="lineNum">     334 </span><span class="lineCov">     192355 :         needed = (size_t)res + 1; /* NUL byte */</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">     192355 :         if (needed &gt; available) {</span>
+<span class="lineNum">     337 </span>            :                 /* the allocation could not be satisfied using the field's current allocation
+<span class="lineNum">     338 </span>            :                    (if it has one), or the space available in the pool (if it does not). allocate
+<span class="lineNum">     339 </span>            :                    space for it, adding a new string pool if necessary.
+<span class="lineNum">     340 </span>            :                 */
+<span class="lineNum">     341 </span><span class="lineCov">      52544 :                 target = (char *) __ast_string_field_alloc_space(mgr, pool_head, needed, file, lineno, func);</span>
+<span class="lineNum">     342 </span><span class="lineCov">      52544 :                 if (!target) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     344 </span>            :                 }
+<span class="lineNum">     345 </span><span class="lineCov">      52544 :                 vsprintf(target, format, ap);</span>
+<span class="lineNum">     346 </span><span class="lineCov">      52544 :                 va_end(ap); /* XXX va_end without va_start? */</span>
+<span class="lineNum">     347 </span><span class="lineCov">      52544 :                 __ast_string_field_release_active(*pool_head, *ptr);</span>
+<span class="lineNum">     348 </span><span class="lineCov">      52544 :                 *ptr = target;</span>
+<span class="lineNum">     349 </span><span class="lineCov">     139811 :         } else if (*ptr != target) {</span>
+<span class="lineNum">     350 </span>            :                 /* the allocation was satisfied using available space in the pool, but not
+<span class="lineNum">     351 </span>            :                    using the space already allocated to the field
+<span class="lineNum">     352 </span>            :                 */
+<span class="lineNum">     353 </span><span class="lineCov">     138712 :                 __ast_string_field_release_active(*pool_head, *ptr);</span>
+<span class="lineNum">     354 </span><span class="lineCov">     138712 :                 mgr-&gt;last_alloc = *ptr = target;</span>
+<span class="lineNum">     355 </span><span class="lineCov">     138712 :                 ast_assert(needed &lt; (ast_string_field_allocation)-1);</span>
+<span class="lineNum">     356 </span><span class="lineCov">     138712 :                 AST_STRING_FIELD_ALLOCATION(target) = (ast_string_field_allocation)needed;</span>
+<span class="lineNum">     357 </span><span class="lineCov">     138712 :                 (*pool_head)-&gt;used += ast_make_room_for(needed, ast_string_field_allocation);</span>
+<span class="lineNum">     358 </span><span class="lineCov">     138712 :                 (*pool_head)-&gt;active += needed;</span>
+<span class="lineNum">     359 </span><span class="lineCov">       1099 :         } else if ((grow = (needed - AST_STRING_FIELD_ALLOCATION(*ptr))) &gt; 0) {</span>
+<span class="lineNum">     360 </span>            :                 /* the allocation was satisfied by using available space in the pool *and*
+<span class="lineNum">     361 </span>            :                    the field was the last allocated field from the pool, so it grew
+<span class="lineNum">     362 </span>            :                 */
+<span class="lineNum">     363 </span><span class="lineCov">          2 :                 AST_STRING_FIELD_ALLOCATION(*ptr) += grow;</span>
+<span class="lineNum">     364 </span><span class="lineCov">          2 :                 (*pool_head)-&gt;used += ast_align_for(grow, ast_string_field_allocation);</span>
+<span class="lineNum">     365 </span><span class="lineCov">          2 :                 (*pool_head)-&gt;active += grow;</span>
+<span class="lineNum">     366 </span>            :         }
+<a name="367"><span class="lineNum">     367 </span>            : }</a>
+<span class="lineNum">     368 </span>            : 
+<span class="lineNum">     369 </span><span class="lineCov">      98231 : void __ast_string_field_ptr_build(const char *file, int lineno, const char *func,</span>
+<span class="lineNum">     370 </span>            :         struct ast_string_field_mgr *mgr,
+<span class="lineNum">     371 </span>            :         struct ast_string_field_pool **pool_head, ast_string_field *ptr, const char *format, ...)
+<span class="lineNum">     372 </span>            : {
+<span class="lineNum">     373 </span>            :         va_list ap;
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineCov">      98231 :         va_start(ap, format);</span>
+<span class="lineNum">     376 </span><span class="lineCov">      98231 :         __ast_string_field_ptr_build_va(mgr, pool_head, ptr, format, ap, file, lineno, func);</span>
+<span class="lineNum">     377 </span><span class="lineCov">      98231 :         va_end(ap);</span>
+<a name="378"><span class="lineNum">     378 </span><span class="lineCov">      98231 : }</span></a>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">    6219575 : void *__ast_calloc_with_stringfields(unsigned int num_structs, size_t struct_size,</span>
+<span class="lineNum">     381 </span>            :         size_t field_mgr_offset, size_t field_mgr_pool_offset, size_t pool_size,
+<span class="lineNum">     382 </span>            :         const char *file, int lineno, const char *func)
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span>            :         struct ast_string_field_mgr *mgr;
+<span class="lineNum">     385 </span>            :         struct ast_string_field_pool *pool;
+<span class="lineNum">     386 </span>            :         struct ast_string_field_pool **pool_head;
+<span class="lineNum">     387 </span><span class="lineCov">    6219575 :         size_t pool_size_needed = sizeof(*pool) + pool_size;</span>
+<span class="lineNum">     388 </span><span class="lineCov">    6219575 :         size_t size_to_alloc = optimal_alloc_size(struct_size + pool_size_needed);</span>
+<span class="lineNum">     389 </span>            :         void *allocation;
+<span class="lineNum">     390 </span>            :         const char **p;
+<span class="lineNum">     391 </span>            :         size_t initial_vector_size;
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span><span class="lineCov">    6219575 :         ast_assert(num_structs == 1);</span>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineCov">    6219575 :         allocation = __ast_calloc(num_structs, size_to_alloc, file, lineno, func);</span>
+<span class="lineNum">     396 </span><span class="lineCov">    6219575 :         if (!allocation) {</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     398 </span>            :         }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">    6219575 :         mgr = allocation + field_mgr_offset;</span>
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineCov">    6219575 :         pool = allocation + struct_size;</span>
+<span class="lineNum">     403 </span><span class="lineCov">    6219575 :         pool_head = allocation + field_mgr_pool_offset;</span>
+<span class="lineNum">     404 </span><span class="lineCov">    6219575 :         p = (const char **) pool_head + 1;</span>
+<span class="lineNum">     405 </span><span class="lineCov">    6219575 :         initial_vector_size = ((size_t) (((char *)mgr) - ((char *)p))) / sizeof(*p);</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">    6219575 :         if (AST_VECTOR_INIT(&amp;mgr-&gt;string_fields, initial_vector_size)) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 ast_free(allocation);</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     410 </span>            :         }
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">   37119296 :         while ((struct ast_string_field_mgr *) p != mgr) {</span>
+<span class="lineNum">     413 </span><span class="lineCov">   30899721 :                 AST_VECTOR_APPEND(&amp;mgr-&gt;string_fields, p);</span>
+<span class="lineNum">     414 </span><span class="lineCov">   30899721 :                 *p++ = __ast_string_field_empty;</span>
+<span class="lineNum">     415 </span>            :         }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">    6219575 :         mgr-&gt;embedded_pool = pool;</span>
+<span class="lineNum">     418 </span><span class="lineCov">    6219575 :         *pool_head = pool;</span>
+<span class="lineNum">     419 </span><span class="lineCov">    6219575 :         pool-&gt;size = size_to_alloc - struct_size - sizeof(*pool);</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">    6219575 :         return allocation;</span>
+<a name="422"><span class="lineNum">     422 </span>            : }</a>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">          7 : int __ast_string_fields_cmp(struct ast_string_field_vector *left,</span>
+<span class="lineNum">     425 </span>            :         struct ast_string_field_vector *right)
+<span class="lineNum">     426 </span>            : {
+<span class="lineNum">     427 </span>            :         int i;
+<span class="lineNum">     428 </span><span class="lineCov">          7 :         int res = 0;</span>
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span><span class="lineCov">          7 :         ast_assert(AST_VECTOR_SIZE(left) == AST_VECTOR_SIZE(right));</span>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">         16 :         for (i = 0; i &lt; AST_VECTOR_SIZE(left); i++) {</span>
+<span class="lineNum">     433 </span><span class="lineCov">         13 :                 if ((res = strcmp(*AST_VECTOR_GET(left, i), *AST_VECTOR_GET(right, i)))) {</span>
+<span class="lineNum">     434 </span><span class="lineCov">          4 :                         return res;</span>
+<span class="lineNum">     435 </span>            :                 }
+<span class="lineNum">     436 </span>            :         }
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineCov">          3 :         return res;</span>
+<a name="439"><span class="lineNum">     439 </span>            : }</a>
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineCov">       4986 : int __ast_string_fields_copy(struct ast_string_field_pool *copy_pool,</span>
+<span class="lineNum">     442 </span>            :         struct ast_string_field_mgr *copy_mgr, struct ast_string_field_mgr *orig_mgr,
+<span class="lineNum">     443 </span>            :         const char *file, int lineno, const char *func)
+<span class="lineNum">     444 </span>            : {
+<span class="lineNum">     445 </span>            :         int i;
+<span class="lineNum">     446 </span><span class="lineCov">       4986 :         struct ast_string_field_vector *dest = &amp;(copy_mgr-&gt;string_fields);</span>
+<span class="lineNum">     447 </span><span class="lineCov">       4986 :         struct ast_string_field_vector *src = &amp;(orig_mgr-&gt;string_fields);</span>
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineCov">       4986 :         ast_assert(AST_VECTOR_SIZE(dest) == AST_VECTOR_SIZE(src));</span>
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span><span class="lineCov">      27008 :         for (i = 0; i &lt; AST_VECTOR_SIZE(dest); i++) {</span>
+<span class="lineNum">     452 </span><span class="lineCov">      22022 :                 __ast_string_field_release_active(copy_pool, *AST_VECTOR_GET(dest, i));</span>
+<span class="lineNum">     453 </span><span class="lineCov">      22022 :                 *AST_VECTOR_GET(dest, i) = __ast_string_field_empty;</span>
+<span class="lineNum">     454 </span>            :         }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">      27008 :         for (i = 0; i &lt; AST_VECTOR_SIZE(dest); i++) {</span>
+<span class="lineNum">     457 </span><span class="lineCov">      22022 :                 if (__ast_string_field_ptr_set_by_fields(copy_pool, *copy_mgr, AST_VECTOR_GET(dest, i),</span>
+<span class="lineNum">     458 </span>            :                         *AST_VECTOR_GET(src, i), file, lineno, func)) {
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     460 </span>            :                 }
+<span class="lineNum">     461 </span>            :         }
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">       4986 :         return 0;</span>
+<span class="lineNum">     464 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

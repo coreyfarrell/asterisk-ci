@@ -1,0 +1,1692 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/stasis/app.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">res/stasis</a> - app.c<span style="font-size: 80%;"> (source / <a href="app.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">534</td>
+            <td class="headerCovTableEntry">722</td>
+            <td class="headerCovTableEntryLo">74.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">59</td>
+            <td class="headerCovTableEntry">69</td>
+            <td class="headerCovTableEntryMed">85.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Stasis application support.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;app.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;control.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;messaging.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/callerid.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/stasis_app.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/stasis_bridges.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/stasis_channels.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/stasis_endpoints.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/stasis_message_router.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #define BRIDGE_ALL &quot;__AST_BRIDGE_ALL_TOPIC&quot;
+<span class="lineNum">      41 </span>            : #define CHANNEL_ALL &quot;__AST_CHANNEL_ALL_TOPIC&quot;
+<span class="lineNum">      42 </span>            : #define ENDPOINT_ALL &quot;__AST_ENDPOINT_ALL_TOPIC&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : /*! Global debug flag.  No need for locking */
+<span class="lineNum">      45 </span>            : int global_debug;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : static int unsubscribe(struct stasis_app *app, const char *kind, const char *id, int terminate);
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : struct stasis_app {
+<span class="lineNum">      50 </span>            :         /*! Aggregation topic for this application. */
+<span class="lineNum">      51 </span>            :         struct stasis_topic *topic;
+<span class="lineNum">      52 </span>            :         /*! Router for handling messages forwarded to \a topic. */
+<span class="lineNum">      53 </span>            :         struct stasis_message_router *router;
+<span class="lineNum">      54 </span>            :         /*! Router for handling messages to the bridge all \a topic. */
+<span class="lineNum">      55 </span>            :         struct stasis_message_router *bridge_router;
+<span class="lineNum">      56 </span>            :         /*! Optional router for handling endpoint messages in 'all' subscriptions */
+<span class="lineNum">      57 </span>            :         struct stasis_message_router *endpoint_router;
+<span class="lineNum">      58 </span>            :         /*! Container of the channel forwards to this app's topic. */
+<span class="lineNum">      59 </span>            :         struct ao2_container *forwards;
+<span class="lineNum">      60 </span>            :         /*! Callback function for this application. */
+<span class="lineNum">      61 </span>            :         stasis_app_cb handler;
+<span class="lineNum">      62 </span>            :         /*! Opaque data to hand to callback function. */
+<span class="lineNum">      63 </span>            :         void *data;
+<span class="lineNum">      64 </span>            :         /*! Subscription model for the application */
+<span class="lineNum">      65 </span>            :         enum stasis_app_subscription_model subscription_model;
+<span class="lineNum">      66 </span>            :         /*! Whether or not someone wants to see debug messages about this app */
+<span class="lineNum">      67 </span>            :         int debug;
+<span class="lineNum">      68 </span>            :         /*! Name of the Stasis application */
+<span class="lineNum">      69 </span>            :         char name[];
+<span class="lineNum">      70 </span>            : };
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            : enum forward_type {
+<span class="lineNum">      73 </span>            :         FORWARD_CHANNEL,
+<span class="lineNum">      74 </span>            :         FORWARD_BRIDGE,
+<span class="lineNum">      75 </span>            :         FORWARD_ENDPOINT,
+<span class="lineNum">      76 </span>            : };
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span>            : /*! Subscription info for a particular channel/bridge. */
+<span class="lineNum">      79 </span>            : struct app_forwards {
+<span class="lineNum">      80 </span>            :         /*! Count of number of times this channel/bridge has been subscribed */
+<span class="lineNum">      81 </span>            :         int interested;
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span>            :         /*! Forward for the regular topic */
+<span class="lineNum">      84 </span>            :         struct stasis_forward *topic_forward;
+<span class="lineNum">      85 </span>            :         /*! Forward for the caching topic */
+<span class="lineNum">      86 </span>            :         struct stasis_forward *topic_cached_forward;
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span>            :         /* Type of object being forwarded */
+<span class="lineNum">      89 </span>            :         enum forward_type forward_type;
+<span class="lineNum">      90 </span>            :         /*! Unique id of the object being forwarded */
+<span class="lineNum">      91 </span>            :         char id[];
+<a name="92"><span class="lineNum">      92 </span>            : };</a>
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span><span class="lineCov">        422 : static void forwards_dtor(void *obj)</span>
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span>            : #ifdef AST_DEVMODE
+<span class="lineNum">      97 </span><span class="lineCov">        422 :         struct app_forwards *forwards = obj;</span>
+<span class="lineNum">      98 </span>            : #endif /* AST_DEVMODE */
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">        422 :         ast_assert(forwards-&gt;topic_forward == NULL);</span>
+<span class="lineNum">     101 </span><span class="lineCov">        422 :         ast_assert(forwards-&gt;topic_cached_forward == NULL);</span>
+<a name="102"><span class="lineNum">     102 </span><span class="lineCov">        422 : }</span></a>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">        422 : static void forwards_unsubscribe(struct app_forwards *forwards)</span>
+<span class="lineNum">     105 </span>            : {
+<span class="lineNum">     106 </span><span class="lineCov">        422 :         stasis_forward_cancel(forwards-&gt;topic_forward);</span>
+<span class="lineNum">     107 </span><span class="lineCov">        422 :         forwards-&gt;topic_forward = NULL;</span>
+<span class="lineNum">     108 </span><span class="lineCov">        422 :         stasis_forward_cancel(forwards-&gt;topic_cached_forward);</span>
+<span class="lineNum">     109 </span><span class="lineCov">        422 :         forwards-&gt;topic_cached_forward = NULL;</span>
+<a name="110"><span class="lineNum">     110 </span><span class="lineCov">        422 : }</span></a>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineCov">        434 : static struct app_forwards *forwards_create(struct stasis_app *app,</span>
+<span class="lineNum">     113 </span>            :         const char *id)
+<span class="lineNum">     114 </span>            : {
+<span class="lineNum">     115 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">        434 :         if (!app || ast_strlen_zero(id)) {</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     119 </span>            :         }
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">        434 :         forwards = ao2_t_alloc(sizeof(*forwards) + strlen(id) + 1, forwards_dtor, id);</span>
+<span class="lineNum">     122 </span><span class="lineCov">        434 :         if (!forwards) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     124 </span>            :         }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">        434 :         strcpy(forwards-&gt;id, id); /* SAFE */</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">        434 :         return forwards;</span>
+<span class="lineNum">     129 </span>            : }
+<a name="130"><span class="lineNum">     130 </span>            : </a>
+<span class="lineNum">     131 </span>            : /*! Forward a channel's topics to an app */
+<span class="lineNum">     132 </span><span class="lineCov">        365 : static struct app_forwards *forwards_create_channel(struct stasis_app *app,</span>
+<span class="lineNum">     133 </span>            :         struct ast_channel *chan)
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span><span class="lineCov">        365 :         if (!app) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     139 </span>            :         }
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineCov">        365 :         forwards = forwards_create(app, chan ? ast_channel_uniqueid(chan) : CHANNEL_ALL);</span>
+<span class="lineNum">     142 </span><span class="lineCov">        365 :         if (!forwards) {</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     144 </span>            :         }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">        365 :         forwards-&gt;forward_type = FORWARD_CHANNEL;</span>
+<span class="lineNum">     147 </span><span class="lineCov">        365 :         if (chan) {</span>
+<span class="lineNum">     148 </span><span class="lineCov">        363 :                 forwards-&gt;topic_forward = stasis_forward_all(ast_channel_topic(chan),</span>
+<span class="lineNum">     149 </span>            :                         app-&gt;topic);
+<span class="lineNum">     150 </span>            :         }
+<span class="lineNum">     151 </span><span class="lineCov">        730 :         forwards-&gt;topic_cached_forward = stasis_forward_all(</span>
+<span class="lineNum">     152 </span><span class="lineCov">        365 :                 chan ? ast_channel_topic_cached(chan) : ast_channel_topic_all_cached(),</span>
+<span class="lineNum">     153 </span>            :                 app-&gt;topic);
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">        365 :         if ((!forwards-&gt;topic_forward &amp;&amp; chan) || !forwards-&gt;topic_cached_forward) {</span>
+<span class="lineNum">     156 </span>            :                 /* Half-subscribed is a bad thing */
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 forwards_unsubscribe(forwards);</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     160 </span>            :         }
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span><span class="lineCov">        365 :         return forwards;</span>
+<span class="lineNum">     163 </span>            : }
+<a name="164"><span class="lineNum">     164 </span>            : </a>
+<span class="lineNum">     165 </span>            : /*! Forward a bridge's topics to an app */
+<span class="lineNum">     166 </span><span class="lineCov">         61 : static struct app_forwards *forwards_create_bridge(struct stasis_app *app,</span>
+<span class="lineNum">     167 </span>            :         struct ast_bridge *bridge)
+<span class="lineNum">     168 </span>            : {
+<span class="lineNum">     169 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">         61 :         if (!app) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">         61 :         forwards = forwards_create(app, bridge ? bridge-&gt;uniqueid : BRIDGE_ALL);</span>
+<span class="lineNum">     176 </span><span class="lineCov">         61 :         if (!forwards) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     178 </span>            :         }
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineCov">         61 :         forwards-&gt;forward_type = FORWARD_BRIDGE;</span>
+<span class="lineNum">     181 </span><span class="lineCov">         61 :         if (bridge) {</span>
+<span class="lineNum">     182 </span><span class="lineCov">         58 :                 forwards-&gt;topic_forward = stasis_forward_all(ast_bridge_topic(bridge),</span>
+<span class="lineNum">     183 </span>            :                         app-&gt;topic);
+<span class="lineNum">     184 </span>            :         }
+<span class="lineNum">     185 </span><span class="lineCov">        122 :         forwards-&gt;topic_cached_forward = stasis_forward_all(</span>
+<span class="lineNum">     186 </span><span class="lineCov">         61 :                 bridge ? ast_bridge_topic_cached(bridge) : ast_bridge_topic_all_cached(),</span>
+<span class="lineNum">     187 </span>            :                 app-&gt;topic);
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">         61 :         if ((!forwards-&gt;topic_forward &amp;&amp; bridge) || !forwards-&gt;topic_cached_forward) {</span>
+<span class="lineNum">     190 </span>            :                 /* Half-subscribed is a bad thing */
+<span class="lineNum">     191 </span><span class="lineCov">          8 :                 forwards_unsubscribe(forwards);</span>
+<span class="lineNum">     192 </span><span class="lineCov">          8 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">     193 </span><span class="lineCov">          8 :                 return NULL;</span>
+<span class="lineNum">     194 </span>            :         }
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">         53 :         return forwards;</span>
+<a name="197"><span class="lineNum">     197 </span>            : }</a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 : static void endpoint_state_cb(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     200 </span>            :         struct stasis_message *message)
+<span class="lineNum">     201 </span>            : {
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         stasis_publish(app-&gt;topic, message);</span>
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 : }</span>
+<a name="206"><span class="lineNum">     206 </span>            : </a>
+<span class="lineNum">     207 </span>            : /*! Forward a endpoint's topics to an app */
+<span class="lineNum">     208 </span><span class="lineCov">          8 : static struct app_forwards *forwards_create_endpoint(struct stasis_app *app,</span>
+<span class="lineNum">     209 </span>            :         struct ast_endpoint *endpoint)
+<span class="lineNum">     210 </span>            : {
+<span class="lineNum">     211 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">     212 </span><span class="lineCov">          8 :         int ret = 0;</span>
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineCov">          8 :         if (!app) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     216 </span>            :         }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineCov">          8 :         forwards = forwards_create(app, endpoint ? ast_endpoint_get_id(endpoint) : ENDPOINT_ALL);</span>
+<span class="lineNum">     219 </span><span class="lineCov">          8 :         if (!forwards) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     221 </span>            :         }
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span><span class="lineCov">          8 :         forwards-&gt;forward_type = FORWARD_ENDPOINT;</span>
+<span class="lineNum">     224 </span><span class="lineCov">          8 :         if (endpoint) {</span>
+<span class="lineNum">     225 </span><span class="lineCov">          6 :                 forwards-&gt;topic_forward = stasis_forward_all(ast_endpoint_topic(endpoint),</span>
+<span class="lineNum">     226 </span>            :                         app-&gt;topic);
+<span class="lineNum">     227 </span><span class="lineCov">          6 :                 forwards-&gt;topic_cached_forward = stasis_forward_all(</span>
+<span class="lineNum">     228 </span>            :                         ast_endpoint_topic_cached(endpoint), app-&gt;topic);
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineCov">          6 :                 if (!forwards-&gt;topic_forward || !forwards-&gt;topic_cached_forward) {</span>
+<span class="lineNum">     231 </span>            :                         /* Half-subscribed is a bad thing */
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                         forwards_unsubscribe(forwards);</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     235 </span>            :                 }
+<span class="lineNum">     236 </span>            :         } else {
+<span class="lineNum">     237 </span>            :                 /* Since endpoint subscriptions also subscribe to channels, in the case
+<span class="lineNum">     238 </span>            :                  * of all endpoint subscriptions, we only want messages for the endpoints.
+<span class="lineNum">     239 </span>            :                  * As such, we route those particular messages and then re-publish them
+<span class="lineNum">     240 </span>            :                  * on the app's topic.
+<span class="lineNum">     241 </span>            :                  */
+<span class="lineNum">     242 </span><span class="lineCov">          2 :                 ast_assert(app-&gt;endpoint_router == NULL);</span>
+<span class="lineNum">     243 </span><span class="lineCov">          2 :                 app-&gt;endpoint_router = stasis_message_router_create(ast_endpoint_topic_all_cached());</span>
+<span class="lineNum">     244 </span><span class="lineCov">          2 :                 if (!app-&gt;endpoint_router) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                         forwards_unsubscribe(forwards);</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     248 </span>            :                 }
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">          2 :                 ret |= stasis_message_router_add(app-&gt;endpoint_router,</span>
+<span class="lineNum">     251 </span>            :                         ast_endpoint_state_type(), endpoint_state_cb, app);
+<span class="lineNum">     252 </span><span class="lineCov">          2 :                 ret |= stasis_message_router_add(app-&gt;endpoint_router,</span>
+<span class="lineNum">     253 </span>            :                         ast_endpoint_contact_state_type(), endpoint_state_cb, app);
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">          2 :                 if (ret) {</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                         ao2_ref(app-&gt;endpoint_router, -1);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                         app-&gt;endpoint_router = NULL;</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     260 </span>            :                 }
+<span class="lineNum">     261 </span>            :         }
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">          8 :         return forwards;</span>
+<a name="264"><span class="lineNum">     264 </span>            : }</a>
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineCov">       5828 : static int forwards_sort(const void *obj_left, const void *obj_right, int flags)</span>
+<span class="lineNum">     267 </span>            : {
+<span class="lineNum">     268 </span><span class="lineCov">       5828 :         const struct app_forwards *object_left = obj_left;</span>
+<span class="lineNum">     269 </span><span class="lineCov">       5828 :         const struct app_forwards *object_right = obj_right;</span>
+<span class="lineNum">     270 </span><span class="lineCov">       5828 :         const char *right_key = obj_right;</span>
+<span class="lineNum">     271 </span>            :         int cmp;
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span><span class="lineCov">       5828 :         switch (flags &amp; (OBJ_POINTER | OBJ_KEY | OBJ_PARTIAL_KEY)) {</span>
+<span class="lineNum">     274 </span><span class="lineCov">       1531 :         case OBJ_POINTER:</span>
+<span class="lineNum">     275 </span><span class="lineCov">       1531 :                 right_key = object_right-&gt;id;</span>
+<span class="lineNum">     276 </span>            :                 /* Fall through */
+<span class="lineNum">     277 </span><span class="lineCov">       5828 :         case OBJ_KEY:</span>
+<span class="lineNum">     278 </span><span class="lineCov">       5828 :                 cmp = strcmp(object_left-&gt;id, right_key);</span>
+<span class="lineNum">     279 </span><span class="lineCov">       5828 :                 break;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         case OBJ_PARTIAL_KEY:</span>
+<span class="lineNum">     281 </span>            :                 /*
+<span class="lineNum">     282 </span>            :                  * We could also use a partial key struct containing a length
+<span class="lineNum">     283 </span>            :                  * so strlen() does not get called for every comparison instead.
+<span class="lineNum">     284 </span>            :                  */
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 cmp = strncmp(object_left-&gt;id, right_key, strlen(right_key));</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     288 </span>            :                 /* Sort can only work on something with a full or partial key. */
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     292 </span>            :         }
+<span class="lineNum">     293 </span><span class="lineCov">       5828 :         return cmp;</span>
+<a name="294"><span class="lineNum">     294 </span>            : }</a>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineCov">        139 : static void app_dtor(void *obj)</span>
+<span class="lineNum">     297 </span>            : {
+<span class="lineNum">     298 </span><span class="lineCov">        139 :         struct stasis_app *app = obj;</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">        139 :         ast_verb(1, &quot;Destroying Stasis app %s\n&quot;, app-&gt;name);</span>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineCov">        139 :         ast_assert(app-&gt;router == NULL);</span>
+<span class="lineNum">     303 </span><span class="lineCov">        139 :         ast_assert(app-&gt;bridge_router == NULL);</span>
+<span class="lineNum">     304 </span><span class="lineCov">        139 :         ast_assert(app-&gt;endpoint_router == NULL);</span>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">        139 :         ao2_cleanup(app-&gt;topic);</span>
+<span class="lineNum">     307 </span><span class="lineCov">        139 :         app-&gt;topic = NULL;</span>
+<span class="lineNum">     308 </span><span class="lineCov">        139 :         ao2_cleanup(app-&gt;forwards);</span>
+<span class="lineNum">     309 </span><span class="lineCov">        139 :         app-&gt;forwards = NULL;</span>
+<span class="lineNum">     310 </span><span class="lineCov">        139 :         ao2_cleanup(app-&gt;data);</span>
+<span class="lineNum">     311 </span><span class="lineCov">        139 :         app-&gt;data = NULL;</span>
+<a name="312"><span class="lineNum">     312 </span><span class="lineCov">        139 : }</span></a>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineCov">        240 : static void call_forwarded_handler(struct stasis_app *app, struct stasis_message *message)</span>
+<span class="lineNum">     315 </span>            : {
+<span class="lineNum">     316 </span><span class="lineCov">        240 :         struct ast_multi_channel_blob *payload = stasis_message_data(message);</span>
+<span class="lineNum">     317 </span><span class="lineCov">        240 :         struct ast_channel_snapshot *snapshot = ast_multi_channel_blob_get_channel(payload, &quot;forwarded&quot;);</span>
+<span class="lineNum">     318 </span>            :         struct ast_channel *chan;
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">        240 :         if (!snapshot) {</span>
+<span class="lineNum">     321 </span><span class="lineCov">        230 :                 return;</span>
+<span class="lineNum">     322 </span>            :         }
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineCov">         10 :         chan = ast_channel_get_by_name(snapshot-&gt;uniqueid);</span>
+<span class="lineNum">     325 </span><span class="lineCov">         10 :         if (!chan) {</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">         10 :         app_subscribe_channel(app, chan);</span>
+<span class="lineNum">     330 </span><span class="lineCov">         10 :         ast_channel_unref(chan);</span>
+<a name="331"><span class="lineNum">     331 </span>            : }</a>
+<span class="lineNum">     332 </span>            : 
+<span class="lineNum">     333 </span><span class="lineCov">       5202 : static void sub_default_handler(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     334 </span>            :         struct stasis_message *message)
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span><span class="lineCov">       5202 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     337 </span>            :         struct ast_json *json;
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineCov">       5202 :         if (stasis_subscription_final_message(sub, message)) {</span>
+<span class="lineNum">     340 </span><span class="lineCov">        139 :                 ao2_cleanup(app);</span>
+<span class="lineNum">     341 </span>            :         }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineCov">       5202 :         if (stasis_message_type(message) == ast_channel_dial_type()) {</span>
+<span class="lineNum">     344 </span><span class="lineCov">        240 :                 call_forwarded_handler(app, message);</span>
+<span class="lineNum">     345 </span>            :         }
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span>            :         /* By default, send any message that has a JSON representation */
+<span class="lineNum">     348 </span><span class="lineCov">       5202 :         json = stasis_message_to_json(message, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     349 </span><span class="lineCov">       5202 :         if (!json) {</span>
+<span class="lineNum">     350 </span><span class="lineCov">       2974 :                 return;</span>
+<span class="lineNum">     351 </span>            :         }
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span><span class="lineCov">       2228 :         app_send(app, json);</span>
+<span class="lineNum">     354 </span><span class="lineCov">       2228 :         ast_json_unref(json);</span>
+<span class="lineNum">     355 </span>            : }
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span>            : /*! \brief Typedef for callbacks that get called on channel snapshot updates */
+<span class="lineNum">     358 </span>            : typedef struct ast_json *(*channel_snapshot_monitor)(
+<span class="lineNum">     359 </span>            :         struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">     360 </span>            :         struct ast_channel_snapshot *new_snapshot,
+<a name="361"><span class="lineNum">     361 </span>            :         const struct timeval *tv);</a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineCov">        211 : static struct ast_json *simple_channel_event(</span>
+<span class="lineNum">     364 </span>            :         const char *type,
+<span class="lineNum">     365 </span>            :         struct ast_channel_snapshot *snapshot,
+<span class="lineNum">     366 </span>            :         const struct timeval *tv)
+<span class="lineNum">     367 </span>            : {
+<span class="lineNum">     368 </span><span class="lineCov">        211 :         struct ast_json *json_channel = ast_channel_snapshot_to_json(snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span><span class="lineCov">        211 :         if (!json_channel) {</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     372 </span>            :         }
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span><span class="lineCov">        211 :         return ast_json_pack(&quot;{s: s, s: o, s: o}&quot;,</span>
+<span class="lineNum">     375 </span>            :                 &quot;type&quot;, type,
+<span class="lineNum">     376 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     377 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="378"><span class="lineNum">     378 </span>            : }</a>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">         10 : static struct ast_json *channel_created_event(</span>
+<span class="lineNum">     381 </span>            :         struct ast_channel_snapshot *snapshot,
+<span class="lineNum">     382 </span>            :         const struct timeval *tv)
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span><span class="lineCov">         10 :         return simple_channel_event(&quot;ChannelCreated&quot;, snapshot, tv);</span>
+<a name="385"><span class="lineNum">     385 </span>            : }</a>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineCov">        201 : static struct ast_json *channel_destroyed_event(</span>
+<span class="lineNum">     388 </span>            :         struct ast_channel_snapshot *snapshot,
+<span class="lineNum">     389 </span>            :         const struct timeval *tv)
+<span class="lineNum">     390 </span>            : {
+<span class="lineNum">     391 </span><span class="lineCov">        201 :         struct ast_json *json_channel = ast_channel_snapshot_to_json(snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span><span class="lineCov">        201 :         if (!json_channel) {</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     395 </span>            :         }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineCov">        201 :         return ast_json_pack(&quot;{s: s, s: o, s: i, s: s, s: o}&quot;,</span>
+<span class="lineNum">     398 </span>            :                 &quot;type&quot;, &quot;ChannelDestroyed&quot;,
+<span class="lineNum">     399 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     400 </span>            :                 &quot;cause&quot;, snapshot-&gt;hangupcause,
+<span class="lineNum">     401 </span>            :                 &quot;cause_txt&quot;, ast_cause2str(snapshot-&gt;hangupcause),
+<span class="lineNum">     402 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="403"><span class="lineNum">     403 </span>            : }</a>
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineCov">        201 : static struct ast_json *channel_state_change_event(</span>
+<span class="lineNum">     406 </span>            :         struct ast_channel_snapshot *snapshot,
+<span class="lineNum">     407 </span>            :         const struct timeval *tv)
+<span class="lineNum">     408 </span>            : {
+<span class="lineNum">     409 </span><span class="lineCov">        201 :         return simple_channel_event(&quot;ChannelStateChange&quot;, snapshot, tv);</span>
+<span class="lineNum">     410 </span>            : }
+<a name="411"><span class="lineNum">     411 </span>            : </a>
+<span class="lineNum">     412 </span>            : /*! \brief Handle channel state changes */
+<span class="lineNum">     413 </span><span class="lineCov">       1846 : static struct ast_json *channel_state(</span>
+<span class="lineNum">     414 </span>            :         struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">     415 </span>            :         struct ast_channel_snapshot *new_snapshot,
+<span class="lineNum">     416 </span>            :         const struct timeval *tv)
+<span class="lineNum">     417 </span>            : {
+<span class="lineNum">     418 </span><span class="lineCov">       1846 :         struct ast_channel_snapshot *snapshot = new_snapshot ?</span>
+<span class="lineNum">     419 </span><span class="lineCov">       1846 :                 new_snapshot : old_snapshot;</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">       1846 :         if (!old_snapshot) {</span>
+<span class="lineNum">     422 </span><span class="lineCov">         10 :                 return channel_created_event(snapshot, tv);</span>
+<span class="lineNum">     423 </span><span class="lineCov">       1836 :         } else if (!new_snapshot) {</span>
+<span class="lineNum">     424 </span><span class="lineCov">        201 :                 return channel_destroyed_event(snapshot, tv);</span>
+<span class="lineNum">     425 </span><span class="lineCov">       1635 :         } else if (old_snapshot-&gt;state != new_snapshot-&gt;state) {</span>
+<span class="lineNum">     426 </span><span class="lineCov">        201 :                 return channel_state_change_event(snapshot, tv);</span>
+<span class="lineNum">     427 </span>            :         }
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineCov">       1434 :         return NULL;</span>
+<a name="430"><span class="lineNum">     430 </span>            : }</a>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">       1846 : static struct ast_json *channel_dialplan(</span>
+<span class="lineNum">     433 </span>            :         struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">     434 </span>            :         struct ast_channel_snapshot *new_snapshot,
+<span class="lineNum">     435 </span>            :         const struct timeval *tv)
+<span class="lineNum">     436 </span>            : {
+<span class="lineNum">     437 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            :         /* No Newexten event on cache clear or first event */
+<span class="lineNum">     440 </span><span class="lineCov">       1846 :         if (!old_snapshot || !new_snapshot) {</span>
+<span class="lineNum">     441 </span><span class="lineCov">        211 :                 return NULL;</span>
+<span class="lineNum">     442 </span>            :         }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            :         /* Empty application is not valid for a Newexten event */
+<span class="lineNum">     445 </span><span class="lineCov">       1635 :         if (ast_strlen_zero(new_snapshot-&gt;appl)) {</span>
+<span class="lineNum">     446 </span><span class="lineCov">        225 :                 return NULL;</span>
+<span class="lineNum">     447 </span>            :         }
+<span class="lineNum">     448 </span>            : 
+<span class="lineNum">     449 </span><span class="lineCov">       1410 :         if (ast_channel_snapshot_cep_equal(old_snapshot, new_snapshot)) {</span>
+<span class="lineNum">     450 </span><span class="lineCov">       1076 :                 return NULL;</span>
+<span class="lineNum">     451 </span>            :         }
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">        334 :         json_channel = ast_channel_snapshot_to_json(new_snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     454 </span><span class="lineCov">        334 :         if (!json_channel) {</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     456 </span>            :         }
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span><span class="lineCov">        334 :         return ast_json_pack(&quot;{s: s, s: o, s: s, s: s, s: o}&quot;,</span>
+<span class="lineNum">     459 </span>            :                 &quot;type&quot;, &quot;ChannelDialplan&quot;,
+<span class="lineNum">     460 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     461 </span>            :                 &quot;dialplan_app&quot;, new_snapshot-&gt;appl,
+<span class="lineNum">     462 </span><span class="lineCov">        334 :                 &quot;dialplan_app_data&quot;, AST_JSON_UTF8_VALIDATE(new_snapshot-&gt;data),</span>
+<span class="lineNum">     463 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="464"><span class="lineNum">     464 </span>            : }</a>
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineCov">       1846 : static struct ast_json *channel_callerid(</span>
+<span class="lineNum">     467 </span>            :         struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">     468 </span>            :         struct ast_channel_snapshot *new_snapshot,
+<span class="lineNum">     469 </span>            :         const struct timeval *tv)
+<span class="lineNum">     470 </span>            : {
+<span class="lineNum">     471 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            :         /* No NewCallerid event on cache clear or first event */
+<span class="lineNum">     474 </span><span class="lineCov">       1846 :         if (!old_snapshot || !new_snapshot) {</span>
+<span class="lineNum">     475 </span><span class="lineCov">        211 :                 return NULL;</span>
+<span class="lineNum">     476 </span>            :         }
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span><span class="lineCov">       1635 :         if (ast_channel_snapshot_caller_id_equal(old_snapshot, new_snapshot)) {</span>
+<span class="lineNum">     479 </span><span class="lineCov">       1629 :                 return NULL;</span>
+<span class="lineNum">     480 </span>            :         }
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span><span class="lineCov">          6 :         json_channel = ast_channel_snapshot_to_json(new_snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     483 </span><span class="lineCov">          6 :         if (!json_channel) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     485 </span>            :         }
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">          6 :         return ast_json_pack(&quot;{s: s, s: o, s: i, s: s, s: o}&quot;,</span>
+<span class="lineNum">     488 </span>            :                 &quot;type&quot;, &quot;ChannelCallerId&quot;,
+<span class="lineNum">     489 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     490 </span>            :                 &quot;caller_presentation&quot;, new_snapshot-&gt;caller_pres,
+<span class="lineNum">     491 </span>            :                 &quot;caller_presentation_txt&quot;, ast_describe_caller_presentation(
+<span class="lineNum">     492 </span>            :                         new_snapshot-&gt;caller_pres),
+<span class="lineNum">     493 </span>            :                 &quot;channel&quot;, json_channel);
+<a name="494"><span class="lineNum">     494 </span>            : }</a>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">       1846 : static struct ast_json *channel_connected_line(</span>
+<span class="lineNum">     497 </span>            :         struct ast_channel_snapshot *old_snapshot,
+<span class="lineNum">     498 </span>            :         struct ast_channel_snapshot *new_snapshot,
+<span class="lineNum">     499 </span>            :         const struct timeval *tv)
+<span class="lineNum">     500 </span>            : {
+<span class="lineNum">     501 </span>            :         struct ast_json *json_channel;
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span>            :         /* No ChannelConnectedLine event on cache clear or first event */
+<span class="lineNum">     504 </span><span class="lineCov">       1846 :         if (!old_snapshot || !new_snapshot) {</span>
+<span class="lineNum">     505 </span><span class="lineCov">        211 :                 return NULL;</span>
+<span class="lineNum">     506 </span>            :         }
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineCov">       1635 :         if (ast_channel_snapshot_connected_line_equal(old_snapshot, new_snapshot)) {</span>
+<span class="lineNum">     509 </span><span class="lineCov">       1599 :                 return NULL;</span>
+<span class="lineNum">     510 </span>            :         }
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">         36 :         json_channel = ast_channel_snapshot_to_json(new_snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     513 </span><span class="lineCov">         36 :         if (!json_channel) {</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     515 </span>            :         }
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span><span class="lineCov">         36 :         return ast_json_pack(&quot;{s: s, s: o, s: o}&quot;,</span>
+<span class="lineNum">     518 </span>            :                 &quot;type&quot;, &quot;ChannelConnectedLine&quot;,
+<span class="lineNum">     519 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     520 </span>            :                 &quot;channel&quot;, json_channel);
+<span class="lineNum">     521 </span>            : }
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span>            : static channel_snapshot_monitor channel_monitors[] = {
+<span class="lineNum">     524 </span>            :         channel_state,
+<span class="lineNum">     525 </span>            :         channel_dialplan,
+<span class="lineNum">     526 </span>            :         channel_callerid,
+<span class="lineNum">     527 </span>            :         channel_connected_line,
+<a name="528"><span class="lineNum">     528 </span>            : };</a>
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span><span class="lineCov">       1846 : static void sub_channel_update_handler(void *data,</span>
+<span class="lineNum">     531 </span>            :         struct stasis_subscription *sub,
+<span class="lineNum">     532 </span>            :         struct stasis_message *message)
+<span class="lineNum">     533 </span>            : {
+<span class="lineNum">     534 </span><span class="lineCov">       1846 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     535 </span>            :         struct stasis_cache_update *update;
+<span class="lineNum">     536 </span>            :         struct ast_channel_snapshot *new_snapshot;
+<span class="lineNum">     537 </span>            :         struct ast_channel_snapshot *old_snapshot;
+<span class="lineNum">     538 </span>            :         const struct timeval *tv;
+<span class="lineNum">     539 </span>            :         int i;
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineCov">       1846 :         ast_assert(stasis_message_type(message) == stasis_cache_update_type());</span>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">       1846 :         update = stasis_message_data(message);</span>
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineCov">       1846 :         ast_assert(update-&gt;type == ast_channel_snapshot_type());</span>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">       1846 :         new_snapshot = stasis_message_data(update-&gt;new_snapshot);</span>
+<span class="lineNum">     548 </span><span class="lineCov">       1846 :         old_snapshot = stasis_message_data(update-&gt;old_snapshot);</span>
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            :         /* Pull timestamp from the new snapshot, or from the update message
+<span class="lineNum">     551 </span>            :          * when there isn't one. */
+<span class="lineNum">     552 </span><span class="lineCov">       3692 :         tv = update-&gt;new_snapshot ?</span>
+<span class="lineNum">     553 </span><span class="lineCov">       1846 :                 stasis_message_timestamp(update-&gt;new_snapshot) :</span>
+<span class="lineNum">     554 </span><span class="lineCov">        201 :                 stasis_message_timestamp(message);</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineCov">       9230 :         for (i = 0; i &lt; ARRAY_LEN(channel_monitors); ++i) {</span>
+<span class="lineNum">     557 </span>            :                 struct ast_json *msg;
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineCov">       7384 :                 msg = channel_monitors[i](old_snapshot, new_snapshot, tv);</span>
+<span class="lineNum">     560 </span><span class="lineCov">       7384 :                 if (msg) {</span>
+<span class="lineNum">     561 </span><span class="lineCov">        788 :                         app_send(app, msg);</span>
+<span class="lineNum">     562 </span><span class="lineCov">        788 :                         ast_json_unref(msg);</span>
+<span class="lineNum">     563 </span>            :                 }
+<span class="lineNum">     564 </span>            :         }
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span><span class="lineCov">       1846 :         if (!new_snapshot &amp;&amp; old_snapshot) {</span>
+<span class="lineNum">     567 </span><span class="lineCov">        201 :                 unsubscribe(app, &quot;channel&quot;, old_snapshot-&gt;uniqueid, 1);</span>
+<span class="lineNum">     568 </span>            :         }
+<a name="569"><span class="lineNum">     569 </span><span class="lineCov">       1846 : }</span></a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineCov">          4 : static struct ast_json *simple_endpoint_event(</span>
+<span class="lineNum">     572 </span>            :         const char *type,
+<span class="lineNum">     573 </span>            :         struct ast_endpoint_snapshot *snapshot,
+<span class="lineNum">     574 </span>            :         const struct timeval *tv)
+<span class="lineNum">     575 </span>            : {
+<span class="lineNum">     576 </span><span class="lineCov">          4 :         struct ast_json *json_endpoint = ast_endpoint_snapshot_to_json(snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span><span class="lineCov">          4 :         if (!json_endpoint) {</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     580 </span>            :         }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">          4 :         return ast_json_pack(&quot;{s: s, s: o, s: o}&quot;,</span>
+<span class="lineNum">     583 </span>            :                 &quot;type&quot;, type,
+<span class="lineNum">     584 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     585 </span>            :                 &quot;endpoint&quot;, json_endpoint);
+<a name="586"><span class="lineNum">     586 </span>            : }</a>
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span><span class="lineCov">          2 : static int message_received_handler(const char *endpoint_id, struct ast_json *json_msg, void *pvt)</span>
+<span class="lineNum">     589 </span>            : {
+<span class="lineNum">     590 </span>            :         struct ast_endpoint_snapshot *snapshot;
+<span class="lineNum">     591 </span>            :         struct ast_json *json_endpoint;
+<span class="lineNum">     592 </span>            :         struct ast_json *message;
+<span class="lineNum">     593 </span><span class="lineCov">          2 :         struct stasis_app *app = pvt;</span>
+<span class="lineNum">     594 </span>            :         char *tech;
+<span class="lineNum">     595 </span>            :         char *resource;
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span><span class="lineCov">          2 :         tech = ast_strdupa(endpoint_id);</span>
+<span class="lineNum">     598 </span><span class="lineCov">          2 :         resource = strchr(tech, '/');</span>
+<span class="lineNum">     599 </span><span class="lineCov">          2 :         if (resource) {</span>
+<span class="lineNum">     600 </span><span class="lineCov">          2 :                 resource[0] = '\0';</span>
+<span class="lineNum">     601 </span><span class="lineCov">          2 :                 resource++;</span>
+<span class="lineNum">     602 </span>            :         }
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineCov">          2 :         if (ast_strlen_zero(tech) || ast_strlen_zero(resource)) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     606 </span>            :         }
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineCov">          2 :         snapshot = ast_endpoint_latest_snapshot(tech, resource);</span>
+<span class="lineNum">     609 </span><span class="lineCov">          2 :         if (!snapshot) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     611 </span>            :         }
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span><span class="lineCov">          2 :         json_endpoint = ast_endpoint_snapshot_to_json(snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     614 </span><span class="lineCov">          2 :         ao2_ref(snapshot, -1);</span>
+<span class="lineNum">     615 </span><span class="lineCov">          2 :         if (!json_endpoint) {</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     617 </span>            :         }
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">          2 :         message = ast_json_pack(&quot;{s: s, s: o, s: o, s: o}&quot;,</span>
+<span class="lineNum">     620 </span>            :                 &quot;type&quot;, &quot;TextMessageReceived&quot;,
+<span class="lineNum">     621 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(ast_tvnow(), NULL),
+<span class="lineNum">     622 </span>            :                 &quot;endpoint&quot;, json_endpoint,
+<span class="lineNum">     623 </span>            :                 &quot;message&quot;, ast_json_ref(json_msg));
+<span class="lineNum">     624 </span><span class="lineCov">          2 :         if (message) {</span>
+<span class="lineNum">     625 </span><span class="lineCov">          2 :                 app_send(app, message);</span>
+<span class="lineNum">     626 </span><span class="lineCov">          2 :                 ast_json_unref(message);</span>
+<span class="lineNum">     627 </span>            :         }
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="630"><span class="lineNum">     630 </span>            : }</a>
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">          8 : static void sub_endpoint_update_handler(void *data,</span>
+<span class="lineNum">     633 </span>            :         struct stasis_subscription *sub,
+<span class="lineNum">     634 </span>            :         struct stasis_message *message)
+<span class="lineNum">     635 </span>            : {
+<span class="lineNum">     636 </span><span class="lineCov">          8 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     637 </span>            :         struct stasis_cache_update *update;
+<span class="lineNum">     638 </span>            :         struct ast_endpoint_snapshot *new_snapshot;
+<span class="lineNum">     639 </span>            :         struct ast_endpoint_snapshot *old_snapshot;
+<span class="lineNum">     640 </span>            :         const struct timeval *tv;
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span><span class="lineCov">          8 :         ast_assert(stasis_message_type(message) == stasis_cache_update_type());</span>
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span><span class="lineCov">          8 :         update = stasis_message_data(message);</span>
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span><span class="lineCov">          8 :         ast_assert(update-&gt;type == ast_endpoint_snapshot_type());</span>
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span><span class="lineCov">          8 :         new_snapshot = stasis_message_data(update-&gt;new_snapshot);</span>
+<span class="lineNum">     649 </span><span class="lineCov">          8 :         old_snapshot = stasis_message_data(update-&gt;old_snapshot);</span>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineCov">          8 :         if (new_snapshot) {</span>
+<span class="lineNum">     652 </span>            :                 struct ast_json *json;
+<span class="lineNum">     653 </span>            : 
+<span class="lineNum">     654 </span><span class="lineCov">          4 :                 tv = stasis_message_timestamp(update-&gt;new_snapshot);</span>
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span><span class="lineCov">          4 :                 json = simple_endpoint_event(&quot;EndpointStateChange&quot;, new_snapshot, tv);</span>
+<span class="lineNum">     657 </span><span class="lineCov">          4 :                 if (!json) {</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     659 </span>            :                 }
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span><span class="lineCov">          4 :                 app_send(app, json);</span>
+<span class="lineNum">     662 </span><span class="lineCov">          4 :                 ast_json_unref(json);</span>
+<span class="lineNum">     663 </span>            :         }
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span><span class="lineCov">          8 :         if (!new_snapshot &amp;&amp; old_snapshot) {</span>
+<span class="lineNum">     666 </span><span class="lineCov">          4 :                 unsubscribe(app, &quot;endpoint&quot;, old_snapshot-&gt;id, 1);</span>
+<span class="lineNum">     667 </span>            :         }
+<a name="668"><span class="lineNum">     668 </span>            : }</a>
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineCov">         43 : static struct ast_json *simple_bridge_event(</span>
+<span class="lineNum">     671 </span>            :         const char *type,
+<span class="lineNum">     672 </span>            :         struct ast_bridge_snapshot *snapshot,
+<span class="lineNum">     673 </span>            :         const struct timeval *tv)
+<span class="lineNum">     674 </span>            : {
+<span class="lineNum">     675 </span><span class="lineCov">         43 :         struct ast_json *json_bridge = ast_bridge_snapshot_to_json(snapshot, stasis_app_get_sanitizer());</span>
+<span class="lineNum">     676 </span><span class="lineCov">         43 :         if (!json_bridge) {</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     678 </span>            :         }
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span><span class="lineCov">         43 :         return ast_json_pack(&quot;{s: s, s: o, s: o}&quot;,</span>
+<span class="lineNum">     681 </span>            :                 &quot;type&quot;, type,
+<span class="lineNum">     682 </span>            :                 &quot;timestamp&quot;, ast_json_timeval(*tv, NULL),
+<span class="lineNum">     683 </span>            :                 &quot;bridge&quot;, json_bridge);
+<a name="684"><span class="lineNum">     684 </span>            : }</a>
+<span class="lineNum">     685 </span>            : 
+<span class="lineNum">     686 </span><span class="lineCov">        471 : static void sub_bridge_update_handler(void *data,</span>
+<span class="lineNum">     687 </span>            :         struct stasis_subscription *sub,
+<span class="lineNum">     688 </span>            :         struct stasis_message *message)
+<span class="lineNum">     689 </span>            : {
+<span class="lineNum">     690 </span><span class="lineCov">        471 :         struct ast_json *json = NULL;</span>
+<span class="lineNum">     691 </span><span class="lineCov">        471 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     692 </span>            :         struct stasis_cache_update *update;
+<span class="lineNum">     693 </span>            :         struct ast_bridge_snapshot *new_snapshot;
+<span class="lineNum">     694 </span>            :         struct ast_bridge_snapshot *old_snapshot;
+<span class="lineNum">     695 </span>            :         const struct timeval *tv;
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span><span class="lineCov">        471 :         ast_assert(stasis_message_type(message) == stasis_cache_update_type());</span>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineCov">        471 :         update = stasis_message_data(message);</span>
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">        471 :         ast_assert(update-&gt;type == ast_bridge_snapshot_type());</span>
+<span class="lineNum">     702 </span>            : 
+<span class="lineNum">     703 </span><span class="lineCov">        471 :         new_snapshot = stasis_message_data(update-&gt;new_snapshot);</span>
+<span class="lineNum">     704 </span><span class="lineCov">        471 :         old_snapshot = stasis_message_data(update-&gt;old_snapshot);</span>
+<span class="lineNum">     705 </span><span class="lineCov">        942 :         tv = update-&gt;new_snapshot ?</span>
+<span class="lineNum">     706 </span><span class="lineCov">        471 :                 stasis_message_timestamp(update-&gt;new_snapshot) :</span>
+<span class="lineNum">     707 </span><span class="lineCov">         36 :                 stasis_message_timestamp(message);</span>
+<span class="lineNum">     708 </span>            : 
+<span class="lineNum">     709 </span><span class="lineCov">        471 :         if (!new_snapshot) {</span>
+<span class="lineNum">     710 </span><span class="lineCov">         36 :                 json = simple_bridge_event(&quot;BridgeDestroyed&quot;, old_snapshot, tv);</span>
+<span class="lineNum">     711 </span><span class="lineCov">        435 :         } else if (!old_snapshot) {</span>
+<span class="lineNum">     712 </span><span class="lineCov">          4 :                 json = simple_bridge_event(&quot;BridgeCreated&quot;, new_snapshot, tv);</span>
+<span class="lineNum">     713 </span><span class="lineCov">        431 :         } else if (new_snapshot &amp;&amp; old_snapshot</span>
+<span class="lineNum">     714 </span><span class="lineCov">        431 :                 &amp;&amp; strcmp(new_snapshot-&gt;video_source_id, old_snapshot-&gt;video_source_id)) {</span>
+<span class="lineNum">     715 </span><span class="lineCov">          3 :                 json = simple_bridge_event(&quot;BridgeVideoSourceChanged&quot;, new_snapshot, tv);</span>
+<span class="lineNum">     716 </span><span class="lineCov">          3 :                 if (json &amp;&amp; !ast_strlen_zero(old_snapshot-&gt;video_source_id)) {</span>
+<span class="lineNum">     717 </span><span class="lineCov">          2 :                         ast_json_object_set(json, &quot;old_video_source_id&quot;,</span>
+<span class="lineNum">     718 </span>            :                                 ast_json_string_create(old_snapshot-&gt;video_source_id));
+<span class="lineNum">     719 </span>            :                 }
+<span class="lineNum">     720 </span>            :         }
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineCov">        471 :         if (json) {</span>
+<span class="lineNum">     723 </span><span class="lineCov">         43 :                 app_send(app, json);</span>
+<span class="lineNum">     724 </span><span class="lineCov">         43 :                 ast_json_unref(json);</span>
+<span class="lineNum">     725 </span>            :         }
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">        471 :         if (!new_snapshot &amp;&amp; old_snapshot) {</span>
+<span class="lineNum">     728 </span><span class="lineCov">         36 :                 unsubscribe(app, &quot;bridge&quot;, old_snapshot-&gt;uniqueid, 1);</span>
+<span class="lineNum">     729 </span>            :         }
+<span class="lineNum">     730 </span><span class="lineCov">        471 : }</span>
+<span class="lineNum">     731 </span>            : 
+<a name="732"><span class="lineNum">     732 </span>            : </a>
+<span class="lineNum">     733 </span>            : /*! \brief Helper function for determining if the application is subscribed to a given entity */
+<span class="lineNum">     734 </span><span class="lineCov">         50 : static int bridge_app_subscribed(struct stasis_app *app, const char *uniqueid)</span>
+<span class="lineNum">     735 </span>            : {
+<span class="lineNum">     736 </span><span class="lineCov">         50 :         struct app_forwards *forwards = NULL;</span>
+<span class="lineNum">     737 </span>            : 
+<span class="lineNum">     738 </span><span class="lineCov">         50 :         forwards = ao2_find(app-&gt;forwards, uniqueid, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     739 </span><span class="lineCov">         50 :         if (!forwards) {</span>
+<span class="lineNum">     740 </span><span class="lineCov">         39 :                 return 0;</span>
+<span class="lineNum">     741 </span>            :         }
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineCov">         11 :         ao2_ref(forwards, -1);</span>
+<span class="lineNum">     744 </span><span class="lineCov">         11 :         return 1;</span>
+<a name="745"><span class="lineNum">     745 </span>            : }</a>
+<span class="lineNum">     746 </span>            : 
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 : static void bridge_merge_handler(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     748 </span>            :         struct stasis_message *message)
+<span class="lineNum">     749 </span>            : {
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     751 </span>            :         struct ast_bridge_merge_message *merge;
+<span class="lineNum">     752 </span>            : 
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :         merge = stasis_message_data(message);</span>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span>            :         /* Find out if we're subscribed to either bridge */
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :         if (bridge_app_subscribed(app, merge-&gt;from-&gt;uniqueid) ||</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :                 bridge_app_subscribed(app, merge-&gt;to-&gt;uniqueid)) {</span>
+<span class="lineNum">     758 </span>            :                 /* Forward the message to the app */
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :                 stasis_publish(app-&gt;topic, message);</span>
+<span class="lineNum">     760 </span>            :         }
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 : }</span>
+<a name="762"><span class="lineNum">     762 </span>            : </a>
+<span class="lineNum">     763 </span>            : /*! \brief Callback function for checking if channels in a bridge are subscribed to */
+<span class="lineNum">     764 </span><span class="lineCov">         16 : static int bridge_app_subscribed_involved(struct stasis_app *app, struct ast_bridge_snapshot *snapshot)</span>
+<span class="lineNum">     765 </span>            : {
+<span class="lineNum">     766 </span><span class="lineCov">         16 :         int subscribed = 0;</span>
+<span class="lineNum">     767 </span>            :         struct ao2_iterator iter;
+<span class="lineNum">     768 </span>            :         char *uniqueid;
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span><span class="lineCov">         16 :         if (bridge_app_subscribed(app, snapshot-&gt;uniqueid)) {</span>
+<span class="lineNum">     771 </span><span class="lineCov">         11 :                 return 1;</span>
+<span class="lineNum">     772 </span>            :         }
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span><span class="lineCov">          5 :         iter = ao2_iterator_init(snapshot-&gt;channels, 0);</span>
+<span class="lineNum">     775 </span><span class="lineCov">         15 :         for (; (uniqueid = ao2_iterator_next(&amp;iter)); ao2_ref(uniqueid, -1)) {</span>
+<span class="lineNum">     776 </span><span class="lineCov">         10 :                 if (bridge_app_subscribed(app, uniqueid)) {</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :                         subscribed = 1;</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                         ao2_ref(uniqueid, -1);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     780 </span>            :                 }
+<span class="lineNum">     781 </span>            :         }
+<span class="lineNum">     782 </span><span class="lineCov">          5 :         ao2_iterator_destroy(&amp;iter);</span>
+<span class="lineNum">     783 </span>            : 
+<span class="lineNum">     784 </span><span class="lineCov">          5 :         return subscribed;</span>
+<a name="785"><span class="lineNum">     785 </span>            : }</a>
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span><span class="lineCov">          4 : static void bridge_blind_transfer_handler(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     788 </span>            :         struct stasis_message *message)
+<span class="lineNum">     789 </span>            : {
+<span class="lineNum">     790 </span><span class="lineCov">          4 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     791 </span><span class="lineCov">          4 :         struct ast_blind_transfer_message *transfer_msg = stasis_message_data(message);</span>
+<span class="lineNum">     792 </span><span class="lineCov">          4 :         struct ast_bridge_snapshot *bridge = transfer_msg-&gt;bridge;</span>
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span><span class="lineCov">          4 :         if (bridge_app_subscribed(app, transfer_msg-&gt;transferer-&gt;uniqueid) ||</span>
+<span class="lineNum">     795 </span><span class="lineCov">          4 :                 (bridge &amp;&amp; bridge_app_subscribed_involved(app, bridge))) {</span>
+<span class="lineNum">     796 </span><span class="lineCov">          3 :                 stasis_publish(app-&gt;topic, message);</span>
+<span class="lineNum">     797 </span>            :         }
+<a name="798"><span class="lineNum">     798 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineCov">          9 : static void bridge_attended_transfer_handler(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     801 </span>            :         struct stasis_message *message)
+<span class="lineNum">     802 </span>            : {
+<span class="lineNum">     803 </span><span class="lineCov">          9 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     804 </span><span class="lineCov">          9 :         struct ast_attended_transfer_message *transfer_msg = stasis_message_data(message);</span>
+<span class="lineNum">     805 </span><span class="lineCov">          9 :         int subscribed = 0;</span>
+<span class="lineNum">     806 </span>            : 
+<span class="lineNum">     807 </span><span class="lineCov">          9 :         subscribed = bridge_app_subscribed(app, transfer_msg-&gt;to_transferee.channel_snapshot-&gt;uniqueid);</span>
+<span class="lineNum">     808 </span><span class="lineCov">          9 :         if (!subscribed) {</span>
+<span class="lineNum">     809 </span><span class="lineCov">          9 :                 subscribed = bridge_app_subscribed(app, transfer_msg-&gt;to_transfer_target.channel_snapshot-&gt;uniqueid);</span>
+<span class="lineNum">     810 </span>            :         }
+<span class="lineNum">     811 </span><span class="lineCov">          9 :         if (!subscribed &amp;&amp; transfer_msg-&gt;to_transferee.bridge_snapshot) {</span>
+<span class="lineNum">     812 </span><span class="lineCov">          8 :                 subscribed = bridge_app_subscribed_involved(app, transfer_msg-&gt;to_transferee.bridge_snapshot);</span>
+<span class="lineNum">     813 </span>            :         }
+<span class="lineNum">     814 </span><span class="lineCov">          9 :         if (!subscribed &amp;&amp; transfer_msg-&gt;to_transfer_target.bridge_snapshot) {</span>
+<span class="lineNum">     815 </span><span class="lineCov">          4 :                 subscribed = bridge_app_subscribed_involved(app, transfer_msg-&gt;to_transfer_target.bridge_snapshot);</span>
+<span class="lineNum">     816 </span>            :         }
+<span class="lineNum">     817 </span>            : 
+<span class="lineNum">     818 </span><span class="lineCov">          9 :         if (!subscribed) {</span>
+<span class="lineNum">     819 </span><span class="lineCov">          1 :                 switch (transfer_msg-&gt;dest_type) {</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                 case AST_ATTENDED_TRANSFER_DEST_BRIDGE_MERGE:</span>
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :                         subscribed = bridge_app_subscribed(app, transfer_msg-&gt;dest.bridge);</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     823 </span><span class="lineCov">          1 :                 case AST_ATTENDED_TRANSFER_DEST_LINK:</span>
+<span class="lineNum">     824 </span><span class="lineCov">          1 :                         subscribed = bridge_app_subscribed(app, transfer_msg-&gt;dest.links[0]-&gt;uniqueid);</span>
+<span class="lineNum">     825 </span><span class="lineCov">          1 :                         if (!subscribed) {</span>
+<span class="lineNum">     826 </span><span class="lineCov">          1 :                                 subscribed = bridge_app_subscribed(app, transfer_msg-&gt;dest.links[1]-&gt;uniqueid);</span>
+<span class="lineNum">     827 </span>            :                         }
+<span class="lineNum">     828 </span><span class="lineCov">          1 :                         break;</span>
+<span class="lineNum">     829 </span>            :                 break;
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :                 case AST_ATTENDED_TRANSFER_DEST_THREEWAY:</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :                         subscribed = bridge_app_subscribed_involved(app, transfer_msg-&gt;dest.threeway.bridge_snapshot);</span>
+<span class="lineNum">     832 </span><span class="lineNoCov">          0 :                         if (!subscribed) {</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">          0 :                                 subscribed = bridge_app_subscribed(app, transfer_msg-&gt;dest.threeway.channel_snapshot-&gt;uniqueid);</span>
+<span class="lineNum">     834 </span>            :                         }
+<span class="lineNum">     835 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     838 </span>            :                 }
+<span class="lineNum">     839 </span><span class="lineCov">          8 :         }</span>
+<span class="lineNum">     840 </span>            : 
+<span class="lineNum">     841 </span><span class="lineCov">          9 :         if (subscribed) {</span>
+<span class="lineNum">     842 </span><span class="lineCov">          8 :                 stasis_publish(app-&gt;topic, message);</span>
+<span class="lineNum">     843 </span>            :         }
+<a name="844"><span class="lineNum">     844 </span><span class="lineCov">          9 : }</span></a>
+<span class="lineNum">     845 </span>            : 
+<span class="lineNum">     846 </span><span class="lineCov">       1437 : static void bridge_default_handler(void *data, struct stasis_subscription *sub,</span>
+<span class="lineNum">     847 </span>            :         struct stasis_message *message)
+<span class="lineNum">     848 </span>            : {
+<span class="lineNum">     849 </span><span class="lineCov">       1437 :         struct stasis_app *app = data;</span>
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineCov">       1437 :         if (stasis_subscription_final_message(sub, message)) {</span>
+<span class="lineNum">     852 </span><span class="lineCov">        139 :                 ao2_cleanup(app);</span>
+<span class="lineNum">     853 </span>            :         }
+<a name="854"><span class="lineNum">     854 </span><span class="lineCov">       1437 : }</span></a>
+<span class="lineNum">     855 </span>            : 
+<span class="lineNum">     856 </span><span class="lineNoCov">          0 : void stasis_app_set_debug(struct stasis_app *app, int debug)</span>
+<span class="lineNum">     857 </span>            : {
+<span class="lineNum">     858 </span><span class="lineNoCov">          0 :         if (!app) {</span>
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     860 </span>            :         }
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :         app-&gt;debug = debug;</span>
+<a name="863"><span class="lineNum">     863 </span>            : }</a>
+<span class="lineNum">     864 </span>            : 
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 : void stasis_app_set_debug_by_name(const char *app_name, int debug)</span>
+<span class="lineNum">     866 </span>            : {
+<span class="lineNum">     867 </span><span class="lineNoCov">          0 :         struct stasis_app *app = stasis_app_get_by_name(app_name);</span>
+<span class="lineNum">     868 </span>            : 
+<span class="lineNum">     869 </span><span class="lineNoCov">          0 :         if (!app) {</span>
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     871 </span>            :         }
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span><span class="lineNoCov">          0 :         app-&gt;debug = debug;</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">          0 :         ao2_cleanup(app);</span>
+<a name="875"><span class="lineNum">     875 </span>            : }</a>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineNoCov">          0 : int stasis_app_get_debug(struct stasis_app *app)</span>
+<span class="lineNum">     878 </span>            : {
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :         return (app ? app-&gt;debug : 0) || global_debug;</span>
+<a name="880"><span class="lineNum">     880 </span>            : }</a>
+<span class="lineNum">     881 </span>            : 
+<span class="lineNum">     882 </span><span class="lineCov">       4223 : int stasis_app_get_debug_by_name(const char *app_name)</span>
+<span class="lineNum">     883 </span>            : {
+<span class="lineNum">     884 </span><span class="lineCov">       4223 :         int debug_enabled = 0;</span>
+<span class="lineNum">     885 </span>            : 
+<span class="lineNum">     886 </span><span class="lineCov">       4223 :         if (global_debug) {</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :                 debug_enabled = 1;</span>
+<span class="lineNum">     888 </span>            :         } else {
+<span class="lineNum">     889 </span><span class="lineCov">       4223 :                 struct stasis_app *app = stasis_app_get_by_name(app_name);</span>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">       4223 :                 if (app) {</span>
+<span class="lineNum">     892 </span><span class="lineCov">       3180 :                         if (app-&gt;debug) {</span>
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :                                 debug_enabled = 1;</span>
+<span class="lineNum">     894 </span>            :                         }
+<span class="lineNum">     895 </span><span class="lineCov">       3180 :                         ao2_ref(app, -1);</span>
+<span class="lineNum">     896 </span>            :                 }
+<span class="lineNum">     897 </span>            :         }
+<span class="lineNum">     898 </span><span class="lineCov">       4223 :         return debug_enabled;</span>
+<a name="899"><span class="lineNum">     899 </span>            : }</a>
+<span class="lineNum">     900 </span>            : 
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 : void stasis_app_set_global_debug(int debug)</span>
+<span class="lineNum">     902 </span>            : {
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :         global_debug = debug;</span>
+<span class="lineNum">     904 </span><span class="lineNoCov">          0 :         if (!global_debug) {</span>
+<span class="lineNum">     905 </span><span class="lineNoCov">          0 :                 struct ao2_container *app_names = stasis_app_get_all();</span>
+<span class="lineNum">     906 </span>            :                 struct ao2_iterator it_app_names;
+<span class="lineNum">     907 </span>            :                 char *app_name;
+<span class="lineNum">     908 </span>            :                 struct stasis_app *app;
+<span class="lineNum">     909 </span>            : 
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                 if (!app_names || !ao2_container_count(app_names)) {</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">          0 :                         ao2_cleanup(app_names);</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     913 </span>            :                 }
+<span class="lineNum">     914 </span>            : 
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                 it_app_names = ao2_iterator_init(app_names, 0);</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :                 while ((app_name = ao2_iterator_next(&amp;it_app_names))) {</span>
+<span class="lineNum">     917 </span><span class="lineNoCov">          0 :                         if ((app = stasis_app_get_by_name(app_name))) {</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                                 stasis_app_set_debug(app, 0);</span>
+<span class="lineNum">     919 </span>            :                         }
+<span class="lineNum">     920 </span>            : 
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :                         ao2_cleanup(app_name);</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                         ao2_cleanup(app);</span>
+<span class="lineNum">     923 </span>            :                 }
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                 ao2_iterator_cleanup(&amp;it_app_names);</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :                 ao2_cleanup(app_names);</span>
+<span class="lineNum">     926 </span>            :         }
+<a name="927"><span class="lineNum">     927 </span>            : }</a>
+<span class="lineNum">     928 </span>            : 
+<a name="929"><span class="lineNum">     929 </span><span class="lineCov">        156 : struct stasis_app *app_create(const char *name, stasis_app_cb handler, void *data, enum stasis_app_subscription_model subscription_model)</span></a>
+<span class="lineNum">     930 </span>            : {
+<span class="lineNum">     931 </span><span class="lineCov">        312 :         RAII_VAR(struct stasis_app *, app, NULL, ao2_cleanup);</span>
+<span class="lineNum">     932 </span>            :         size_t size;
+<span class="lineNum">     933 </span><span class="lineCov">        156 :         int res = 0;</span>
+<span class="lineNum">     934 </span>            : 
+<span class="lineNum">     935 </span><span class="lineCov">        156 :         ast_assert(name != NULL);</span>
+<span class="lineNum">     936 </span><span class="lineCov">        156 :         ast_assert(handler != NULL);</span>
+<span class="lineNum">     937 </span>            : 
+<span class="lineNum">     938 </span><span class="lineCov">        156 :         ast_verb(1, &quot;Creating Stasis app '%s'\n&quot;, name);</span>
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span><span class="lineCov">        156 :         size = sizeof(*app) + strlen(name) + 1;</span>
+<span class="lineNum">     941 </span><span class="lineCov">        156 :         app = ao2_alloc_options(size, app_dtor, AO2_ALLOC_OPT_LOCK_MUTEX);</span>
+<span class="lineNum">     942 </span><span class="lineCov">        156 :         if (!app) {</span>
+<span class="lineNum">     943 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     944 </span>            :         }
+<span class="lineNum">     945 </span><span class="lineCov">        156 :         app-&gt;subscription_model = subscription_model;</span>
+<span class="lineNum">     946 </span>            : 
+<span class="lineNum">     947 </span><span class="lineCov">        156 :         app-&gt;forwards = ao2_container_alloc_rbtree(AO2_ALLOC_OPT_LOCK_MUTEX,</span>
+<span class="lineNum">     948 </span>            :                 AO2_CONTAINER_ALLOC_OPT_DUPS_OBJ_REJECT,
+<span class="lineNum">     949 </span>            :                 forwards_sort, NULL);
+<span class="lineNum">     950 </span><span class="lineCov">        156 :         if (!app-&gt;forwards) {</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     952 </span>            :         }
+<span class="lineNum">     953 </span>            : 
+<span class="lineNum">     954 </span><span class="lineCov">        156 :         app-&gt;topic = stasis_topic_create(name);</span>
+<span class="lineNum">     955 </span><span class="lineCov">        156 :         if (!app-&gt;topic) {</span>
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     957 </span>            :         }
+<span class="lineNum">     958 </span>            : 
+<span class="lineNum">     959 </span><span class="lineCov">        156 :         app-&gt;bridge_router = stasis_message_router_create(ast_bridge_topic_all());</span>
+<span class="lineNum">     960 </span><span class="lineCov">        156 :         if (!app-&gt;bridge_router) {</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     962 </span>            :         }
+<span class="lineNum">     963 </span>            : 
+<span class="lineNum">     964 </span><span class="lineCov">        156 :         res |= stasis_message_router_add(app-&gt;bridge_router,</span>
+<span class="lineNum">     965 </span>            :                 ast_bridge_merge_message_type(), bridge_merge_handler, app);
+<span class="lineNum">     966 </span>            : 
+<span class="lineNum">     967 </span><span class="lineCov">        156 :         res |= stasis_message_router_add(app-&gt;bridge_router,</span>
+<span class="lineNum">     968 </span>            :                 ast_blind_transfer_type(), bridge_blind_transfer_handler, app);
+<span class="lineNum">     969 </span>            : 
+<span class="lineNum">     970 </span><span class="lineCov">        156 :         res |= stasis_message_router_add(app-&gt;bridge_router,</span>
+<span class="lineNum">     971 </span>            :                 ast_attended_transfer_type(), bridge_attended_transfer_handler, app);
+<span class="lineNum">     972 </span>            : 
+<span class="lineNum">     973 </span><span class="lineCov">        156 :         res |= stasis_message_router_set_default(app-&gt;bridge_router,</span>
+<span class="lineNum">     974 </span>            :                 bridge_default_handler, app);
+<span class="lineNum">     975 </span>            : 
+<span class="lineNum">     976 </span><span class="lineCov">        156 :         if (res != 0) {</span>
+<span class="lineNum">     977 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     978 </span>            :         }
+<span class="lineNum">     979 </span>            :         /* Bridge router holds a reference */
+<span class="lineNum">     980 </span><span class="lineCov">        156 :         ao2_ref(app, +1);</span>
+<span class="lineNum">     981 </span>            : 
+<span class="lineNum">     982 </span><span class="lineCov">        156 :         app-&gt;router = stasis_message_router_create(app-&gt;topic);</span>
+<span class="lineNum">     983 </span><span class="lineCov">        156 :         if (!app-&gt;router) {</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     985 </span>            :         }
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span><span class="lineCov">        156 :         res |= stasis_message_router_add_cache_update(app-&gt;router,</span>
+<span class="lineNum">     988 </span>            :                 ast_bridge_snapshot_type(), sub_bridge_update_handler, app);
+<span class="lineNum">     989 </span>            : 
+<span class="lineNum">     990 </span><span class="lineCov">        156 :         res |= stasis_message_router_add_cache_update(app-&gt;router,</span>
+<span class="lineNum">     991 </span>            :                 ast_channel_snapshot_type(), sub_channel_update_handler, app);
+<span class="lineNum">     992 </span>            : 
+<span class="lineNum">     993 </span><span class="lineCov">        156 :         res |= stasis_message_router_add_cache_update(app-&gt;router,</span>
+<span class="lineNum">     994 </span>            :                 ast_endpoint_snapshot_type(), sub_endpoint_update_handler, app);
+<span class="lineNum">     995 </span>            : 
+<span class="lineNum">     996 </span><span class="lineCov">        156 :         res |= stasis_message_router_set_default(app-&gt;router,</span>
+<span class="lineNum">     997 </span>            :                 sub_default_handler, app);
+<span class="lineNum">     998 </span>            : 
+<span class="lineNum">     999 </span><span class="lineCov">        156 :         if (res != 0) {</span>
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1001 </span>            :         }
+<span class="lineNum">    1002 </span>            :         /* Router holds a reference */
+<span class="lineNum">    1003 </span><span class="lineCov">        156 :         ao2_ref(app, +1);</span>
+<span class="lineNum">    1004 </span>            : 
+<span class="lineNum">    1005 </span><span class="lineCov">        156 :         strncpy(app-&gt;name, name, size - sizeof(*app));</span>
+<span class="lineNum">    1006 </span><span class="lineCov">        156 :         app-&gt;handler = handler;</span>
+<span class="lineNum">    1007 </span><span class="lineCov">        156 :         app-&gt;data = ao2_bump(data);</span>
+<span class="lineNum">    1008 </span>            : 
+<span class="lineNum">    1009 </span><span class="lineCov">        156 :         ao2_ref(app, +1);</span>
+<span class="lineNum">    1010 </span><span class="lineCov">        156 :         return app;</span>
+<a name="1011"><span class="lineNum">    1011 </span>            : }</a>
+<span class="lineNum">    1012 </span>            : 
+<span class="lineNum">    1013 </span><span class="lineCov">        566 : struct stasis_topic *ast_app_get_topic(struct stasis_app *app)</span>
+<span class="lineNum">    1014 </span>            : {
+<span class="lineNum">    1015 </span><span class="lineCov">        566 :         return app-&gt;topic;</span>
+<span class="lineNum">    1016 </span>            : }
+<span class="lineNum">    1017 </span>            : 
+<span class="lineNum">    1018 </span>            : /*!
+<span class="lineNum">    1019 </span>            :  * \brief Send a message to the given application.
+<span class="lineNum">    1020 </span>            :  * \param app App to send the message to.
+<a name="1021"><span class="lineNum">    1021 </span>            :  * \param message Message to send.</a>
+<span class="lineNum">    1022 </span>            :  */
+<span class="lineNum">    1023 </span><span class="lineCov">       3084 : void app_send(struct stasis_app *app, struct ast_json *message)</span>
+<span class="lineNum">    1024 </span>            : {
+<span class="lineNum">    1025 </span>            :         stasis_app_cb handler;
+<span class="lineNum">    1026 </span>            :         char eid[20];
+<span class="lineNum">    1027 </span>            :         void *data;
+<span class="lineNum">    1028 </span>            : 
+<span class="lineNum">    1029 </span><span class="lineCov">       3084 :         if (ast_json_object_set(message, &quot;asterisk_id&quot;, ast_json_string_create(</span>
+<span class="lineNum">    1030 </span><span class="lineCov">       3084 :                         ast_eid_to_str(eid, sizeof(eid), &amp;ast_eid_default)))) {</span>
+<span class="lineNum">    1031 </span><span class="lineNoCov">          0 :                 ast_log(AST_LOG_WARNING, &quot;Failed to append EID to outgoing event %s\n&quot;,</span>
+<span class="lineNum">    1032 </span><span class="lineNoCov">          0 :                         ast_json_string_get(ast_json_object_get(message, &quot;type&quot;)));</span>
+<span class="lineNum">    1033 </span>            :         }
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span>            :         /* Copy off mutable state with lock held */
+<span class="lineNum">    1036 </span><span class="lineCov">       3084 :         ao2_lock(app);</span>
+<span class="lineNum">    1037 </span><span class="lineCov">       3084 :         handler = app-&gt;handler;</span>
+<span class="lineNum">    1038 </span><span class="lineCov">       3084 :         data = ao2_bump(app-&gt;data);</span>
+<span class="lineNum">    1039 </span><span class="lineCov">       3084 :         ao2_unlock(app);</span>
+<span class="lineNum">    1040 </span>            :         /* Name is immutable; no need to copy */
+<span class="lineNum">    1041 </span>            : 
+<span class="lineNum">    1042 </span><span class="lineCov">       3084 :         if (handler) {</span>
+<span class="lineNum">    1043 </span><span class="lineCov">       3073 :                 handler(data, app-&gt;name, message);</span>
+<span class="lineNum">    1044 </span>            :         } else {
+<span class="lineNum">    1045 </span><span class="lineCov">         11 :                 ast_verb(3,</span>
+<span class="lineNum">    1046 </span>            :                         &quot;Inactive Stasis app '%s' missed message\n&quot;, app-&gt;name);
+<span class="lineNum">    1047 </span>            :         }
+<span class="lineNum">    1048 </span><span class="lineCov">       3084 :         ao2_cleanup(data);</span>
+<a name="1049"><span class="lineNum">    1049 </span><span class="lineCov">       3084 : }</span></a>
+<span class="lineNum">    1050 </span>            : 
+<span class="lineNum">    1051 </span><span class="lineCov">        150 : void app_deactivate(struct stasis_app *app)</span>
+<span class="lineNum">    1052 </span>            : {
+<span class="lineNum">    1053 </span><span class="lineCov">        150 :         ao2_lock(app);</span>
+<span class="lineNum">    1054 </span>            : 
+<span class="lineNum">    1055 </span><span class="lineCov">        150 :         ast_verb(1, &quot;Deactivating Stasis app '%s'\n&quot;, app-&gt;name);</span>
+<span class="lineNum">    1056 </span><span class="lineCov">        150 :         app-&gt;handler = NULL;</span>
+<span class="lineNum">    1057 </span><span class="lineCov">        150 :         ao2_cleanup(app-&gt;data);</span>
+<span class="lineNum">    1058 </span><span class="lineCov">        150 :         app-&gt;data = NULL;</span>
+<span class="lineNum">    1059 </span>            : 
+<span class="lineNum">    1060 </span><span class="lineCov">        150 :         ao2_unlock(app);</span>
+<a name="1061"><span class="lineNum">    1061 </span><span class="lineCov">        150 : }</span></a>
+<span class="lineNum">    1062 </span>            : 
+<span class="lineNum">    1063 </span><span class="lineCov">        139 : void app_shutdown(struct stasis_app *app)</span>
+<span class="lineNum">    1064 </span>            : {
+<span class="lineNum">    1065 </span><span class="lineCov">        139 :         ao2_lock(app);</span>
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span><span class="lineCov">        139 :         ast_assert(app_is_finished(app));</span>
+<span class="lineNum">    1068 </span>            : 
+<span class="lineNum">    1069 </span><span class="lineCov">        139 :         stasis_message_router_unsubscribe(app-&gt;router);</span>
+<span class="lineNum">    1070 </span><span class="lineCov">        139 :         app-&gt;router = NULL;</span>
+<span class="lineNum">    1071 </span><span class="lineCov">        139 :         stasis_message_router_unsubscribe(app-&gt;bridge_router);</span>
+<span class="lineNum">    1072 </span><span class="lineCov">        139 :         app-&gt;bridge_router = NULL;</span>
+<span class="lineNum">    1073 </span><span class="lineCov">        139 :         stasis_message_router_unsubscribe(app-&gt;endpoint_router);</span>
+<span class="lineNum">    1074 </span><span class="lineCov">        139 :         app-&gt;endpoint_router = NULL;</span>
+<span class="lineNum">    1075 </span>            : 
+<span class="lineNum">    1076 </span><span class="lineCov">        139 :         ao2_unlock(app);</span>
+<a name="1077"><span class="lineNum">    1077 </span><span class="lineCov">        139 : }</span></a>
+<span class="lineNum">    1078 </span>            : 
+<span class="lineNum">    1079 </span><span class="lineCov">        277 : int app_is_active(struct stasis_app *app)</span>
+<span class="lineNum">    1080 </span>            : {
+<span class="lineNum">    1081 </span>            :         int ret;
+<span class="lineNum">    1082 </span>            : 
+<span class="lineNum">    1083 </span><span class="lineCov">        277 :         ao2_lock(app);</span>
+<span class="lineNum">    1084 </span><span class="lineCov">        277 :         ret = app-&gt;handler != NULL;</span>
+<span class="lineNum">    1085 </span><span class="lineCov">        277 :         ao2_unlock(app);</span>
+<span class="lineNum">    1086 </span>            : 
+<span class="lineNum">    1087 </span><span class="lineCov">        277 :         return ret;</span>
+<a name="1088"><span class="lineNum">    1088 </span>            : }</a>
+<span class="lineNum">    1089 </span>            : 
+<span class="lineNum">    1090 </span><span class="lineCov">        796 : int app_is_finished(struct stasis_app *app)</span>
+<span class="lineNum">    1091 </span>            : {
+<span class="lineNum">    1092 </span>            :         int ret;
+<span class="lineNum">    1093 </span>            : 
+<span class="lineNum">    1094 </span><span class="lineCov">        796 :         ao2_lock(app);</span>
+<span class="lineNum">    1095 </span><span class="lineCov">        796 :         ret = app-&gt;handler == NULL &amp;&amp; ao2_container_count(app-&gt;forwards) == 0;</span>
+<span class="lineNum">    1096 </span><span class="lineCov">        796 :         ao2_unlock(app);</span>
+<span class="lineNum">    1097 </span>            : 
+<span class="lineNum">    1098 </span><span class="lineCov">        796 :         return ret;</span>
+<a name="1099"><span class="lineNum">    1099 </span>            : }</a>
+<span class="lineNum">    1100 </span>            : 
+<span class="lineNum">    1101 </span><span class="lineCov">          1 : void app_update(struct stasis_app *app, stasis_app_cb handler, void *data)</span>
+<span class="lineNum">    1102 </span>            : {
+<span class="lineNum">    1103 </span><span class="lineCov">          1 :         ao2_lock(app);</span>
+<span class="lineNum">    1104 </span><span class="lineCov">          2 :         if (app-&gt;handler &amp;&amp; app-&gt;data) {</span>
+<span class="lineNum">    1105 </span>            :                 struct ast_json *msg;
+<span class="lineNum">    1106 </span>            : 
+<span class="lineNum">    1107 </span><span class="lineCov">          1 :                 ast_verb(1, &quot;Replacing Stasis app '%s'\n&quot;, app-&gt;name);</span>
+<span class="lineNum">    1108 </span>            : 
+<span class="lineNum">    1109 </span><span class="lineCov">          1 :                 msg = ast_json_pack(&quot;{s: s, s: s}&quot;,</span>
+<span class="lineNum">    1110 </span>            :                         &quot;type&quot;, &quot;ApplicationReplaced&quot;,
+<span class="lineNum">    1111 </span><span class="lineCov">          1 :                         &quot;application&quot;, app-&gt;name);</span>
+<span class="lineNum">    1112 </span><span class="lineCov">          1 :                 if (msg) {</span>
+<span class="lineNum">    1113 </span><span class="lineCov">          1 :                         app_send(app, msg);</span>
+<span class="lineNum">    1114 </span><span class="lineCov">          1 :                         ast_json_unref(msg);</span>
+<span class="lineNum">    1115 </span>            :                 }
+<span class="lineNum">    1116 </span>            :         } else {
+<span class="lineNum">    1117 </span><span class="lineNoCov">          0 :                 ast_verb(1, &quot;Activating Stasis app '%s'\n&quot;, app-&gt;name);</span>
+<span class="lineNum">    1118 </span>            :         }
+<span class="lineNum">    1119 </span>            : 
+<span class="lineNum">    1120 </span><span class="lineCov">          1 :         app-&gt;handler = handler;</span>
+<span class="lineNum">    1121 </span><span class="lineCov">          1 :         ao2_replace(app-&gt;data, data);</span>
+<span class="lineNum">    1122 </span><span class="lineCov">          1 :         ao2_unlock(app);</span>
+<a name="1123"><span class="lineNum">    1123 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1124 </span>            : 
+<span class="lineNum">    1125 </span><span class="lineCov">       4828 : const char *stasis_app_name(const struct stasis_app *app)</span>
+<span class="lineNum">    1126 </span>            : {
+<span class="lineNum">    1127 </span><span class="lineCov">       4828 :         return app-&gt;name;</span>
+<a name="1128"><span class="lineNum">    1128 </span>            : }</a>
+<span class="lineNum">    1129 </span>            : 
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 : static int forwards_filter_by_type(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1131 </span>            : {
+<span class="lineNum">    1132 </span><span class="lineNoCov">          0 :         struct app_forwards *forward = obj;</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :         enum forward_type *forward_type = arg;</span>
+<span class="lineNum">    1134 </span>            : 
+<span class="lineNum">    1135 </span><span class="lineNoCov">          0 :         if (forward-&gt;forward_type == *forward_type) {</span>
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :                 return CMP_MATCH;</span>
+<span class="lineNum">    1137 </span>            :         }
+<span class="lineNum">    1138 </span>            : 
+<span class="lineNum">    1139 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="1140"><span class="lineNum">    1140 </span>            : }</a>
+<span class="lineNum">    1141 </span>            : 
+<span class="lineNum">    1142 </span><span class="lineNoCov">          0 : void stasis_app_to_cli(const struct stasis_app *app, struct ast_cli_args *a)</span>
+<span class="lineNum">    1143 </span>            : {
+<span class="lineNum">    1144 </span>            :         struct ao2_iterator *channels;
+<span class="lineNum">    1145 </span>            :         struct ao2_iterator *endpoints;
+<span class="lineNum">    1146 </span>            :         struct ao2_iterator *bridges;
+<span class="lineNum">    1147 </span>            :         struct app_forwards *forward;
+<span class="lineNum">    1148 </span>            :         enum forward_type forward_type;
+<span class="lineNum">    1149 </span>            : 
+<span class="lineNum">    1150 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;Name: %s\n&quot;</span>
+<span class="lineNum">    1151 </span>            :                 &quot;  Debug: %s\n&quot;
+<span class="lineNum">    1152 </span>            :                 &quot;  Subscription Model: %s\n&quot;,
+<span class="lineNum">    1153 </span><span class="lineNoCov">          0 :                 app-&gt;name,</span>
+<span class="lineNum">    1154 </span><span class="lineNoCov">          0 :                 app-&gt;debug ? &quot;Yes&quot; : &quot;No&quot;,</span>
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :                 app-&gt;subscription_model == STASIS_APP_SUBSCRIBE_ALL ?</span>
+<span class="lineNum">    1156 </span>            :                         &quot;Global Resource Subscription&quot; :
+<span class="lineNum">    1157 </span>            :                         &quot;Application/Explicit Resource Subscription&quot;);
+<span class="lineNum">    1158 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;  Subscriptions: %d\n&quot;, ao2_container_count(app-&gt;forwards));</span>
+<span class="lineNum">    1159 </span>            : 
+<span class="lineNum">    1160 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;    Channels:\n&quot;);</span>
+<span class="lineNum">    1161 </span><span class="lineNoCov">          0 :         forward_type = FORWARD_CHANNEL;</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">          0 :         channels = ao2_callback(app-&gt;forwards, OBJ_MULTIPLE,</span>
+<span class="lineNum">    1163 </span>            :                 forwards_filter_by_type, &amp;forward_type);
+<span class="lineNum">    1164 </span><span class="lineNoCov">          0 :         if (channels) {</span>
+<span class="lineNum">    1165 </span><span class="lineNoCov">          0 :                 while ((forward = ao2_iterator_next(channels))) {</span>
+<span class="lineNum">    1166 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;      %s (%d)\n&quot;, forward-&gt;id, forward-&gt;interested);</span>
+<span class="lineNum">    1167 </span><span class="lineNoCov">          0 :                         ao2_ref(forward, -1);</span>
+<span class="lineNum">    1168 </span>            :                 }
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                 ao2_iterator_destroy(channels);</span>
+<span class="lineNum">    1170 </span>            :         }
+<span class="lineNum">    1171 </span>            : 
+<span class="lineNum">    1172 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;    Bridges:\n&quot;);</span>
+<span class="lineNum">    1173 </span><span class="lineNoCov">          0 :         forward_type = FORWARD_BRIDGE;</span>
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :         bridges = ao2_callback(app-&gt;forwards, OBJ_MULTIPLE,</span>
+<span class="lineNum">    1175 </span>            :                 forwards_filter_by_type, &amp;forward_type);
+<span class="lineNum">    1176 </span><span class="lineNoCov">          0 :         if (bridges) {</span>
+<span class="lineNum">    1177 </span><span class="lineNoCov">          0 :                 while ((forward = ao2_iterator_next(bridges))) {</span>
+<span class="lineNum">    1178 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;      %s (%d)\n&quot;, forward-&gt;id, forward-&gt;interested);</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :                         ao2_ref(forward, -1);</span>
+<span class="lineNum">    1180 </span>            :                 }
+<span class="lineNum">    1181 </span><span class="lineNoCov">          0 :                 ao2_iterator_destroy(bridges);</span>
+<span class="lineNum">    1182 </span>            :         }
+<span class="lineNum">    1183 </span>            : 
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;    Endpoints:\n&quot;);</span>
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :         forward_type = FORWARD_ENDPOINT;</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :         endpoints = ao2_callback(app-&gt;forwards, OBJ_MULTIPLE,</span>
+<span class="lineNum">    1187 </span>            :                 forwards_filter_by_type, &amp;forward_type);
+<span class="lineNum">    1188 </span><span class="lineNoCov">          0 :         if (endpoints) {</span>
+<span class="lineNum">    1189 </span><span class="lineNoCov">          0 :                 while ((forward = ao2_iterator_next(endpoints))) {</span>
+<span class="lineNum">    1190 </span><span class="lineNoCov">          0 :                         ast_cli(a-&gt;fd, &quot;      %s (%d)\n&quot;, forward-&gt;id, forward-&gt;interested);</span>
+<span class="lineNum">    1191 </span><span class="lineNoCov">          0 :                         ao2_ref(forward, -1);</span>
+<span class="lineNum">    1192 </span>            :                 }
+<span class="lineNum">    1193 </span><span class="lineNoCov">          0 :                 ao2_iterator_destroy(endpoints);</span>
+<span class="lineNum">    1194 </span>            :         }
+<a name="1195"><span class="lineNum">    1195 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1196 </span>            : 
+<span class="lineNum">    1197 </span><span class="lineCov">         26 : struct ast_json *app_to_json(const struct stasis_app *app)</span>
+<span class="lineNum">    1198 </span>            : {
+<span class="lineNum">    1199 </span>            :         struct ast_json *json;
+<span class="lineNum">    1200 </span>            :         struct ast_json *channels;
+<span class="lineNum">    1201 </span>            :         struct ast_json *bridges;
+<span class="lineNum">    1202 </span>            :         struct ast_json *endpoints;
+<span class="lineNum">    1203 </span>            :         struct ao2_iterator i;
+<span class="lineNum">    1204 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1205 </span>            : 
+<span class="lineNum">    1206 </span><span class="lineCov">         26 :         json = ast_json_pack(&quot;{s: s, s: [], s: [], s: []}&quot;,</span>
+<span class="lineNum">    1207 </span><span class="lineCov">         26 :                 &quot;name&quot;, app-&gt;name,</span>
+<span class="lineNum">    1208 </span>            :                 &quot;channel_ids&quot;, &quot;bridge_ids&quot;, &quot;endpoint_ids&quot;);
+<span class="lineNum">    1209 </span><span class="lineCov">         26 :         if (!json) {</span>
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1211 </span>            :         }
+<span class="lineNum">    1212 </span><span class="lineCov">         26 :         channels = ast_json_object_get(json, &quot;channel_ids&quot;);</span>
+<span class="lineNum">    1213 </span><span class="lineCov">         26 :         bridges = ast_json_object_get(json, &quot;bridge_ids&quot;);</span>
+<span class="lineNum">    1214 </span><span class="lineCov">         26 :         endpoints = ast_json_object_get(json, &quot;endpoint_ids&quot;);</span>
+<span class="lineNum">    1215 </span>            : 
+<span class="lineNum">    1216 </span><span class="lineCov">         26 :         i = ao2_iterator_init(app-&gt;forwards, 0);</span>
+<span class="lineNum">    1217 </span><span class="lineCov">         63 :         while ((forwards = ao2_iterator_next(&amp;i))) {</span>
+<span class="lineNum">    1218 </span><span class="lineCov">         37 :                 struct ast_json *array = NULL;</span>
+<span class="lineNum">    1219 </span>            :                 int append_res;
+<span class="lineNum">    1220 </span>            : 
+<span class="lineNum">    1221 </span><span class="lineCov">         37 :                 switch (forwards-&gt;forward_type) {</span>
+<span class="lineNum">    1222 </span><span class="lineCov">         20 :                 case FORWARD_CHANNEL:</span>
+<span class="lineNum">    1223 </span><span class="lineCov">         20 :                         array = channels;</span>
+<span class="lineNum">    1224 </span><span class="lineCov">         20 :                         break;</span>
+<span class="lineNum">    1225 </span><span class="lineCov">          9 :                 case FORWARD_BRIDGE:</span>
+<span class="lineNum">    1226 </span><span class="lineCov">          9 :                         array = bridges;</span>
+<span class="lineNum">    1227 </span><span class="lineCov">          9 :                         break;</span>
+<span class="lineNum">    1228 </span><span class="lineCov">          8 :                 case FORWARD_ENDPOINT:</span>
+<span class="lineNum">    1229 </span><span class="lineCov">          8 :                         array = endpoints;</span>
+<span class="lineNum">    1230 </span><span class="lineCov">          8 :                         break;</span>
+<span class="lineNum">    1231 </span>            :                 }
+<span class="lineNum">    1232 </span>            : 
+<span class="lineNum">    1233 </span>            :                 /* If forward_type value is unexpected this will safely return an error. */
+<span class="lineNum">    1234 </span><span class="lineCov">         37 :                 append_res = ast_json_array_append(array, ast_json_string_create(forwards-&gt;id));</span>
+<span class="lineNum">    1235 </span><span class="lineCov">         37 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1236 </span>            : 
+<span class="lineNum">    1237 </span><span class="lineCov">         37 :                 if (append_res != 0) {</span>
+<span class="lineNum">    1238 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Error building response\n&quot;);</span>
+<span class="lineNum">    1239 </span><span class="lineNoCov">          0 :                         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">    1240 </span><span class="lineNoCov">          0 :                         ast_json_unref(json);</span>
+<span class="lineNum">    1241 </span>            : 
+<span class="lineNum">    1242 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">    1243 </span>            :                 }
+<span class="lineNum">    1244 </span>            :         }
+<span class="lineNum">    1245 </span><span class="lineCov">         26 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">    1246 </span>            : 
+<span class="lineNum">    1247 </span><span class="lineCov">         26 :         return json;</span>
+<a name="1248"><span class="lineNum">    1248 </span>            : }</a>
+<span class="lineNum">    1249 </span>            : 
+<span class="lineNum">    1250 </span><span class="lineCov">        473 : int app_subscribe_channel(struct stasis_app *app, struct ast_channel *chan)</span>
+<span class="lineNum">    1251 </span>            : {
+<span class="lineNum">    1252 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1253 </span>            : 
+<span class="lineNum">    1254 </span><span class="lineCov">        473 :         if (!app) {</span>
+<span class="lineNum">    1255 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1256 </span>            :         }
+<span class="lineNum">    1257 </span>            : 
+<span class="lineNum">    1258 </span><span class="lineCov">        473 :         ao2_lock(app-&gt;forwards);</span>
+<span class="lineNum">    1259 </span>            :         /* If subscribed to all, don't subscribe again */
+<span class="lineNum">    1260 </span><span class="lineCov">        473 :         forwards = ao2_find(app-&gt;forwards, CHANNEL_ALL, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">    1261 </span><span class="lineCov">        473 :         if (forwards) {</span>
+<span class="lineNum">    1262 </span><span class="lineCov">          1 :                 ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1263 </span><span class="lineCov">          1 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1264 </span>            : 
+<span class="lineNum">    1265 </span><span class="lineCov">          1 :                 return 0;</span>
+<span class="lineNum">    1266 </span>            :         }
+<span class="lineNum">    1267 </span>            : 
+<span class="lineNum">    1268 </span><span class="lineCov">        472 :         forwards = ao2_find(app-&gt;forwards,</span>
+<span class="lineNum">    1269 </span>            :                 chan ? ast_channel_uniqueid(chan) : CHANNEL_ALL,
+<span class="lineNum">    1270 </span>            :                 OBJ_SEARCH_KEY | OBJ_NOLOCK);
+<span class="lineNum">    1271 </span><span class="lineCov">        472 :         if (!forwards) {</span>
+<span class="lineNum">    1272 </span>            :                 int res;
+<span class="lineNum">    1273 </span>            : 
+<span class="lineNum">    1274 </span>            :                 /* Forwards not found, create one */
+<span class="lineNum">    1275 </span><span class="lineCov">        365 :                 forwards = forwards_create_channel(app, chan);</span>
+<span class="lineNum">    1276 </span><span class="lineCov">        365 :                 if (!forwards) {</span>
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1280 </span>            :                 }
+<span class="lineNum">    1281 </span>            : 
+<span class="lineNum">    1282 </span><span class="lineCov">        365 :                 res = ao2_link_flags(app-&gt;forwards, forwards, OBJ_NOLOCK);</span>
+<span class="lineNum">    1283 </span><span class="lineCov">        365 :                 if (!res) {</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1285 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1286 </span>            : 
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1288 </span>            :                 }
+<span class="lineNum">    1289 </span>            :         }
+<span class="lineNum">    1290 </span>            : 
+<span class="lineNum">    1291 </span><span class="lineCov">        472 :         ++forwards-&gt;interested;</span>
+<span class="lineNum">    1292 </span><span class="lineCov">        472 :         ast_debug(3, &quot;Channel '%s' is %d interested in %s\n&quot;,</span>
+<span class="lineNum">    1293 </span>            :                 chan ? ast_channel_uniqueid(chan) : &quot;ALL&quot;,
+<span class="lineNum">    1294 </span>            :                 forwards-&gt;interested,
+<span class="lineNum">    1295 </span>            :                 app-&gt;name);
+<span class="lineNum">    1296 </span>            : 
+<span class="lineNum">    1297 </span><span class="lineCov">        472 :         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1298 </span><span class="lineCov">        472 :         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1299 </span>            : 
+<span class="lineNum">    1300 </span><span class="lineCov">        472 :         return 0;</span>
+<a name="1301"><span class="lineNum">    1301 </span>            : }</a>
+<span class="lineNum">    1302 </span>            : 
+<span class="lineNum">    1303 </span><span class="lineCov">          6 : static int subscribe_channel(struct stasis_app *app, void *obj)</span>
+<span class="lineNum">    1304 </span>            : {
+<span class="lineNum">    1305 </span><span class="lineCov">          6 :         return app_subscribe_channel(app, obj);</span>
+<a name="1306"><span class="lineNum">    1306 </span>            : }</a>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineCov">        673 : static int unsubscribe(struct stasis_app *app, const char *kind, const char *id, int terminate)</span>
+<span class="lineNum">    1309 </span>            : {
+<span class="lineNum">    1310 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1311 </span>            : 
+<span class="lineNum">    1312 </span><span class="lineCov">        673 :         if (!id) {</span>
+<span class="lineNum">    1313 </span><span class="lineNoCov">          0 :                 if (!strcmp(kind, &quot;bridge&quot;)) {</span>
+<span class="lineNum">    1314 </span><span class="lineNoCov">          0 :                         id = BRIDGE_ALL;</span>
+<span class="lineNum">    1315 </span><span class="lineNoCov">          0 :                 } else if (!strcmp(kind, &quot;channel&quot;)) {</span>
+<span class="lineNum">    1316 </span><span class="lineNoCov">          0 :                         id = CHANNEL_ALL;</span>
+<span class="lineNum">    1317 </span><span class="lineNoCov">          0 :                 } else if (!strcmp(kind, &quot;endpoint&quot;)) {</span>
+<span class="lineNum">    1318 </span><span class="lineNoCov">          0 :                         id = ENDPOINT_ALL;</span>
+<span class="lineNum">    1319 </span>            :                 } else {
+<span class="lineNum">    1320 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unknown subscription kind '%s'\n&quot;, kind);</span>
+<span class="lineNum">    1321 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1322 </span>            :                 }
+<span class="lineNum">    1323 </span>            :         }
+<span class="lineNum">    1324 </span>            : 
+<span class="lineNum">    1325 </span><span class="lineCov">        673 :         ao2_lock(app-&gt;forwards);</span>
+<span class="lineNum">    1326 </span><span class="lineCov">        673 :         forwards = ao2_find(app-&gt;forwards, id, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">    1327 </span><span class="lineCov">        673 :         if (!forwards) {</span>
+<span class="lineNum">    1328 </span><span class="lineCov">         35 :                 ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1329 </span><span class="lineCov">         35 :                 ast_debug(3, &quot;App '%s' not subscribed to %s '%s'\n&quot;, app-&gt;name, kind, id);</span>
+<span class="lineNum">    1330 </span><span class="lineCov">         35 :                 return -1;</span>
+<span class="lineNum">    1331 </span>            :         }
+<span class="lineNum">    1332 </span><span class="lineCov">        638 :         forwards-&gt;interested--;</span>
+<span class="lineNum">    1333 </span>            : 
+<span class="lineNum">    1334 </span><span class="lineCov">        638 :         ast_debug(3, &quot;%s '%s': is %d interested in %s\n&quot;, kind, id, forwards-&gt;interested, app-&gt;name);</span>
+<span class="lineNum">    1335 </span><span class="lineCov">        638 :         if (forwards-&gt;interested == 0 || terminate) {</span>
+<span class="lineNum">    1336 </span>            :                 /* No one is interested any more; unsubscribe */
+<span class="lineNum">    1337 </span><span class="lineCov">        414 :                 ast_debug(3, &quot;%s '%s' unsubscribed from %s\n&quot;, kind, id, app-&gt;name);</span>
+<span class="lineNum">    1338 </span><span class="lineCov">        414 :                 forwards_unsubscribe(forwards);</span>
+<span class="lineNum">    1339 </span><span class="lineCov">        414 :                 ao2_find(app-&gt;forwards, forwards,</span>
+<span class="lineNum">    1340 </span>            :                         OBJ_POINTER | OBJ_NOLOCK | OBJ_UNLINK |
+<span class="lineNum">    1341 </span>            :                         OBJ_NODATA);
+<span class="lineNum">    1342 </span>            : 
+<span class="lineNum">    1343 </span><span class="lineCov">        414 :                 if (!strcmp(kind, &quot;endpoint&quot;)) {</span>
+<span class="lineNum">    1344 </span><span class="lineCov">          4 :                         messaging_app_unsubscribe_endpoint(app-&gt;name, id);</span>
+<span class="lineNum">    1345 </span>            :                 }
+<span class="lineNum">    1346 </span>            :         }
+<span class="lineNum">    1347 </span><span class="lineCov">        638 :         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1348 </span><span class="lineCov">        638 :         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1349 </span>            : 
+<span class="lineNum">    1350 </span><span class="lineCov">        638 :         return 0;</span>
+<a name="1351"><span class="lineNum">    1351 </span>            : }</a>
+<span class="lineNum">    1352 </span>            : 
+<span class="lineNum">    1353 </span><span class="lineCov">        278 : int app_unsubscribe_channel(struct stasis_app *app, struct ast_channel *chan)</span>
+<span class="lineNum">    1354 </span>            : {
+<span class="lineNum">    1355 </span><span class="lineCov">        278 :         if (!app) {</span>
+<span class="lineNum">    1356 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1357 </span>            :         }
+<span class="lineNum">    1358 </span>            : 
+<span class="lineNum">    1359 </span><span class="lineCov">        278 :         return app_unsubscribe_channel_id(app, chan ? ast_channel_uniqueid(chan) : CHANNEL_ALL);</span>
+<a name="1360"><span class="lineNum">    1360 </span>            : }</a>
+<span class="lineNum">    1361 </span>            : 
+<span class="lineNum">    1362 </span><span class="lineCov">        292 : int app_unsubscribe_channel_id(struct stasis_app *app, const char *channel_id)</span>
+<span class="lineNum">    1363 </span>            : {
+<span class="lineNum">    1364 </span><span class="lineCov">        292 :         if (!app) {</span>
+<span class="lineNum">    1365 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1366 </span>            :         }
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span><span class="lineCov">        292 :         return unsubscribe(app, &quot;channel&quot;, channel_id, 0);</span>
+<a name="1369"><span class="lineNum">    1369 </span>            : }</a>
+<span class="lineNum">    1370 </span>            : 
+<span class="lineNum">    1371 </span><span class="lineCov">          1 : int app_is_subscribed_channel_id(struct stasis_app *app, const char *channel_id)</span>
+<span class="lineNum">    1372 </span>            : {
+<span class="lineNum">    1373 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1374 </span>            : 
+<span class="lineNum">    1375 </span><span class="lineCov">          1 :         if (ast_strlen_zero(channel_id)) {</span>
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :                 channel_id = CHANNEL_ALL;</span>
+<span class="lineNum">    1377 </span>            :         }
+<span class="lineNum">    1378 </span><span class="lineCov">          1 :         forwards = ao2_find(app-&gt;forwards, channel_id, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">    1379 </span><span class="lineCov">          1 :         ao2_cleanup(forwards);</span>
+<span class="lineNum">    1380 </span>            : 
+<span class="lineNum">    1381 </span><span class="lineCov">          1 :         return forwards != NULL;</span>
+<a name="1382"><span class="lineNum">    1382 </span>            : }</a>
+<span class="lineNum">    1383 </span>            : 
+<span class="lineNum">    1384 </span><span class="lineCov">          4 : static void *channel_find(const struct stasis_app *app, const char *id)</span>
+<span class="lineNum">    1385 </span>            : {
+<span class="lineNum">    1386 </span><span class="lineCov">          4 :         return ast_channel_get_by_name(id);</span>
+<span class="lineNum">    1387 </span>            : }
+<span class="lineNum">    1388 </span>            : 
+<span class="lineNum">    1389 </span>            : struct stasis_app_event_source channel_event_source = {
+<span class="lineNum">    1390 </span>            :         .scheme = &quot;channel:&quot;,
+<span class="lineNum">    1391 </span>            :         .find = channel_find,
+<span class="lineNum">    1392 </span>            :         .subscribe = subscribe_channel,
+<span class="lineNum">    1393 </span>            :         .unsubscribe = app_unsubscribe_channel_id,
+<span class="lineNum">    1394 </span>            :         .is_subscribed = app_is_subscribed_channel_id
+<a name="1395"><span class="lineNum">    1395 </span>            : };</a>
+<span class="lineNum">    1396 </span>            : 
+<span class="lineNum">    1397 </span><span class="lineCov">        201 : int app_subscribe_bridge(struct stasis_app *app, struct ast_bridge *bridge)</span>
+<span class="lineNum">    1398 </span>            : {
+<span class="lineNum">    1399 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1400 </span>            : 
+<span class="lineNum">    1401 </span><span class="lineCov">        201 :         if (!app) {</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1403 </span>            :         }
+<span class="lineNum">    1404 </span>            : 
+<span class="lineNum">    1405 </span><span class="lineCov">        201 :         ao2_lock(app-&gt;forwards);</span>
+<span class="lineNum">    1406 </span>            :         /* If subscribed to all, don't subscribe again */
+<span class="lineNum">    1407 </span><span class="lineCov">        201 :         forwards = ao2_find(app-&gt;forwards, BRIDGE_ALL, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">    1408 </span><span class="lineCov">        201 :         if (forwards) {</span>
+<span class="lineNum">    1409 </span><span class="lineCov">          2 :                 ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1410 </span><span class="lineCov">          2 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1411 </span>            : 
+<span class="lineNum">    1412 </span><span class="lineCov">          2 :                 return 0;</span>
+<span class="lineNum">    1413 </span>            :         }
+<span class="lineNum">    1414 </span>            : 
+<span class="lineNum">    1415 </span><span class="lineCov">        199 :         forwards = ao2_find(app-&gt;forwards,</span>
+<span class="lineNum">    1416 </span>            :                 bridge ? bridge-&gt;uniqueid : BRIDGE_ALL,
+<span class="lineNum">    1417 </span>            :                 OBJ_SEARCH_KEY | OBJ_NOLOCK);
+<span class="lineNum">    1418 </span><span class="lineCov">        199 :         if (!forwards) {</span>
+<span class="lineNum">    1419 </span>            :                 int res;
+<span class="lineNum">    1420 </span>            : 
+<span class="lineNum">    1421 </span>            :                 /* Forwards not found, create one */
+<span class="lineNum">    1422 </span><span class="lineCov">         61 :                 forwards = forwards_create_bridge(app, bridge);</span>
+<span class="lineNum">    1423 </span><span class="lineCov">         61 :                 if (!forwards) {</span>
+<span class="lineNum">    1424 </span><span class="lineCov">          8 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1425 </span>            : 
+<span class="lineNum">    1426 </span><span class="lineCov">          8 :                         return -1;</span>
+<span class="lineNum">    1427 </span>            :                 }
+<span class="lineNum">    1428 </span>            : 
+<span class="lineNum">    1429 </span><span class="lineCov">         53 :                 res = ao2_link_flags(app-&gt;forwards, forwards, OBJ_NOLOCK);</span>
+<span class="lineNum">    1430 </span><span class="lineCov">         53 :                 if (!res) {</span>
+<span class="lineNum">    1431 </span><span class="lineNoCov">          0 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1432 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1433 </span>            : 
+<span class="lineNum">    1434 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1435 </span>            :                 }
+<span class="lineNum">    1436 </span>            :         }
+<span class="lineNum">    1437 </span>            : 
+<span class="lineNum">    1438 </span><span class="lineCov">        191 :         ++forwards-&gt;interested;</span>
+<span class="lineNum">    1439 </span><span class="lineCov">        191 :         ast_debug(3, &quot;Bridge '%s' is %d interested in %s\n&quot;,</span>
+<span class="lineNum">    1440 </span>            :                 bridge ? bridge-&gt;uniqueid : &quot;ALL&quot;,
+<span class="lineNum">    1441 </span>            :                 forwards-&gt;interested,
+<span class="lineNum">    1442 </span>            :                 app-&gt;name);
+<span class="lineNum">    1443 </span>            : 
+<span class="lineNum">    1444 </span><span class="lineCov">        191 :         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1445 </span><span class="lineCov">        191 :         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1446 </span>            : 
+<span class="lineNum">    1447 </span><span class="lineCov">        191 :         return 0;</span>
+<a name="1448"><span class="lineNum">    1448 </span>            : }</a>
+<span class="lineNum">    1449 </span>            : 
+<span class="lineNum">    1450 </span><span class="lineCov">          7 : static int subscribe_bridge(struct stasis_app *app, void *obj)</span>
+<span class="lineNum">    1451 </span>            : {
+<span class="lineNum">    1452 </span><span class="lineCov">          7 :         return app_subscribe_bridge(app, obj);</span>
+<a name="1453"><span class="lineNum">    1453 </span>            : }</a>
+<span class="lineNum">    1454 </span>            : 
+<span class="lineNum">    1455 </span><span class="lineCov">        139 : int app_unsubscribe_bridge(struct stasis_app *app, struct ast_bridge *bridge)</span>
+<span class="lineNum">    1456 </span>            : {
+<span class="lineNum">    1457 </span><span class="lineCov">        139 :         if (!app) {</span>
+<span class="lineNum">    1458 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1459 </span>            :         }
+<span class="lineNum">    1460 </span>            : 
+<span class="lineNum">    1461 </span><span class="lineCov">        139 :         return app_unsubscribe_bridge_id(app, bridge ? bridge-&gt;uniqueid : BRIDGE_ALL);</span>
+<a name="1462"><span class="lineNum">    1462 </span>            : }</a>
+<span class="lineNum">    1463 </span>            : 
+<span class="lineNum">    1464 </span><span class="lineCov">        140 : int app_unsubscribe_bridge_id(struct stasis_app *app, const char *bridge_id)</span>
+<span class="lineNum">    1465 </span>            : {
+<span class="lineNum">    1466 </span><span class="lineCov">        140 :         if (!app) {</span>
+<span class="lineNum">    1467 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1468 </span>            :         }
+<span class="lineNum">    1469 </span>            : 
+<span class="lineNum">    1470 </span><span class="lineCov">        140 :         return unsubscribe(app, &quot;bridge&quot;, bridge_id, 0);</span>
+<a name="1471"><span class="lineNum">    1471 </span>            : }</a>
+<span class="lineNum">    1472 </span>            : 
+<span class="lineNum">    1473 </span><span class="lineCov">          1 : int app_is_subscribed_bridge_id(struct stasis_app *app, const char *bridge_id)</span>
+<span class="lineNum">    1474 </span>            : {
+<span class="lineNum">    1475 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1476 </span>            : 
+<span class="lineNum">    1477 </span><span class="lineCov">          1 :         if (ast_strlen_zero(bridge_id)) {</span>
+<span class="lineNum">    1478 </span><span class="lineNoCov">          0 :                 bridge_id = BRIDGE_ALL;</span>
+<span class="lineNum">    1479 </span>            :         }
+<span class="lineNum">    1480 </span>            : 
+<span class="lineNum">    1481 </span><span class="lineCov">          1 :         forwards = ao2_find(app-&gt;forwards, bridge_id, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">    1482 </span><span class="lineCov">          1 :         ao2_cleanup(forwards);</span>
+<span class="lineNum">    1483 </span>            : 
+<span class="lineNum">    1484 </span><span class="lineCov">          1 :         return forwards != NULL;</span>
+<a name="1485"><span class="lineNum">    1485 </span>            : }</a>
+<span class="lineNum">    1486 </span>            : 
+<span class="lineNum">    1487 </span><span class="lineCov">          4 : static void *bridge_find(const struct stasis_app *app, const char *id)</span>
+<span class="lineNum">    1488 </span>            : {
+<span class="lineNum">    1489 </span><span class="lineCov">          4 :         return stasis_app_bridge_find_by_id(id);</span>
+<span class="lineNum">    1490 </span>            : }
+<span class="lineNum">    1491 </span>            : 
+<span class="lineNum">    1492 </span>            : struct stasis_app_event_source bridge_event_source = {
+<span class="lineNum">    1493 </span>            :         .scheme = &quot;bridge:&quot;,
+<span class="lineNum">    1494 </span>            :         .find = bridge_find,
+<span class="lineNum">    1495 </span>            :         .subscribe = subscribe_bridge,
+<span class="lineNum">    1496 </span>            :         .unsubscribe = app_unsubscribe_bridge_id,
+<span class="lineNum">    1497 </span>            :         .is_subscribed = app_is_subscribed_bridge_id
+<a name="1498"><span class="lineNum">    1498 </span>            : };</a>
+<span class="lineNum">    1499 </span>            : 
+<span class="lineNum">    1500 </span><span class="lineCov">          8 : int app_subscribe_endpoint(struct stasis_app *app, struct ast_endpoint *endpoint)</span>
+<span class="lineNum">    1501 </span>            : {
+<span class="lineNum">    1502 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1503 </span>            : 
+<span class="lineNum">    1504 </span><span class="lineCov">          8 :         if (!app) {</span>
+<span class="lineNum">    1505 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1506 </span>            :         }
+<span class="lineNum">    1507 </span>            : 
+<span class="lineNum">    1508 </span><span class="lineCov">          8 :         ao2_lock(app-&gt;forwards);</span>
+<span class="lineNum">    1509 </span>            :         /* If subscribed to all, don't subscribe again */
+<span class="lineNum">    1510 </span><span class="lineCov">          8 :         forwards = ao2_find(app-&gt;forwards, ENDPOINT_ALL, OBJ_SEARCH_KEY | OBJ_NOLOCK);</span>
+<span class="lineNum">    1511 </span><span class="lineCov">          8 :         if (forwards) {</span>
+<span class="lineNum">    1512 </span><span class="lineNoCov">          0 :                 ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1513 </span><span class="lineNoCov">          0 :                 ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1514 </span>            : 
+<span class="lineNum">    1515 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1516 </span>            :         }
+<span class="lineNum">    1517 </span>            : 
+<span class="lineNum">    1518 </span><span class="lineCov">          8 :         forwards = ao2_find(app-&gt;forwards,</span>
+<span class="lineNum">    1519 </span>            :                 endpoint ? ast_endpoint_get_id(endpoint) : ENDPOINT_ALL,
+<span class="lineNum">    1520 </span>            :                 OBJ_SEARCH_KEY | OBJ_NOLOCK);
+<span class="lineNum">    1521 </span><span class="lineCov">          8 :         if (!forwards) {</span>
+<span class="lineNum">    1522 </span>            :                 int res;
+<span class="lineNum">    1523 </span>            : 
+<span class="lineNum">    1524 </span>            :                 /* Forwards not found, create one */
+<span class="lineNum">    1525 </span><span class="lineCov">          8 :                 forwards = forwards_create_endpoint(app, endpoint);</span>
+<span class="lineNum">    1526 </span><span class="lineCov">          8 :                 if (!forwards) {</span>
+<span class="lineNum">    1527 </span><span class="lineNoCov">          0 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1528 </span>            : 
+<span class="lineNum">    1529 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1530 </span>            :                 }
+<span class="lineNum">    1531 </span>            : 
+<span class="lineNum">    1532 </span><span class="lineCov">          8 :                 res = ao2_link_flags(app-&gt;forwards, forwards, OBJ_NOLOCK);</span>
+<span class="lineNum">    1533 </span><span class="lineCov">          8 :                 if (!res) {</span>
+<span class="lineNum">    1534 </span><span class="lineNoCov">          0 :                         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1535 </span><span class="lineNoCov">          0 :                         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1536 </span>            : 
+<span class="lineNum">    1537 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1538 </span>            :                 }
+<span class="lineNum">    1539 </span>            : 
+<span class="lineNum">    1540 </span>            :                 /* Subscribe for messages */
+<span class="lineNum">    1541 </span><span class="lineCov">          8 :                 messaging_app_subscribe_endpoint(app-&gt;name, endpoint, &amp;message_received_handler, app);</span>
+<span class="lineNum">    1542 </span>            :         }
+<span class="lineNum">    1543 </span>            : 
+<span class="lineNum">    1544 </span><span class="lineCov">          8 :         ++forwards-&gt;interested;</span>
+<span class="lineNum">    1545 </span><span class="lineCov">          8 :         ast_debug(3, &quot;Endpoint '%s' is %d interested in %s\n&quot;,</span>
+<span class="lineNum">    1546 </span>            :                 endpoint ? ast_endpoint_get_id(endpoint) : &quot;ALL&quot;,
+<span class="lineNum">    1547 </span>            :                 forwards-&gt;interested,
+<span class="lineNum">    1548 </span>            :                 app-&gt;name);
+<span class="lineNum">    1549 </span>            : 
+<span class="lineNum">    1550 </span><span class="lineCov">          8 :         ao2_unlock(app-&gt;forwards);</span>
+<span class="lineNum">    1551 </span><span class="lineCov">          8 :         ao2_ref(forwards, -1);</span>
+<span class="lineNum">    1552 </span>            : 
+<span class="lineNum">    1553 </span><span class="lineCov">          8 :         return 0;</span>
+<a name="1554"><span class="lineNum">    1554 </span>            : }</a>
+<span class="lineNum">    1555 </span>            : 
+<span class="lineNum">    1556 </span><span class="lineCov">          8 : static int subscribe_endpoint(struct stasis_app *app, void *obj)</span>
+<span class="lineNum">    1557 </span>            : {
+<span class="lineNum">    1558 </span><span class="lineCov">          8 :         return app_subscribe_endpoint(app, obj);</span>
+<a name="1559"><span class="lineNum">    1559 </span>            : }</a>
+<span class="lineNum">    1560 </span>            : 
+<span class="lineNum">    1561 </span><span class="lineNoCov">          0 : int app_unsubscribe_endpoint_id(struct stasis_app *app, const char *endpoint_id)</span>
+<span class="lineNum">    1562 </span>            : {
+<span class="lineNum">    1563 </span><span class="lineNoCov">          0 :         if (!app) {</span>
+<span class="lineNum">    1564 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1565 </span>            :         }
+<span class="lineNum">    1566 </span>            : 
+<span class="lineNum">    1567 </span><span class="lineNoCov">          0 :         return unsubscribe(app, &quot;endpoint&quot;, endpoint_id, 0);</span>
+<a name="1568"><span class="lineNum">    1568 </span>            : }</a>
+<span class="lineNum">    1569 </span>            : 
+<span class="lineNum">    1570 </span><span class="lineNoCov">          0 : int app_is_subscribed_endpoint_id(struct stasis_app *app, const char *endpoint_id)</span>
+<span class="lineNum">    1571 </span>            : {
+<span class="lineNum">    1572 </span>            :         struct app_forwards *forwards;
+<span class="lineNum">    1573 </span>            : 
+<span class="lineNum">    1574 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(endpoint_id)) {</span>
+<span class="lineNum">    1575 </span><span class="lineNoCov">          0 :                 endpoint_id = ENDPOINT_ALL;</span>
+<span class="lineNum">    1576 </span>            :         }
+<span class="lineNum">    1577 </span><span class="lineNoCov">          0 :         forwards = ao2_find(app-&gt;forwards, endpoint_id, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">    1578 </span><span class="lineNoCov">          0 :         ao2_cleanup(forwards);</span>
+<span class="lineNum">    1579 </span>            : 
+<span class="lineNum">    1580 </span><span class="lineNoCov">          0 :         return forwards != NULL;</span>
+<a name="1581"><span class="lineNum">    1581 </span>            : }</a>
+<span class="lineNum">    1582 </span>            : 
+<span class="lineNum">    1583 </span><span class="lineCov">          8 : static void *endpoint_find(const struct stasis_app *app, const char *id)</span>
+<span class="lineNum">    1584 </span>            : {
+<span class="lineNum">    1585 </span><span class="lineCov">          8 :         return ast_endpoint_find_by_id(id);</span>
+<span class="lineNum">    1586 </span>            : }
+<span class="lineNum">    1587 </span>            : 
+<span class="lineNum">    1588 </span>            : struct stasis_app_event_source endpoint_event_source = {
+<span class="lineNum">    1589 </span>            :         .scheme = &quot;endpoint:&quot;,
+<span class="lineNum">    1590 </span>            :         .find = endpoint_find,
+<span class="lineNum">    1591 </span>            :         .subscribe = subscribe_endpoint,
+<span class="lineNum">    1592 </span>            :         .unsubscribe = app_unsubscribe_endpoint_id,
+<span class="lineNum">    1593 </span>            :         .is_subscribed = app_is_subscribed_endpoint_id
+<a name="1594"><span class="lineNum">    1594 </span>            : };</a>
+<span class="lineNum">    1595 </span>            : 
+<span class="lineNum">    1596 </span><span class="lineCov">       1118 : void stasis_app_register_event_sources(void)</span>
+<span class="lineNum">    1597 </span>            : {
+<span class="lineNum">    1598 </span><span class="lineCov">       1118 :         stasis_app_register_event_source(&amp;channel_event_source);</span>
+<span class="lineNum">    1599 </span><span class="lineCov">       1118 :         stasis_app_register_event_source(&amp;bridge_event_source);</span>
+<span class="lineNum">    1600 </span><span class="lineCov">       1118 :         stasis_app_register_event_source(&amp;endpoint_event_source);</span>
+<a name="1601"><span class="lineNum">    1601 </span><span class="lineCov">       1118 : }</span></a>
+<span class="lineNum">    1602 </span>            : 
+<span class="lineNum">    1603 </span><span class="lineCov">       1116 : void stasis_app_unregister_event_sources(void)</span>
+<span class="lineNum">    1604 </span>            : {
+<span class="lineNum">    1605 </span><span class="lineCov">       1116 :         stasis_app_unregister_event_source(&amp;endpoint_event_source);</span>
+<span class="lineNum">    1606 </span><span class="lineCov">       1116 :         stasis_app_unregister_event_source(&amp;bridge_event_source);</span>
+<span class="lineNum">    1607 </span><span class="lineCov">       1116 :         stasis_app_unregister_event_source(&amp;channel_event_source);</span>
+<span class="lineNum">    1608 </span><span class="lineCov">       1116 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

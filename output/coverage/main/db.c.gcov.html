@@ -1,0 +1,1184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/db.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - db.c<span style="font-size: 80%;"> (source / <a href="db.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">275</td>
+            <td class="headerCovTableEntry">518</td>
+            <td class="headerCovTableEntryLo">53.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntryMed">84.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief ASTdb Management
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \note DB3 is licensed under Sleepycat Public License and is thus incompatible
+<span class="lineNum">      26 </span>            :  * with GPL.  To avoid having to make another exception (and complicate
+<span class="lineNum">      27 </span>            :  * licensing even further) we elect to use DB1 which is BSD licensed
+<span class="lineNum">      28 </span>            :  */
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : /*** MODULEINFO
+<span class="lineNum">      31 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      32 </span>            :  ***/
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/paths.h&quot;   /* use ast_config_AST_DB */
+<span class="lineNum">      38 </span>            : #include &lt;sys/time.h&gt;
+<span class="lineNum">      39 </span>            : #include &lt;sys/types.h&gt;
+<span class="lineNum">      40 </span>            : #include &lt;sys/stat.h&gt;
+<span class="lineNum">      41 </span>            : #include &lt;unistd.h&gt;
+<span class="lineNum">      42 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      43 </span>            : #include &lt;dirent.h&gt;
+<span class="lineNum">      44 </span>            : #include &lt;sqlite3.h&gt;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      49 </span>            : #include &quot;asterisk/dsp.h&quot;
+<span class="lineNum">      50 </span>            : #include &quot;asterisk/astdb.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      52 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      53 </span>            : #include &quot;asterisk/manager.h&quot;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      56 </span>            :         &lt;manager name=&quot;DBGet&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      57 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      58 </span>            :                         Get DB Entry.
+<span class="lineNum">      59 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      60 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      61 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      62 </span>            :                         &lt;parameter name=&quot;Family&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      63 </span>            :                         &lt;parameter name=&quot;Key&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      64 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      65 </span>            :                 &lt;description&gt;
+<span class="lineNum">      66 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      67 </span>            :         &lt;/manager&gt;
+<span class="lineNum">      68 </span>            :         &lt;manager name=&quot;DBPut&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      69 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      70 </span>            :                         Put DB entry.
+<span class="lineNum">      71 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      72 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      73 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      74 </span>            :                         &lt;parameter name=&quot;Family&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      75 </span>            :                         &lt;parameter name=&quot;Key&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      76 </span>            :                         &lt;parameter name=&quot;Val&quot; /&gt;
+<span class="lineNum">      77 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      78 </span>            :                 &lt;description&gt;
+<span class="lineNum">      79 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      80 </span>            :         &lt;/manager&gt;
+<span class="lineNum">      81 </span>            :         &lt;manager name=&quot;DBDel&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      82 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      83 </span>            :                         Delete DB entry.
+<span class="lineNum">      84 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      85 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      86 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      87 </span>            :                         &lt;parameter name=&quot;Family&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      88 </span>            :                         &lt;parameter name=&quot;Key&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      89 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      90 </span>            :                 &lt;description&gt;
+<span class="lineNum">      91 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      92 </span>            :         &lt;/manager&gt;
+<span class="lineNum">      93 </span>            :         &lt;manager name=&quot;DBDelTree&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      94 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      95 </span>            :                         Delete DB Tree.
+<span class="lineNum">      96 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      97 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      98 </span>            :                         &lt;xi:include xpointer=&quot;xpointer(/docs/manager[@name='Login']/syntax/parameter[@name='ActionID'])&quot; /&gt;
+<span class="lineNum">      99 </span>            :                         &lt;parameter name=&quot;Family&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     100 </span>            :                         &lt;parameter name=&quot;Key&quot; /&gt;
+<span class="lineNum">     101 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     102 </span>            :                 &lt;description&gt;
+<span class="lineNum">     103 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     104 </span>            :         &lt;/manager&gt;
+<span class="lineNum">     105 </span>            :  ***/
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : #define MAX_DB_FIELD 256
+<span class="lineNum">     108 </span>            : AST_MUTEX_DEFINE_STATIC(dblock);
+<span class="lineNum">     109 </span>            : static ast_cond_t dbcond;
+<span class="lineNum">     110 </span>            : static sqlite3 *astdb;
+<span class="lineNum">     111 </span>            : static pthread_t syncthread;
+<span class="lineNum">     112 </span>            : static int doexit;
+<span class="lineNum">     113 </span>            : static int dosync;
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : static void db_sync(void);
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span>            : #define DEFINE_SQL_STATEMENT(stmt,sql) static sqlite3_stmt *stmt; \
+<span class="lineNum">     118 </span>            :         const char stmt##_sql[] = sql;
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : DEFINE_SQL_STATEMENT(put_stmt, &quot;INSERT OR REPLACE INTO astdb (key, value) VALUES (?, ?)&quot;)
+<span class="lineNum">     121 </span>            : DEFINE_SQL_STATEMENT(get_stmt, &quot;SELECT value FROM astdb WHERE key=?&quot;)
+<span class="lineNum">     122 </span>            : DEFINE_SQL_STATEMENT(del_stmt, &quot;DELETE FROM astdb WHERE key=?&quot;)
+<span class="lineNum">     123 </span>            : DEFINE_SQL_STATEMENT(deltree_stmt, &quot;DELETE FROM astdb WHERE key || '/' LIKE ? || '/' || '%'&quot;)
+<span class="lineNum">     124 </span>            : DEFINE_SQL_STATEMENT(deltree_all_stmt, &quot;DELETE FROM astdb&quot;)
+<span class="lineNum">     125 </span>            : DEFINE_SQL_STATEMENT(gettree_stmt, &quot;SELECT key, value FROM astdb WHERE key || '/' LIKE ? || '/' || '%' ORDER BY key&quot;)
+<span class="lineNum">     126 </span>            : DEFINE_SQL_STATEMENT(gettree_all_stmt, &quot;SELECT key, value FROM astdb ORDER BY key&quot;)
+<span class="lineNum">     127 </span>            : DEFINE_SQL_STATEMENT(showkey_stmt, &quot;SELECT key, value FROM astdb WHERE key LIKE '%' || '/' || ? ORDER BY key&quot;)
+<span class="lineNum">     128 </span>            : DEFINE_SQL_STATEMENT(create_astdb_stmt, &quot;CREATE TABLE IF NOT EXISTS astdb(key VARCHAR(256), value VARCHAR(256), PRIMARY KEY(key))&quot;)
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            : /* This query begs an explanation:
+<span class="lineNum">     131 </span>            :  *
+<span class="lineNum">     132 </span>            :  * First, the parameter binding syntax used here is slightly different than the other
+<span class="lineNum">     133 </span>            :  * queries in that we use a numbered parameter so that we can bind once and get the same
+<span class="lineNum">     134 </span>            :  * value substituted multiple times within the executed query.
+<span class="lineNum">     135 </span>            :  *
+<span class="lineNum">     136 </span>            :  * Second, the key comparison is being used to find all keys that are lexicographically
+<span class="lineNum">     137 </span>            :  * greater than the provided key, but less than the provided key with a high (but
+<span class="lineNum">     138 </span>            :  * invalid) Unicode codepoint appended to it. This will give us all keys in the database
+<span class="lineNum">     139 </span>            :  * that have 'key' as a prefix and performs much better than the equivalent &quot;LIKE key ||
+<span class="lineNum">     140 </span>            :  * '%'&quot; operation.
+<span class="lineNum">     141 </span>            :  */
+<a name="142"><span class="lineNum">     142 </span>            : DEFINE_SQL_STATEMENT(gettree_prefix_stmt, &quot;SELECT key, value FROM astdb WHERE key &gt; ?1 AND key &lt;= ?1 || X'ffff'&quot;)</a>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">      11240 : static int init_stmt(sqlite3_stmt **stmt, const char *sql, size_t len)</span>
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span><span class="lineCov">      11240 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     147 </span><span class="lineCov">      11240 :         if (sqlite3_prepare(astdb, sql, len, stmt, NULL) != SQLITE_OK) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't prepare statement '%s': %s\n&quot;, sql, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     151 </span>            :         }
+<span class="lineNum">     152 </span><span class="lineCov">      11240 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">      11240 :         return 0;</span>
+<span class="lineNum">     155 </span>            : }
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : /*! \internal
+<span class="lineNum">     158 </span>            :  * \brief Clean up the prepared SQLite3 statement
+<a name="159"><span class="lineNum">     159 </span>            :  * \note dblock should already be locked prior to calling this method</a>
+<span class="lineNum">     160 </span>            :  */
+<span class="lineNum">     161 </span><span class="lineCov">      11240 : static int clean_stmt(sqlite3_stmt **stmt, const char *sql)</span>
+<span class="lineNum">     162 </span>            : {
+<span class="lineNum">     163 </span><span class="lineCov">      11240 :         if (sqlite3_finalize(*stmt) != SQLITE_OK) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't finalize statement '%s': %s\n&quot;, sql, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 *stmt = NULL;</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     167 </span>            :         }
+<span class="lineNum">     168 </span><span class="lineCov">      11240 :         *stmt = NULL;</span>
+<span class="lineNum">     169 </span><span class="lineCov">      11240 :         return 0;</span>
+<span class="lineNum">     170 </span>            : }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            : /*! \internal
+<span class="lineNum">     173 </span>            :  * \brief Clean up all prepared SQLite3 statements
+<a name="174"><span class="lineNum">     174 </span>            :  * \note dblock should already be locked prior to calling this method</a>
+<span class="lineNum">     175 </span>            :  */
+<span class="lineNum">     176 </span><span class="lineCov">       1124 : static void clean_statements(void)</span>
+<span class="lineNum">     177 </span>            : {
+<span class="lineNum">     178 </span><span class="lineCov">       1124 :         clean_stmt(&amp;get_stmt, get_stmt_sql);</span>
+<span class="lineNum">     179 </span><span class="lineCov">       1124 :         clean_stmt(&amp;del_stmt, del_stmt_sql);</span>
+<span class="lineNum">     180 </span><span class="lineCov">       1124 :         clean_stmt(&amp;deltree_stmt, deltree_stmt_sql);</span>
+<span class="lineNum">     181 </span><span class="lineCov">       1124 :         clean_stmt(&amp;deltree_all_stmt, deltree_all_stmt_sql);</span>
+<span class="lineNum">     182 </span><span class="lineCov">       1124 :         clean_stmt(&amp;gettree_stmt, gettree_stmt_sql);</span>
+<span class="lineNum">     183 </span><span class="lineCov">       1124 :         clean_stmt(&amp;gettree_all_stmt, gettree_all_stmt_sql);</span>
+<span class="lineNum">     184 </span><span class="lineCov">       1124 :         clean_stmt(&amp;gettree_prefix_stmt, gettree_prefix_stmt_sql);</span>
+<span class="lineNum">     185 </span><span class="lineCov">       1124 :         clean_stmt(&amp;showkey_stmt, showkey_stmt_sql);</span>
+<span class="lineNum">     186 </span><span class="lineCov">       1124 :         clean_stmt(&amp;put_stmt, put_stmt_sql);</span>
+<span class="lineNum">     187 </span><span class="lineCov">       1124 :         clean_stmt(&amp;create_astdb_stmt, create_astdb_stmt_sql);</span>
+<a name="188"><span class="lineNum">     188 </span><span class="lineCov">       1124 : }</span></a>
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">       1124 : static int init_statements(void)</span>
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span>            :         /* Don't initialize create_astdb_statment here as the astdb table needs to exist
+<span class="lineNum">     193 </span>            :          * brefore these statments can be initialized */
+<span class="lineNum">     194 </span><span class="lineCov">       1124 :         return init_stmt(&amp;get_stmt, get_stmt_sql, sizeof(get_stmt_sql))</span>
+<span class="lineNum">     195 </span><span class="lineCov">       1124 :         || init_stmt(&amp;del_stmt, del_stmt_sql, sizeof(del_stmt_sql))</span>
+<span class="lineNum">     196 </span><span class="lineCov">       1124 :         || init_stmt(&amp;deltree_stmt, deltree_stmt_sql, sizeof(deltree_stmt_sql))</span>
+<span class="lineNum">     197 </span><span class="lineCov">       1124 :         || init_stmt(&amp;deltree_all_stmt, deltree_all_stmt_sql, sizeof(deltree_all_stmt_sql))</span>
+<span class="lineNum">     198 </span><span class="lineCov">       1124 :         || init_stmt(&amp;gettree_stmt, gettree_stmt_sql, sizeof(gettree_stmt_sql))</span>
+<span class="lineNum">     199 </span><span class="lineCov">       1124 :         || init_stmt(&amp;gettree_all_stmt, gettree_all_stmt_sql, sizeof(gettree_all_stmt_sql))</span>
+<span class="lineNum">     200 </span><span class="lineCov">       1124 :         || init_stmt(&amp;gettree_prefix_stmt, gettree_prefix_stmt_sql, sizeof(gettree_prefix_stmt_sql))</span>
+<span class="lineNum">     201 </span><span class="lineCov">       1124 :         || init_stmt(&amp;showkey_stmt, showkey_stmt_sql, sizeof(showkey_stmt_sql))</span>
+<span class="lineNum">     202 </span><span class="lineCov">       2248 :         || init_stmt(&amp;put_stmt, put_stmt_sql, sizeof(put_stmt_sql));</span>
+<a name="203"><span class="lineNum">     203 </span>            : }</a>
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 : static int convert_bdb_to_sqlite3(void)</span>
+<span class="lineNum">     206 </span>            : {
+<span class="lineNum">     207 </span>            :         char *cmd;
+<span class="lineNum">     208 </span>            :         int res;
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :         res = ast_asprintf(&amp;cmd, &quot;%s/astdb2sqlite3 '%s'\n&quot;, ast_config_AST_SBIN_DIR, ast_config_AST_DB);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         if (0 &lt;= res) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 res = ast_safe_system(cmd);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 ast_free(cmd);</span>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="217"><span class="lineNum">     217 </span>            : }</a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">       1124 : static int db_create_astdb(void)</span>
+<span class="lineNum">     220 </span>            : {
+<span class="lineNum">     221 </span><span class="lineCov">       1124 :         int res = 0;</span>
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span><span class="lineCov">       1124 :         if (!create_astdb_stmt) {</span>
+<span class="lineNum">     224 </span><span class="lineCov">       1124 :                 init_stmt(&amp;create_astdb_stmt, create_astdb_stmt_sql, sizeof(create_astdb_stmt_sql));</span>
+<span class="lineNum">     225 </span>            :         }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">       1124 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     228 </span><span class="lineCov">       1124 :         if (sqlite3_step(create_astdb_stmt) != SQLITE_DONE) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't create astdb table: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span><span class="lineCov">       1124 :         sqlite3_reset(create_astdb_stmt);</span>
+<span class="lineNum">     233 </span><span class="lineCov">       1124 :         db_sync();</span>
+<span class="lineNum">     234 </span><span class="lineCov">       1124 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">       1124 :         return res;</span>
+<a name="237"><span class="lineNum">     237 </span>            : }</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">       1124 : static int db_open(void)</span>
+<span class="lineNum">     240 </span>            : {
+<span class="lineNum">     241 </span>            :         char *dbname;
+<span class="lineNum">     242 </span>            :         struct stat dont_care;
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">       1124 :         if (!(dbname = ast_alloca(strlen(ast_config_AST_DB) + sizeof(&quot;.sqlite3&quot;)))) {</span>
+<span class="lineNum">     245 </span>            :                 return -1;
+<span class="lineNum">     246 </span>            :         }
+<span class="lineNum">     247 </span><span class="lineCov">       1124 :         strcpy(dbname, ast_config_AST_DB);</span>
+<span class="lineNum">     248 </span><span class="lineCov">       1124 :         strcat(dbname, &quot;.sqlite3&quot;);</span>
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineCov">       1124 :         if (stat(dbname, &amp;dont_care) &amp;&amp; !stat(ast_config_AST_DB, &amp;dont_care)) {</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 if (convert_bdb_to_sqlite3()) {</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** Database conversion failed!\n&quot;);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** Asterisk now uses SQLite3 for its internal\n&quot;);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** database. Conversion from the old astdb\n&quot;);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** failed. Most likely the astdb2sqlite3 utility\n&quot;);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** was not selected for build. To convert the\n&quot;);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** old astdb, please delete '%s'\n&quot;, dbname);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** and re-run 'make menuselect' and select astdb2sqlite3\n&quot;);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** in the Utilities section, then 'make &amp;&amp; make install'.\n&quot;);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** It is also imperative that the user under which\n&quot;);</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** Asterisk runs have write permission to the directory\n&quot;);</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;*** where the database resides.\n&quot;);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                         sleep(5);</span>
+<span class="lineNum">     264 </span>            :                 } else {
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;Database conversion succeeded!\n&quot;);</span>
+<span class="lineNum">     266 </span>            :                 }
+<span class="lineNum">     267 </span>            :         }
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineCov">       1124 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     270 </span><span class="lineCov">       1124 :         if (sqlite3_open(dbname, &amp;astdb) != SQLITE_OK) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unable to open Asterisk database '%s': %s\n&quot;, dbname, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 sqlite3_close(astdb);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     275 </span>            :         }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">       1124 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">       1124 :         return 0;</span>
+<a name="280"><span class="lineNum">     280 </span>            : }</a>
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">       1124 : static int db_init(void)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineCov">       1124 :         if (astdb) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     286 </span>            :         }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">       1124 :         if (db_open() || db_create_astdb() || init_statements()) {</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">     293 </span>            : }
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span>            : /* We purposely don't lock around the sqlite3 call because the transaction
+<a name="296"><span class="lineNum">     296 </span>            :  * calls will be called with the database lock held. For any other use, make</a>
+<span class="lineNum">     297 </span>            :  * sure to take the dblock yourself. */
+<span class="lineNum">     298 </span><span class="lineCov">       9456 : static int db_execute_sql(const char *sql, int (*callback)(void *, int, char **, char **), void *arg)</span>
+<span class="lineNum">     299 </span>            : {
+<span class="lineNum">     300 </span><span class="lineCov">       9456 :         char *errmsg = NULL;</span>
+<span class="lineNum">     301 </span><span class="lineCov">       9456 :         int res =0;</span>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">       9456 :         if (sqlite3_exec(astdb, sql, callback, arg, &amp;errmsg) != SQLITE_OK) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Error executing SQL (%s): %s\n&quot;, sql, errmsg);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 sqlite3_free(errmsg);</span>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">       9456 :         return res;</span>
+<a name="310"><span class="lineNum">     310 </span>            : }</a>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">       4728 : static int ast_db_begin_transaction(void)</span>
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span><span class="lineCov">       4728 :         return db_execute_sql(&quot;BEGIN TRANSACTION&quot;, NULL, NULL);</span>
+<a name="315"><span class="lineNum">     315 </span>            : }</a>
+<span class="lineNum">     316 </span>            : 
+<span class="lineNum">     317 </span><span class="lineCov">       4728 : static int ast_db_commit_transaction(void)</span>
+<span class="lineNum">     318 </span>            : {
+<span class="lineNum">     319 </span><span class="lineCov">       4728 :         return db_execute_sql(&quot;COMMIT&quot;, NULL, NULL);</span>
+<a name="320"><span class="lineNum">     320 </span>            : }</a>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 : static int ast_db_rollback_transaction(void)</span>
+<span class="lineNum">     323 </span>            : {
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         return db_execute_sql(&quot;ROLLBACK&quot;, NULL, NULL);</span>
+<a name="325"><span class="lineNum">     325 </span>            : }</a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineCov">     101966 : int ast_db_put(const char *family, const char *key, const char *value)</span>
+<span class="lineNum">     328 </span>            : {
+<span class="lineNum">     329 </span>            :         char fullkey[MAX_DB_FIELD];
+<span class="lineNum">     330 </span>            :         size_t fullkey_len;
+<span class="lineNum">     331 </span><span class="lineCov">     101966 :         int res = 0;</span>
+<span class="lineNum">     332 </span>            : 
+<span class="lineNum">     333 </span><span class="lineCov">     101966 :         if (strlen(family) + strlen(key) + 2 &gt; sizeof(fullkey) - 1) {</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Family and key length must be less than %zu bytes\n&quot;, sizeof(fullkey) - 3);</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     336 </span>            :         }
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span><span class="lineCov">     101966 :         fullkey_len = snprintf(fullkey, sizeof(fullkey), &quot;/%s/%s&quot;, family, key);</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">     101966 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     341 </span><span class="lineCov">     101966 :         if (sqlite3_bind_text(put_stmt, 1, fullkey, fullkey_len, SQLITE_STATIC) != SQLITE_OK) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't bind key to stmt: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     344 </span><span class="lineCov">     101966 :         } else if (sqlite3_bind_text(put_stmt, 2, value, -1, SQLITE_STATIC) != SQLITE_OK) {</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't bind value to stmt: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     347 </span><span class="lineCov">     101966 :         } else if (sqlite3_step(put_stmt) != SQLITE_DONE) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't execute statment: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     350 </span>            :         }
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineCov">     101966 :         sqlite3_reset(put_stmt);</span>
+<span class="lineNum">     353 </span><span class="lineCov">     101966 :         db_sync();</span>
+<span class="lineNum">     354 </span><span class="lineCov">     101966 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineCov">     101966 :         return res;</span>
+<span class="lineNum">     357 </span>            : }
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span>            : /*!
+<span class="lineNum">     360 </span>            :  * \internal
+<span class="lineNum">     361 </span>            :  * \brief Get key value specified by family/key.
+<span class="lineNum">     362 </span>            :  *
+<span class="lineNum">     363 </span>            :  * Gets the value associated with the specified \a family and \a key, and
+<span class="lineNum">     364 </span>            :  * stores it, either into the fixed sized buffer specified by \a buffer
+<span class="lineNum">     365 </span>            :  * and \a bufferlen, or as a heap allocated string if \a bufferlen is -1.
+<span class="lineNum">     366 </span>            :  *
+<span class="lineNum">     367 </span>            :  * \note If \a bufferlen is -1, \a buffer points to heap allocated memory
+<span class="lineNum">     368 </span>            :  *       and must be freed by calling ast_free().
+<span class="lineNum">     369 </span>            :  *
+<span class="lineNum">     370 </span>            :  * \retval -1 An error occurred
+<a name="371"><span class="lineNum">     371 </span>            :  * \retval 0 Success</a>
+<span class="lineNum">     372 </span>            :  */
+<span class="lineNum">     373 </span><span class="lineCov">       4576 : static int db_get_common(const char *family, const char *key, char **buffer, int bufferlen)</span>
+<span class="lineNum">     374 </span>            : {
+<span class="lineNum">     375 </span>            :         const unsigned char *result;
+<span class="lineNum">     376 </span>            :         char fullkey[MAX_DB_FIELD];
+<span class="lineNum">     377 </span>            :         size_t fullkey_len;
+<span class="lineNum">     378 </span><span class="lineCov">       4576 :         int res = 0;</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">       4576 :         if (strlen(family) + strlen(key) + 2 &gt; sizeof(fullkey) - 1) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Family and key length must be less than %zu bytes\n&quot;, sizeof(fullkey) - 3);</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     383 </span>            :         }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">       4576 :         fullkey_len = snprintf(fullkey, sizeof(fullkey), &quot;/%s/%s&quot;, family, key);</span>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineCov">       4576 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     388 </span><span class="lineCov">       4576 :         if (sqlite3_bind_text(get_stmt, 1, fullkey, fullkey_len, SQLITE_STATIC) != SQLITE_OK) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't bind key to stmt: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     391 </span><span class="lineCov">       4576 :         } else if (sqlite3_step(get_stmt) != SQLITE_ROW) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">       4023 :                 ast_debug(1, &quot;Unable to find key '%s' in family '%s'\n&quot;, key, family);</span>
+<span class="lineNum">     393 </span><span class="lineCov">       4023 :                 res = -1;</span>
+<span class="lineNum">     394 </span><span class="lineCov">        553 :         } else if (!(result = sqlite3_column_text(get_stmt, 0))) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't get value\n&quot;);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     397 </span>            :         } else {
+<span class="lineNum">     398 </span><span class="lineCov">        553 :                 const char *value = (const char *) result;</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">        553 :                 if (bufferlen == -1) {</span>
+<span class="lineNum">     401 </span><span class="lineCov">         70 :                         *buffer = ast_strdup(value);</span>
+<span class="lineNum">     402 </span>            :                 } else {
+<span class="lineNum">     403 </span><span class="lineCov">        483 :                         ast_copy_string(*buffer, value, bufferlen);</span>
+<span class="lineNum">     404 </span>            :                 }
+<span class="lineNum">     405 </span>            :         }
+<span class="lineNum">     406 </span><span class="lineCov">       4576 :         sqlite3_reset(get_stmt);</span>
+<span class="lineNum">     407 </span><span class="lineCov">       4576 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">       4576 :         return res;</span>
+<a name="410"><span class="lineNum">     410 </span>            : }</a>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">       2438 : int ast_db_get(const char *family, const char *key, char *value, int valuelen)</span>
+<span class="lineNum">     413 </span>            : {
+<span class="lineNum">     414 </span><span class="lineCov">       2438 :         ast_assert(value != NULL);</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            :         /* Make sure we initialize */
+<span class="lineNum">     417 </span><span class="lineCov">       2438 :         value[0] = 0;</span>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">       2438 :         return db_get_common(family, key, &amp;value, valuelen);</span>
+<a name="420"><span class="lineNum">     420 </span>            : }</a>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span><span class="lineCov">       2138 : int ast_db_get_allocated(const char *family, const char *key, char **out)</span>
+<span class="lineNum">     423 </span>            : {
+<span class="lineNum">     424 </span><span class="lineCov">       2138 :         *out = NULL;</span>
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span><span class="lineCov">       2138 :         return db_get_common(family, key, out, -1);</span>
+<a name="427"><span class="lineNum">     427 </span>            : }</a>
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineCov">        192 : int ast_db_del(const char *family, const char *key)</span>
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span>            :         char fullkey[MAX_DB_FIELD];
+<span class="lineNum">     432 </span>            :         size_t fullkey_len;
+<span class="lineNum">     433 </span><span class="lineCov">        192 :         int res = 0;</span>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineCov">        192 :         if (strlen(family) + strlen(key) + 2 &gt; sizeof(fullkey) - 1) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Family and key length must be less than %zu bytes\n&quot;, sizeof(fullkey) - 3);</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     438 </span>            :         }
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineCov">        192 :         fullkey_len = snprintf(fullkey, sizeof(fullkey), &quot;/%s/%s&quot;, family, key);</span>
+<span class="lineNum">     441 </span>            : 
+<span class="lineNum">     442 </span><span class="lineCov">        192 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     443 </span><span class="lineCov">        192 :         if (sqlite3_bind_text(del_stmt, 1, fullkey, fullkey_len, SQLITE_STATIC) != SQLITE_OK) {</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't bind key to stmt: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     446 </span><span class="lineCov">        192 :         } else if (sqlite3_step(del_stmt) != SQLITE_DONE) {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;Unable to find key '%s' in family '%s'\n&quot;, key, family);</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     449 </span>            :         }
+<span class="lineNum">     450 </span><span class="lineCov">        192 :         sqlite3_reset(del_stmt);</span>
+<span class="lineNum">     451 </span><span class="lineCov">        192 :         db_sync();</span>
+<span class="lineNum">     452 </span><span class="lineCov">        192 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineCov">        192 :         return res;</span>
+<a name="455"><span class="lineNum">     455 </span>            : }</a>
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span><span class="lineCov">      12364 : int ast_db_deltree(const char *family, const char *keytree)</span>
+<span class="lineNum">     458 </span>            : {
+<span class="lineNum">     459 </span><span class="lineCov">      12364 :         sqlite3_stmt *stmt = deltree_stmt;</span>
+<span class="lineNum">     460 </span>            :         char prefix[MAX_DB_FIELD];
+<span class="lineNum">     461 </span><span class="lineCov">      12364 :         int res = 0;</span>
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">      12364 :         if (!ast_strlen_zero(family)) {</span>
+<span class="lineNum">     464 </span><span class="lineCov">      12364 :                 if (!ast_strlen_zero(keytree)) {</span>
+<span class="lineNum">     465 </span>            :                         /* Family and key tree */
+<span class="lineNum">     466 </span><span class="lineCov">          1 :                         snprintf(prefix, sizeof(prefix), &quot;/%s/%s&quot;, family, keytree);</span>
+<span class="lineNum">     467 </span>            :                 } else {
+<span class="lineNum">     468 </span>            :                         /* Family only */
+<span class="lineNum">     469 </span><span class="lineCov">      12363 :                         snprintf(prefix, sizeof(prefix), &quot;/%s&quot;, family);</span>
+<span class="lineNum">     470 </span>            :                 }
+<span class="lineNum">     471 </span>            :         } else {
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :                 prefix[0] = '\0';</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :                 stmt = deltree_all_stmt;</span>
+<span class="lineNum">     474 </span>            :         }
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">      12364 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     477 </span><span class="lineCov">      12364 :         if (!ast_strlen_zero(prefix) &amp;&amp; (sqlite3_bind_text(stmt, 1, prefix, -1, SQLITE_STATIC) != SQLITE_OK)) {</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could bind %s to stmt: %s\n&quot;, prefix, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     480 </span><span class="lineCov">      12364 :         } else if (sqlite3_step(stmt) != SQLITE_DONE) {</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't execute stmt: %s\n&quot;, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :                 res = -1;</span>
+<span class="lineNum">     483 </span>            :         }
+<span class="lineNum">     484 </span><span class="lineCov">      12364 :         res = sqlite3_changes(astdb);</span>
+<span class="lineNum">     485 </span><span class="lineCov">      12364 :         sqlite3_reset(stmt);</span>
+<span class="lineNum">     486 </span><span class="lineCov">      12364 :         db_sync();</span>
+<span class="lineNum">     487 </span><span class="lineCov">      12364 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">      12364 :         return res;</span>
+<a name="490"><span class="lineNum">     490 </span>            : }</a>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">      10852 : static struct ast_db_entry *db_gettree_common(sqlite3_stmt *stmt)</span>
+<span class="lineNum">     493 </span>            : {
+<span class="lineNum">     494 </span><span class="lineCov">      10852 :         struct ast_db_entry *head = NULL, *prev = NULL, *cur;</span>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">      11439 :         while (sqlite3_step(stmt) == SQLITE_ROW) {</span>
+<span class="lineNum">     497 </span>            :                 const char *key, *value;
+<span class="lineNum">     498 </span>            :                 size_t key_len, value_len;
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">        587 :                 key   = (const char *) sqlite3_column_text(stmt, 0);</span>
+<span class="lineNum">     501 </span><span class="lineCov">        587 :                 value = (const char *) sqlite3_column_text(stmt, 1);</span>
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineCov">        587 :                 if (!key || !value) {</span>
+<span class="lineNum">     504 </span>            :                         break;
+<span class="lineNum">     505 </span>            :                 }
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineCov">        587 :                 key_len = strlen(key);</span>
+<span class="lineNum">     508 </span><span class="lineCov">        587 :                 value_len = strlen(value);</span>
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">        587 :                 cur = ast_malloc(sizeof(*cur) + key_len + value_len + 2);</span>
+<span class="lineNum">     511 </span><span class="lineCov">        587 :                 if (!cur) {</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     513 </span>            :                 }
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span><span class="lineCov">        587 :                 cur-&gt;next = NULL;</span>
+<span class="lineNum">     516 </span><span class="lineCov">        587 :                 cur-&gt;key = cur-&gt;data + value_len + 1;</span>
+<span class="lineNum">     517 </span><span class="lineCov">        587 :                 memcpy(cur-&gt;data, value, value_len + 1);</span>
+<span class="lineNum">     518 </span><span class="lineCov">        587 :                 memcpy(cur-&gt;key, key, key_len + 1);</span>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineCov">        587 :                 if (prev) {</span>
+<span class="lineNum">     521 </span><span class="lineCov">        231 :                         prev-&gt;next = cur;</span>
+<span class="lineNum">     522 </span>            :                 } else {
+<span class="lineNum">     523 </span><span class="lineCov">        356 :                         head = cur;</span>
+<span class="lineNum">     524 </span>            :                 }
+<span class="lineNum">     525 </span><span class="lineCov">        587 :                 prev = cur;</span>
+<span class="lineNum">     526 </span>            :         }
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineCov">      10852 :         return head;</span>
+<a name="529"><span class="lineNum">     529 </span>            : }</a>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineCov">       9394 : struct ast_db_entry *ast_db_gettree(const char *family, const char *keytree)</span>
+<span class="lineNum">     532 </span>            : {
+<span class="lineNum">     533 </span>            :         char prefix[MAX_DB_FIELD];
+<span class="lineNum">     534 </span><span class="lineCov">       9394 :         sqlite3_stmt *stmt = gettree_stmt;</span>
+<span class="lineNum">     535 </span><span class="lineCov">       9394 :         size_t res = 0;</span>
+<span class="lineNum">     536 </span>            :         struct ast_db_entry *ret;
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">       9394 :         if (!ast_strlen_zero(family)) {</span>
+<span class="lineNum">     539 </span><span class="lineCov">       9394 :                 if (!ast_strlen_zero(keytree)) {</span>
+<span class="lineNum">     540 </span>            :                         /* Family and key tree */
+<span class="lineNum">     541 </span><span class="lineCov">          2 :                         res = snprintf(prefix, sizeof(prefix), &quot;/%s/%s&quot;, family, keytree);</span>
+<span class="lineNum">     542 </span>            :                 } else {
+<span class="lineNum">     543 </span>            :                         /* Family only */
+<span class="lineNum">     544 </span><span class="lineCov">       9392 :                         res = snprintf(prefix, sizeof(prefix), &quot;/%s&quot;, family);</span>
+<span class="lineNum">     545 </span>            :                 }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">       9394 :                 if (res &gt;= sizeof(prefix)) {</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Requested prefix is too long: %s\n&quot;, keytree);</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     550 </span>            :                 }
+<span class="lineNum">     551 </span>            :         } else {
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 prefix[0] = '\0';</span>
+<span class="lineNum">     553 </span><span class="lineNoCov">          0 :                 stmt = gettree_all_stmt;</span>
+<span class="lineNum">     554 </span>            :         }
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineCov">       9394 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     557 </span><span class="lineCov">       9394 :         if (res &amp;&amp; (sqlite3_bind_text(stmt, 1, prefix, res, SQLITE_STATIC) != SQLITE_OK)) {</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not bind %s to stmt: %s\n&quot;, prefix, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :                 sqlite3_reset(stmt);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">       9394 :         ret = db_gettree_common(stmt);</span>
+<span class="lineNum">     565 </span><span class="lineCov">       9394 :         sqlite3_reset(stmt);</span>
+<span class="lineNum">     566 </span><span class="lineCov">       9394 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineCov">       9394 :         return ret;</span>
+<a name="569"><span class="lineNum">     569 </span>            : }</a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineCov">       1458 : struct ast_db_entry *ast_db_gettree_by_prefix(const char *family, const char *key_prefix)</span>
+<span class="lineNum">     572 </span>            : {
+<span class="lineNum">     573 </span>            :         char prefix[MAX_DB_FIELD];
+<span class="lineNum">     574 </span>            :         size_t res;
+<span class="lineNum">     575 </span>            :         struct ast_db_entry *ret;
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineCov">       1458 :         res = snprintf(prefix, sizeof(prefix), &quot;/%s/%s&quot;, family, key_prefix);</span>
+<span class="lineNum">     578 </span><span class="lineCov">       1458 :         if (res &gt;= sizeof(prefix)) {</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Requested key prefix is too long: %s\n&quot;, key_prefix);</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     581 </span>            :         }
+<span class="lineNum">     582 </span>            : 
+<span class="lineNum">     583 </span><span class="lineCov">       1458 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     584 </span><span class="lineCov">       1458 :         if (sqlite3_bind_text(gettree_prefix_stmt, 1, prefix, res, SQLITE_STATIC) != SQLITE_OK) {</span>
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not bind %s to stmt: %s\n&quot;, prefix, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :                 sqlite3_reset(gettree_prefix_stmt);</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     589 </span>            :         }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineCov">       1458 :         ret = db_gettree_common(gettree_prefix_stmt);</span>
+<span class="lineNum">     592 </span><span class="lineCov">       1458 :         sqlite3_reset(gettree_prefix_stmt);</span>
+<span class="lineNum">     593 </span><span class="lineCov">       1458 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span><span class="lineCov">       1458 :         return ret;</span>
+<a name="596"><span class="lineNum">     596 </span>            : }</a>
+<span class="lineNum">     597 </span>            : 
+<span class="lineNum">     598 </span><span class="lineCov">       9743 : void ast_db_freetree(struct ast_db_entry *dbe)</span>
+<span class="lineNum">     599 </span>            : {
+<span class="lineNum">     600 </span>            :         struct ast_db_entry *last;
+<span class="lineNum">     601 </span><span class="lineCov">      10330 :         while (dbe) {</span>
+<span class="lineNum">     602 </span><span class="lineCov">        587 :                 last = dbe;</span>
+<span class="lineNum">     603 </span><span class="lineCov">        587 :                 dbe = dbe-&gt;next;</span>
+<span class="lineNum">     604 </span><span class="lineCov">        587 :                 ast_free(last);</span>
+<span class="lineNum">     605 </span>            :         }
+<a name="606"><span class="lineNum">     606 </span><span class="lineCov">       9743 : }</span></a>
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineCov">       1124 : static char *handle_cli_database_put(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     609 </span>            : {
+<span class="lineNum">     610 </span>            :         int res;
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     613 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     614 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database put&quot;;</span>
+<span class="lineNum">     615 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     616 </span>            :                         &quot;Usage: database put &lt;family&gt; &lt;key&gt; &lt;value&gt;\n&quot;
+<span class="lineNum">     617 </span>            :                         &quot;       Adds or updates an entry in the Asterisk database for\n&quot;
+<span class="lineNum">     618 </span>            :                         &quot;       a given family, key, and value.\n&quot;;
+<span class="lineNum">     619 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     622 </span>            :         }
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 5)</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :         res = ast_db_put(a-&gt;argv[2], a-&gt;argv[3], a-&gt;argv[4]);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :         if (res)  {</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Failed to update entry\n&quot;);</span>
+<span class="lineNum">     629 </span>            :         } else {
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Updated database successfully\n&quot;);</span>
+<span class="lineNum">     631 </span>            :         }
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="633"><span class="lineNum">     633 </span>            : }</a>
+<span class="lineNum">     634 </span>            : 
+<span class="lineNum">     635 </span><span class="lineCov">       1124 : static char *handle_cli_database_get(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     636 </span>            : {
+<span class="lineNum">     637 </span>            :         int res;
+<span class="lineNum">     638 </span>            :         char tmp[MAX_DB_FIELD];
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     641 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     642 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database get&quot;;</span>
+<span class="lineNum">     643 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     644 </span>            :                         &quot;Usage: database get &lt;family&gt; &lt;key&gt;\n&quot;
+<span class="lineNum">     645 </span>            :                         &quot;       Retrieves an entry in the Asterisk database for a given\n&quot;
+<span class="lineNum">     646 </span>            :                         &quot;       family and key.\n&quot;;
+<span class="lineNum">     647 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     650 </span>            :         }
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4)</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :         res = ast_db_get(a-&gt;argv[2], a-&gt;argv[3], tmp, sizeof(tmp));</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :         if (res) {</span>
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Database entry not found.\n&quot;);</span>
+<span class="lineNum">     657 </span>            :         } else {
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Value: %s\n&quot;, tmp);</span>
+<span class="lineNum">     659 </span>            :         }
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="661"><span class="lineNum">     661 </span>            : }</a>
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span><span class="lineCov">       1124 : static char *handle_cli_database_del(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     664 </span>            : {
+<span class="lineNum">     665 </span>            :         int res;
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     668 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     669 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database del&quot;;</span>
+<span class="lineNum">     670 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     671 </span>            :                         &quot;Usage: database del &lt;family&gt; &lt;key&gt;\n&quot;
+<span class="lineNum">     672 </span>            :                         &quot;       Deletes an entry in the Asterisk database for a given\n&quot;
+<span class="lineNum">     673 </span>            :                         &quot;       family and key.\n&quot;;
+<span class="lineNum">     674 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     677 </span>            :         }
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4)</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :         res = ast_db_del(a-&gt;argv[2], a-&gt;argv[3]);</span>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :         if (res) {</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Database entry does not exist.\n&quot;);</span>
+<span class="lineNum">     684 </span>            :         } else {
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Database entry removed.\n&quot;);</span>
+<span class="lineNum">     686 </span>            :         }
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="688"><span class="lineNum">     688 </span>            : }</a>
+<span class="lineNum">     689 </span>            : 
+<span class="lineNum">     690 </span><span class="lineCov">       1124 : static char *handle_cli_database_deltree(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     691 </span>            : {
+<span class="lineNum">     692 </span>            :         int num_deleted;
+<span class="lineNum">     693 </span>            : 
+<span class="lineNum">     694 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     695 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     696 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database deltree&quot;;</span>
+<span class="lineNum">     697 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     698 </span>            :                         &quot;Usage: database deltree &lt;family&gt; [keytree]\n&quot;
+<span class="lineNum">     699 </span>            :                         &quot;   OR: database deltree &lt;family&gt;[/keytree]\n&quot;
+<span class="lineNum">     700 </span>            :                         &quot;       Deletes a family or specific keytree within a family\n&quot;
+<span class="lineNum">     701 </span>            :                         &quot;       in the Asterisk database.  The two arguments may be\n&quot;
+<span class="lineNum">     702 </span>            :                         &quot;       separated by either a space or a slash.\n&quot;;
+<span class="lineNum">     703 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     706 </span>            :         }
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         if ((a-&gt;argc &lt; 3) || (a-&gt;argc &gt; 4))</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :         if (a-&gt;argc == 4) {</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                 num_deleted = ast_db_deltree(a-&gt;argv[2], a-&gt;argv[3]);</span>
+<span class="lineNum">     712 </span>            :         } else {
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :                 num_deleted = ast_db_deltree(a-&gt;argv[2], NULL);</span>
+<span class="lineNum">     714 </span>            :         }
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         if (num_deleted &lt; 0) {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Database unavailable.\n&quot;);</span>
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :         } else if (num_deleted == 0) {</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;Database entries do not exist.\n&quot;);</span>
+<span class="lineNum">     719 </span>            :         } else {
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%d database entries removed.\n&quot;,num_deleted);</span>
+<span class="lineNum">     721 </span>            :         }
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="723"><span class="lineNum">     723 </span>            : }</a>
+<span class="lineNum">     724 </span>            : 
+<span class="lineNum">     725 </span><span class="lineCov">       1124 : static char *handle_cli_database_show(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     726 </span>            : {
+<span class="lineNum">     727 </span>            :         char prefix[MAX_DB_FIELD];
+<span class="lineNum">     728 </span><span class="lineCov">       1124 :         int counter = 0;</span>
+<span class="lineNum">     729 </span><span class="lineCov">       1124 :         sqlite3_stmt *stmt = gettree_stmt;</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     732 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     733 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database show&quot;;</span>
+<span class="lineNum">     734 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     735 </span>            :                         &quot;Usage: database show [family [keytree]]\n&quot;
+<span class="lineNum">     736 </span>            :                         &quot;   OR: database show [family[/keytree]]\n&quot;
+<span class="lineNum">     737 </span>            :                         &quot;       Shows Asterisk database contents, optionally restricted\n&quot;
+<span class="lineNum">     738 </span>            :                         &quot;       to a given family, or family and keytree. The two arguments\n&quot;
+<span class="lineNum">     739 </span>            :                         &quot;       may be separated either by a space or by a slash.\n&quot;;
+<span class="lineNum">     740 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     743 </span>            :         }
+<span class="lineNum">     744 </span>            : 
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :         if (a-&gt;argc == 4) {</span>
+<span class="lineNum">     746 </span>            :                 /* Family and key tree */
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :                 snprintf(prefix, sizeof(prefix), &quot;/%s/%s&quot;, a-&gt;argv[2], a-&gt;argv[3]);</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :         } else if (a-&gt;argc == 3) {</span>
+<span class="lineNum">     749 </span>            :                 /* Family only */
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :                 snprintf(prefix, sizeof(prefix), &quot;/%s&quot;, a-&gt;argv[2]);</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :         } else if (a-&gt;argc == 2) {</span>
+<span class="lineNum">     752 </span>            :                 /* Neither */
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :                 prefix[0] = '\0';</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">          0 :                 stmt = gettree_all_stmt;</span>
+<span class="lineNum">     755 </span>            : 
+<span class="lineNum">     756 </span>            :         } else {
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     758 </span>            :         }
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(prefix) &amp;&amp; (sqlite3_bind_text(stmt, 1, prefix, -1, SQLITE_STATIC) != SQLITE_OK)) {</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could bind %s to stmt: %s\n&quot;, prefix, sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :                 sqlite3_reset(stmt);</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     766 </span>            :         }
+<span class="lineNum">     767 </span>            : 
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :         while (sqlite3_step(stmt) == SQLITE_ROW) {</span>
+<span class="lineNum">     769 </span>            :                 const char *key_s, *value_s;
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :                 if (!(key_s = (const char *) sqlite3_column_text(stmt, 0))) {</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Skipping invalid key!\n&quot;);</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     773 </span>            :                 }
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :                 if (!(value_s = (const char *) sqlite3_column_text(stmt, 1))) {</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Skipping invalid value!\n&quot;);</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     777 </span>            :                 }
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 ++counter;</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%-50s: %-25s\n&quot;, key_s, value_s);</span>
+<span class="lineNum">     780 </span>            :         }
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :         sqlite3_reset(stmt);</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%d results found.\n&quot;, counter);</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="787"><span class="lineNum">     787 </span>            : }</a>
+<span class="lineNum">     788 </span>            : 
+<span class="lineNum">     789 </span><span class="lineCov">       1124 : static char *handle_cli_database_showkey(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     790 </span>            : {
+<span class="lineNum">     791 </span><span class="lineCov">       1124 :         int counter = 0;</span>
+<span class="lineNum">     792 </span>            : 
+<span class="lineNum">     793 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     794 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     795 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database showkey&quot;;</span>
+<span class="lineNum">     796 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     797 </span>            :                         &quot;Usage: database showkey &lt;keytree&gt;\n&quot;
+<span class="lineNum">     798 </span>            :                         &quot;       Shows Asterisk database contents, restricted to a given key.\n&quot;;
+<span class="lineNum">     799 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     802 </span>            :         }
+<span class="lineNum">     803 </span>            : 
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 3) {</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     806 </span>            :         }
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(a-&gt;argv[2]) &amp;&amp; (sqlite3_bind_text(showkey_stmt, 1, a-&gt;argv[2], -1, SQLITE_STATIC) != SQLITE_OK)) {</span>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could bind %s to stmt: %s\n&quot;, a-&gt;argv[2], sqlite3_errmsg(astdb));</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :                 sqlite3_reset(showkey_stmt);</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     814 </span>            :         }
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :         while (sqlite3_step(showkey_stmt) == SQLITE_ROW) {</span>
+<span class="lineNum">     817 </span>            :                 const char *key_s, *value_s;
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                 if (!(key_s = (const char *) sqlite3_column_text(showkey_stmt, 0))) {</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     820 </span>            :                 }
+<span class="lineNum">     821 </span><span class="lineNoCov">          0 :                 if (!(value_s = (const char *) sqlite3_column_text(showkey_stmt, 1))) {</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     823 </span>            :                 }
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                 ++counter;</span>
+<span class="lineNum">     825 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%-50s: %-25s\n&quot;, key_s, value_s);</span>
+<span class="lineNum">     826 </span>            :         }
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :         sqlite3_reset(showkey_stmt);</span>
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;%d results found.\n&quot;, counter);</span>
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<a name="832"><span class="lineNum">     832 </span>            : }</a>
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 : static int display_results(void *arg, int columns, char **values, char **colnames)</span>
+<span class="lineNum">     835 </span>            : {
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :         struct ast_cli_args *a = arg;</span>
+<span class="lineNum">     837 </span>            :         size_t x;
+<span class="lineNum">     838 </span>            : 
+<span class="lineNum">     839 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; columns; x++) {</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;%-5s: %-50s\n&quot;, colnames[x], values[x]);</span>
+<span class="lineNum">     841 </span>            :         }
+<span class="lineNum">     842 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;\n&quot;);</span>
+<span class="lineNum">     843 </span>            : 
+<span class="lineNum">     844 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="845"><span class="lineNum">     845 </span>            : }</a>
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span><span class="lineCov">       1124 : static char *handle_cli_database_query(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     848 </span>            : {
+<span class="lineNum">     849 </span>            : 
+<span class="lineNum">     850 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     851 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     852 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;database query&quot;;</span>
+<span class="lineNum">     853 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     854 </span>            :                         &quot;Usage: database query \&quot;&lt;SQL Statement&gt;\&quot;\n&quot;
+<span class="lineNum">     855 </span>            :                         &quot;       Run a user-specified SQL query on the database. Be careful.\n&quot;;
+<span class="lineNum">     856 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     857 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     858 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     859 </span>            :         }
+<span class="lineNum">     860 </span>            : 
+<span class="lineNum">     861 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 3) {</span>
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     863 </span>            :         }
+<span class="lineNum">     864 </span>            : 
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">     866 </span><span class="lineNoCov">          0 :         db_execute_sql(a-&gt;argv[2], display_results, a);</span>
+<span class="lineNum">     867 </span><span class="lineNoCov">          0 :         db_sync(); /* Go ahead and sync the db in case they write */</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">     869 </span>            : 
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     871 </span>            : }
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span>            : static struct ast_cli_entry cli_database[] = {
+<span class="lineNum">     874 </span>            :         AST_CLI_DEFINE(handle_cli_database_show,    &quot;Shows database contents&quot;),
+<span class="lineNum">     875 </span>            :         AST_CLI_DEFINE(handle_cli_database_showkey, &quot;Shows database contents&quot;),
+<span class="lineNum">     876 </span>            :         AST_CLI_DEFINE(handle_cli_database_get,     &quot;Gets database value&quot;),
+<span class="lineNum">     877 </span>            :         AST_CLI_DEFINE(handle_cli_database_put,     &quot;Adds/updates database value&quot;),
+<span class="lineNum">     878 </span>            :         AST_CLI_DEFINE(handle_cli_database_del,     &quot;Removes database key/value&quot;),
+<span class="lineNum">     879 </span>            :         AST_CLI_DEFINE(handle_cli_database_deltree, &quot;Removes database keytree/values&quot;),
+<span class="lineNum">     880 </span>            :         AST_CLI_DEFINE(handle_cli_database_query,   &quot;Run a user-specified query on the astdb&quot;),
+<a name="881"><span class="lineNum">     881 </span>            : };</a>
+<span class="lineNum">     882 </span>            : 
+<span class="lineNum">     883 </span><span class="lineCov">          3 : static int manager_dbput(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     884 </span>            : {
+<span class="lineNum">     885 </span><span class="lineCov">          3 :         const char *family = astman_get_header(m, &quot;Family&quot;);</span>
+<span class="lineNum">     886 </span><span class="lineCov">          3 :         const char *key = astman_get_header(m, &quot;Key&quot;);</span>
+<span class="lineNum">     887 </span><span class="lineCov">          3 :         const char *val = astman_get_header(m, &quot;Val&quot;);</span>
+<span class="lineNum">     888 </span>            :         int res;
+<span class="lineNum">     889 </span>            : 
+<span class="lineNum">     890 </span><span class="lineCov">          3 :         if (ast_strlen_zero(family)) {</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No family specified&quot;);</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     893 </span>            :         }
+<span class="lineNum">     894 </span><span class="lineCov">          3 :         if (ast_strlen_zero(key)) {</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No key specified&quot;);</span>
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     897 </span>            :         }
+<span class="lineNum">     898 </span>            : 
+<span class="lineNum">     899 </span><span class="lineCov">          3 :         res = ast_db_put(family, key, S_OR(val, &quot;&quot;));</span>
+<span class="lineNum">     900 </span><span class="lineCov">          3 :         if (res) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Failed to update entry&quot;);</span>
+<span class="lineNum">     902 </span>            :         } else {
+<span class="lineNum">     903 </span><span class="lineCov">          3 :                 astman_send_ack(s, m, &quot;Updated database successfully&quot;);</span>
+<span class="lineNum">     904 </span>            :         }
+<span class="lineNum">     905 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="906"><span class="lineNum">     906 </span>            : }</a>
+<span class="lineNum">     907 </span>            : 
+<span class="lineNum">     908 </span><span class="lineNoCov">          0 : static int manager_dbget(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     909 </span>            : {
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :         const char *id = astman_get_header(m,&quot;ActionID&quot;);</span>
+<span class="lineNum">     911 </span>            :         char idText[256];
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :         const char *family = astman_get_header(m, &quot;Family&quot;);</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">          0 :         const char *key = astman_get_header(m, &quot;Key&quot;);</span>
+<span class="lineNum">     914 </span>            :         char tmp[MAX_DB_FIELD];
+<span class="lineNum">     915 </span>            :         int res;
+<span class="lineNum">     916 </span>            : 
+<span class="lineNum">     917 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(family)) {</span>
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No family specified.&quot;);</span>
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     920 </span>            :         }
+<span class="lineNum">     921 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(key)) {</span>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No key specified.&quot;);</span>
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     924 </span>            :         }
+<span class="lineNum">     925 </span>            : 
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :         idText[0] = '\0';</span>
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(id))</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                 snprintf(idText, sizeof(idText) ,&quot;ActionID: %s\r\n&quot;, id);</span>
+<span class="lineNum">     929 </span>            : 
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :         res = ast_db_get(family, key, tmp, sizeof(tmp));</span>
+<span class="lineNum">     931 </span><span class="lineNoCov">          0 :         if (res) {</span>
+<span class="lineNum">     932 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Database entry not found&quot;);</span>
+<span class="lineNum">     933 </span>            :         } else {
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                 astman_send_listack(s, m, &quot;Result will follow&quot;, &quot;start&quot;);</span>
+<span class="lineNum">     935 </span>            : 
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                 astman_append(s, &quot;Event: DBGetResponse\r\n&quot;</span>
+<span class="lineNum">     937 </span>            :                                 &quot;Family: %s\r\n&quot;
+<span class="lineNum">     938 </span>            :                                 &quot;Key: %s\r\n&quot;
+<span class="lineNum">     939 </span>            :                                 &quot;Val: %s\r\n&quot;
+<span class="lineNum">     940 </span>            :                                 &quot;%s&quot;
+<span class="lineNum">     941 </span>            :                                 &quot;\r\n&quot;,
+<span class="lineNum">     942 </span>            :                                 family, key, tmp, idText);
+<span class="lineNum">     943 </span>            : 
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 astman_send_list_complete_start(s, m, &quot;DBGetComplete&quot;, 1);</span>
+<span class="lineNum">     945 </span><span class="lineNoCov">          0 :                 astman_send_list_complete_end(s);</span>
+<span class="lineNum">     946 </span>            :         }
+<span class="lineNum">     947 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="948"><span class="lineNum">     948 </span>            : }</a>
+<span class="lineNum">     949 </span>            : 
+<span class="lineNum">     950 </span><span class="lineNoCov">          0 : static int manager_dbdel(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     951 </span>            : {
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :         const char *family = astman_get_header(m, &quot;Family&quot;);</span>
+<span class="lineNum">     953 </span><span class="lineNoCov">          0 :         const char *key = astman_get_header(m, &quot;Key&quot;);</span>
+<span class="lineNum">     954 </span>            :         int res;
+<span class="lineNum">     955 </span>            : 
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(family)) {</span>
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No family specified.&quot;);</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     959 </span>            :         }
+<span class="lineNum">     960 </span>            : 
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(key)) {</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No key specified.&quot;);</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     964 </span>            :         }
+<span class="lineNum">     965 </span>            : 
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :         res = ast_db_del(family, key);</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :         if (res)</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Database entry not found&quot;);</span>
+<span class="lineNum">     969 </span>            :         else
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :                 astman_send_ack(s, m, &quot;Key deleted successfully&quot;);</span>
+<span class="lineNum">     971 </span>            : 
+<span class="lineNum">     972 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="973"><span class="lineNum">     973 </span>            : }</a>
+<span class="lineNum">     974 </span>            : 
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 : static int manager_dbdeltree(struct mansession *s, const struct message *m)</span>
+<span class="lineNum">     976 </span>            : {
+<span class="lineNum">     977 </span><span class="lineNoCov">          0 :         const char *family = astman_get_header(m, &quot;Family&quot;);</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :         const char *key = astman_get_header(m, &quot;Key&quot;);</span>
+<span class="lineNum">     979 </span>            :         int num_deleted;
+<span class="lineNum">     980 </span>            : 
+<span class="lineNum">     981 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(family)) {</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;No family specified.&quot;);</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     984 </span>            :         }
+<span class="lineNum">     985 </span>            : 
+<span class="lineNum">     986 </span><span class="lineNoCov">          0 :         if (!ast_strlen_zero(key)) {</span>
+<span class="lineNum">     987 </span><span class="lineNoCov">          0 :                 num_deleted = ast_db_deltree(family, key);</span>
+<span class="lineNum">     988 </span>            :         } else {
+<span class="lineNum">     989 </span><span class="lineNoCov">          0 :                 num_deleted = ast_db_deltree(family, NULL);</span>
+<span class="lineNum">     990 </span>            :         }
+<span class="lineNum">     991 </span>            : 
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :         if (num_deleted &lt; 0) {</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Database unavailable&quot;);</span>
+<span class="lineNum">     994 </span><span class="lineNoCov">          0 :         } else if (num_deleted == 0) {</span>
+<span class="lineNum">     995 </span><span class="lineNoCov">          0 :                 astman_send_error(s, m, &quot;Database entry not found&quot;);</span>
+<span class="lineNum">     996 </span>            :         } else {
+<span class="lineNum">     997 </span><span class="lineNoCov">          0 :                 astman_send_ack(s, m, &quot;Key tree deleted successfully&quot;);</span>
+<span class="lineNum">     998 </span>            :         }
+<span class="lineNum">     999 </span>            : 
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1001 </span>            : }
+<span class="lineNum">    1002 </span>            : 
+<span class="lineNum">    1003 </span>            : /*!
+<span class="lineNum">    1004 </span>            :  * \internal
+<span class="lineNum">    1005 </span>            :  * \brief Signal the astdb sync thread to do its thing.
+<span class="lineNum">    1006 </span>            :  *
+<a name="1007"><span class="lineNum">    1007 </span>            :  * \note dblock is assumed to be held when calling this function.</a>
+<span class="lineNum">    1008 </span>            :  */
+<span class="lineNum">    1009 </span><span class="lineCov">     116770 : static void db_sync(void)</span>
+<span class="lineNum">    1010 </span>            : {
+<span class="lineNum">    1011 </span><span class="lineCov">     116770 :         dosync = 1;</span>
+<span class="lineNum">    1012 </span><span class="lineCov">     116770 :         ast_cond_signal(&amp;dbcond);</span>
+<span class="lineNum">    1013 </span><span class="lineCov">     116770 : }</span>
+<span class="lineNum">    1014 </span>            : 
+<span class="lineNum">    1015 </span>            : /*!
+<span class="lineNum">    1016 </span>            :  * \internal
+<span class="lineNum">    1017 </span>            :  * \brief astdb sync thread
+<span class="lineNum">    1018 </span>            :  *
+<span class="lineNum">    1019 </span>            :  * This thread is in charge of syncing astdb to disk after a change.
+<span class="lineNum">    1020 </span>            :  * By pushing it off to this thread to take care of, this I/O bound operation
+<span class="lineNum">    1021 </span>            :  * will not block other threads from performing other critical processing.
+<span class="lineNum">    1022 </span>            :  * If changes happen rapidly, this thread will also ensure that the sync
+<a name="1023"><span class="lineNum">    1023 </span>            :  * operations are rate limited.</a>
+<span class="lineNum">    1024 </span>            :  */
+<span class="lineNum">    1025 </span><span class="lineCov">       1124 : static void *db_sync_thread(void *data)</span>
+<span class="lineNum">    1026 </span>            : {
+<span class="lineNum">    1027 </span><span class="lineCov">       1124 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">    1028 </span><span class="lineCov">       1124 :         ast_db_begin_transaction();</span>
+<span class="lineNum">    1029 </span>            :         for (;;) {
+<span class="lineNum">    1030 </span>            :                 /* If dosync is set, db_sync() was called during sleep(1),
+<span class="lineNum">    1031 </span>            :                  * and the pending transaction should be committed.
+<span class="lineNum">    1032 </span>            :                  * Otherwise, block until db_sync() is called.
+<span class="lineNum">    1033 </span>            :                  */
+<span class="lineNum">    1034 </span><span class="lineCov">       5578 :                 while (!dosync) {</span>
+<span class="lineNum">    1035 </span><span class="lineCov">        850 :                         ast_cond_wait(&amp;dbcond, &amp;dblock);</span>
+<span class="lineNum">    1036 </span>            :                 }
+<span class="lineNum">    1037 </span><span class="lineCov">       4728 :                 dosync = 0;</span>
+<span class="lineNum">    1038 </span><span class="lineCov">       4728 :                 if (ast_db_commit_transaction()) {</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                         ast_db_rollback_transaction();</span>
+<span class="lineNum">    1040 </span>            :                 }
+<span class="lineNum">    1041 </span><span class="lineCov">       4728 :                 if (doexit) {</span>
+<span class="lineNum">    1042 </span><span class="lineCov">       1124 :                         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">    1043 </span><span class="lineCov">       1124 :                         break;</span>
+<span class="lineNum">    1044 </span>            :                 }
+<span class="lineNum">    1045 </span><span class="lineCov">       3604 :                 ast_db_begin_transaction();</span>
+<span class="lineNum">    1046 </span><span class="lineCov">       3604 :                 ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">    1047 </span><span class="lineCov">       3604 :                 sleep(1);</span>
+<span class="lineNum">    1048 </span><span class="lineCov">       3604 :                 ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">    1049 </span>            :         }
+<span class="lineNum">    1050 </span>            : 
+<span class="lineNum">    1051 </span><span class="lineCov">       1124 :         return NULL;</span>
+<span class="lineNum">    1052 </span>            : }
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span>            : /*!
+<span class="lineNum">    1055 </span>            :  * \internal
+<a name="1056"><span class="lineNum">    1056 </span>            :  * \brief Clean up resources on Asterisk shutdown</a>
+<span class="lineNum">    1057 </span>            :  */
+<span class="lineNum">    1058 </span><span class="lineCov">       1124 : static void astdb_atexit(void)</span>
+<span class="lineNum">    1059 </span>            : {
+<span class="lineNum">    1060 </span><span class="lineCov">       1124 :         ast_cli_unregister_multiple(cli_database, ARRAY_LEN(cli_database));</span>
+<span class="lineNum">    1061 </span><span class="lineCov">       1124 :         ast_manager_unregister(&quot;DBGet&quot;);</span>
+<span class="lineNum">    1062 </span><span class="lineCov">       1124 :         ast_manager_unregister(&quot;DBPut&quot;);</span>
+<span class="lineNum">    1063 </span><span class="lineCov">       1124 :         ast_manager_unregister(&quot;DBDel&quot;);</span>
+<span class="lineNum">    1064 </span><span class="lineCov">       1124 :         ast_manager_unregister(&quot;DBDelTree&quot;);</span>
+<span class="lineNum">    1065 </span>            : 
+<span class="lineNum">    1066 </span>            :         /* Set doexit to 1 to kill thread. db_sync must be called with
+<span class="lineNum">    1067 </span>            :          * mutex held. */
+<span class="lineNum">    1068 </span><span class="lineCov">       1124 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">    1069 </span><span class="lineCov">       1124 :         doexit = 1;</span>
+<span class="lineNum">    1070 </span><span class="lineCov">       1124 :         db_sync();</span>
+<span class="lineNum">    1071 </span><span class="lineCov">       1124 :         ast_mutex_unlock(&amp;dblock);</span>
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span><span class="lineCov">       1124 :         pthread_join(syncthread, NULL);</span>
+<span class="lineNum">    1074 </span><span class="lineCov">       1124 :         ast_mutex_lock(&amp;dblock);</span>
+<span class="lineNum">    1075 </span><span class="lineCov">       1124 :         clean_statements();</span>
+<span class="lineNum">    1076 </span><span class="lineCov">       1124 :         if (sqlite3_close(astdb) == SQLITE_OK) {</span>
+<span class="lineNum">    1077 </span><span class="lineCov">       1124 :                 astdb = NULL;</span>
+<span class="lineNum">    1078 </span>            :         }
+<span class="lineNum">    1079 </span><span class="lineCov">       1124 :         ast_mutex_unlock(&amp;dblock);</span>
+<a name="1080"><span class="lineNum">    1080 </span><span class="lineCov">       1124 : }</span></a>
+<span class="lineNum">    1081 </span>            : 
+<span class="lineNum">    1082 </span><span class="lineCov">       1124 : int astdb_init(void)</span>
+<span class="lineNum">    1083 </span>            : {
+<span class="lineNum">    1084 </span><span class="lineCov">       1124 :         if (db_init()) {</span>
+<span class="lineNum">    1085 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1086 </span>            :         }
+<span class="lineNum">    1087 </span>            : 
+<span class="lineNum">    1088 </span><span class="lineCov">       1124 :         ast_cond_init(&amp;dbcond, NULL);</span>
+<span class="lineNum">    1089 </span><span class="lineCov">       1124 :         if (ast_pthread_create_background(&amp;syncthread, NULL, db_sync_thread, NULL)) {</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1091 </span>            :         }
+<span class="lineNum">    1092 </span>            : 
+<span class="lineNum">    1093 </span><span class="lineCov">       1124 :         ast_register_atexit(astdb_atexit);</span>
+<span class="lineNum">    1094 </span><span class="lineCov">       1124 :         ast_cli_register_multiple(cli_database, ARRAY_LEN(cli_database));</span>
+<span class="lineNum">    1095 </span><span class="lineCov">       1124 :         ast_manager_register_xml_core(&quot;DBGet&quot;, EVENT_FLAG_SYSTEM | EVENT_FLAG_REPORTING, manager_dbget);</span>
+<span class="lineNum">    1096 </span><span class="lineCov">       1124 :         ast_manager_register_xml_core(&quot;DBPut&quot;, EVENT_FLAG_SYSTEM, manager_dbput);</span>
+<span class="lineNum">    1097 </span><span class="lineCov">       1124 :         ast_manager_register_xml_core(&quot;DBDel&quot;, EVENT_FLAG_SYSTEM, manager_dbdel);</span>
+<span class="lineNum">    1098 </span><span class="lineCov">       1124 :         ast_manager_register_xml_core(&quot;DBDelTree&quot;, EVENT_FLAG_SYSTEM, manager_dbdeltree);</span>
+<span class="lineNum">    1099 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">    1100 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

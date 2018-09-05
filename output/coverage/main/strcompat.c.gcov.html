@@ -1,0 +1,669 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/strcompat.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - strcompat.c<span style="font-size: 80%;"> (source / <a href="strcompat.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">41</td>
+            <td class="headerCovTableEntryMed">78.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       7 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       8 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">       9 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      10 </span>            :  * channels for your use.
+<span class="lineNum">      11 </span>            :  *
+<span class="lineNum">      12 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      13 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      14 </span>            :  * at the top of the source tree.
+<span class="lineNum">      15 </span>            :  */
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : /*! \file
+<span class="lineNum">      18 </span>            :  *
+<span class="lineNum">      19 </span>            :  * \brief Compatibility functions for strsep and strtoq missing on Solaris
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * .. and lots of other functions too.
+<span class="lineNum">      22 </span>            :  */
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : /*** MODULEINFO
+<span class="lineNum">      25 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      26 </span>            :  ***/
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #define ASTMM_LIBC ASTMM_IGNORE
+<span class="lineNum">      29 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &lt;ctype.h&gt;
+<span class="lineNum">      32 </span>            : #include &lt;sys/time.h&gt;       /* for getrlimit(2) */
+<span class="lineNum">      33 </span>            : #include &lt;sys/resource.h&gt;   /* for getrlimit(2) */
+<span class="lineNum">      34 </span>            : #include &lt;sys/types.h&gt;      /* for opendir(3) */
+<span class="lineNum">      35 </span>            : #include &lt;dirent.h&gt;         /* for opendir(3) */
+<span class="lineNum">      36 </span>            : #include &lt;unistd.h&gt;         /* for fcntl(2) */
+<span class="lineNum">      37 </span>            : #include &lt;fcntl.h&gt;          /* for fcntl(2) */
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #ifndef HAVE_STRSEP
+<span class="lineNum">      42 </span>            : char *strsep(char **str, const char *delims)
+<span class="lineNum">      43 </span>            : {
+<span class="lineNum">      44 </span>            :         char *token;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            :         if (!*str) {
+<span class="lineNum">      47 </span>            :                 /* No more tokens */
+<span class="lineNum">      48 </span>            :                 return NULL;
+<span class="lineNum">      49 </span>            :         }
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            :         token = *str;
+<span class="lineNum">      52 </span>            :         while (**str != '\0') {
+<span class="lineNum">      53 </span>            :                 if (strchr(delims, **str)) {
+<span class="lineNum">      54 </span>            :                         **str = '\0';
+<span class="lineNum">      55 </span>            :                         (*str)++;
+<span class="lineNum">      56 </span>            :                         return token;
+<span class="lineNum">      57 </span>            :                 }
+<span class="lineNum">      58 </span>            :                 (*str)++;
+<span class="lineNum">      59 </span>            :         }
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span>            :         /* There is no other token */
+<span class="lineNum">      62 </span>            :         *str = NULL;
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            :         return token;
+<span class="lineNum">      65 </span>            : }
+<span class="lineNum">      66 </span>            : #endif
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : #ifndef HAVE_SETENV
+<span class="lineNum">      69 </span>            : int setenv(const char *name, const char *value, int overwrite)
+<span class="lineNum">      70 </span>            : {
+<span class="lineNum">      71 </span>            :         unsigned char *buf;
+<span class="lineNum">      72 </span>            :         int buflen;
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            :         if (!overwrite &amp;&amp; getenv(name))
+<span class="lineNum">      75 </span>            :                 return 0;
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            :         buflen = strlen(name) + strlen(value) + 2;
+<span class="lineNum">      78 </span>            :         buf = ast_alloca(buflen);
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            :         snprintf(buf, buflen, &quot;%s=%s&quot;, name, value);
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            :         return putenv(buf);
+<span class="lineNum">      83 </span>            : }
+<span class="lineNum">      84 </span>            : #endif
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span>            : #ifndef HAVE_UNSETENV
+<span class="lineNum">      87 </span>            : int unsetenv(const char *name)
+<span class="lineNum">      88 </span>            : {
+<span class="lineNum">      89 </span>            :         return setenv(name, &quot;&quot;, 0);
+<span class="lineNum">      90 </span>            : }
+<span class="lineNum">      91 </span>            : #endif
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : #ifndef HAVE_STRCASESTR
+<span class="lineNum">      94 </span>            : static char *upper(const char *orig, char *buf, int bufsize)
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span>            :         int i = 0;
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            :         while (i &lt; (bufsize - 1) &amp;&amp; orig[i]) {
+<span class="lineNum">      99 </span>            :                 buf[i] = toupper(orig[i]);
+<span class="lineNum">     100 </span>            :                 i++;
+<span class="lineNum">     101 </span>            :         }
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            :         buf[i] = '\0';
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            :         return buf;
+<span class="lineNum">     106 </span>            : }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : char *strcasestr(const char *haystack, const char *needle)
+<span class="lineNum">     109 </span>            : {
+<span class="lineNum">     110 </span>            :         char *u1, *u2;
+<span class="lineNum">     111 </span>            :         char *offset;
+<span class="lineNum">     112 </span>            :         int u1len = strlen(haystack) + 1, u2len = strlen(needle) + 1;
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            :         if (u2len &gt; u1len) {
+<span class="lineNum">     115 </span>            :                 /* Needle bigger than haystack */
+<span class="lineNum">     116 </span>            :                 return NULL;
+<span class="lineNum">     117 </span>            :         }
+<span class="lineNum">     118 </span>            :         u1 = ast_alloca(u1len);
+<span class="lineNum">     119 </span>            :         u2 = ast_alloca(u2len);
+<span class="lineNum">     120 </span>            :         offset = strstr(upper(haystack, u1, u1len), upper(needle, u2, u2len));
+<span class="lineNum">     121 </span>            :         if (offset) {
+<span class="lineNum">     122 </span>            :                 /* Return the offset into the original string */
+<span class="lineNum">     123 </span>            :                 return ((char *)((unsigned long)haystack + (unsigned long)(offset - u1)));
+<span class="lineNum">     124 </span>            :         } else {
+<span class="lineNum">     125 </span>            :                 return NULL;
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : }
+<span class="lineNum">     128 </span>            : #endif /* !HAVE_STRCASESTR */
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            : #ifndef HAVE_STRNLEN
+<span class="lineNum">     131 </span>            : size_t strnlen(const char *s, size_t n)
+<span class="lineNum">     132 </span>            : {
+<span class="lineNum">     133 </span>            :         size_t len;
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span>            :         for (len = 0; len &lt; n; len++)
+<span class="lineNum">     136 </span>            :                 if (s[len] == '\0')
+<span class="lineNum">     137 </span>            :                         break;
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :         return len;
+<span class="lineNum">     140 </span>            : }
+<span class="lineNum">     141 </span>            : #endif /* !HAVE_STRNLEN */
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            : #if !defined(HAVE_STRNDUP)
+<span class="lineNum">     144 </span>            : char *strndup(const char *s, size_t n)
+<span class="lineNum">     145 </span>            : {
+<span class="lineNum">     146 </span>            :         size_t len = strnlen(s, n);
+<span class="lineNum">     147 </span>            :         char *new = malloc(len + 1);
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :         if (!new)
+<span class="lineNum">     150 </span>            :                 return NULL;
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :         new[len] = '\0';
+<span class="lineNum">     153 </span>            :         return memcpy(new, s, len);
+<span class="lineNum">     154 </span>            : }
+<span class="lineNum">     155 </span>            : #endif /* !defined(HAVE_STRNDUP) */
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : #if !defined(HAVE_VASPRINTF)
+<span class="lineNum">     158 </span>            : int vasprintf(char **strp, const char *fmt, va_list ap)
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span>            :         int size;
+<span class="lineNum">     161 </span>            :         va_list ap2;
+<span class="lineNum">     162 </span>            :         char s;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            :         *strp = NULL;
+<span class="lineNum">     165 </span>            :         va_copy(ap2, ap);
+<span class="lineNum">     166 </span>            :         size = vsnprintf(&amp;s, 1, fmt, ap2);
+<span class="lineNum">     167 </span>            :         va_end(ap2);
+<span class="lineNum">     168 </span>            :         *strp = malloc(size + 1);
+<span class="lineNum">     169 </span>            :         if (!*strp)
+<span class="lineNum">     170 </span>            :                 return -1;
+<span class="lineNum">     171 </span>            :         vsnprintf(*strp, size + 1, fmt, ap);
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            :         return size;
+<span class="lineNum">     174 </span>            : }
+<span class="lineNum">     175 </span>            : #endif /* !defined(HAVE_VASPRINTF) */
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            : #ifndef HAVE_TIMERSUB
+<span class="lineNum">     178 </span>            : void timersub(struct timeval *tvend, struct timeval *tvstart, struct timeval *tvdiff)
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span>            :         tvdiff-&gt;tv_sec = tvend-&gt;tv_sec - tvstart-&gt;tv_sec;
+<span class="lineNum">     181 </span>            :         tvdiff-&gt;tv_usec = tvend-&gt;tv_usec - tvstart-&gt;tv_usec;
+<span class="lineNum">     182 </span>            :         if (tvdiff-&gt;tv_usec &lt; 0) {
+<span class="lineNum">     183 </span>            :                 tvdiff-&gt;tv_sec --;
+<span class="lineNum">     184 </span>            :                 tvdiff-&gt;tv_usec += 1000000;
+<span class="lineNum">     185 </span>            :         }
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            : }
+<span class="lineNum">     188 </span>            : #endif
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            : /*
+<span class="lineNum">     191 </span>            :  * Based on Code from bsd-asprintf from OpenSSH
+<span class="lineNum">     192 </span>            :  * Copyright (c) 2004 Darren Tucker.
+<span class="lineNum">     193 </span>            :  *
+<span class="lineNum">     194 </span>            :  * Based originally on asprintf.c from OpenBSD:
+<span class="lineNum">     195 </span>            :  * Copyright (c) 1997 Todd C. Miller &lt;Todd.Miller@courtesan.com&gt;
+<span class="lineNum">     196 </span>            :  *
+<span class="lineNum">     197 </span>            :  * Permission to use, copy, modify, and distribute this software for any
+<span class="lineNum">     198 </span>            :  * purpose with or without fee is hereby granted, provided that the above
+<span class="lineNum">     199 </span>            :  * copyright notice and this permission notice appear in all copies.
+<span class="lineNum">     200 </span>            :  *
+<span class="lineNum">     201 </span>            :  * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+<span class="lineNum">     202 </span>            :  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+<span class="lineNum">     203 </span>            :  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+<span class="lineNum">     204 </span>            :  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+<span class="lineNum">     205 </span>            :  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+<span class="lineNum">     206 </span>            :  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+<span class="lineNum">     207 </span>            :  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+<span class="lineNum">     208 </span>            :  */
+<span class="lineNum">     209 </span>            : #if !defined(HAVE_ASPRINTF)
+<span class="lineNum">     210 </span>            : int asprintf(char **str, const char *fmt, ...)
+<span class="lineNum">     211 </span>            : {
+<span class="lineNum">     212 </span>            :         va_list ap;
+<span class="lineNum">     213 </span>            :         int ret;
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :         *str = NULL;
+<span class="lineNum">     216 </span>            :         va_start(ap, fmt);
+<span class="lineNum">     217 </span>            :         ret = vasprintf(str, fmt, ap);
+<span class="lineNum">     218 </span>            :         va_end(ap);
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            :         return ret;
+<span class="lineNum">     221 </span>            : }
+<span class="lineNum">     222 </span>            : #endif /* !defined(HAVE_ASPRINTF) */
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            : #ifndef HAVE_STRTOQ
+<span class="lineNum">     225 </span>            : #ifndef LONG_MIN
+<span class="lineNum">     226 </span>            : #define LONG_MIN        (-9223372036854775807L-1L)
+<span class="lineNum">     227 </span>            :                                          /* min value of a &quot;long int&quot; */
+<span class="lineNum">     228 </span>            : #endif
+<span class="lineNum">     229 </span>            : #ifndef LONG_MAX
+<span class="lineNum">     230 </span>            : #define LONG_MAX        9223372036854775807L
+<span class="lineNum">     231 </span>            :                                          /* max value of a &quot;long int&quot; */
+<span class="lineNum">     232 </span>            : #endif
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span>            : /*! \brief
+<span class="lineNum">     235 </span>            :  * Convert a string to a quad integer.
+<span class="lineNum">     236 </span>            :  *
+<span class="lineNum">     237 </span>            :  * \note Ignores `locale' stuff.  Assumes that the upper and lower case
+<span class="lineNum">     238 </span>            :  * alphabets and digits are each contiguous.
+<span class="lineNum">     239 </span>            :  */
+<span class="lineNum">     240 </span>            : uint64_t strtoq(const char *nptr, char **endptr, int base)
+<span class="lineNum">     241 </span>            : {
+<span class="lineNum">     242 </span>            :          const char *s;
+<span class="lineNum">     243 </span>            :          uint64_t acc;
+<span class="lineNum">     244 </span>            :          unsigned char c;
+<span class="lineNum">     245 </span>            :          uint64_t qbase, cutoff;
+<span class="lineNum">     246 </span>            :          int neg, any, cutlim;
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span>            :          /*
+<span class="lineNum">     249 </span>            :           * Skip white space and pick up leading +/- sign if any.
+<span class="lineNum">     250 </span>            :           * If base is 0, allow 0x for hex and 0 for octal, else
+<span class="lineNum">     251 </span>            :           * assume decimal; if base is already 16, allow 0x.
+<span class="lineNum">     252 </span>            :           */
+<span class="lineNum">     253 </span>            :          s = nptr;
+<span class="lineNum">     254 </span>            :          do {
+<span class="lineNum">     255 </span>            :                  c = *s++;
+<span class="lineNum">     256 </span>            :          } while (isspace(c));
+<span class="lineNum">     257 </span>            :          if (c == '-') {
+<span class="lineNum">     258 </span>            :                  neg = 1;
+<span class="lineNum">     259 </span>            :                  c = *s++;
+<span class="lineNum">     260 </span>            :          } else {
+<span class="lineNum">     261 </span>            :                  neg = 0;
+<span class="lineNum">     262 </span>            :                  if (c == '+')
+<span class="lineNum">     263 </span>            :                          c = *s++;
+<span class="lineNum">     264 </span>            :          }
+<span class="lineNum">     265 </span>            :          if ((base == 0 || base == 16) &amp;&amp;
+<span class="lineNum">     266 </span>            :              c == '\0' &amp;&amp; (*s == 'x' || *s == 'X')) {
+<span class="lineNum">     267 </span>            :                  c = s[1];
+<span class="lineNum">     268 </span>            :                  s += 2;
+<span class="lineNum">     269 </span>            :                  base = 16;
+<span class="lineNum">     270 </span>            :          }
+<span class="lineNum">     271 </span>            :          if (base == 0)
+<span class="lineNum">     272 </span>            :                  base = c == '\0' ? 8 : 10;
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span>            :          /*
+<span class="lineNum">     275 </span>            :           * Compute the cutoff value between legal numbers and illegal
+<span class="lineNum">     276 </span>            :           * numbers.  That is the largest legal value, divided by the
+<span class="lineNum">     277 </span>            :           * base.  An input number that is greater than this value, if
+<span class="lineNum">     278 </span>            :           * followed by a legal input character, is too big.  One that
+<span class="lineNum">     279 </span>            :           * is equal to this value may be valid or not; the limit
+<span class="lineNum">     280 </span>            :           * between valid and invalid numbers is then based on the last
+<span class="lineNum">     281 </span>            :           * digit.  For instance, if the range for quads is
+<span class="lineNum">     282 </span>            :           * [-9223372036854775808..9223372036854775807] and the input base
+<span class="lineNum">     283 </span>            :           * is 10, cutoff will be set to 922337203685477580 and cutlim to
+<span class="lineNum">     284 </span>            :           * either 7 (neg==0) or 8 (neg==1), meaning that if we have
+<span class="lineNum">     285 </span>            :           * accumulated a value &gt; 922337203685477580, or equal but the
+<span class="lineNum">     286 </span>            :           * next digit is &gt; 7 (or 8), the number is too big, and we will
+<span class="lineNum">     287 </span>            :           * return a range error.
+<span class="lineNum">     288 </span>            :           *
+<span class="lineNum">     289 </span>            :           * Set any if any `digits' consumed; make it negative to indicate
+<span class="lineNum">     290 </span>            :           * overflow.
+<span class="lineNum">     291 </span>            :           */
+<span class="lineNum">     292 </span>            :          qbase = (unsigned)base;
+<span class="lineNum">     293 </span>            :          cutoff = neg ? (uint64_t)-(LONG_MIN + LONG_MAX) + LONG_MAX : LONG_MAX;
+<span class="lineNum">     294 </span>            :          cutlim = cutoff % qbase;
+<span class="lineNum">     295 </span>            :          cutoff /= qbase;
+<span class="lineNum">     296 </span>            :          for (acc = 0, any = 0;; c = *s++) {
+<span class="lineNum">     297 </span>            :                  if (!isascii(c))
+<span class="lineNum">     298 </span>            :                          break;
+<span class="lineNum">     299 </span>            :                  if (isdigit(c))
+<span class="lineNum">     300 </span>            :                          c -= '\0';
+<span class="lineNum">     301 </span>            :                  else if (isalpha(c))
+<span class="lineNum">     302 </span>            :                          c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+<span class="lineNum">     303 </span>            :                  else
+<span class="lineNum">     304 </span>            :                          break;
+<span class="lineNum">     305 </span>            :                  if (c &gt;= base)
+<span class="lineNum">     306 </span>            :                          break;
+<span class="lineNum">     307 </span>            :                  if (any &lt; 0 || acc &gt; cutoff || (acc == cutoff &amp;&amp; c &gt; cutlim))
+<span class="lineNum">     308 </span>            :                          any = -1;
+<span class="lineNum">     309 </span>            :                  else {
+<span class="lineNum">     310 </span>            :                          any = 1;
+<span class="lineNum">     311 </span>            :                          acc *= qbase;
+<span class="lineNum">     312 </span>            :                          acc += c;
+<span class="lineNum">     313 </span>            :                  }
+<span class="lineNum">     314 </span>            :          }
+<span class="lineNum">     315 </span>            :          if (any &lt; 0) {
+<span class="lineNum">     316 </span>            :                  acc = neg ? LONG_MIN : LONG_MAX;
+<span class="lineNum">     317 </span>            :          } else if (neg)
+<span class="lineNum">     318 </span>            :                  acc = -acc;
+<span class="lineNum">     319 </span>            :          if (endptr != 0)
+<span class="lineNum">     320 </span>            :                  *((const char **)endptr) = any ? s - 1 : nptr;
+<span class="lineNum">     321 </span>            :          return acc;
+<span class="lineNum">     322 </span>            : }
+<span class="lineNum">     323 </span>            : #endif /* !HAVE_STRTOQ */
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span>            : #ifndef HAVE_GETLOADAVG
+<span class="lineNum">     326 </span>            : #ifdef linux
+<span class="lineNum">     327 </span>            : /*! \brief Alternative method of getting load avg on Linux only */
+<span class="lineNum">     328 </span>            : int getloadavg(double *list, int nelem)
+<span class="lineNum">     329 </span>            : {
+<span class="lineNum">     330 </span>            :         FILE *LOADAVG;
+<span class="lineNum">     331 </span>            :         double avg[3] = { 0.0, 0.0, 0.0 };
+<span class="lineNum">     332 </span>            :         int i, res = -1;
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span>            :         if ((LOADAVG = fopen(&quot;/proc/loadavg&quot;, &quot;r&quot;))) {
+<span class="lineNum">     335 </span>            :                 fscanf(LOADAVG, &quot;%lf %lf %lf&quot;, &amp;avg[0], &amp;avg[1], &amp;avg[2]);
+<span class="lineNum">     336 </span>            :                 res = 0;
+<span class="lineNum">     337 </span>            :                 fclose(LOADAVG);
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span>            :         for (i = 0; (i &lt; nelem) &amp;&amp; (i &lt; 3); i++) {
+<span class="lineNum">     341 </span>            :                 list[i] = avg[i];
+<span class="lineNum">     342 </span>            :         }
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            :         return res;
+<span class="lineNum">     345 </span>            : }
+<span class="lineNum">     346 </span>            : #else /* !linux */
+<span class="lineNum">     347 </span>            : /*! \brief Return something that won't cancel the call, but still return -1, in case
+<span class="lineNum">     348 </span>            :  * we correct the implementation to check return value */
+<span class="lineNum">     349 </span>            : int getloadavg(double *list, int nelem)
+<span class="lineNum">     350 </span>            : {
+<span class="lineNum">     351 </span>            :         int i;
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            :         for (i = 0; i &lt; nelem; i++) {
+<span class="lineNum">     354 </span>            :                 list[i] = 0.1;
+<span class="lineNum">     355 </span>            :         }
+<span class="lineNum">     356 </span>            :         return -1;
+<span class="lineNum">     357 </span>            : }
+<span class="lineNum">     358 </span>            : #endif /* linux */
+<span class="lineNum">     359 </span>            : #endif /* !HAVE_GETLOADAVG */
+<a name="360"><span class="lineNum">     360 </span>            : </a>
+<span class="lineNum">     361 </span>            : #ifndef HAVE_NTOHLL
+<span class="lineNum">     362 </span><span class="lineCov">        249 : uint64_t ntohll(uint64_t net64)</span>
+<span class="lineNum">     363 </span>            : {
+<span class="lineNum">     364 </span>            : #if BYTE_ORDER == BIG_ENDIAN
+<span class="lineNum">     365 </span>            :         return net64;
+<span class="lineNum">     366 </span>            : #elif BYTE_ORDER == LITTLE_ENDIAN
+<span class="lineNum">     367 </span>            :         union {
+<span class="lineNum">     368 </span>            :                 unsigned char c[8];
+<span class="lineNum">     369 </span>            :                 uint64_t u;
+<span class="lineNum">     370 </span>            :         } number;
+<span class="lineNum">     371 </span><span class="lineCov">        249 :         number.u = net64;</span>
+<span class="lineNum">     372 </span>            :         return
+<span class="lineNum">     373 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[0]) &lt;&lt; 56) |</span>
+<span class="lineNum">     374 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[1]) &lt;&lt; 48) |</span>
+<span class="lineNum">     375 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[2]) &lt;&lt; 40) |</span>
+<span class="lineNum">     376 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[3]) &lt;&lt; 32) |</span>
+<span class="lineNum">     377 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[4]) &lt;&lt; 24) |</span>
+<span class="lineNum">     378 </span><span class="lineCov">        498 :                 (((uint64_t) number.c[5]) &lt;&lt; 16) |</span>
+<span class="lineNum">     379 </span><span class="lineCov">        747 :                 (((uint64_t) number.c[6]) &lt;&lt;  8) |</span>
+<span class="lineNum">     380 </span><span class="lineCov">        249 :                 (((uint64_t) number.c[7]) &lt;&lt;  0);</span>
+<span class="lineNum">     381 </span>            : #else
+<span class="lineNum">     382 </span>            :         #error &quot;Unknown byte order&quot;
+<span class="lineNum">     383 </span>            : #endif
+<span class="lineNum">     384 </span>            : }
+<span class="lineNum">     385 </span>            : #endif
+<a name="386"><span class="lineNum">     386 </span>            : </a>
+<span class="lineNum">     387 </span>            : #ifndef HAVE_HTONLL
+<span class="lineNum">     388 </span><span class="lineCov">        143 : uint64_t htonll(uint64_t host64)</span>
+<span class="lineNum">     389 </span>            : {
+<span class="lineNum">     390 </span>            : #if BYTE_ORDER == BIG_ENDIAN
+<span class="lineNum">     391 </span>            :         return host64;
+<span class="lineNum">     392 </span>            : #elif BYTE_ORDER == LITTLE_ENDIAN
+<span class="lineNum">     393 </span>            :         union {
+<span class="lineNum">     394 </span>            :                 unsigned char c[8];
+<span class="lineNum">     395 </span>            :                 uint64_t u;
+<span class="lineNum">     396 </span>            :         } number;
+<span class="lineNum">     397 </span><span class="lineCov">        143 :         number.u = host64;</span>
+<span class="lineNum">     398 </span>            :         return
+<span class="lineNum">     399 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[0]) &lt;&lt; 56) |</span>
+<span class="lineNum">     400 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[1]) &lt;&lt; 48) |</span>
+<span class="lineNum">     401 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[2]) &lt;&lt; 40) |</span>
+<span class="lineNum">     402 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[3]) &lt;&lt; 32) |</span>
+<span class="lineNum">     403 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[4]) &lt;&lt; 24) |</span>
+<span class="lineNum">     404 </span><span class="lineCov">        286 :                 (((uint64_t) number.c[5]) &lt;&lt; 16) |</span>
+<span class="lineNum">     405 </span><span class="lineCov">        429 :                 (((uint64_t) number.c[6]) &lt;&lt;  8) |</span>
+<span class="lineNum">     406 </span><span class="lineCov">        143 :                 (((uint64_t) number.c[7]) &lt;&lt;  0);</span>
+<span class="lineNum">     407 </span>            : #else
+<span class="lineNum">     408 </span>            :         #error &quot;Unknown byte order&quot;
+<span class="lineNum">     409 </span>            : #endif
+<span class="lineNum">     410 </span>            : }
+<span class="lineNum">     411 </span>            : #endif
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span>            : #ifndef HAVE_FFSLL
+<span class="lineNum">     414 </span>            : int ffsll(long long n)
+<span class="lineNum">     415 </span>            : {
+<span class="lineNum">     416 </span>            :         int i;
+<span class="lineNum">     417 </span>            :         for (i = 0; i &lt; 64; i++) {
+<span class="lineNum">     418 </span>            :                 if ((1LL &lt;&lt; i) &amp; n) {
+<span class="lineNum">     419 </span>            :                         return i + 1;
+<span class="lineNum">     420 </span>            :                 }
+<span class="lineNum">     421 </span>            :         }
+<span class="lineNum">     422 </span>            :         return 0;
+<span class="lineNum">     423 </span>            : }
+<span class="lineNum">     424 </span>            : #endif
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span>            : #ifndef HAVE_CLOSEFROM
+<span class="lineNum">     427 </span><span class="lineCov">         16 : void closefrom(int n)</span>
+<span class="lineNum">     428 </span>            : {
+<span class="lineNum">     429 </span>            :         long x;
+<span class="lineNum">     430 </span>            :         struct rlimit rl;
+<span class="lineNum">     431 </span>            :         DIR *dir;
+<span class="lineNum">     432 </span>            :         char path[16], *result;
+<span class="lineNum">     433 </span>            :         struct dirent *entry;
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineCov">         16 :         snprintf(path, sizeof(path), &quot;/proc/%d/fd&quot;, (int) getpid());</span>
+<span class="lineNum">     436 </span><span class="lineCov">         16 :         if ((dir = opendir(path))) {</span>
+<span class="lineNum">     437 </span><span class="lineCov">        586 :                 while ((entry = readdir(dir))) {</span>
+<span class="lineNum">     438 </span>            :                         /* Skip . and .. */
+<span class="lineNum">     439 </span><span class="lineCov">        570 :                         if (entry-&gt;d_name[0] == '.') {</span>
+<span class="lineNum">     440 </span><span class="lineCov">         32 :                                 continue;</span>
+<span class="lineNum">     441 </span>            :                         }
+<span class="lineNum">     442 </span><span class="lineCov">        538 :                         if ((x = strtol(entry-&gt;d_name, &amp;result, 10)) &amp;&amp; x &gt;= n) {</span>
+<span class="lineNum">     443 </span>            : #ifdef STRICT_COMPAT
+<span class="lineNum">     444 </span>            :                                 close(x);
+<span class="lineNum">     445 </span>            : #else
+<span class="lineNum">     446 </span>            :                                 /* This isn't strictly compatible, but it's actually faster
+<span class="lineNum">     447 </span>            :                                  * for our purposes to set the CLOEXEC flag than to close
+<span class="lineNum">     448 </span>            :                                  * file descriptors.
+<span class="lineNum">     449 </span>            :                                  */
+<span class="lineNum">     450 </span><span class="lineCov">        490 :                                 long flags = fcntl(x, F_GETFD);</span>
+<span class="lineNum">     451 </span><span class="lineCov">        490 :                                 if (flags == -1 &amp;&amp; errno == EBADF) {</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     453 </span>            :                                 }
+<span class="lineNum">     454 </span><span class="lineCov">        490 :                                 fcntl(x, F_SETFD, flags | FD_CLOEXEC);</span>
+<span class="lineNum">     455 </span>            : #endif
+<span class="lineNum">     456 </span>            :                         }
+<span class="lineNum">     457 </span>            :                 }
+<span class="lineNum">     458 </span><span class="lineCov">         16 :                 closedir(dir);</span>
+<span class="lineNum">     459 </span>            :         } else {
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 getrlimit(RLIMIT_NOFILE, &amp;rl);</span>
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :                 if (rl.rlim_cur &gt; 65535) {</span>
+<span class="lineNum">     462 </span>            :                         /* A more reasonable value.  Consider that the primary source of
+<span class="lineNum">     463 </span>            :                          * file descriptors in Asterisk are UDP sockets, of which we are
+<span class="lineNum">     464 </span>            :                          * limited to 65,535 per address.  We additionally limit that down
+<span class="lineNum">     465 </span>            :                          * to about 10,000 sockets per protocol.  While the kernel will
+<span class="lineNum">     466 </span>            :                          * allow us to set the fileno limit higher (up to 4.2 billion),
+<span class="lineNum">     467 </span>            :                          * there really is no practical reason for it to be that high.
+<span class="lineNum">     468 </span>            :                          */
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                         rl.rlim_cur = 65535;</span>
+<span class="lineNum">     470 </span>            :                 }
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :                 for (x = n; x &lt; rl.rlim_cur; x++) {</span>
+<span class="lineNum">     472 </span>            : #ifdef STRICT_COMPAT
+<span class="lineNum">     473 </span>            :                         close(x);
+<span class="lineNum">     474 </span>            : #else
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                         long flags = fcntl(x, F_GETFD);</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :                         if (flags == -1 &amp;&amp; errno == EBADF) {</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     478 </span>            :                         }
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                         fcntl(x, F_SETFD, flags | FD_CLOEXEC);</span>
+<span class="lineNum">     480 </span>            : #endif
+<span class="lineNum">     481 </span>            :                 }
+<span class="lineNum">     482 </span>            :         }
+<span class="lineNum">     483 </span><span class="lineCov">         16 : }</span>
+<span class="lineNum">     484 </span>            : #endif
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span>            : #ifndef HAVE_MKDTEMP
+<span class="lineNum">     487 </span>            : /*      $OpenBSD: mktemp.c,v 1.30 2010/03/21 23:09:30 schwarze Exp $ */
+<span class="lineNum">     488 </span>            : /*
+<span class="lineNum">     489 </span>            :  * Copyright (c) 1996-1998, 2008 Theo de Raadt
+<span class="lineNum">     490 </span>            :  * Copyright (c) 1997, 2008-2009 Todd C. Miller
+<span class="lineNum">     491 </span>            :  *
+<span class="lineNum">     492 </span>            :  * Permission to use, copy, modify, and distribute this software for any
+<span class="lineNum">     493 </span>            :  * purpose with or without fee is hereby granted, provided that the above
+<span class="lineNum">     494 </span>            :  * copyright notice and this permission notice appear in all copies.
+<span class="lineNum">     495 </span>            :  *
+<span class="lineNum">     496 </span>            :  * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+<span class="lineNum">     497 </span>            :  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+<span class="lineNum">     498 </span>            :  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+<span class="lineNum">     499 </span>            :  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+<span class="lineNum">     500 </span>            :  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+<span class="lineNum">     501 </span>            :  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+<span class="lineNum">     502 </span>            :  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+<span class="lineNum">     503 </span>            :  */
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span>            : #define MKTEMP_NAME     0
+<span class="lineNum">     506 </span>            : #define MKTEMP_FILE     1
+<span class="lineNum">     507 </span>            : #define MKTEMP_DIR      2
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span>            : #define TEMPCHARS       &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.&quot;
+<span class="lineNum">     510 </span>            : #define NUM_CHARS       (sizeof(TEMPCHARS) - 1)
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span>            : static int mktemp_internal(char *path, int slen, int mode)
+<span class="lineNum">     513 </span>            : {
+<span class="lineNum">     514 </span>            :         char *start, *cp, *ep;
+<span class="lineNum">     515 </span>            :         const char *tempchars = TEMPCHARS;
+<span class="lineNum">     516 </span>            :         unsigned int r, tries;
+<span class="lineNum">     517 </span>            :         struct stat sb;
+<span class="lineNum">     518 </span>            :         size_t len;
+<span class="lineNum">     519 </span>            :         int fd;
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span>            :         len = strlen(path);
+<span class="lineNum">     522 </span>            :         if (len == 0 || slen &gt;= len) {
+<span class="lineNum">     523 </span>            :                 errno = EINVAL;
+<span class="lineNum">     524 </span>            :                 return(-1);
+<span class="lineNum">     525 </span>            :         }
+<span class="lineNum">     526 </span>            :         ep = path + len - slen;
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span>            :         tries = 1;
+<span class="lineNum">     529 </span>            :         for (start = ep; start &gt; path &amp;&amp; start[-1] == 'X'; start--) {
+<span class="lineNum">     530 </span>            :                 if (tries &lt; INT_MAX / NUM_CHARS) {
+<span class="lineNum">     531 </span>            :                         tries *= NUM_CHARS;
+<span class="lineNum">     532 </span>            :                 }
+<span class="lineNum">     533 </span>            :         }
+<span class="lineNum">     534 </span>            :         tries *= 2;
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span>            :         do {
+<span class="lineNum">     537 </span>            :                 for (cp = start; cp != ep; cp++) {
+<span class="lineNum">     538 </span>            :                         r = ast_random() % NUM_CHARS;
+<span class="lineNum">     539 </span>            :                         *cp = tempchars[r];
+<span class="lineNum">     540 </span>            :                 }
+<span class="lineNum">     541 </span>            : 
+<span class="lineNum">     542 </span>            :                 switch (mode) {
+<span class="lineNum">     543 </span>            :                 case MKTEMP_NAME:
+<span class="lineNum">     544 </span>            :                         if (lstat(path, &amp;sb) != 0) {
+<span class="lineNum">     545 </span>            :                                 return (errno == ENOENT ? 0 : -1);
+<span class="lineNum">     546 </span>            :                         }
+<span class="lineNum">     547 </span>            :                         break;
+<span class="lineNum">     548 </span>            :                 case MKTEMP_FILE:
+<span class="lineNum">     549 </span>            :                         fd = open(path, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+<span class="lineNum">     550 </span>            :                         if (fd != -1 || errno != EEXIST) {
+<span class="lineNum">     551 </span>            :                                 return (fd);
+<span class="lineNum">     552 </span>            :                         }
+<span class="lineNum">     553 </span>            :                         break;
+<span class="lineNum">     554 </span>            :                 case MKTEMP_DIR:
+<span class="lineNum">     555 </span>            :                         if (mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR) == 0) {
+<span class="lineNum">     556 </span>            :                                 return (0);
+<span class="lineNum">     557 </span>            :                         }
+<span class="lineNum">     558 </span>            :                         if (errno != EEXIST) {
+<span class="lineNum">     559 </span>            :                                 return (-1);
+<span class="lineNum">     560 </span>            :                         }
+<span class="lineNum">     561 </span>            :                         break;
+<span class="lineNum">     562 </span>            :                 }
+<span class="lineNum">     563 </span>            :         } while (--tries);
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span>            :         errno = EEXIST;
+<span class="lineNum">     566 </span>            :         return(-1);
+<span class="lineNum">     567 </span>            : }
+<span class="lineNum">     568 </span>            : 
+<span class="lineNum">     569 </span>            : char *mkdtemp(char *path)
+<span class="lineNum">     570 </span>            : {
+<span class="lineNum">     571 </span>            :         return mktemp_internal(path, 0, MKTEMP_DIR) ? NULL : path;
+<span class="lineNum">     572 </span>            : }
+<span class="lineNum">     573 </span>            : #endif
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span>            : #ifndef HAVE_ROUNDF
+<span class="lineNum">     576 </span>            : #ifndef HAVE_ROUND
+<span class="lineNum">     577 </span>            : float roundf(float x) {
+<span class="lineNum">     578 </span>            :         if (x &lt; 0.0) {
+<span class="lineNum">     579 </span>            :                 return (float)(int)((x) - 0.5);
+<span class="lineNum">     580 </span>            :         } else {
+<span class="lineNum">     581 </span>            :                 return (float)(int)((x) + 0.5);
+<span class="lineNum">     582 </span>            :         }
+<span class="lineNum">     583 </span>            : }
+<span class="lineNum">     584 </span>            : #endif
+<span class="lineNum">     585 </span>            : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

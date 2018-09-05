@@ -1,0 +1,870 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - codecs/lpc10/voicin.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">codecs/lpc10</a> - voicin.c<span style="font-size: 80%;"> (source / <a href="voicin.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">87</td>
+            <td class="headerCovTableEntry">148</td>
+            <td class="headerCovTableEntryLo">58.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            : 
+<span class="lineNum">       3 </span>            : $Log$
+<span class="lineNum">       4 </span>            : Revision 1.16  2004/06/26 03:50:14  markster
+<span class="lineNum">       5 </span>            : Merge source cleanups (bug #1911)
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : Revision 1.15  2003/11/23 22:14:32  markster
+<span class="lineNum">       8 </span>            : Various warning cleanups
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : Revision 1.14  2003/02/12 13:59:15  matteo
+<span class="lineNum">      11 </span>            : mer feb 12 14:56:57 CET 2003
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : Revision 1.1.1.1  2003/02/12 13:59:15  matteo
+<span class="lineNum">      14 </span>            : mer feb 12 14:56:57 CET 2003
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            : Revision 1.2  2000/01/05 08:20:40  markster
+<span class="lineNum">      17 </span>            : Some OSS fixes and a few lpc changes to make it actually work
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            :  * Revision 1.2  1996/08/20  20:45:00  jaf
+<span class="lineNum">      20 </span>            :  * Removed all static local variables that were SAVE'd in the Fortran
+<span class="lineNum">      21 </span>            :  * code, and put them in struct lpc10_encoder_state that is passed as an
+<span class="lineNum">      22 </span>            :  * argument.
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * Removed init function, since all initialization is now done in
+<span class="lineNum">      25 </span>            :  * init_lpc10_encoder_state().
+<span class="lineNum">      26 </span>            :  *
+<span class="lineNum">      27 </span>            :  * Revision 1.1  1996/08/19  22:30:14  jaf
+<span class="lineNum">      28 </span>            :  * Initial revision
+<span class="lineNum">      29 </span>            :  *
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : */
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : /*  -- translated by f2c (version 19951025).
+<span class="lineNum">      34 </span>            :    You must link the resulting object file with the libraries:
+<span class="lineNum">      35 </span>            :         -lf2c -lm   (in that order)
+<span class="lineNum">      36 </span>            : */
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : #include &quot;f2c.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #ifdef P_R_O_T_O_T_Y_P_E_S
+<span class="lineNum">      41 </span>            : extern int voicin_(integer *vwin, real *inbuf, real *lpbuf, integer *buflim, integer *half, real *minamd, real *maxamd, integer *mintau, real *ivrc, integer *obound, integer *voibuf, integer *af, struct lpc10_encoder_state *st);
+<span class="lineNum">      42 </span>            : /* comlen contrl_ 12 */
+<span class="lineNum">      43 </span>            : /*:ref: vparms_ 14 14 4 6 6 4 4 6 4 4 4 4 6 6 6 6 */
+<span class="lineNum">      44 </span>            : #endif
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /* Common Block Declarations */
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : extern struct {
+<span class="lineNum">      49 </span>            :     integer order, lframe;
+<span class="lineNum">      50 </span>            :     logical corrp;
+<span class="lineNum">      51 </span>            : } contrl_;
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : #define contrl_1 contrl_
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : /****************************************************************************/
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            : /*      VOICIN Version 52 */
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : /* $Log$
+<span class="lineNum">      60 </span>            :  * Revision 1.16  2004/06/26 03:50:14  markster
+<span class="lineNum">      61 </span>            :  * Merge source cleanups (bug #1911)
+<span class="lineNum">      62 </span>            :  *
+<span class="lineNum">      63 </span>            :  * Revision 1.15  2003/11/23 22:14:32  markster
+<span class="lineNum">      64 </span>            :  * Various warning cleanups
+<span class="lineNum">      65 </span>            :  *
+<span class="lineNum">      66 </span>            :  * Revision 1.14  2003/02/12 13:59:15  matteo
+<span class="lineNum">      67 </span>            :  * mer feb 12 14:56:57 CET 2003
+<span class="lineNum">      68 </span>            :  *
+<span class="lineNum">      69 </span>            :  * Revision 1.1.1.1  2003/02/12 13:59:15  matteo
+<span class="lineNum">      70 </span>            :  * mer feb 12 14:56:57 CET 2003
+<span class="lineNum">      71 </span>            :  *
+<span class="lineNum">      72 </span>            :  * Revision 1.2  2000/01/05 08:20:40  markster
+<span class="lineNum">      73 </span>            :  * Some OSS fixes and a few lpc changes to make it actually work
+<span class="lineNum">      74 </span>            :  *
+<span class="lineNum">      75 </span>            :  * Revision 1.2  1996/08/20  20:45:00  jaf
+<span class="lineNum">      76 </span>            :  * Removed all static local variables that were SAVE'd in the Fortran
+<span class="lineNum">      77 </span>            :  * code, and put them in struct lpc10_encoder_state that is passed as an
+<span class="lineNum">      78 </span>            :  * argument.
+<span class="lineNum">      79 </span>            :  *
+<span class="lineNum">      80 </span>            :  * Removed init function, since all initialization is now done in
+<span class="lineNum">      81 </span>            :  * init_lpc10_encoder_state().
+<span class="lineNum">      82 </span>            :  *
+<span class="lineNum">      83 </span>            :  * Revision 1.1  1996/08/19  22:30:14  jaf
+<span class="lineNum">      84 </span>            :  * Initial revision
+<span class="lineNum">      85 </span>            :  * */
+<span class="lineNum">      86 </span>            : /* Revision 1.10  1996/03/29  17:59:14  jaf */
+<span class="lineNum">      87 </span>            : /* Avoided using VALUE(9), although it shouldn't affect the function of */
+<span class="lineNum">      88 </span>            : /* the code at all, because it was always multiplied by VDC(9,SNRL), */
+<span class="lineNum">      89 </span>            : /* which is 0 for all values of SNRL.  Still, if VALUE(9) had an initial */
+<span class="lineNum">      90 </span>            : /* value of IEEE NaN, it might cause trouble (I don't know how IEEE */
+<span class="lineNum">      91 </span>            : /* defines Nan * 0.  It should either be NaN or 0.) */
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : /* Revision 1.9  1996/03/29  17:54:46  jaf */
+<span class="lineNum">      94 </span>            : /* Added a few comments about the accesses made to argument array VOIBUF */
+<span class="lineNum">      95 </span>            : /* and the local saved array VOICE. */
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span>            : /* Revision 1.8  1996/03/27  18:19:54  jaf */
+<span class="lineNum">      98 </span>            : /* Added an assignment to VSTATE that does not affect the function of the */
+<span class="lineNum">      99 </span>            : /* program at all.  The only reason I put it in was so that the tracing */
+<span class="lineNum">     100 </span>            : /* statements at the end, when enabled, will print a consistent value for */
+<span class="lineNum">     101 </span>            : /* VSTATE when HALF .EQ. 1, rather than a garbage value that could change */
+<span class="lineNum">     102 </span>            : /* from one call to the next. */
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : /* Revision 1.7  1996/03/26  20:00:06  jaf */
+<span class="lineNum">     105 </span>            : /* Removed the inclusion of the file &quot;vcomm.fh&quot;, and put its contents */
+<span class="lineNum">     106 </span>            : /* into this file.  It was included nowhere else but here. */
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : /* Revision 1.6  1996/03/26  19:38:09  jaf */
+<span class="lineNum">     109 </span>            : /* Commented out trace statements. */
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span>            : /* Revision 1.5  1996/03/19  20:43:45  jaf */
+<span class="lineNum">     112 </span>            : /* Added comments about which indices of OBOUND and VOIBUF can be */
+<span class="lineNum">     113 </span>            : /* accessed, and whether they are read or written.  VOIBUF is fairly */
+<span class="lineNum">     114 </span>            : /* messy. */
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            : /* Revision 1.4  1996/03/19  15:00:58  jaf */
+<span class="lineNum">     117 </span>            : /* Moved the DATA statements for the *VDC* variables later, as it is */
+<span class="lineNum">     118 </span>            : /* apparently illegal to have DATA statements before local variable */
+<span class="lineNum">     119 </span>            : /* declarations. */
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span>            : /* Revision 1.3  1996/03/19  00:10:49  jaf */
+<span class="lineNum">     122 </span>            : /* Heavily commented the local variables that are saved from one */
+<span class="lineNum">     123 </span>            : /* invocation to the next, and how the local variable FIRST is used to */
+<span class="lineNum">     124 </span>            : /* avoid the need to assign most of them initial values with DATA */
+<span class="lineNum">     125 </span>            : /* statements. */
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : /* A few should be initialized, but aren't.  I've guessed initial values */
+<span class="lineNum">     128 </span>            : /* for two of these, SFBUE and SLBUE, and I've convinced myself that for */
+<span class="lineNum">     129 </span>            : /* VOICE, the effects of uninitialized values will die out after 2 or 3 */
+<span class="lineNum">     130 </span>            : /* frame times.  It would still be good to choose initial values for */
+<span class="lineNum">     131 </span>            : /* these, but I don't know what reasonable values would be (0 comes to */
+<span class="lineNum">     132 </span>            : /* mind). */
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            : /* Revision 1.2  1996/03/13  16:09:28  jaf */
+<span class="lineNum">     135 </span>            : /* Comments added explaining which of the local variables of this */
+<span class="lineNum">     136 </span>            : /* subroutine need to be saved from one invocation to the next, and which */
+<span class="lineNum">     137 </span>            : /* do not. */
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : /* WARNING!  Some of them that should are never given initial values in */
+<span class="lineNum">     140 </span>            : /* this code.  Hopefully, Fortran 77 defines initial values for them, but */
+<span class="lineNum">     141 </span>            : /* even so, giving them explicit initial values is preferable. */
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            : /* WARNING!  VALUE(9) is used, but never assigned a value.  It should */
+<span class="lineNum">     144 </span>            : /* probably be eliminated from the code. */
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            : /* Revision 1.1  1996/02/07 14:50:28  jaf */
+<span class="lineNum">     147 </span>            : /* Initial revision */
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span>            : /****************************************************************************/
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : /*        Voicing Detection (VOICIN) makes voicing decisions for each half */
+<span class="lineNum">     153 </span>            : /*  frame of input speech.  Tentative voicing decisions are made two frames*/
+<span class="lineNum">     154 </span>            : /*   in the future (2F) for each half frame.  These decisions are carried */
+<span class="lineNum">     155 </span>            : /*   through one frame in the future (1F) to the present (P) frame where */
+<span class="lineNum">     156 </span>            : /*   they are examined and smoothed, resulting in the final voicing */
+<span class="lineNum">     157 </span>            : /*   decisions for each half frame. */
+<span class="lineNum">     158 </span>            : /*        The voicing parameter (signal measurement) column vector (VALUE) */
+<span class="lineNum">     159 </span>            : /*   is based on a rectangular window of speech samples determined by the */
+<span class="lineNum">     160 </span>            : /*  window placement algorithm.  The voicing parameter vector contains the*/
+<span class="lineNum">     161 </span>            : /*  AMDF windowed maximum-to-minimum ratio, the zero crossing rate, energy*/
+<span class="lineNum">     162 </span>            : /*   measures, reflection coefficients, and prediction gains.  The voicing */
+<span class="lineNum">     163 </span>            : /*  window is placed to avoid contamination of the voicing parameter vector*/
+<span class="lineNum">     164 </span>            : /*   with speech onsets. */
+<span class="lineNum">     165 </span>            : /*        The input signal is then classified as unvoiced (including */
+<span class="lineNum">     166 </span>            : /*   silence) or voiced.  This decision is made by a linear discriminant */
+<span class="lineNum">     167 </span>            : /*   function consisting of a dot product of the voicing decision */
+<span class="lineNum">     168 </span>            : /*   coefficient (VDC) row vector with the measurement column vector */
+<span class="lineNum">     169 </span>            : /*  (VALUE).  The VDC vector is 2-dimensional, each row vector is optimized*/
+<span class="lineNum">     170 </span>            : /*   for a particular signal-to-noise ratio (SNR).  So, before the dot */
+<span class="lineNum">     171 </span>            : /*   product is performed, the SNR is estimated to select the appropriate */
+<span class="lineNum">     172 </span>            : /*   VDC vector. */
+<span class="lineNum">     173 </span>            : /*        The smoothing algorithm is a modified median smoother.  The */
+<span class="lineNum">     174 </span>            : /*  voicing discriminant function is used by the smoother to determine how*/
+<span class="lineNum">     175 </span>            : /*   strongly voiced or unvoiced a signal is.  The smoothing is further */
+<span class="lineNum">     176 </span>            : /*   modified if a speech onset and a voicing decision transition occur */
+<span class="lineNum">     177 </span>            : /*   within one half frame.  In this case, the voicing decision transition */
+<span class="lineNum">     178 </span>            : /*  is extended to the speech onset.  For transmission purposes, there are*/
+<span class="lineNum">     179 </span>            : /*   constraints on the duration and transition of voicing decisions.  The */
+<span class="lineNum">     180 </span>            : /*   smoother takes these constraints into account. */
+<span class="lineNum">     181 </span>            : /*        Finally, the energy estimates are updated along with the dither */
+<span class="lineNum">     182 </span>            : /*   threshold used to calculate the zero crossing rate (ZC). */
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            : /* Inputs: */
+<span class="lineNum">     185 </span>            : /*  VWIN      - Voicing window limits */
+<span class="lineNum">     186 </span>            : /*              The indices read of arrays VWIN, INBUF, LPBUF, and BUFLIM */
+<span class="lineNum">     187 </span>            : /*              are the same as those read by subroutine VPARMS. */
+<span class="lineNum">     188 </span>            : /*  INBUF     - Input speech buffer */
+<span class="lineNum">     189 </span>            : /*  LPBUF     - Low-pass filtered speech buffer */
+<span class="lineNum">     190 </span>            : /*  BUFLIM    - INBUF and LPBUF limits */
+<span class="lineNum">     191 </span>            : /*  HALF      - Present analysis half frame number */
+<span class="lineNum">     192 </span>            : /*  MINAMD    - Minimum value of the AMDF */
+<span class="lineNum">     193 </span>            : /*  MAXAMD    - Maximum value of the AMDF */
+<span class="lineNum">     194 </span>            : /*  MINTAU    - Pointer to the lag of the minimum AMDF value */
+<span class="lineNum">     195 </span>            : /*  IVRC(2)   - Inverse filter's RC's */
+<span class="lineNum">     196 </span>            : /*              Only index 2 of array IVRC read under normal operation. */
+<span class="lineNum">     197 </span>            : /*              (Index 1 is also read when debugging is turned on.) */
+<span class="lineNum">     198 </span>            : /*  OBOUND    - Onset boundary descriptions */
+<span class="lineNum">     199 </span>            : /*             Indices 1 through 3 read if (HALF .NE. 1), otherwise untouched.
+<span class="lineNum">     200 </span>            : */
+<span class="lineNum">     201 </span>            : /*  AF        - The analysis frame number */
+<span class="lineNum">     202 </span>            : /* Output: */
+<span class="lineNum">     203 </span>            : /*  VOIBUF(2,0:AF) - Buffer of voicing decisions */
+<span class="lineNum">     204 </span>            : /*              Index (HALF,3) written. */
+<span class="lineNum">     205 </span>            : /*              If (HALF .EQ. 1), skip down to &quot;Read (HALF,3)&quot; below. */
+<span class="lineNum">     206 </span>            : /*              Indices (1,2), (2,1), (1,2), and (2,2) read. */
+<span class="lineNum">     207 </span>            : /*              One of the following is then done: */
+<span class="lineNum">     208 </span>            : /*                 read (1,3) and possibly write (1,2) */
+<span class="lineNum">     209 </span>            : /*                 read (1,3) and write (1,2) or (2,2) */
+<span class="lineNum">     210 </span>            : /*                 write (2,1) */
+<span class="lineNum">     211 </span>            : /*                 write (2,1) or (1,2) */
+<span class="lineNum">     212 </span>            : /*                 read (1,0) and (1,3) and then write (2,2) or (1,1) */
+<span class="lineNum">     213 </span>            : /*                 no reads or writes on VOIBUF */
+<span class="lineNum">     214 </span>            : /*              Finally, read (HALF,3) */
+<span class="lineNum">     215 </span>            : /* Internal: */
+<span class="lineNum">     216 </span>            : /*  QS        - Ratio of preemphasized to full-band energies */
+<span class="lineNum">     217 </span>            : /*  RC1       - First reflection coefficient */
+<span class="lineNum">     218 </span>            : /* AR_B      - Product of the causal forward and reverse pitch prediction gain
+<span class="lineNum">     219 </span>            : s*/
+<span class="lineNum">     220 </span>            : /* AR_F      - Product of the noncausal forward and rev. pitch prediction gain
+<span class="lineNum">     221 </span>            : s*/
+<span class="lineNum">     222 </span>            : /*  ZC        - Zero crossing rate */
+<span class="lineNum">     223 </span>            : /*  DITHER    - Zero crossing threshold level */
+<span class="lineNum">     224 </span>            : /*  MAXMIN    - AMDF's 1 octave windowed maximum-to-minimum ratio */
+<span class="lineNum">     225 </span>            : /*  MINPTR    - Location  of minimum AMDF value */
+<span class="lineNum">     226 </span>            : /*  NVDC      - Number of elements in each VDC vector */
+<span class="lineNum">     227 </span>            : /*  NVDCL     - Number of VDC vectors */
+<span class="lineNum">     228 </span>            : /*  VDCL      - SNR values corresponding to the set of VDC's */
+<span class="lineNum">     229 </span>            : /*  VDC       - 2-D voicing decision coefficient vector */
+<span class="lineNum">     230 </span>            : /*  VALUE(9)  - Voicing Parameters */
+<span class="lineNum">     231 </span>            : /*  VOICE(2,3)- History of LDA results */
+<span class="lineNum">     232 </span>            : /*              On every call when (HALF .EQ. 1), VOICE(*,I+1) is */
+<span class="lineNum">     233 </span>            : /*              shifted back to VOICE(*,I), for I=1,2. */
+<span class="lineNum">     234 </span>            : /*              VOICE(HALF,3) is written on every call. */
+<span class="lineNum">     235 </span>            : /*              Depending on several conditions, one or more of */
+<span class="lineNum">     236 </span>            : /*              (1,1), (1,2), (2,1), and (2,2) might then be read. */
+<span class="lineNum">     237 </span>            : /*  LBE       - Ratio of low-band instantaneous to average energies */
+<span class="lineNum">     238 </span>            : /*  FBE       - Ratio of full-band instantaneous to average energies */
+<span class="lineNum">     239 </span>            : /*  LBVE      - Low band voiced energy */
+<span class="lineNum">     240 </span>            : /*  LBUE      - Low band unvoiced energy */
+<span class="lineNum">     241 </span>            : /*  FBVE      - Full band voiced energy */
+<span class="lineNum">     242 </span>            : /*  FBUE      - Full band unvoiced energy */
+<span class="lineNum">     243 </span>            : /*  OFBUE     - Previous full-band unvoiced energy */
+<span class="lineNum">     244 </span>            : /*  OLBUE     - Previous low-band unvoiced energy */
+<span class="lineNum">     245 </span>            : /*  REF       - Reference energy for initialization and DITHER threshold */
+<span class="lineNum">     246 </span>            : /*  SNR       - Estimate of signal-to-noise ratio */
+<span class="lineNum">     247 </span>            : /*  SNR2      - Estimate of low-band signal-to-noise ratio */
+<span class="lineNum">     248 </span>            : /*  SNRL      - SNR level number */
+<span class="lineNum">     249 </span>            : /*  OT        - Onset transition present */
+<span class="lineNum">     250 </span>            : /*  VSTATE    - Decimal interpretation of binary voicing classifications */
+<span class="lineNum">     251 </span>            : /*  FIRST     - First call flag */
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            : /* This subroutine maintains local state from one call to the next.  If */
+<span class="lineNum">     254 </span>            : /* you want to switch to using a new audio stream for this filter, or */
+<span class="lineNum">     255 </span>            : /* reinitialize its state for any other reason, call the ENTRY */
+<a name="256"><span class="lineNum">     256 </span>            : /* INITVOICIN. */</a>
+<span class="lineNum">     257 </span>            : 
+<span class="lineNum">     258 </span><span class="lineCov">     100530 : /* Subroutine */ int voicin_(integer *vwin, real *inbuf, real *</span>
+<span class="lineNum">     259 </span>            :         lpbuf, integer *buflim, integer *half, real *minamd, real *maxamd,
+<span class="lineNum">     260 </span>            :         integer *mintau, real *ivrc, integer *obound, integer *voibuf,
+<span class="lineNum">     261 </span>            :         integer *af, struct lpc10_encoder_state *st)
+<span class="lineNum">     262 </span>            : {
+<span class="lineNum">     263 </span>            :     /* Initialized data */
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            :     real *dither;
+<span class="lineNum">     266 </span>            :     static real vdc[100]        /* was [10][10] */ = { 0.f,1714.f,-110.f,
+<span class="lineNum">     267 </span>            :             334.f,-4096.f,-654.f,3752.f,3769.f,0.f,1181.f,0.f,874.f,-97.f,
+<span class="lineNum">     268 </span>            :             300.f,-4096.f,-1021.f,2451.f,2527.f,0.f,-500.f,0.f,510.f,-70.f,
+<span class="lineNum">     269 </span>            :             250.f,-4096.f,-1270.f,2194.f,2491.f,0.f,-1500.f,0.f,500.f,-10.f,
+<span class="lineNum">     270 </span>            :             200.f,-4096.f,-1300.f,2e3f,2e3f,0.f,-2e3f,0.f,500.f,0.f,0.f,
+<span class="lineNum">     271 </span>            :             -4096.f,-1300.f,2e3f,2e3f,0.f,-2500.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,
+<span class="lineNum">     272 </span>            :             0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,
+<span class="lineNum">     273 </span>            :             0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,
+<span class="lineNum">     274 </span>            :             0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f,0.f };
+<span class="lineNum">     275 </span>            :     static integer nvdcl = 5;
+<span class="lineNum">     276 </span>            :     static real vdcl[10] = { 600.f,450.f,300.f,200.f,0.f,0.f,0.f,0.f,0.f,0.f }
+<span class="lineNum">     277 </span>            :             ;
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :     /* System generated locals */
+<span class="lineNum">     280 </span><span class="lineCov">     100530 :     integer inbuf_offset = 0, lpbuf_offset = 0, i__1, i__2;</span>
+<span class="lineNum">     281 </span>            :     real r__1, r__2;
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            :     /* Builtin functions */
+<span class="lineNum">     284 </span>            :     integer i_nint(real *);
+<span class="lineNum">     285 </span>            :     double sqrt(doublereal);
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :     /* Local variables */
+<span class="lineNum">     288 </span>            :     real ar_b__, ar_f__;
+<span class="lineNum">     289 </span>            :     integer *lbve, *lbue, *fbve, *fbue;
+<span class="lineNum">     290 </span>            :     integer snrl, i__;
+<span class="lineNum">     291 </span>            :     integer *ofbue, *sfbue;
+<span class="lineNum">     292 </span>            :     real *voice;
+<span class="lineNum">     293 </span>            :     integer *olbue, *slbue;
+<span class="lineNum">     294 </span>            :     real value[9];
+<span class="lineNum">     295 </span>            :     integer zc;
+<span class="lineNum">     296 </span>            :     logical ot;
+<span class="lineNum">     297 </span>            :     real qs;
+<span class="lineNum">     298 </span>            :     real *maxmin;
+<span class="lineNum">     299 </span>            :     integer vstate;
+<span class="lineNum">     300 </span>            :     real rc1;
+<span class="lineNum">     301 </span>            :     extern /* Subroutine */ int vparms_(integer *, real *, real *, integer *,
+<span class="lineNum">     302 </span>            :             integer *, real *, integer *, integer *, integer *, integer *,
+<span class="lineNum">     303 </span>            :             real *, real *, real *, real *);
+<span class="lineNum">     304 </span>            :     integer fbe, lbe;
+<span class="lineNum">     305 </span>            :     real *snr;
+<span class="lineNum">     306 </span>            :     real snr2;
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            : /*      Global Variables: */
+<span class="lineNum">     309 </span>            : /*       Arguments */
+<span class="lineNum">     310 </span>            : /* $Log$
+<span class="lineNum">     311 </span>            :  * Revision 1.16  2004/06/26 03:50:14  markster
+<span class="lineNum">     312 </span>            :  * Merge source cleanups (bug #1911)
+<span class="lineNum">     313 </span>            :  *
+<span class="lineNum">     314 </span>            :  * Revision 1.15  2003/11/23 22:14:32  markster
+<span class="lineNum">     315 </span>            :  * Various warning cleanups
+<span class="lineNum">     316 </span>            :  *
+<span class="lineNum">     317 </span>            :  * Revision 1.14  2003/02/12 13:59:15  matteo
+<span class="lineNum">     318 </span>            :  * mer feb 12 14:56:57 CET 2003
+<span class="lineNum">     319 </span>            :  *
+<span class="lineNum">     320 </span>            :  * Revision 1.1.1.1  2003/02/12 13:59:15  matteo
+<span class="lineNum">     321 </span>            :  * mer feb 12 14:56:57 CET 2003
+<span class="lineNum">     322 </span>            :  *
+<span class="lineNum">     323 </span>            :  * Revision 1.2  2000/01/05 08:20:40  markster
+<span class="lineNum">     324 </span>            :  * Some OSS fixes and a few lpc changes to make it actually work
+<span class="lineNum">     325 </span>            :  *
+<span class="lineNum">     326 </span>            :  * Revision 1.2  1996/08/20  20:45:00  jaf
+<span class="lineNum">     327 </span>            :  * Removed all static local variables that were SAVE'd in the Fortran
+<span class="lineNum">     328 </span>            :  * code, and put them in struct lpc10_encoder_state that is passed as an
+<span class="lineNum">     329 </span>            :  * argument.
+<span class="lineNum">     330 </span>            :  *
+<span class="lineNum">     331 </span>            :  * Removed init function, since all initialization is now done in
+<span class="lineNum">     332 </span>            :  * init_lpc10_encoder_state().
+<span class="lineNum">     333 </span>            :  *
+<span class="lineNum">     334 </span>            :  * Revision 1.1  1996/08/19  22:30:14  jaf
+<span class="lineNum">     335 </span>            :  * Initial revision
+<span class="lineNum">     336 </span>            :  * */
+<span class="lineNum">     337 </span>            : /* Revision 1.3  1996/03/29  22:05:55  jaf */
+<span class="lineNum">     338 </span>            : /* Commented out the common block variables that are not needed by the */
+<span class="lineNum">     339 </span>            : /* embedded version. */
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span>            : /* Revision 1.2  1996/03/26  19:34:50  jaf */
+<span class="lineNum">     342 </span>            : /* Added comments indicating which constants are not needed in an */
+<span class="lineNum">     343 </span>            : /* application that uses the LPC-10 coder. */
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span>            : /* Revision 1.1  1996/02/07  14:44:09  jaf */
+<span class="lineNum">     346 </span>            : /* Initial revision */
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span>            : /*   LPC Processing control variables: */
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span>            : /* *** Read-only: initialized in setup */
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span>            : /*  Files for Speech, Parameter, and Bitstream Input &amp; Output, */
+<span class="lineNum">     353 </span>            : /*    and message and debug outputs. */
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span>            : /* Here are the only files which use these variables: */
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span>            : /* lpcsim.f setup.f trans.f error.f vqsetup.f */
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span>            : /* Many files which use fdebug are not listed, since it is only used in */
+<span class="lineNum">     360 </span>            : /* those other files conditionally, to print trace statements. */
+<span class="lineNum">     361 </span>            : /*      integer fsi, fso, fpi, fpo, fbi, fbo, pbin, fmsg, fdebug */
+<span class="lineNum">     362 </span>            : /*  LPC order, Frame size, Quantization rate, Bits per frame, */
+<span class="lineNum">     363 </span>            : /*    Error correction */
+<span class="lineNum">     364 </span>            : /* Subroutine SETUP is the only place where order is assigned a value, */
+<span class="lineNum">     365 </span>            : /* and that value is 10.  It could increase efficiency 1% or so to */
+<span class="lineNum">     366 </span>            : /* declare order as a constant (i.e., a Fortran PARAMETER) instead of as
+<span class="lineNum">     367 </span>            : */
+<span class="lineNum">     368 </span>            : /* a variable in a COMMON block, since it is used in many places in the */
+<span class="lineNum">     369 </span>            : /* core of the coding and decoding routines.  Actually, I take that back.
+<span class="lineNum">     370 </span>            : */
+<span class="lineNum">     371 </span>            : /* At least when compiling with f2c, the upper bound of DO loops is */
+<span class="lineNum">     372 </span>            : /* stored in a local variable before the DO loop begins, and then that is
+<span class="lineNum">     373 </span>            : */
+<span class="lineNum">     374 </span>            : /* compared against on each iteration. */
+<span class="lineNum">     375 </span>            : /* Similarly for lframe, which is given a value of MAXFRM in SETUP. */
+<span class="lineNum">     376 </span>            : /* Similarly for quant, which is given a value of 2400 in SETUP.  quant */
+<span class="lineNum">     377 </span>            : /* is used in only a few places, and never in the core coding and */
+<span class="lineNum">     378 </span>            : /* decoding routines, so it could be eliminated entirely. */
+<span class="lineNum">     379 </span>            : /* nbits is similar to quant, and is given a value of 54 in SETUP. */
+<span class="lineNum">     380 </span>            : /* corrp is given a value of .TRUE. in SETUP, and is only used in the */
+<span class="lineNum">     381 </span>            : /* subroutines ENCODE and DECODE.  It doesn't affect the speed of the */
+<span class="lineNum">     382 </span>            : /* coder significantly whether it is .TRUE. or .FALSE., or whether it is
+<span class="lineNum">     383 </span>            : */
+<span class="lineNum">     384 </span>            : /* a constant or a variable, since it is only examined once per frame. */
+<span class="lineNum">     385 </span>            : /* Leaving it as a variable that is set to .TRUE.  seems like a good */
+<span class="lineNum">     386 </span>            : /* idea, since it does enable some error-correction capability for */
+<span class="lineNum">     387 </span>            : /* unvoiced frames, with no change in the coding rate, and no noticeable
+<span class="lineNum">     388 </span>            : */
+<span class="lineNum">     389 </span>            : /* quality difference in the decoded speech. */
+<span class="lineNum">     390 </span>            : /*      integer quant, nbits */
+<span class="lineNum">     391 </span>            : /* *** Read/write: variables for debugging, not needed for LPC algorithm
+<span class="lineNum">     392 </span>            : */
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span>            : /*  Current frame, Unstable frames, Output clip count, Max onset buffer,
+<span class="lineNum">     395 </span>            : */
+<span class="lineNum">     396 </span>            : /*    Debug listing detail level, Line count on listing page */
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span>            : /* nframe is not needed for an embedded LPC10 at all. */
+<span class="lineNum">     399 </span>            : /* nunsfm is initialized to 0 in SETUP, and incremented in subroutine */
+<span class="lineNum">     400 </span>            : /* ERROR, which is only called from RCCHK.  When LPC10 is embedded into */
+<span class="lineNum">     401 </span>            : /* an application, I would recommend removing the call to ERROR in RCCHK,
+<span class="lineNum">     402 </span>            : */
+<span class="lineNum">     403 </span>            : /* and remove ERROR and nunsfm completely. */
+<span class="lineNum">     404 </span>            : /* iclip is initialized to 0 in SETUP, and incremented in entry SWRITE in
+<span class="lineNum">     405 </span>            : */
+<span class="lineNum">     406 </span>            : /* sread.f.  When LPC10 is embedded into an application, one might want */
+<span class="lineNum">     407 </span>            : /* to cause it to be incremented in a routine that takes the output of */
+<span class="lineNum">     408 </span>            : /* SYNTHS and sends it to an audio device.  It could be optionally */
+<span class="lineNum">     409 </span>            : /* displayed, for those that might want to know what it is. */
+<span class="lineNum">     410 </span>            : /* maxosp is never initialized to 0 in SETUP, although it probably should
+<span class="lineNum">     411 </span>            : */
+<span class="lineNum">     412 </span>            : /* be, and it is updated in subroutine ANALYS.  I doubt that its value */
+<span class="lineNum">     413 </span>            : /* would be of much interest to an application in which LPC10 is */
+<span class="lineNum">     414 </span>            : /* embedded. */
+<span class="lineNum">     415 </span>            : /* listl and lincnt are not needed for an embedded LPC10 at all. */
+<span class="lineNum">     416 </span>            : /*      integer nframe, nunsfm, iclip, maxosp, listl, lincnt */
+<span class="lineNum">     417 </span>            : /*      common /contrl/ fsi, fso, fpi, fpo, fbi, fbo, pbin, fmsg, fdebug */
+<span class="lineNum">     418 </span>            : /*      common /contrl/ quant, nbits */
+<span class="lineNum">     419 </span>            : /*      common /contrl/ nframe, nunsfm, iclip, maxosp, listl, lincnt */
+<span class="lineNum">     420 </span>            : /*      Parameters/constants */
+<span class="lineNum">     421 </span>            : /*       Voicing coefficient and Linear Discriminant Analysis variables:
+<span class="lineNum">     422 </span>            : */
+<span class="lineNum">     423 </span>            : /*       Max number of VDC's and VDC levels */
+<span class="lineNum">     424 </span>            : /*       The following are not Fortran PARAMETER's, but they are */
+<span class="lineNum">     425 </span>            : /*       initialized with DATA statements, and never modified. */
+<span class="lineNum">     426 </span>            : /*       Actual number of VDC's and levels */
+<span class="lineNum">     427 </span>            : /*       Local variables that need not be saved */
+<span class="lineNum">     428 </span>            : /*       Note: */
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            : /*       VALUE(1) through VALUE(8) are assigned values, but VALUE(9) */
+<span class="lineNum">     431 </span>            : /*       never is.  Yet VALUE(9) is read in the loop that begins &quot;DO I =
+<span class="lineNum">     432 </span>            : */
+<span class="lineNum">     433 </span>            : /*       1, 9&quot; below.  I believe that this doesn't cause any problems in
+<span class="lineNum">     434 </span>            : */
+<span class="lineNum">     435 </span>            : /*       this subroutine, because all VDC(9,*) array elements are 0, and
+<span class="lineNum">     436 </span>            : */
+<span class="lineNum">     437 </span>            : /*       this is what is multiplied by VALUE(9) in all cases.  Still, it
+<span class="lineNum">     438 </span>            : */
+<span class="lineNum">     439 </span>            : /*       would save a multiplication to change the loop to &quot;DO I = 1, 8&quot;.
+<span class="lineNum">     440 </span>            : */
+<span class="lineNum">     441 </span>            : /*       Local state */
+<span class="lineNum">     442 </span>            : /*       WARNING! */
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            : /*       VOICE, SFBUE, and SLBUE should be saved from one invocation to */
+<span class="lineNum">     445 </span>            : /*       the next, but they are never given an initial value. */
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span>            : /*       Does Fortran 77 specify some default initial value, like 0, or */
+<span class="lineNum">     448 </span>            : /*       is it undefined?  If it is undefined, then this code should be */
+<span class="lineNum">     449 </span>            : /*       corrected to specify an initial value. */
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span>            : /*       For VOICE, note that it is &quot;shifted&quot; in the statement that */
+<span class="lineNum">     452 </span>            : /*       begins &quot;IF (HALF .EQ. 1) THEN&quot; below.  Also, uninitialized */
+<span class="lineNum">     453 </span>            : /*       values in the VOICE array can only affect entries in the VOIBUF
+<span class="lineNum">     454 </span>            : */
+<span class="lineNum">     455 </span>            : /*       array that are for the same frame, or for an older frame.  Thus
+<span class="lineNum">     456 </span>            : */
+<span class="lineNum">     457 </span>            : /*       the effects of uninitialized values in VOICE cannot linger on */
+<span class="lineNum">     458 </span>            : /*       for more than 2 or 3 frame times. */
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span>            : /*       For SFBUE and SLBUE, the effects of uninitialized values can */
+<span class="lineNum">     461 </span>            : /*       linger on for many frame times, because their previous values */
+<span class="lineNum">     462 </span>            : /*       are exponentially decayed.  Thus it is more important to choose
+<span class="lineNum">     463 </span>            : */
+<span class="lineNum">     464 </span>            : /*       initial values for these variables.  I would guess that a */
+<span class="lineNum">     465 </span>            : /*       reasonable initial value for SFBUE is REF/16, the same as used */
+<span class="lineNum">     466 </span>            : /*       for FBUE and OFBUE.  Similarly, SLBUE can be initialized to */
+<span class="lineNum">     467 </span>            : /*       REF/32, the same as for LBUE and OLBUE. */
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span>            : /*       These guessed initial values should be validated by re-running */
+<span class="lineNum">     470 </span>            : /*       the modified program on some audio samples. */
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span>            : /*   Declare and initialize filters: */
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span><span class="lineCov">     100530 :     dither = (&amp;st-&gt;dither);</span>
+<span class="lineNum">     475 </span><span class="lineCov">     100530 :     snr = (&amp;st-&gt;snr);</span>
+<span class="lineNum">     476 </span><span class="lineCov">     100530 :     maxmin = (&amp;st-&gt;maxmin);</span>
+<span class="lineNum">     477 </span><span class="lineCov">     100530 :     voice = (&amp;st-&gt;voice[0]);</span>
+<span class="lineNum">     478 </span><span class="lineCov">     100530 :     lbve = (&amp;st-&gt;lbve);</span>
+<span class="lineNum">     479 </span><span class="lineCov">     100530 :     lbue = (&amp;st-&gt;lbue);</span>
+<span class="lineNum">     480 </span><span class="lineCov">     100530 :     fbve = (&amp;st-&gt;fbve);</span>
+<span class="lineNum">     481 </span><span class="lineCov">     100530 :     fbue = (&amp;st-&gt;fbue);</span>
+<span class="lineNum">     482 </span><span class="lineCov">     100530 :     ofbue = (&amp;st-&gt;ofbue);</span>
+<span class="lineNum">     483 </span><span class="lineCov">     100530 :     olbue = (&amp;st-&gt;olbue);</span>
+<span class="lineNum">     484 </span><span class="lineCov">     100530 :     sfbue = (&amp;st-&gt;sfbue);</span>
+<span class="lineNum">     485 </span><span class="lineCov">     100530 :     slbue = (&amp;st-&gt;slbue);</span>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span>            :     /* Parameter adjustments */
+<span class="lineNum">     488 </span><span class="lineCov">     100530 :     if (vwin) {</span>
+<span class="lineNum">     489 </span><span class="lineCov">     100530 :         --vwin;</span>
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span><span class="lineCov">     100530 :     if (buflim) {</span>
+<span class="lineNum">     492 </span><span class="lineCov">     100530 :         --buflim;</span>
+<span class="lineNum">     493 </span>            :         }
+<span class="lineNum">     494 </span><span class="lineCov">     100530 :     if (inbuf) {</span>
+<span class="lineNum">     495 </span><span class="lineCov">     100530 :         inbuf_offset = buflim[1];</span>
+<span class="lineNum">     496 </span><span class="lineCov">     100530 :         inbuf -= inbuf_offset;</span>
+<span class="lineNum">     497 </span>            :         }
+<span class="lineNum">     498 </span><span class="lineCov">     100530 :     if (lpbuf) {</span>
+<span class="lineNum">     499 </span><span class="lineCov">     100530 :         lpbuf_offset = buflim[3];</span>
+<span class="lineNum">     500 </span><span class="lineCov">     100530 :         lpbuf -= lpbuf_offset;</span>
+<span class="lineNum">     501 </span>            :         }
+<span class="lineNum">     502 </span><span class="lineCov">     100530 :     if (ivrc) {</span>
+<span class="lineNum">     503 </span><span class="lineCov">     100530 :         --ivrc;</span>
+<span class="lineNum">     504 </span>            :         }
+<span class="lineNum">     505 </span><span class="lineCov">     100530 :     if (obound) {</span>
+<span class="lineNum">     506 </span><span class="lineCov">     100530 :         --obound;</span>
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span><span class="lineCov">     100530 :     if (voibuf) {</span>
+<span class="lineNum">     509 </span><span class="lineCov">     100530 :         --voibuf;</span>
+<span class="lineNum">     510 </span>            :         }
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span>            :     /* Function Body */
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span>            : /*       The following variables are saved from one invocation to the */
+<span class="lineNum">     515 </span>            : /*       next, but are not initialized with DATA statements.  This is */
+<span class="lineNum">     516 </span>            : /*       acceptable, because FIRST is initialized ot .TRUE., and the */
+<span class="lineNum">     517 </span>            : /*       first time that this subroutine is then called, they are all */
+<span class="lineNum">     518 </span>            : /*       given initial values. */
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span>            : /*       SNR */
+<span class="lineNum">     521 </span>            : /*       LBVE, LBUE, FBVE, FBUE, OFBUE, OLBUE */
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span>            : /*       MAXMIN is initialized on the first call, assuming that HALF */
+<span class="lineNum">     524 </span>            : /*       .EQ. 1 on first call.  This is how ANALYS calls this subroutine.
+<span class="lineNum">     525 </span>            : */
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            : /*   Voicing Decision Parameter vector (* denotes zero coefficient): */
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span>            : /*      * MAXMIN */
+<span class="lineNum">     530 </span>            : /*        LBE/LBVE */
+<span class="lineNum">     531 </span>            : /*        ZC */
+<span class="lineNum">     532 </span>            : /*        RC1 */
+<span class="lineNum">     533 </span>            : /*        QS */
+<span class="lineNum">     534 </span>            : /*        IVRC2 */
+<span class="lineNum">     535 </span>            : /*        aR_B */
+<span class="lineNum">     536 </span>            : /*        aR_F */
+<span class="lineNum">     537 </span>            : /*      * LOG(LBE/LBVE) */
+<span class="lineNum">     538 </span>            : /*  Define 2-D voicing decision coefficient vector according to the voicin
+<span class="lineNum">     539 </span>            : g*/
+<span class="lineNum">     540 </span>            : /*  parameter order above.  Each row (VDC vector) is optimized for a speci
+<span class="lineNum">     541 </span>            : fic*/
+<span class="lineNum">     542 </span>            : /*   SNR.  The last element of the vector is the constant. */
+<span class="lineNum">     543 </span>            : /*               E    ZC    RC1    Qs   IVRC2  aRb   aRf        c */
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span>            : /*  The VOICE array contains the result of the linear discriminant functio
+<span class="lineNum">     546 </span>            : n*/
+<span class="lineNum">     547 </span>            : /*   (analog values).  The VOIBUF array contains the hard-limited binary
+<span class="lineNum">     548 </span>            : */
+<span class="lineNum">     549 </span>            : /*   voicing decisions.  The VOICE and VOIBUF arrays, according to FORTRAN
+<span class="lineNum">     550 </span>            :  */
+<span class="lineNum">     551 </span>            : /*   memory allocation, are addressed as: */
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            : /*         (half-frame number, future-frame number) */
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span>            : /*         |   Past    |  Present  |  Future1  |  Future2  | */
+<span class="lineNum">     556 </span>            : /*         | 1,0 | 2,0 | 1,1 | 2,1 | 1,2 | 2,2 | 1,3 | 2,3 |  ---&gt;  time */
+<span class="lineNum">     557 </span>            : 
+<span class="lineNum">     558 </span>            : /*   Update linear discriminant function history each frame: */
+<span class="lineNum">     559 </span><span class="lineCov">     100530 :     if (*half == 1) {</span>
+<span class="lineNum">     560 </span><span class="lineCov">      50265 :         voice[0] = voice[2];</span>
+<span class="lineNum">     561 </span><span class="lineCov">      50265 :         voice[1] = voice[3];</span>
+<span class="lineNum">     562 </span><span class="lineCov">      50265 :         voice[2] = voice[4];</span>
+<span class="lineNum">     563 </span><span class="lineCov">      50265 :         voice[3] = voice[5];</span>
+<span class="lineNum">     564 </span><span class="lineCov">      50265 :         *maxmin = *maxamd / max(*minamd,1.f);</span>
+<span class="lineNum">     565 </span>            :     }
+<span class="lineNum">     566 </span>            : /*   Calculate voicing parameters twice per frame: */
+<span class="lineNum">     567 </span><span class="lineCov">     100530 :     vparms_(&amp;vwin[1], &amp;inbuf[inbuf_offset], &amp;lpbuf[lpbuf_offset], &amp;buflim[1],</span>
+<span class="lineNum">     568 </span>            :             half, dither, mintau, &amp;zc, &amp;lbe, &amp;fbe, &amp;qs, &amp;rc1, &amp;ar_b__, &amp;
+<span class="lineNum">     569 </span>            :             ar_f__);
+<span class="lineNum">     570 </span>            : /*   Estimate signal-to-noise ratio to select the appropriate VDC vector.
+<span class="lineNum">     571 </span>            : */
+<span class="lineNum">     572 </span>            : /*   The SNR is estimated as the running average of the ratio of the */
+<span class="lineNum">     573 </span>            : /*   running average full-band voiced energy to the running average */
+<span class="lineNum">     574 </span>            : /*   full-band unvoiced energy. SNR filter has gain of 63. */
+<span class="lineNum">     575 </span><span class="lineCov">     100530 :     r__1 = (*snr + *fbve / (real) max(*fbue,1)) * 63 / 64.f;</span>
+<span class="lineNum">     576 </span><span class="lineCov">     100530 :     *snr = (real) i_nint(&amp;r__1);</span>
+<span class="lineNum">     577 </span><span class="lineCov">     100530 :     snr2 = *snr * *fbue / max(*lbue,1);</span>
+<span class="lineNum">     578 </span>            : /*   Quantize SNR to SNRL according to VDCL thresholds. */
+<span class="lineNum">     579 </span><span class="lineCov">     100530 :     snrl = 1;</span>
+<span class="lineNum">     580 </span><span class="lineCov">     100530 :     i__1 = nvdcl - 1;</span>
+<span class="lineNum">     581 </span><span class="lineCov">     100530 :     for (snrl = 1; snrl &lt;= i__1; ++snrl) {</span>
+<span class="lineNum">     582 </span><span class="lineCov">     100530 :         if (snr2 &gt; vdcl[snrl - 1]) {</span>
+<span class="lineNum">     583 </span><span class="lineCov">     100530 :             goto L69;</span>
+<span class="lineNum">     584 </span>            :         }
+<span class="lineNum">     585 </span>            :     }
+<span class="lineNum">     586 </span>            : /*      (Note:  SNRL = NVDCL here) */
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 : L69:</span>
+<span class="lineNum">     588 </span>            : /*   Linear discriminant voicing parameters: */
+<span class="lineNum">     589 </span><span class="lineCov">     100530 :     value[0] = *maxmin;</span>
+<span class="lineNum">     590 </span><span class="lineCov">     100530 :     value[1] = (real) lbe / max(*lbve,1);</span>
+<span class="lineNum">     591 </span><span class="lineCov">     100530 :     value[2] = (real) zc;</span>
+<span class="lineNum">     592 </span><span class="lineCov">     100530 :     value[3] = rc1;</span>
+<span class="lineNum">     593 </span><span class="lineCov">     100530 :     value[4] = qs;</span>
+<span class="lineNum">     594 </span><span class="lineCov">     100530 :     value[5] = ivrc[2];</span>
+<span class="lineNum">     595 </span><span class="lineCov">     100530 :     value[6] = ar_b__;</span>
+<span class="lineNum">     596 </span><span class="lineCov">     100530 :     value[7] = ar_f__;</span>
+<span class="lineNum">     597 </span>            : /*   Evaluation of linear discriminant function: */
+<span class="lineNum">     598 </span><span class="lineCov">     100530 :     voice[*half + 3] = vdc[snrl * 10 - 1];</span>
+<span class="lineNum">     599 </span><span class="lineCov">     904770 :     for (i__ = 1; i__ &lt;= 8; ++i__) {</span>
+<span class="lineNum">     600 </span><span class="lineCov">     804240 :         voice[*half + 3] += vdc[i__ + snrl * 10 - 11] * value[i__ - 1];</span>
+<span class="lineNum">     601 </span>            :     }
+<span class="lineNum">     602 </span>            : /*   Classify as voiced if discriminant &gt; 0, otherwise unvoiced */
+<span class="lineNum">     603 </span>            : /*   Voicing decision for current half-frame:  1 = Voiced; 0 = Unvoiced */
+<span class="lineNum">     604 </span><span class="lineCov">     100530 :     if (voice[*half + 3] &gt; 0.f) {</span>
+<span class="lineNum">     605 </span><span class="lineCov">      98296 :         voibuf[*half + 6] = 1;</span>
+<span class="lineNum">     606 </span>            :     } else {
+<span class="lineNum">     607 </span><span class="lineCov">       2234 :         voibuf[*half + 6] = 0;</span>
+<span class="lineNum">     608 </span>            :     }
+<span class="lineNum">     609 </span>            : /*   Skip voicing decision smoothing in first half-frame: */
+<span class="lineNum">     610 </span>            : /*     Give a value to VSTATE, so that trace statements below will print
+<span class="lineNum">     611 </span>            : */
+<span class="lineNum">     612 </span>            : /*     a consistent value from one call to the next when HALF .EQ. 1. */
+<span class="lineNum">     613 </span>            : /*     The value of VSTATE is not used for any other purpose when this is
+<span class="lineNum">     614 </span>            : */
+<span class="lineNum">     615 </span>            : /*     true. */
+<span class="lineNum">     616 </span><span class="lineCov">     100530 :     vstate = -1;</span>
+<span class="lineNum">     617 </span><span class="lineCov">     100530 :     if (*half == 1) {</span>
+<span class="lineNum">     618 </span><span class="lineCov">      50265 :         goto L99;</span>
+<span class="lineNum">     619 </span>            :     }
+<span class="lineNum">     620 </span>            : /*   Voicing decision smoothing rules (override of linear combination): */
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            : /*      Unvoiced half-frames:  At least two in a row. */
+<span class="lineNum">     623 </span>            : /*      -------------------- */
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span>            : /*      Voiced half-frames:    At least two in a row in one frame. */
+<span class="lineNum">     626 </span>            : /*      -------------------    Otherwise at least three in a row. */
+<span class="lineNum">     627 </span>            : /*                             (Due to the way transition frames are encoded) */
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span>            : /*      In many cases, the discriminant function determines how to smooth. */
+<span class="lineNum">     630 </span>            : /*      In the following chart, the decisions marked with a * may be overridden
+<span class="lineNum">     631 </span>            : .*/
+<span class="lineNum">     632 </span>            : 
+<span class="lineNum">     633 </span>            : /*   Voicing override of transitions at onsets: */
+<span class="lineNum">     634 </span>            : /*      If a V/UV or UV/V voicing decision transition occurs within one-half
+<span class="lineNum">     635 </span>            : */
+<span class="lineNum">     636 </span>            : /*      frame of an onset bounding a voicing window, then the transition is */
+<span class="lineNum">     637 </span>            : /*      moved to occur at the onset. */
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span>            : /*      P       1F */
+<span class="lineNum">     640 </span>            : /*      -----   ----- */
+<span class="lineNum">     641 </span>            : /*      0   0   0   0 */
+<span class="lineNum">     642 </span>            : /*      0   0   0*  1   (If there is an onset there) */
+<span class="lineNum">     643 </span>            : /*      0   0   1*  0*  (Based on 2F and discriminant distance) */
+<span class="lineNum">     644 </span>            : /*      0   0   1   1 */
+<span class="lineNum">     645 </span>            : /*      0   1*  0   0   (Always) */
+<span class="lineNum">     646 </span>            : /*      0   1*  0*  1   (Based on discriminant distance) */
+<span class="lineNum">     647 </span>            : /*      0*  1   1   0*  (Based on past, 2F, and discriminant distance) */
+<span class="lineNum">     648 </span>            : /*      0   1*  1   1   (If there is an onset there) */
+<span class="lineNum">     649 </span>            : /*      1   0*  0   0   (If there is an onset there) */
+<span class="lineNum">     650 </span>            : /*      1   0   0   1 */
+<span class="lineNum">     651 </span>            : /*      1   0*  1*  0   (Based on discriminant distance) */
+<span class="lineNum">     652 </span>            : /*      1   0*  1   1   (Always) */
+<span class="lineNum">     653 </span>            : /*      1   1   0   0 */
+<span class="lineNum">     654 </span>            : /*      1   1   0*  1*  (Based on 2F and discriminant distance) */
+<span class="lineNum">     655 </span>            : /*      1   1   1*  0   (If there is an onset there) */
+<span class="lineNum">     656 </span>            : /*      1   1   1   1 */
+<span class="lineNum">     657 </span>            : 
+<span class="lineNum">     658 </span>            : /*   Determine if there is an onset transition between P and 1F. */
+<span class="lineNum">     659 </span>            : /*   OT (Onset Transition) is true if there is an onset between */
+<span class="lineNum">     660 </span>            : /*   P and 1F but not after 1F. */
+<span class="lineNum">     661 </span><span class="lineCov">      50265 :     ot = ((obound[1] &amp; 2) != 0 || obound[2] == 1) &amp;&amp; (obound[3] &amp; 1) == 0;</span>
+<span class="lineNum">     662 </span>            : /*   Multi-way dispatch on voicing decision history: */
+<span class="lineNum">     663 </span><span class="lineCov">      50265 :     vstate = (voibuf[3] &lt;&lt; 3) + (voibuf[4] &lt;&lt; 2) + (voibuf[5] &lt;&lt; 1) + voibuf[</span>
+<span class="lineNum">     664 </span>            :             6];
+<span class="lineNum">     665 </span><span class="lineCov">      50265 :     switch (vstate + 1) {</span>
+<span class="lineNum">     666 </span><span class="lineCov">       2234 :         case 1:  goto L99;</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :         case 2:  goto L1;</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :         case 3:  goto L2;</span>
+<span class="lineNum">     669 </span><span class="lineCov">       1117 :         case 4:  goto L99;</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         case 5:  goto L4;</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :         case 6:  goto L5;</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         case 7:  goto L6;</span>
+<span class="lineNum">     673 </span><span class="lineNoCov">          0 :         case 8:  goto L7;</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :         case 9:  goto L8;</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :         case 10:  goto L99;</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :         case 11:  goto L10;</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :         case 12:  goto L11;</span>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :         case 13:  goto L99;</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         case 14:  goto L13;</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :         case 15:  goto L14;</span>
+<span class="lineNum">     681 </span><span class="lineCov">      46914 :         case 16:  goto L99;</span>
+<span class="lineNum">     682 </span>            :     }
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 : L1:</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :     if (ot &amp;&amp; voibuf[7] == 1) {</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :         voibuf[5] = 1;</span>
+<span class="lineNum">     686 </span>            :     }
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 : L2:</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">          0 :     if (voibuf[7] == 0 || voice[2] &lt; -voice[3]) {</span>
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :         voibuf[5] = 0;</span>
+<span class="lineNum">     691 </span>            :     } else {
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :         voibuf[6] = 1;</span>
+<span class="lineNum">     693 </span>            :     }
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     695 </span><span class="lineNoCov">          0 : L4:</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :     voibuf[4] = 0;</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 : L5:</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :     if (voice[1] &lt; -voice[2]) {</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :         voibuf[4] = 0;</span>
+<span class="lineNum">     701 </span>            :     } else {
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :         voibuf[5] = 1;</span>
+<span class="lineNum">     703 </span>            :     }
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     705 </span>            : /*   VOIBUF(2,0) must be 0 */
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 : L6:</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 :     if (voibuf[1] == 1 || voibuf[7] == 1 || voice[3] &gt; voice[0]) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         voibuf[6] = 1;</span>
+<span class="lineNum">     709 </span>            :     } else {
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :         voibuf[3] = 1;</span>
+<span class="lineNum">     711 </span>            :     }
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 : L7:</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :     if (ot) {</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         voibuf[4] = 0;</span>
+<span class="lineNum">     716 </span>            :     }
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 : L8:</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :     if (ot) {</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :         voibuf[4] = 1;</span>
+<span class="lineNum">     721 </span>            :     }
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 : L10:</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :     if (voice[2] &lt; -voice[1]) {</span>
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :         voibuf[5] = 0;</span>
+<span class="lineNum">     726 </span>            :     } else {
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :         voibuf[4] = 1;</span>
+<span class="lineNum">     728 </span>            :     }
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 : L11:</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :     voibuf[4] = 1;</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 : L13:</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :     if (voibuf[7] == 0 &amp;&amp; voice[3] &lt; -voice[2]) {</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :         voibuf[6] = 0;</span>
+<span class="lineNum">     736 </span>            :     } else {
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :         voibuf[5] = 1;</span>
+<span class="lineNum">     738 </span>            :     }
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :     goto L99;</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 : L14:</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :     if (ot &amp;&amp; voibuf[7] == 0) {</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :         voibuf[5] = 0;</span>
+<span class="lineNum">     743 </span>            :     }
+<span class="lineNum">     744 </span>            : /*      GOTO 99 */
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 : L99:</span>
+<span class="lineNum">     746 </span>            : /*   Now update parameters: */
+<span class="lineNum">     747 </span>            : /*   ---------------------- */
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span>            : /*  During unvoiced half-frames, update the low band and full band unvoice
+<span class="lineNum">     750 </span>            : d*/
+<span class="lineNum">     751 </span>            : /*   energy estimates (LBUE and FBUE) and also the zero crossing */
+<span class="lineNum">     752 </span>            : /*   threshold (DITHER).  (The input to the unvoiced energy filters is */
+<span class="lineNum">     753 </span>            : /*   restricted to be less than 10dB above the previous inputs of the */
+<span class="lineNum">     754 </span>            : /*   filters.) */
+<span class="lineNum">     755 </span>            : /*   During voiced half-frames, update the low-pass (LBVE) and all-pass */
+<span class="lineNum">     756 </span>            : /*   (FBVE) voiced energy estimates. */
+<span class="lineNum">     757 </span><span class="lineCov">     100530 :     if (voibuf[*half + 6] == 0) {</span>
+<span class="lineNum">     758 </span>            : /* Computing MIN */
+<span class="lineNum">     759 </span><span class="lineCov">       2234 :         i__1 = fbe, i__2 = *ofbue * 3;</span>
+<span class="lineNum">     760 </span><span class="lineCov">       2234 :         r__1 = (*sfbue * 63 + (min(i__1,i__2) &lt;&lt; 3)) / 64.f;</span>
+<span class="lineNum">     761 </span><span class="lineCov">       2234 :         *sfbue = i_nint(&amp;r__1);</span>
+<span class="lineNum">     762 </span><span class="lineCov">       2234 :         *fbue = *sfbue / 8;</span>
+<span class="lineNum">     763 </span><span class="lineCov">       2234 :         *ofbue = fbe;</span>
+<span class="lineNum">     764 </span>            : /* Computing MIN */
+<span class="lineNum">     765 </span><span class="lineCov">       2234 :         i__1 = lbe, i__2 = *olbue * 3;</span>
+<span class="lineNum">     766 </span><span class="lineCov">       2234 :         r__1 = (*slbue * 63 + (min(i__1,i__2) &lt;&lt; 3)) / 64.f;</span>
+<span class="lineNum">     767 </span><span class="lineCov">       2234 :         *slbue = i_nint(&amp;r__1);</span>
+<span class="lineNum">     768 </span><span class="lineCov">       2234 :         *lbue = *slbue / 8;</span>
+<span class="lineNum">     769 </span><span class="lineCov">       2234 :         *olbue = lbe;</span>
+<span class="lineNum">     770 </span>            :     } else {
+<span class="lineNum">     771 </span><span class="lineCov">      98296 :         r__1 = (*lbve * 63 + lbe) / 64.f;</span>
+<span class="lineNum">     772 </span><span class="lineCov">      98296 :         *lbve = i_nint(&amp;r__1);</span>
+<span class="lineNum">     773 </span><span class="lineCov">      98296 :         r__1 = (*fbve * 63 + fbe) / 64.f;</span>
+<span class="lineNum">     774 </span><span class="lineCov">      98296 :         *fbve = i_nint(&amp;r__1);</span>
+<span class="lineNum">     775 </span>            :     }
+<span class="lineNum">     776 </span>            : /*   Set dither threshold to yield proper zero crossing rates in the */
+<span class="lineNum">     777 </span>            : /*   presence of low frequency noise and low level signal input. */
+<span class="lineNum">     778 </span>            : /*   NOTE: The divisor is a function of REF, the expected energies. */
+<span class="lineNum">     779 </span>            : /* Computing MIN */
+<span class="lineNum">     780 </span>            : /* Computing MAX */
+<span class="lineNum">     781 </span><span class="lineCov">     100530 :     r__2 = (real)(sqrt((real) (*lbue * *lbve)) * 64 / 3000);</span>
+<span class="lineNum">     782 </span><span class="lineCov">     100530 :     r__1 = max(r__2,1.f);</span>
+<span class="lineNum">     783 </span><span class="lineCov">     100530 :     *dither = min(r__1,20.f);</span>
+<span class="lineNum">     784 </span>            : /*   Voicing decisions are returned in VOIBUF. */
+<span class="lineNum">     785 </span><span class="lineCov">     100530 :     return 0;</span>
+<span class="lineNum">     786 </span>            : } /* voicin_ */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

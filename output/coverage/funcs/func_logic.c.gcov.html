@@ -1,0 +1,423 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - funcs/func_logic.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">funcs</a> - func_logic.c<span style="font-size: 80%;"> (source / <a href="func_logic.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">47</td>
+            <td class="headerCovTableEntry">96</td>
+            <td class="headerCovTableEntryLo">49.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryLo">71.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2006, Digium, Inc.
+<span class="lineNum">       5 </span>            :  * Portions Copyright (C) 2005, Anthony Minessale II
+<span class="lineNum">       6 </span>            :  *
+<span class="lineNum">       7 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       8 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">       9 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      10 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      11 </span>            :  * channels for your use.
+<span class="lineNum">      12 </span>            :  *
+<span class="lineNum">      13 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      14 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      15 </span>            :  * at the top of the source tree.
+<span class="lineNum">      16 </span>            :  */
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : /*! \file
+<span class="lineNum">      19 </span>            :  *
+<span class="lineNum">      20 </span>            :  * \brief Conditional logic dialplan functions
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \author Anthony Minessale II
+<span class="lineNum">      23 </span>            :  *
+<span class="lineNum">      24 </span>            :  * \ingroup functions
+<span class="lineNum">      25 </span>            :  */
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /*** MODULEINFO
+<span class="lineNum">      28 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      29 </span>            :  ***/
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      40 </span>            :         &lt;function name=&quot;ISNULL&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      41 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      42 </span>            :                         Check if a value is NULL.
+<span class="lineNum">      43 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      44 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      45 </span>            :                         &lt;parameter name=&quot;data&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      46 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      47 </span>            :                 &lt;description&gt;
+<span class="lineNum">      48 </span>            :                         &lt;para&gt;Returns &lt;literal&gt;1&lt;/literal&gt; if NULL or &lt;literal&gt;0&lt;/literal&gt; otherwise.&lt;/para&gt;
+<span class="lineNum">      49 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      50 </span>            :         &lt;/function&gt;
+<span class="lineNum">      51 </span>            :         &lt;function name=&quot;SET&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      52 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      53 </span>            :                         SET assigns a value to a channel variable.
+<span class="lineNum">      54 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      55 </span>            :                 &lt;syntax argsep=&quot;=&quot;&gt;
+<span class="lineNum">      56 </span>            :                         &lt;parameter name=&quot;varname&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      57 </span>            :                         &lt;parameter name=&quot;value&quot; /&gt;
+<span class="lineNum">      58 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      59 </span>            :                 &lt;description&gt;
+<span class="lineNum">      60 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      61 </span>            :         &lt;/function&gt;
+<span class="lineNum">      62 </span>            :         &lt;function name=&quot;EXISTS&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      63 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      64 </span>            :                         Test the existence of a value.
+<span class="lineNum">      65 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      66 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      67 </span>            :                         &lt;parameter name=&quot;data&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      68 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      69 </span>            :                 &lt;description&gt;
+<span class="lineNum">      70 </span>            :                         &lt;para&gt;Returns &lt;literal&gt;1&lt;/literal&gt; if exists, &lt;literal&gt;0&lt;/literal&gt; otherwise.&lt;/para&gt;
+<span class="lineNum">      71 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      72 </span>            :         &lt;/function&gt;
+<span class="lineNum">      73 </span>            :         &lt;function name=&quot;IF&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      74 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      75 </span>            :                         Check for an expresion.
+<span class="lineNum">      76 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      77 </span>            :                 &lt;syntax argsep=&quot;?&quot;&gt;
+<span class="lineNum">      78 </span>            :                         &lt;parameter name=&quot;expresion&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      79 </span>            :                         &lt;parameter name=&quot;retvalue&quot; argsep=&quot;:&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      80 </span>            :                                 &lt;argument name=&quot;true&quot; /&gt;
+<span class="lineNum">      81 </span>            :                                 &lt;argument name=&quot;false&quot; /&gt;
+<span class="lineNum">      82 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      83 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      84 </span>            :                 &lt;description&gt;
+<span class="lineNum">      85 </span>            :                         &lt;para&gt;Returns the data following &lt;literal&gt;?&lt;/literal&gt; if true, else the data following &lt;literal&gt;:&lt;/literal&gt;&lt;/para&gt;
+<span class="lineNum">      86 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      87 </span>            :         &lt;/function&gt;
+<span class="lineNum">      88 </span>            :         &lt;function name=&quot;IFTIME&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      89 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      90 </span>            :                         Temporal Conditional.
+<span class="lineNum">      91 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      92 </span>            :                 &lt;syntax argsep=&quot;?&quot;&gt;
+<span class="lineNum">      93 </span>            :                         &lt;parameter name=&quot;timespec&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      94 </span>            :                         &lt;parameter name=&quot;retvalue&quot; required=&quot;true&quot; argsep=&quot;:&quot;&gt;
+<span class="lineNum">      95 </span>            :                                 &lt;argument name=&quot;true&quot; /&gt;
+<span class="lineNum">      96 </span>            :                                 &lt;argument name=&quot;false&quot; /&gt;
+<span class="lineNum">      97 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      98 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      99 </span>            :                 &lt;description&gt;
+<span class="lineNum">     100 </span>            :                         &lt;para&gt;Returns the data following &lt;literal&gt;?&lt;/literal&gt; if true, else the data following &lt;literal&gt;:&lt;/literal&gt;&lt;/para&gt;
+<span class="lineNum">     101 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     102 </span>            :         &lt;/function&gt;
+<span class="lineNum">     103 </span>            :         &lt;function name=&quot;IMPORT&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">     104 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">     105 </span>            :                         Retrieve the value of a variable from another channel.
+<span class="lineNum">     106 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">     107 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">     108 </span>            :                         &lt;parameter name=&quot;channel&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     109 </span>            :                         &lt;parameter name=&quot;variable&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">     110 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">     111 </span>            :                 &lt;description&gt;
+<span class="lineNum">     112 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     113 </span>            :         &lt;/function&gt;
+<a name="114"><span class="lineNum">     114 </span>            :  ***/</a>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">         40 : static int isnull(struct ast_channel *chan, const char *cmd, char *data,</span>
+<span class="lineNum">     117 </span>            :                   char *buf, size_t len)
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span><span class="lineCov">         40 :         strcpy(buf, data &amp;&amp; *data ? &quot;0&quot; : &quot;1&quot;);</span>
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineCov">         40 :         return 0;</span>
+<a name="122"><span class="lineNum">     122 </span>            : }</a>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 : static int exists(struct ast_channel *chan, const char *cmd, char *data, char *buf,</span>
+<span class="lineNum">     125 </span>            :                   size_t len)
+<span class="lineNum">     126 </span>            : {
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         strcpy(buf, data &amp;&amp; *data ? &quot;1&quot; : &quot;0&quot;);</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="130"><span class="lineNum">     130 </span>            : }</a>
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 : static int iftime(struct ast_channel *chan, const char *cmd, char *data, char *buf,</span>
+<span class="lineNum">     133 </span>            :                   size_t len)
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span>            :         struct ast_timing timing;
+<span class="lineNum">     136 </span>            :         char *expr;
+<span class="lineNum">     137 </span>            :         char *iftrue;
+<span class="lineNum">     138 </span>            :         char *iffalse;
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         data = ast_strip_quoted(data, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :         expr = strsep(&amp;data, &quot;?&quot;);</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         iftrue = strsep(&amp;data, &quot;:&quot;);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         iffalse = data;</span>
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(expr) || !(iftrue || iffalse)) {</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING,</span>
+<span class="lineNum">     147 </span>            :                                 &quot;Syntax IFTIME(&lt;timespec&gt;?[&lt;true&gt;][:&lt;false&gt;])\n&quot;);
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     149 </span>            :         }
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         if (!ast_build_timing(&amp;timing, expr)) {</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Invalid Time Spec.\n&quot;);</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 ast_destroy_timing(&amp;timing);</span>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     155 </span>            :         }
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :         if (iftrue)</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                 iftrue = ast_strip_quoted(iftrue, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         if (iffalse)</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 iffalse = ast_strip_quoted(iffalse, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, ast_check_timing(&amp;timing) ? S_OR(iftrue, &quot;&quot;) : S_OR(iffalse, &quot;&quot;), len);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         ast_destroy_timing(&amp;timing);</span>
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="166"><span class="lineNum">     166 </span>            : }</a>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">         76 : static int acf_if(struct ast_channel *chan, const char *cmd, char *data, char *buf,</span>
+<span class="lineNum">     169 </span>            :                   size_t len)
+<span class="lineNum">     170 </span>            : {
+<span class="lineNum">     171 </span><span class="lineCov">         76 :         AST_DECLARE_APP_ARGS(args1,</span>
+<span class="lineNum">     172 </span>            :                 AST_APP_ARG(expr);
+<span class="lineNum">     173 </span>            :                 AST_APP_ARG(remainder);
+<span class="lineNum">     174 </span>            :         );
+<span class="lineNum">     175 </span><span class="lineCov">         76 :         AST_DECLARE_APP_ARGS(args2,</span>
+<span class="lineNum">     176 </span>            :                 AST_APP_ARG(iftrue);
+<span class="lineNum">     177 </span>            :                 AST_APP_ARG(iffalse);
+<span class="lineNum">     178 </span>            :         );
+<span class="lineNum">     179 </span><span class="lineCov">         76 :         args2.iftrue = args2.iffalse = NULL; /* you have to set these, because if there is nothing after the '?',</span>
+<span class="lineNum">     180 </span>            :                                                                                         then args1.remainder will be NULL, not a pointer to a null string, and
+<span class="lineNum">     181 </span>            :                                                                                         then any garbage in args2.iffalse will not be cleared, and you'll crash.
+<span class="lineNum">     182 </span>            :                                                                                     -- and if you mod the ast_app_separate_args func instead, you'll really
+<span class="lineNum">     183 </span>            :                                                                                         mess things up badly, because the rest of everything depends on null args
+<span class="lineNum">     184 </span>            :                                                                                         for non-specified stuff. */
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">         76 :         AST_NONSTANDARD_APP_ARGS(args1, data, '?');</span>
+<span class="lineNum">     187 </span><span class="lineCov">         76 :         AST_NONSTANDARD_APP_ARGS(args2, args1.remainder, ':');</span>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">         76 :         if (ast_strlen_zero(args1.expr) || !(args2.iftrue || args2.iffalse)) {</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Syntax IF(&lt;expr&gt;?[&lt;true&gt;][:&lt;false&gt;])  (expr must be non-null, and either &lt;true&gt; or &lt;false&gt; must be non-null)\n&quot;);</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;      In this case, &lt;expr&gt;='%s', &lt;true&gt;='%s', and &lt;false&gt;='%s'\n&quot;, args1.expr, args2.iftrue, args2.iffalse);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     193 </span>            :         }
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">         76 :         args1.expr = ast_strip(args1.expr);</span>
+<span class="lineNum">     196 </span><span class="lineCov">         76 :         if (args2.iftrue)</span>
+<span class="lineNum">     197 </span><span class="lineCov">         76 :                 args2.iftrue = ast_strip(args2.iftrue);</span>
+<span class="lineNum">     198 </span><span class="lineCov">         76 :         if (args2.iffalse)</span>
+<span class="lineNum">     199 </span><span class="lineCov">         76 :                 args2.iffalse = ast_strip(args2.iffalse);</span>
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span><span class="lineCov">         76 :         ast_copy_string(buf, pbx_checkcondition(args1.expr) ? (S_OR(args2.iftrue, &quot;&quot;)) : (S_OR(args2.iffalse, &quot;&quot;)), len);</span>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">         76 :         return 0;</span>
+<a name="204"><span class="lineNum">     204 </span>            : }</a>
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 : static int set(struct ast_channel *chan, const char *cmd, char *data, char *buf,</span>
+<span class="lineNum">     207 </span>            :                size_t len)
+<span class="lineNum">     208 </span>            : {
+<span class="lineNum">     209 </span>            :         char *varname;
+<span class="lineNum">     210 </span>            :         char *val;
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         varname = strsep(&amp;data, &quot;=&quot;);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :         val = data;</span>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(varname) || !val) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Syntax SET(&lt;varname&gt;=[&lt;value&gt;])\n&quot;);</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     218 </span>            :         }
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :         varname = ast_strip(varname);</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :         val = ast_strip(val);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         pbx_builtin_setvar_helper(chan, varname, val);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :         ast_copy_string(buf, val, len);</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="226"><span class="lineNum">     226 </span>            : }</a>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 : static int set2(struct ast_channel *chan, const char *cmd, char *data, struct ast_str **str, ssize_t len)</span>
+<span class="lineNum">     229 </span>            : {
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         if (len &gt; -1) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 ast_str_make_space(str, len == 0 ? strlen(data) : len);</span>
+<span class="lineNum">     232 </span>            :         }
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :         return set(chan, cmd, data, ast_str_buffer(*str), ast_str_size(*str));</span>
+<a name="234"><span class="lineNum">     234 </span>            : }</a>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineCov">          2 : static int import_helper(struct ast_channel *chan, const char *cmd, char *data, char *buf, struct ast_str **str, ssize_t len)</span>
+<span class="lineNum">     237 </span>            : {
+<span class="lineNum">     238 </span><span class="lineCov">          2 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     239 </span>            :                 AST_APP_ARG(channel);
+<span class="lineNum">     240 </span>            :                 AST_APP_ARG(varname);
+<span class="lineNum">     241 </span>            :         );
+<span class="lineNum">     242 </span><span class="lineCov">          2 :         AST_STANDARD_APP_ARGS(args, data);</span>
+<span class="lineNum">     243 </span><span class="lineCov">          2 :         if (buf) {</span>
+<span class="lineNum">     244 </span><span class="lineCov">          1 :                 *buf = '\0';</span>
+<span class="lineNum">     245 </span>            :         }
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">          2 :         if (!ast_strlen_zero(args.varname)) {</span>
+<span class="lineNum">     248 </span>            :                 struct ast_channel *chan2;
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 if ((chan2 = ast_channel_get_by_name(args.channel))) {</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                         char *s = ast_alloca(strlen(args.varname) + 4);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         sprintf(s, &quot;${%s}&quot;, args.varname);</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         ast_channel_lock(chan2);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                         if (buf) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                                 pbx_substitute_variables_helper(chan2, s, buf, len);</span>
+<span class="lineNum">     256 </span>            :                         } else {
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                                 ast_str_substitute_variables(str, len, chan2, s);</span>
+<span class="lineNum">     258 </span>            :                         }
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         ast_channel_unlock(chan2);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                         chan2 = ast_channel_unref(chan2);</span>
+<span class="lineNum">     261 </span>            :                 }
+<span class="lineNum">     262 </span>            :         }
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="265"><span class="lineNum">     265 </span>            : }</a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">          1 : static int import_read(struct ast_channel *chan, const char *cmd, char *data, char *buf, size_t len)</span>
+<span class="lineNum">     268 </span>            : {
+<span class="lineNum">     269 </span><span class="lineCov">          1 :         return import_helper(chan, cmd, data, buf, NULL, len);</span>
+<a name="270"><span class="lineNum">     270 </span>            : }</a>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          1 : static int import_read2(struct ast_channel *chan, const char *cmd, char *data, struct ast_str **str, ssize_t len)</span>
+<span class="lineNum">     273 </span>            : {
+<span class="lineNum">     274 </span><span class="lineCov">          1 :         return import_helper(chan, cmd, data, NULL, str, len);</span>
+<span class="lineNum">     275 </span>            : }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span>            : static struct ast_custom_function isnull_function = {
+<span class="lineNum">     278 </span>            :         .name = &quot;ISNULL&quot;,
+<span class="lineNum">     279 </span>            :         .read = isnull,
+<span class="lineNum">     280 </span>            :         .read_max = 2,
+<span class="lineNum">     281 </span>            : };
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            : static struct ast_custom_function set_function = {
+<span class="lineNum">     284 </span>            :         .name = &quot;SET&quot;,
+<span class="lineNum">     285 </span>            :         .read = set,
+<span class="lineNum">     286 </span>            :         .read2 = set2,
+<span class="lineNum">     287 </span>            : };
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span>            : static struct ast_custom_function exists_function = {
+<span class="lineNum">     290 </span>            :         .name = &quot;EXISTS&quot;,
+<span class="lineNum">     291 </span>            :         .read = exists,
+<span class="lineNum">     292 </span>            :         .read_max = 2,
+<span class="lineNum">     293 </span>            : };
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span>            : static struct ast_custom_function if_function = {
+<span class="lineNum">     296 </span>            :         .name = &quot;IF&quot;,
+<span class="lineNum">     297 </span>            :         .read = acf_if,
+<span class="lineNum">     298 </span>            : };
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span>            : static struct ast_custom_function if_time_function = {
+<span class="lineNum">     301 </span>            :         .name = &quot;IFTIME&quot;,
+<span class="lineNum">     302 </span>            :         .read = iftime,
+<span class="lineNum">     303 </span>            : };
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span>            : static struct ast_custom_function import_function = {
+<span class="lineNum">     306 </span>            :         .name = &quot;IMPORT&quot;,
+<span class="lineNum">     307 </span>            :         .read = import_read,
+<span class="lineNum">     308 </span>            :         .read2 = import_read2,
+<a name="309"><span class="lineNum">     309 </span>            : };</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     312 </span>            : {
+<span class="lineNum">     313 </span><span class="lineCov">       1115 :         int res = 0;</span>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;isnull_function);</span>
+<span class="lineNum">     316 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;set_function);</span>
+<span class="lineNum">     317 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;exists_function);</span>
+<span class="lineNum">     318 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;if_function);</span>
+<span class="lineNum">     319 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;if_time_function);</span>
+<span class="lineNum">     320 </span><span class="lineCov">       1115 :         res |= ast_custom_function_unregister(&amp;import_function);</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineCov">       1115 :         return res;</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineCov">       1117 :         int res = 0;</span>
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;isnull_function);</span>
+<span class="lineNum">     330 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;set_function);</span>
+<span class="lineNum">     331 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;exists_function);</span>
+<span class="lineNum">     332 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;if_function);</span>
+<span class="lineNum">     333 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;if_time_function);</span>
+<span class="lineNum">     334 </span><span class="lineCov">       1117 :         res |= ast_custom_function_register(&amp;import_function);</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">       1117 :         return res;</span>
+<a name="337"><span class="lineNum">     337 </span>            : }</a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineCov">       8936 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Logical dialplan functions&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

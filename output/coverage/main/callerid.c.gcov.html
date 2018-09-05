@@ -1,0 +1,1455 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/callerid.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - callerid.c<span style="font-size: 80%;"> (source / <a href="callerid.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">103</td>
+            <td class="headerCovTableEntry">680</td>
+            <td class="headerCovTableEntryLo">15.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntry">36</td>
+            <td class="headerCovTableEntryLo">36.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief CallerID Generation support
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Mark Spencer &lt;markster@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &lt;time.h&gt;
+<span class="lineNum">      33 </span>            : #include &lt;math.h&gt;
+<span class="lineNum">      34 </span>            : #include &lt;ctype.h&gt;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/ulaw.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/alaw.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/frame.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/callerid.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/fskmodem.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;asterisk/utils.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : struct callerid_state {
+<span class="lineNum">      46 </span>            :         fsk_data fskd;
+<span class="lineNum">      47 </span>            :         char rawdata[256];
+<span class="lineNum">      48 </span>            :         short oldstuff[160];
+<span class="lineNum">      49 </span>            :         int oldlen;
+<span class="lineNum">      50 </span>            :         int pos;
+<span class="lineNum">      51 </span>            :         int type;
+<span class="lineNum">      52 </span>            :         int cksum;
+<span class="lineNum">      53 </span>            :         char name[64];
+<span class="lineNum">      54 </span>            :         char number[64];
+<span class="lineNum">      55 </span>            :         int flags;
+<span class="lineNum">      56 </span>            :         int sawflag;
+<span class="lineNum">      57 </span>            :         int len;
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            :         int skipflag;
+<span class="lineNum">      60 </span>            :         unsigned short crc;
+<span class="lineNum">      61 </span>            : };
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : float cid_dr[4], cid_di[4];
+<span class="lineNum">      65 </span>            : float clidsb = 8000.0 / 1200.0;
+<span class="lineNum">      66 </span>            : float sasdr, sasdi;
+<span class="lineNum">      67 </span>            : float casdr1, casdi1, casdr2, casdi2;
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : #define CALLERID_SPACE  2200.0          /*!&lt; 2200 hz for &quot;0&quot; */
+<span class="lineNum">      70 </span>            : #define CALLERID_MARK   1200.0          /*!&lt; 1200 hz for &quot;1&quot; */
+<span class="lineNum">      71 </span>            : #define SAS_FREQ                 440.0
+<span class="lineNum">      72 </span>            : #define CAS_FREQ1               2130.0
+<span class="lineNum">      73 </span>            : #define CAS_FREQ2               2750.0
+<span class="lineNum">      74 </span>            : 
+<a name="75"><span class="lineNum">      75 </span>            : #define AST_CALLERID_UNKNOWN    &quot;&lt;unknown&gt;&quot;</a>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 : static inline void gen_tones(unsigned char *buf, int len, struct ast_format *codec, float ddr1, float ddi1, float ddr2, float ddi2, float *cr1, float *ci1, float *cr2, float *ci2)</span>
+<span class="lineNum">      78 </span>            : {
+<span class="lineNum">      79 </span>            :         int x;
+<span class="lineNum">      80 </span>            :         float t;
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++) {</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 t = *cr1 * ddr1 - *ci1 * ddi1;</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 *ci1 = *cr1 * ddi1 + *ci1 * ddr1;</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 *cr1 = t;</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 t = 2.0 - (*cr1 * *cr1 + *ci1 * *ci1);</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 *cr1 *= t;</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 *ci1 *= t;</span>
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 t = *cr2 * ddr2 - *ci2 * ddi2;</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 *ci2 = *cr2 * ddi2 + *ci2 * ddr2;</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 *cr2 = t;</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 t = 2.0 - (*cr2 * *cr2 + *ci2 * *ci2);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 *cr2 *= t;</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 *ci2 *= t;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 buf[x] = AST_LIN2X((*cr1 + *cr2) * 2048.0);</span>
+<span class="lineNum">      96 </span>            :         }
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 : static inline void gen_tone(unsigned char *buf, int len, struct ast_format *codec, float ddr1, float ddi1, float *cr1, float *ci1)</span>
+<span class="lineNum">     100 </span>            : {
+<span class="lineNum">     101 </span>            :         int x;
+<span class="lineNum">     102 </span>            :         float t;
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 t = *cr1 * ddr1 - *ci1 * ddi1;</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 *ci1 = *cr1 * ddi1 + *ci1 * ddr1;</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 *cr1 = t;</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                 t = 2.0 - (*cr1 * *cr1 + *ci1 * *ci1);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 *cr1 *= t;</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 *ci1 *= t;</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 buf[x] = AST_LIN2X(*cr1 * 8192.0);</span>
+<span class="lineNum">     111 </span>            :         }
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 : }</span>
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<span class="lineNum">     114 </span>            : /*! \brief Initialize stuff for inverse FFT */
+<span class="lineNum">     115 </span><span class="lineCov">       1124 : void callerid_init(void)</span>
+<span class="lineNum">     116 </span>            : {
+<span class="lineNum">     117 </span><span class="lineCov">       1124 :         cid_dr[0] = cos(CALLERID_SPACE * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     118 </span><span class="lineCov">       1124 :         cid_di[0] = sin(CALLERID_SPACE * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     119 </span><span class="lineCov">       1124 :         cid_dr[1] = cos(CALLERID_MARK * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     120 </span><span class="lineCov">       1124 :         cid_di[1] = sin(CALLERID_MARK * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     121 </span><span class="lineCov">       1124 :         sasdr = cos(SAS_FREQ * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     122 </span><span class="lineCov">       1124 :         sasdi = sin(SAS_FREQ * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     123 </span><span class="lineCov">       1124 :         casdr1 = cos(CAS_FREQ1 * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     124 </span><span class="lineCov">       1124 :         casdi1 = sin(CAS_FREQ1 * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     125 </span><span class="lineCov">       1124 :         casdr2 = cos(CAS_FREQ2 * 2.0 * M_PI / 8000.0);</span>
+<span class="lineNum">     126 </span><span class="lineCov">       1124 :         casdi2 = sin(CAS_FREQ2 * 2.0 * M_PI / 8000.0);</span>
+<a name="127"><span class="lineNum">     127 </span><span class="lineCov">       1124 : }</span></a>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 : struct callerid_state *callerid_new(int cid_signalling)</span>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span>            :         struct callerid_state *cid;
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :         if ((cid = ast_calloc(1, sizeof(*cid)))) {</span>
+<span class="lineNum">     134 </span>            : #ifdef INTEGER_CALLERID
+<span class="lineNum">     135 </span>            :                 cid-&gt;fskd.ispb = 7;                  /* 1200 baud */
+<span class="lineNum">     136 </span>            :                 /* Set up for 1200 / 8000 freq *32 to allow ints */
+<span class="lineNum">     137 </span>            :                 cid-&gt;fskd.pllispb  = (int)(8000 * 32  / 1200);
+<span class="lineNum">     138 </span>            :                 cid-&gt;fskd.pllids   = cid-&gt;fskd.pllispb/32;
+<span class="lineNum">     139 </span>            :                 cid-&gt;fskd.pllispb2 = cid-&gt;fskd.pllispb/2;
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :                 cid-&gt;fskd.icont = 0;           /* PLL REset */
+<span class="lineNum">     142 </span>            :                 /* cid-&gt;fskd.hdlc = 0; */            /* Async */
+<span class="lineNum">     143 </span>            :                 cid-&gt;fskd.nbit = 8;                  /* 8 bits */
+<span class="lineNum">     144 </span>            :                 cid-&gt;fskd.instop = 1;                /* 1 stop bit */
+<span class="lineNum">     145 </span>            :                 /* cid-&gt;fskd.paridad = 0; */         /* No parity */
+<span class="lineNum">     146 </span>            :                 cid-&gt;fskd.bw = 1;                    /* Filter 800 Hz */
+<span class="lineNum">     147 </span>            :                 if (cid_signalling == 2) {      /* v23 signalling */
+<span class="lineNum">     148 </span>            :                         cid-&gt;fskd.f_mark_idx  = 4;   /* 1300 Hz */
+<span class="lineNum">     149 </span>            :                         cid-&gt;fskd.f_space_idx = 5;   /* 2100 Hz */
+<span class="lineNum">     150 </span>            :                 } else {                        /* Bell 202 signalling as default */
+<span class="lineNum">     151 </span>            :                         cid-&gt;fskd.f_mark_idx  = 2;   /* 1200 Hz */
+<span class="lineNum">     152 </span>            :                         cid-&gt;fskd.f_space_idx = 3;   /* 2200 Hz */
+<span class="lineNum">     153 </span>            :                 }
+<span class="lineNum">     154 </span>            :                 /* cid-&gt;fskd.pcola = 0; */           /* No clue */
+<span class="lineNum">     155 </span>            :                 /* cid-&gt;fskd.cont = 0.0; */          /* Digital PLL reset */
+<span class="lineNum">     156 </span>            :                 /* cid-&gt;fskd.x0 = 0.0; */
+<span class="lineNum">     157 </span>            :                 /* cid-&gt;fskd.state = 0; */
+<span class="lineNum">     158 </span>            :                 cid-&gt;flags = CID_UNKNOWN_NAME | CID_UNKNOWN_NUMBER;
+<span class="lineNum">     159 </span>            :                 /* cid-&gt;pos = 0; */
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span>            :                 fskmodem_init(&amp;cid-&gt;fskd);
+<span class="lineNum">     162 </span>            : #else
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 cid-&gt;fskd.spb = 7.0;                 /* 1200 baud */</span>
+<span class="lineNum">     164 </span>            :                 /* cid-&gt;fskd.hdlc = 0; */            /* Async */
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 cid-&gt;fskd.nbit = 8;                  /* 8 bits */</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 cid-&gt;fskd.nstop = 1.0;               /* 1 stop bit */</span>
+<span class="lineNum">     167 </span>            :                 /* cid-&gt;fskd.paridad = 0; */         /* No parity */
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 cid-&gt;fskd.bw = 1;                    /* Filter 800 Hz */</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 if (cid_signalling == 2) {      /* v23 signalling */</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                         cid-&gt;fskd.f_mark_idx =  4;   /* 1300 Hz */</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                         cid-&gt;fskd.f_space_idx = 5;   /* 2100 Hz */</span>
+<span class="lineNum">     172 </span>            :                 } else {                        /* Bell 202 signalling as default */
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :                         cid-&gt;fskd.f_mark_idx =  2;   /* 1200 Hz */</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                         cid-&gt;fskd.f_space_idx = 3;   /* 2200 Hz */</span>
+<span class="lineNum">     175 </span>            :                 }
+<span class="lineNum">     176 </span>            :                 /* cid-&gt;fskd.pcola = 0; */           /* No clue */
+<span class="lineNum">     177 </span>            :                 /* cid-&gt;fskd.cont = 0.0; */          /* Digital PLL reset */
+<span class="lineNum">     178 </span>            :                 /* cid-&gt;fskd.x0 = 0.0; */
+<span class="lineNum">     179 </span>            :                 /* cid-&gt;fskd.state = 0; */
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 cid-&gt;flags = CID_UNKNOWN_NAME | CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     181 </span>            :                 /* cid-&gt;pos = 0; */
+<span class="lineNum">     182 </span>            : #endif
+<span class="lineNum">     183 </span>            :         }
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :         return cid;</span>
+<a name="186"><span class="lineNum">     186 </span>            : }</a>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 : void callerid_get(struct callerid_state *cid, char **name, char **number, int *flags)</span>
+<span class="lineNum">     189 </span>            : {
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         *flags = cid-&gt;flags;</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         if (cid-&gt;flags &amp; (CID_UNKNOWN_NAME | CID_PRIVATE_NAME))</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 *name = NULL;</span>
+<span class="lineNum">     193 </span>            :         else
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 *name = cid-&gt;name;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         if (cid-&gt;flags &amp; (CID_UNKNOWN_NUMBER | CID_PRIVATE_NUMBER))</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 *number = NULL;</span>
+<span class="lineNum">     197 </span>            :         else
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 *number = cid-&gt;number;</span>
+<a name="199"><span class="lineNum">     199 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 : void callerid_get_dtmf(char *cidstring, char *number, int *flags)</span>
+<span class="lineNum">     202 </span>            : {
+<span class="lineNum">     203 </span>            :         int i;
+<span class="lineNum">     204 </span>            :         int code;
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span>            :         /* &quot;Clear&quot; the number-buffer. */
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         number[0] = 0;</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :         if (strlen(cidstring) &lt; 2) {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;No cid detected\n&quot;);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 *flags = CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     213 </span>            :         }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :         /* Detect protocol and special types */
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         if (cidstring[0] == 'B') {</span>
+<span class="lineNum">     217 </span>            :                 /* Handle special codes */
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 code = atoi(&amp;cidstring[1]);</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 if (code == 0)</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                         *flags = CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 else if (code == 10)</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         *flags = CID_PRIVATE_NUMBER;</span>
+<span class="lineNum">     223 </span>            :                 else
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                         ast_debug(1, &quot;Unknown DTMF code %d\n&quot;, code);</span>
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :         } else if (cidstring[0] == 'D' &amp;&amp; cidstring[2] == '#') {</span>
+<span class="lineNum">     226 </span>            :                 /* .DK special code */
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                 if (cidstring[1] == '1')</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                         *flags = CID_PRIVATE_NUMBER;</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 if (cidstring[1] == '2' || cidstring[1] == '3')</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                         *flags = CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         } else if (cidstring[0] == 'D' || cidstring[0] == 'A') {</span>
+<span class="lineNum">     232 </span>            :                 /* &quot;Standard&quot; callerid */
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                 for (i = 1; i &lt; strlen(cidstring); i++) {</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                         if (cidstring[i] == 'C' || cidstring[i] == '#')</span>
+<span class="lineNum">     235 </span>            :                                 break;
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                         if (isdigit(cidstring[i]))</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :                                 number[i-1] = cidstring[i];</span>
+<span class="lineNum">     238 </span>            :                         else
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;Unknown CID digit '%c'\n&quot;,</span>
+<span class="lineNum">     240 </span>            :                                         cidstring[i]);
+<span class="lineNum">     241 </span>            :                 }
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 number[i-1] = 0;</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         } else if (isdigit(cidstring[0])) {</span>
+<span class="lineNum">     244 </span>            :                 /* It begins with a digit, so we parse it as a number and hope
+<span class="lineNum">     245 </span>            :                  * for the best */
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Couldn't detect start-character. CID &quot;</span>
+<span class="lineNum">     247 </span>            :                         &quot;parsing might be unreliable\n&quot;);
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; strlen(cidstring); i++) {</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :                         if (isdigit(cidstring[i]))</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                                 number[i] = cidstring[i];</span>
+<span class="lineNum">     251 </span>            :                         else
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     253 </span>            :                 }
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 number[i] = 0;</span>
+<span class="lineNum">     255 </span>            :         } else {
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 ast_debug(1, &quot;Unknown CID protocol, start digit '%c'\n&quot;, cidstring[0]);</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 *flags = CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     258 </span>            :         }
+<a name="259"><span class="lineNum">     259 </span>            : }</a>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 : int ast_gen_cas(unsigned char *outbuf, int sendsas, int len, struct ast_format *codec)</span>
+<span class="lineNum">     262 </span>            : {
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         int pos = 0;</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :         int saslen = 2400;</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :         float cr1 = 1.0;</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         float ci1 = 0.0;</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         float cr2 = 1.0;</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         float ci2 = 0.0;</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         if (sendsas) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 if (len &lt; saslen)</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 gen_tone(outbuf, saslen, codec, sasdr, sasdi, &amp;cr1, &amp;ci1);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 len -= saslen;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 pos += saslen;</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                 cr2 = cr1;</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 ci2 = ci1;</span>
+<span class="lineNum">     278 </span>            :         }
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         gen_tones(outbuf + pos, len, codec, casdr1, casdi1, casdr2, casdi2, &amp;cr1, &amp;ci1, &amp;cr2, &amp;ci2);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="281"><span class="lineNum">     281 </span>            : }</a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 : static unsigned short calc_crc(unsigned short crc, unsigned char data)</span>
+<span class="lineNum">     284 </span>            : {
+<span class="lineNum">     285 </span>            :         unsigned int i, j, org, dst;
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         org = data;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         dst = 0;</span>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; CHAR_BIT; i++) {</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 org &lt;&lt;= 1;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 dst &gt;&gt;= 1;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 if (org &amp; 0x100)</span>
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         dst |= 0x80;</span>
+<span class="lineNum">     294 </span>            :         }
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         data = (unsigned char) dst;</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         crc ^= (unsigned int) data &lt;&lt; (16 - CHAR_BIT);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         for (j = 0; j &lt; CHAR_BIT; j++) {</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 if (crc &amp; 0x8000U)</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                         crc = (crc &lt;&lt; 1) ^ 0x1021U ;</span>
+<span class="lineNum">     300 </span>            :                 else
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         crc &lt;&lt;= 1 ;</span>
+<span class="lineNum">     302 </span>            :         }
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         return crc;</span>
+<a name="304"><span class="lineNum">     304 </span>            : }</a>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 : int callerid_feed_jp(struct callerid_state *cid, unsigned char *ubuf, int len, struct ast_format *codec)</span>
+<span class="lineNum">     307 </span>            : {
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         int mylen = len;</span>
+<span class="lineNum">     309 </span>            :         int olen;
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         int b = 'X';</span>
+<span class="lineNum">     311 </span>            :         int b2;
+<span class="lineNum">     312 </span>            :         int res;
+<span class="lineNum">     313 </span>            :         int x;
+<span class="lineNum">     314 </span>            :         short *buf;
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         buf = ast_alloca(2 * len + cid-&gt;oldlen);</span>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         memcpy(buf, cid-&gt;oldstuff, cid-&gt;oldlen);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         mylen += cid-&gt;oldlen / 2;</span>
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++)</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 buf[x+cid-&gt;oldlen/2] = AST_XLAW(ubuf[x]);</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         while (mylen &gt;= 160) {</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 b = b2 = 0;</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 olen = mylen;</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 res = fsk_serial(&amp;cid-&gt;fskd, buf, &amp;mylen, &amp;b);</span>
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 if (mylen &lt; 0) {</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;No start bit found in fsk data.\n&quot;);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     332 </span>            :                 }
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 buf += (olen - mylen);</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 if (res &lt; 0) {</span>
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;fsk_serial failed\n&quot;);</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     339 </span>            :                 }
+<span class="lineNum">     340 </span>            : 
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 if (res == 1) {</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                         b2 = b;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                         b  &amp;= 0x7f;</span>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span>            :                         /* crc checksum calculation */
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                         if (cid-&gt;sawflag &gt; 1)</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                                 cid-&gt;crc = calc_crc(cid-&gt;crc, (unsigned char) b2);</span>
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            :                         /* Ignore invalid bytes */
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                         if (b &gt; 0xff)</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span>            :                         /* skip DLE if needed */
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                         if (cid-&gt;sawflag &gt; 0) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                                 if (cid-&gt;sawflag != 5 &amp;&amp; cid-&gt;skipflag == 0 &amp;&amp; b == 0x10) {</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                                         cid-&gt;skipflag = 1 ;</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                                         continue ;</span>
+<span class="lineNum">     358 </span>            :                                 }
+<span class="lineNum">     359 </span>            :                         }
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                         if (cid-&gt;skipflag == 1)</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                                 cid-&gt;skipflag = 0 ;</span>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :                         /* caller id retrieval */
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                         switch (cid-&gt;sawflag) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :                         case 0: /* DLE */</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                                 if (b == 0x10) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 1;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                                         cid-&gt;skipflag = 0;</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :                                         cid-&gt;crc = 0;</span>
+<span class="lineNum">     370 </span>            :                                 }
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         case 1: /* SOH */</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                                 if (b == 0x01)</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 2;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                                 break ;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                         case 2: /* HEADER */</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                                 if (b == 0x07)</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 3;</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :                         case 3: /* STX */</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                                 if (b == 0x02)</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 4;</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                         case 4: /* SERVICE TYPE */</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :                                 if (b == 0x40)</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 5;</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                         case 5: /* Frame Length */</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 6;</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                         case 6: /* NUMBER TYPE */</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 7;</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                                 cid-&gt;pos = 0;</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                                 cid-&gt;rawdata[cid-&gt;pos++] = b;</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         case 7: /* NUMBER LENGTH */</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 8;</span>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                                 cid-&gt;len = b;</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                                 if ((cid-&gt;len+2) &gt;= sizeof(cid-&gt;rawdata)) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_WARNING, &quot;too long caller id string\n&quot;) ;</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     402 </span>            :                                 }
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                                 cid-&gt;rawdata[cid-&gt;pos++] = b;</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :                         case 8: /* Retrieve message */</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                                 cid-&gt;rawdata[cid-&gt;pos++] = b;</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                                 cid-&gt;len--;</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                                 if (cid-&gt;len&lt;=0) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                                         cid-&gt;rawdata[cid-&gt;pos] = '\0';</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 9;</span>
+<span class="lineNum">     411 </span>            :                                 }
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         case 9: /* ETX */</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 10;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                         case 10: /* CRC Checksum 1 */</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 11;</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                         case 11: /* CRC Checksum 2 */</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 12;</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                                 if (cid-&gt;crc != 0) {</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_WARNING, &quot;crc checksum error\n&quot;) ;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     424 </span>            :                                 }
+<span class="lineNum">     425 </span>            :                                 /* extract caller id data */
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                                 for (x = 0; x &lt; cid-&gt;pos;) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                                         switch (cid-&gt;rawdata[x++]) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                                         case 0x02: /* caller id  number */</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :                                                 cid-&gt;number[0] = '\0';</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                                                 cid-&gt;name[0] = '\0';</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                                                 cid-&gt;flags = 0;</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                                                 res = cid-&gt;rawdata[x++];</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                                                 ast_copy_string(cid-&gt;number, &amp;cid-&gt;rawdata[x], res+1);</span>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                                                 x += res;</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                                         case 0x21: /* additional information */</span>
+<span class="lineNum">     437 </span>            :                                                 /* length */
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     439 </span>            :                                                 /* number type */
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x]) {</span>
+<span class="lineNum">     441 </span>            :                                                 case 0x00: /* unknown */
+<span class="lineNum">     442 </span>            :                                                 case 0x01: /* international number */
+<span class="lineNum">     443 </span>            :                                                 case 0x02: /* domestic number */
+<span class="lineNum">     444 </span>            :                                                 case 0x03: /* network */
+<span class="lineNum">     445 </span>            :                                                 case 0x04: /* local call */
+<span class="lineNum">     446 </span>            :                                                 case 0x06: /* short dial number */
+<span class="lineNum">     447 </span>            :                                                 case 0x07: /* reserved */
+<span class="lineNum">     448 </span>            :                                                 default:   /* reserved */
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :                                                         ast_debug(2, &quot;cid info:#1=%X\n&quot;, (unsigned)cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                                                         break ;</span>
+<span class="lineNum">     451 </span>            :                                                 }
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     453 </span>            :                                                 /* numbering plan octed 4 */
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     455 </span>            :                                                 /* numbering plan octed 5 */
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x]) {</span>
+<span class="lineNum">     457 </span>            :                                                 case 0x00: /* unknown */
+<span class="lineNum">     458 </span>            :                                                 case 0x01: /* recommendation E.164 ISDN */
+<span class="lineNum">     459 </span>            :                                                 case 0x03: /* recommendation X.121 */
+<span class="lineNum">     460 </span>            :                                                 case 0x04: /* telex dial plan */
+<span class="lineNum">     461 </span>            :                                                 case 0x08: /* domestic dial plan */
+<span class="lineNum">     462 </span>            :                                                 case 0x09: /* private dial plan */
+<span class="lineNum">     463 </span>            :                                                 case 0x05: /* reserved */
+<span class="lineNum">     464 </span>            :                                                 default:   /* reserved */
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                                         ast_debug(2, &quot;cid info:#2=%X\n&quot;, (unsigned)cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                                                         break ;</span>
+<span class="lineNum">     467 </span>            :                                                 }
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                                 break ;</span>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                                         case 0x04: /* no callerid reason */</span>
+<span class="lineNum">     471 </span>            :                                                 /* length */
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     473 </span>            :                                                 /* no callerid reason code */
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x]) {</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                                                 case 'P': /* caller id denied by user */</span>
+<span class="lineNum">     476 </span>            :                                                 case 'O': /* service not available */
+<span class="lineNum">     477 </span>            :                                                 case 'C': /* pay phone */
+<span class="lineNum">     478 </span>            :                                                 case 'S': /* service congested */
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                                                         cid-&gt;flags |= CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                                                         ast_debug(2, &quot;no cid reason:%c\n&quot;, cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :                                                         break ;</span>
+<span class="lineNum">     482 </span>            :                                                 }
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                                                 break ;</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                                         case 0x09: /* dialed number */</span>
+<span class="lineNum">     486 </span>            :                                                 /* length */
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                                                 res = cid-&gt;rawdata[x++];</span>
+<span class="lineNum">     488 </span>            :                                                 /* dialed number */
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :                                                 x += res;</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                                                 break ;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                                         case 0x22: /* dialed number additional information */</span>
+<span class="lineNum">     492 </span>            :                                                 /* length */
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     494 </span>            :                                                 /* number type */
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x]) {</span>
+<span class="lineNum">     496 </span>            :                                                 case 0x00: /* unknown */
+<span class="lineNum">     497 </span>            :                                                 case 0x01: /* international number */
+<span class="lineNum">     498 </span>            :                                                 case 0x02: /* domestic number */
+<span class="lineNum">     499 </span>            :                                                 case 0x03: /* network */
+<span class="lineNum">     500 </span>            :                                                 case 0x04: /* local call */
+<span class="lineNum">     501 </span>            :                                                 case 0x06: /* short dial number */
+<span class="lineNum">     502 </span>            :                                                 case 0x07: /* reserved */
+<span class="lineNum">     503 </span>            :                                                 default:   /* reserved */
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                                                         if (DEBUG_ATLEAST(2))</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                                                                 ast_log(LOG_NOTICE, &quot;did info:#1=%X\n&quot;, (unsigned)cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                                                         break ;</span>
+<span class="lineNum">     507 </span>            :                                                 }
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     509 </span>            :                                                 /* numbering plan octed 4 */
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     511 </span>            :                                                 /* numbering plan octed 5 */
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x]) {</span>
+<span class="lineNum">     513 </span>            :                                                 case 0x00: /* unknown */
+<span class="lineNum">     514 </span>            :                                                 case 0x01: /* recommendation E.164 ISDN */
+<span class="lineNum">     515 </span>            :                                                 case 0x03: /* recommendation X.121 */
+<span class="lineNum">     516 </span>            :                                                 case 0x04: /* telex dial plan */
+<span class="lineNum">     517 </span>            :                                                 case 0x08: /* domestic dial plan */
+<span class="lineNum">     518 </span>            :                                                 case 0x09: /* private dial plan */
+<span class="lineNum">     519 </span>            :                                                 case 0x05: /* reserved */
+<span class="lineNum">     520 </span>            :                                                 default:   /* reserved */
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :                                                         ast_debug(2, &quot;did info:#2=%X\n&quot;, (unsigned)cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                                                         break ;</span>
+<span class="lineNum">     523 </span>            :                                                 }
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :                                                 break ;</span>
+<span class="lineNum">     526 </span>            :                                         }
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                                 }</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                                 return 1;</span>
+<span class="lineNum">     529 </span>            :                                 break;
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :                         default:</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;invalid value in sawflag %d\n&quot;, cid-&gt;sawflag);</span>
+<span class="lineNum">     532 </span>            :                         }
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     534 </span>            :         }
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :         if (mylen) {</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                 memcpy(cid-&gt;oldstuff, buf, mylen * 2);</span>
+<span class="lineNum">     537 </span><span class="lineNoCov">          0 :                 cid-&gt;oldlen = mylen * 2;</span>
+<span class="lineNum">     538 </span>            :         } else
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                 cid-&gt;oldlen = 0;</span>
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     542 </span>            : }
+<a name="543"><span class="lineNum">     543 </span>            : </a>
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 : int callerid_feed(struct callerid_state *cid, unsigned char *ubuf, int len, struct ast_format *codec)</span>
+<span class="lineNum">     546 </span>            : {
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :         int mylen = len;</span>
+<span class="lineNum">     548 </span>            :         int olen;
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :         int b = 'X';</span>
+<span class="lineNum">     550 </span>            :         int res;
+<span class="lineNum">     551 </span>            :         int x;
+<span class="lineNum">     552 </span>            :         short *buf;
+<span class="lineNum">     553 </span>            : 
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :         buf = ast_alloca(2 * len + cid-&gt;oldlen);</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :         memcpy(buf, cid-&gt;oldstuff, cid-&gt;oldlen);</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :         mylen += cid-&gt;oldlen/2;</span>
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++)</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                 buf[x+cid-&gt;oldlen/2] = AST_XLAW(ubuf[x]);</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :         while (mylen &gt;= 160) {</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :                 olen = mylen;</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :                 res = fsk_serial(&amp;cid-&gt;fskd, buf, &amp;mylen, &amp;b);</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                 if (mylen &lt; 0) {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;No start bit found in fsk data.\n&quot;);</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     567 </span>            :                 }
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                 buf += (olen - mylen);</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :                 if (res &lt; 0) {</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;fsk_serial failed\n&quot;);</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     572 </span>            :                 }
+<span class="lineNum">     573 </span><span class="lineNoCov">          0 :                 if (res == 1) {</span>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                         if (b &gt; 0xff) {</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                                 if (cid-&gt;sawflag != 5) {</span>
+<span class="lineNum">     576 </span>            :                                         /* Ignore invalid bytes */
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :                                         continue;</span>
+<span class="lineNum">     578 </span>            :                                 }
+<span class="lineNum">     579 </span>            :                                 /*
+<span class="lineNum">     580 </span>            :                                  * We can tollerate an error on the checksum character since the
+<span class="lineNum">     581 </span>            :                                  * checksum character is the last character in the message and
+<span class="lineNum">     582 </span>            :                                  * it validates the message.
+<span class="lineNum">     583 </span>            :                                  *
+<span class="lineNum">     584 </span>            :                                  * Remove character error flags.
+<span class="lineNum">     585 </span>            :                                  * Bit 8 : Parity error
+<span class="lineNum">     586 </span>            :                                  * Bit 9 : Framing error
+<span class="lineNum">     587 </span>            :                                  */
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                                 b &amp;= 0xff;</span>
+<span class="lineNum">     589 </span>            :                         }
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                         switch (cid-&gt;sawflag) {</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :                         case 0: /* Look for flag */</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                                 if (b == 'U')</span>
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 2;</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :                         case 2: /* Get lead-in */</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                                 if ((b == 0x04) || (b == 0x80) || (b == 0x06) || (b == 0x82)) {</span>
+<span class="lineNum">     597 </span><span class="lineNoCov">          0 :                                         cid-&gt;type = b;</span>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 3;</span>
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :                                         cid-&gt;cksum = b;</span>
+<span class="lineNum">     600 </span>            :                                 }
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                         case 3: /* Get length */</span>
+<span class="lineNum">     603 </span>            :                                 /* Not a lead in.  We're ready  */
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                                 cid-&gt;sawflag = 4;</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :                                 cid-&gt;len = b;</span>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :                                 cid-&gt;pos = 0;</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :                                 cid-&gt;cksum += b;</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :                         case 4: /* Retrieve message */</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                                 if (cid-&gt;pos &gt;= 128) {</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_WARNING, &quot;Caller ID too long???\n&quot;);</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :                                         return -1;</span>
+<span class="lineNum">     613 </span>            :                                 }
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :                                 cid-&gt;rawdata[cid-&gt;pos++] = b;</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :                                 cid-&gt;len--;</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                                 cid-&gt;cksum += b;</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :                                 if (!cid-&gt;len) {</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                                         cid-&gt;rawdata[cid-&gt;pos] = '\0';</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 5;</span>
+<span class="lineNum">     620 </span>            :                                 }
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                         case 5: /* Check checksum */</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :                                 if ((b + cid-&gt;cksum) &amp; 0xff) {</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                                         ast_log(LOG_NOTICE, &quot;Caller*ID failed checksum\n&quot;);</span>
+<span class="lineNum">     625 </span>            :                                         /* Try again */
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :                                         cid-&gt;sawflag = 0;</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     628 </span>            :                                 }
+<span class="lineNum">     629 </span>            : 
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                                 cid-&gt;number[0] = '\0';</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :                                 cid-&gt;name[0] = '\0';</span>
+<span class="lineNum">     632 </span>            :                                 /* Update flags */
+<span class="lineNum">     633 </span><span class="lineNoCov">          0 :                                 cid-&gt;flags = 0;</span>
+<span class="lineNum">     634 </span>            :                                 /* If we get this far we're fine.  */
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                                 if ((cid-&gt;type == 0x80) || (cid-&gt;type == 0x82)) {</span>
+<span class="lineNum">     636 </span>            :                                         /* MDMF */
+<span class="lineNum">     637 </span>            :                                         /* Go through each element and process */
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                                         for (x = 0; x &lt; cid-&gt;pos;) {</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                                                 switch (cid-&gt;rawdata[x++]) {</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :                                                 case 1:</span>
+<span class="lineNum">     641 </span>            :                                                         /* Date */
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :                                                 case 2: /* Number */</span>
+<span class="lineNum">     644 </span>            :                                                 case 3: /* Number (for Zebble) */
+<span class="lineNum">     645 </span>            :                                                 case 4: /* Number */
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 :                                                         res = cid-&gt;rawdata[x];</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :                                                         if (res &gt; 32) {</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                                                                 ast_log(LOG_NOTICE, &quot;Truncating long caller ID number from %d bytes to 32\n&quot;, cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :                                                                 res = 32;</span>
+<span class="lineNum">     650 </span>            :                                                         }
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                                                         if (ast_strlen_zero(cid-&gt;number)) {</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                                                                 memcpy(cid-&gt;number, cid-&gt;rawdata + x + 1, res);</span>
+<span class="lineNum">     653 </span>            :                                                                 /* Null terminate */
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                                                                 cid-&gt;number[res] = '\0';</span>
+<span class="lineNum">     655 </span>            :                                                         }
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 :                                                 case 6: /* Stentor Call Qualifier (ie. Long Distance call) */</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :                                                 case 7: /* Name */</span>
+<span class="lineNum">     660 </span>            :                                                 case 8: /* Name */
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :                                                         res = cid-&gt;rawdata[x];</span>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                                                         if (res &gt; 32) {</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                                                                 ast_log(LOG_NOTICE, &quot;Truncating long caller ID name from %d bytes to 32\n&quot;, cid-&gt;rawdata[x]);</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                                                                 res = 32;</span>
+<span class="lineNum">     665 </span>            :                                                         }
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                                                         memcpy(cid-&gt;name, cid-&gt;rawdata + x + 1, res);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                                                         cid-&gt;name[res] = '\0';</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :                                                 case 11: /* Message Waiting */</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                                                         res = cid-&gt;rawdata[x + 1];</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                                                         if (res)</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                                                                 cid-&gt;flags |= CID_MSGWAITING;</span>
+<span class="lineNum">     673 </span>            :                                                         else
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                                                                 cid-&gt;flags |= CID_NOMSGWAITING;</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                                                 case 17: /* UK: Call type, 1=Voice Call, 2=Ringback when free, 129=Message waiting  */</span>
+<span class="lineNum">     677 </span>            :                                                 case 19: /* UK: Network message system status (Number of messages waiting) */
+<span class="lineNum">     678 </span>            :                                                 case 22: /* Something French */
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :                                                         break;</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                                                 default:</span>
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 :                                                         ast_log(LOG_NOTICE, &quot;Unknown IE %d\n&quot;, cid-&gt;rawdata[x - 1]);</span>
+<span class="lineNum">     682 </span>            :                                                 }
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                                                 res = cid-&gt;rawdata[x];</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                                                 if (0 &gt; res){        /* Negative offset in the CID Spill */</span>
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :                                                         ast_log(LOG_NOTICE, &quot;IE %d has bad field length of %d at offset %d\n&quot;, cid-&gt;rawdata[x-1], cid-&gt;rawdata[x], x);</span>
+<span class="lineNum">     686 </span>            :                                                         /* Try again */
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                                                         cid-&gt;sawflag = 0;</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :                                                         break;  /* Exit the loop */</span>
+<span class="lineNum">     689 </span>            :                                                 }
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :                                                 x += cid-&gt;rawdata[x];</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                                                 x++;</span>
+<span class="lineNum">     692 </span>            :                                         }
+<span class="lineNum">     693 </span><span class="lineNoCov">          0 :                                 } else if (cid-&gt;type == 0x6) {</span>
+<span class="lineNum">     694 </span>            :                                         /* VMWI SDMF */
+<span class="lineNum">     695 </span><span class="lineNoCov">          0 :                                         if (cid-&gt;rawdata[2] == 0x42) {</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                                                 cid-&gt;flags |= CID_MSGWAITING;</span>
+<span class="lineNum">     697 </span><span class="lineNoCov">          0 :                                         } else if (cid-&gt;rawdata[2] == 0x6f) {</span>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                                                 cid-&gt;flags |= CID_NOMSGWAITING;</span>
+<span class="lineNum">     699 </span>            :                                         }
+<span class="lineNum">     700 </span>            :                                 } else {
+<span class="lineNum">     701 </span>            :                                         /* SDMF */
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :                                         ast_copy_string(cid-&gt;number, cid-&gt;rawdata + 8, sizeof(cid-&gt;number));</span>
+<span class="lineNum">     703 </span>            :                                 }
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :                                 if (!strcmp(cid-&gt;number, &quot;P&quot;)) {</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :                                         strcpy(cid-&gt;number, &quot;&quot;);</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :                                         cid-&gt;flags |= CID_PRIVATE_NUMBER;</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 :                                 } else if (!strcmp(cid-&gt;number, &quot;O&quot;) || ast_strlen_zero(cid-&gt;number)) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :                                         strcpy(cid-&gt;number, &quot;&quot;);</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :                                         cid-&gt;flags |= CID_UNKNOWN_NUMBER;</span>
+<span class="lineNum">     710 </span>            :                                 }
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                                 if (!strcmp(cid-&gt;name, &quot;P&quot;)) {</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :                                         strcpy(cid-&gt;name, &quot;&quot;);</span>
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :                                         cid-&gt;flags |= CID_PRIVATE_NAME;</span>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :                                 } else if (!strcmp(cid-&gt;name, &quot;O&quot;) || ast_strlen_zero(cid-&gt;name)) {</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :                                         strcpy(cid-&gt;name, &quot;&quot;);</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                                         cid-&gt;flags |= CID_UNKNOWN_NAME;</span>
+<span class="lineNum">     717 </span>            :                                 }
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                                 return 1;</span>
+<span class="lineNum">     719 </span>            :                                 break;
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :                         default:</span>
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Dunno what to do with a digit in sawflag %d\n&quot;, cid-&gt;sawflag);</span>
+<span class="lineNum">     722 </span>            :                         }
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :                 }</span>
+<span class="lineNum">     724 </span>            :         }
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 :         if (mylen) {</span>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :                 memcpy(cid-&gt;oldstuff, buf, mylen * 2);</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :                 cid-&gt;oldlen = mylen * 2;</span>
+<span class="lineNum">     728 </span>            :         } else
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 :                 cid-&gt;oldlen = 0;</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="732"><span class="lineNum">     732 </span>            : }</a>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 : void callerid_free(struct callerid_state *cid)</span>
+<span class="lineNum">     735 </span>            : {
+<span class="lineNum">     736 </span><span class="lineNoCov">          0 :         ast_free(cid);</span>
+<a name="737"><span class="lineNum">     737 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 : static int callerid_genmsg(char *msg, int size, const char *number, const char *name, int flags)</span>
+<span class="lineNum">     740 </span>            : {
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :         struct timeval now = ast_tvnow();</span>
+<span class="lineNum">     742 </span>            :         struct ast_tm tm;
+<span class="lineNum">     743 </span>            :         char *ptr;
+<span class="lineNum">     744 </span>            :         int res;
+<span class="lineNum">     745 </span>            :         int i, x;
+<span class="lineNum">     746 </span>            : 
+<span class="lineNum">     747 </span>            :         /* Get the time */
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :         ast_localtime(&amp;now, &amp;tm, NULL);</span>
+<span class="lineNum">     749 </span>            : 
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :         ptr = msg;</span>
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span>            :         /* Format time and message header */
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :         res = snprintf(ptr, size, &quot;\001\010%02d%02d%02d%02d&quot;, tm.tm_mon + 1,</span>
+<span class="lineNum">     754 </span>            :                                 tm.tm_mday, tm.tm_hour, tm.tm_min);
+<span class="lineNum">     755 </span><span class="lineNoCov">          0 :         size -= res;</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :         ptr += res;</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(number) || (flags &amp; CID_UNKNOWN_NUMBER)) {</span>
+<span class="lineNum">     758 </span>            :                 /* Indicate number not known */
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\004\001O&quot;);</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     761 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :         } else if (flags &amp; CID_PRIVATE_NUMBER) {</span>
+<span class="lineNum">     763 </span>            :                 /* Indicate number is private */
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\004\001P&quot;);</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     767 </span>            :         } else {
+<span class="lineNum">     768 </span>            :                 /* Send up to 16 digits of number MAX */
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :                 i = strlen(number);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :                 if (i &gt; 16)</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                         i = 16;</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\002%c&quot;, i);</span>
+<span class="lineNum">     773 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; i; x++)</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                         ptr[x] = number[x];</span>
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :                 ptr[i] = '\0';</span>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 ptr += i;</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :                 size -= i;</span>
+<span class="lineNum">     780 </span>            :         }
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(name) || (flags &amp; CID_UNKNOWN_NAME)) {</span>
+<span class="lineNum">     783 </span>            :                 /* Indicate name not known */
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\010\001O&quot;);</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :         } else if (flags &amp; CID_PRIVATE_NAME) {</span>
+<span class="lineNum">     788 </span>            :                 /* Indicate name is private */
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\010\001P&quot;);</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     792 </span>            :         } else {
+<span class="lineNum">     793 </span>            :                 /* Send up to 16 digits of name MAX */
+<span class="lineNum">     794 </span><span class="lineNoCov">          0 :                 i = strlen(name);</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :                 if (i &gt; 16)</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :                         i = 16;</span>
+<span class="lineNum">     797 </span><span class="lineNoCov">          0 :                 res = snprintf(ptr, size, &quot;\007%c&quot;, i);</span>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                 size -= res;</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :                 ptr += res;</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; i; x++)</span>
+<span class="lineNum">     801 </span><span class="lineNoCov">          0 :                         ptr[x] = name[x];</span>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :                 ptr[i] = '\0';</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :                 ptr += i;</span>
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                 size -= i;</span>
+<span class="lineNum">     805 </span>            :         }
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :         return (ptr - msg);</span>
+<span class="lineNum">     807 </span>            : 
+<a name="808"><span class="lineNum">     808 </span>            : }</a>
+<span class="lineNum">     809 </span>            : 
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 : int ast_callerid_vmwi_generate(unsigned char *buf, int active, int type, struct ast_format *codec,</span>
+<span class="lineNum">     811 </span>            :                                const char* name, const char* number, int flags)
+<span class="lineNum">     812 </span>            : {
+<span class="lineNum">     813 </span>            :         char msg[256];
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :         int len = 0;</span>
+<span class="lineNum">     815 </span>            :         int sum;
+<span class="lineNum">     816 </span>            :         int x;
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :         int bytes = 0;</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :         float cr = 1.0;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :         float ci = 0.0;</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :         float scont = 0.0;</span>
+<span class="lineNum">     821 </span>            : 
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :         if (type == CID_MWI_TYPE_MDMF_FULL) {</span>
+<span class="lineNum">     823 </span>            :                 /* MDMF Message waiting with date, number, name and MWI parameter */
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                 msg[0] = 0x82;</span>
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span>            :                 /* put date, number info at the right place */
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :                 len = callerid_genmsg(msg+2, sizeof(msg)-2, number, name, flags);</span>
+<span class="lineNum">     828 </span>            : 
+<span class="lineNum">     829 </span>            :                 /* length of MDMF CLI plus Message Waiting Structure */
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :                 msg[1] = len+3;</span>
+<span class="lineNum">     831 </span>            : 
+<span class="lineNum">     832 </span>            :                 /* Go to the position to write to */
+<span class="lineNum">     833 </span><span class="lineNoCov">          0 :                 len = len+2;</span>
+<span class="lineNum">     834 </span>            : 
+<span class="lineNum">     835 </span>            :                 /* &quot;Message Waiting Parameter&quot; */
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :                 msg[len++] = 0x0b;</span>
+<span class="lineNum">     837 </span>            :                 /* Length of IE is one */
+<span class="lineNum">     838 </span><span class="lineNoCov">          0 :                 msg[len++] = 1;</span>
+<span class="lineNum">     839 </span>            :                 /* Active or not */
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :                 if (active)</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">          0 :                         msg[len++] = 0xff;</span>
+<span class="lineNum">     842 </span>            :                 else
+<span class="lineNum">     843 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x00;</span>
+<span class="lineNum">     844 </span>            : 
+<span class="lineNum">     845 </span><span class="lineNoCov">          0 :         } else if (type == CID_MWI_TYPE_MDMF) {</span>
+<span class="lineNum">     846 </span>            :                 /* MDMF Message waiting only */
+<span class="lineNum">     847 </span>            :                 /* same as above except that the we only put MWI parameter */
+<span class="lineNum">     848 </span><span class="lineNoCov">          0 :                 msg[len++] = 0x82;</span>
+<span class="lineNum">     849 </span>            :                 /* Length is 3 */
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :                 msg[len++] = 3;</span>
+<span class="lineNum">     851 </span>            :                 /* IE is &quot;Message Waiting Parameter&quot; */
+<span class="lineNum">     852 </span><span class="lineNoCov">          0 :                 msg[len++] = 0x0b;</span>
+<span class="lineNum">     853 </span>            :                 /* Length of IE is one */
+<span class="lineNum">     854 </span><span class="lineNoCov">          0 :                 msg[len++] = 1;</span>
+<span class="lineNum">     855 </span>            :                 /* Active or not */
+<span class="lineNum">     856 </span><span class="lineNoCov">          0 :                 if (active)</span>
+<span class="lineNum">     857 </span><span class="lineNoCov">          0 :                         msg[len++] = 0xff;</span>
+<span class="lineNum">     858 </span>            :                 else
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x00;</span>
+<span class="lineNum">     860 </span>            :         } else {
+<span class="lineNum">     861 </span>            :                 /* SDMF Message waiting */
+<span class="lineNum">     862 </span><span class="lineNoCov">          0 :                 msg[len++] = 0x6;</span>
+<span class="lineNum">     863 </span>            :                 /* Length is 3 */
+<span class="lineNum">     864 </span><span class="lineNoCov">          0 :                 msg[len++] = 3;</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :                 if (active) {</span>
+<span class="lineNum">     866 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x42;</span>
+<span class="lineNum">     867 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x42;</span>
+<span class="lineNum">     868 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x42;</span>
+<span class="lineNum">     869 </span>            :                 } else {
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x6f;</span>
+<span class="lineNum">     871 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x6f;</span>
+<span class="lineNum">     872 </span><span class="lineNoCov">          0 :                         msg[len++] = 0x6f;</span>
+<span class="lineNum">     873 </span>            :                 }
+<span class="lineNum">     874 </span>            :         }
+<span class="lineNum">     875 </span><span class="lineNoCov">          0 :         sum = 0;</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++)</span>
+<span class="lineNum">     877 </span><span class="lineNoCov">          0 :                 sum += msg[x];</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :         sum = (256 - (sum &amp; 255));</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :         msg[len++] = sum;</span>
+<span class="lineNum">     880 </span>            :         /* Wait a half a second */
+<span class="lineNum">     881 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 4000; x++)</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 :                 PUT_BYTE(0x7f);</span>
+<span class="lineNum">     883 </span>            :         /* Transmit 30 0x55's (looks like a square wave) for channel seizure */
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 30; x++)</span>
+<span class="lineNum">     885 </span><span class="lineNoCov">          0 :                 PUT_CLID(0x55);</span>
+<span class="lineNum">     886 </span>            :         /* Send 170ms of callerid marks */
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 170; x++)</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                 PUT_CLID_MARKMS;</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++) {</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">          0 :                 PUT_CLID(msg[x]);</span>
+<span class="lineNum">     891 </span>            :         }
+<span class="lineNum">     892 </span>            :         /* Send 50 more ms of marks */
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 50; x++)</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                 PUT_CLID_MARKMS;</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">          0 :         return bytes;</span>
+<a name="896"><span class="lineNum">     896 </span>            : }</a>
+<span class="lineNum">     897 </span>            : 
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 : int callerid_generate(unsigned char *buf, const char *number, const char *name, int flags, int callwaiting, struct ast_format *codec)</span>
+<span class="lineNum">     899 </span>            : {
+<span class="lineNum">     900 </span><span class="lineNoCov">          0 :         int bytes = 0;</span>
+<span class="lineNum">     901 </span>            :         int x, sum;
+<span class="lineNum">     902 </span>            :         int len;
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span>            :         /* Initial carriers (real/imaginary) */
+<span class="lineNum">     905 </span><span class="lineNoCov">          0 :         float cr = 1.0;</span>
+<span class="lineNum">     906 </span><span class="lineNoCov">          0 :         float ci = 0.0;</span>
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :         float scont = 0.0;</span>
+<span class="lineNum">     908 </span>            :         char msg[256];
+<span class="lineNum">     909 </span><span class="lineNoCov">          0 :         len = callerid_genmsg(msg, sizeof(msg), number, name, flags);</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :         if (!callwaiting) {</span>
+<span class="lineNum">     911 </span>            :                 /* Wait a half a second */
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; 4000; x++)</span>
+<span class="lineNum">     913 </span><span class="lineNoCov">          0 :                         PUT_BYTE(0x7f);</span>
+<span class="lineNum">     914 </span>            :                 /* Transmit 30 0x55's (looks like a square wave) for channel seizure */
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                 for (x = 0; x &lt; 30; x++)</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :                         PUT_CLID(0x55);</span>
+<span class="lineNum">     917 </span>            :         }
+<span class="lineNum">     918 </span>            :         /* Send 150ms of callerid marks */
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 150; x++)</span>
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :                 PUT_CLID_MARKMS;</span>
+<span class="lineNum">     921 </span>            :         /* Send 0x80 indicating MDMF format */
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :         PUT_CLID(0x80);</span>
+<span class="lineNum">     923 </span>            :         /* Put length of whole message */
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :         PUT_CLID(len);</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :         sum = 0x80 + strlen(msg);</span>
+<span class="lineNum">     926 </span>            :         /* Put each character of message and update checksum */
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; len; x++) {</span>
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                 PUT_CLID(msg[x]);</span>
+<span class="lineNum">     929 </span><span class="lineNoCov">          0 :                 sum += msg[x];</span>
+<span class="lineNum">     930 </span>            :         }
+<span class="lineNum">     931 </span>            :         /* Send 2's compliment of sum */
+<span class="lineNum">     932 </span><span class="lineNoCov">          0 :         PUT_CLID(256 - (sum &amp; 255));</span>
+<span class="lineNum">     933 </span>            : 
+<span class="lineNum">     934 </span>            :         /* Send 50 more ms of marks */
+<span class="lineNum">     935 </span><span class="lineNoCov">          0 :         for (x = 0; x &lt; 50; x++)</span>
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                 PUT_CLID_MARKMS;</span>
+<span class="lineNum">     937 </span>            : 
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :         return bytes;</span>
+<span class="lineNum">     939 </span>            : }
+<span class="lineNum">     940 </span>            : 
+<span class="lineNum">     941 </span>            : /*!
+<span class="lineNum">     942 </span>            :  * \brief Clean up phone string
+<span class="lineNum">     943 </span>            :  * \details
+<span class="lineNum">     944 </span>            :  * Remove '(', ' ', ')', non-trailing '.', and '-' not in square brackets.
+<a name="945"><span class="lineNum">     945 </span>            :  * Basically, remove anything that could be invalid in a pattern.</a>
+<span class="lineNum">     946 </span>            :  */
+<span class="lineNum">     947 </span><span class="lineCov">       2226 : void ast_shrink_phone_number(char *n)</span>
+<span class="lineNum">     948 </span>            : {
+<span class="lineNum">     949 </span><span class="lineCov">       2226 :         int x, y = 0;</span>
+<span class="lineNum">     950 </span><span class="lineCov">       2226 :         int bracketed = 0;</span>
+<span class="lineNum">     951 </span>            : 
+<span class="lineNum">     952 </span><span class="lineCov">      18433 :         for (x = 0; n[x]; x++) {</span>
+<span class="lineNum">     953 </span><span class="lineCov">      16207 :                 switch (n[x]) {</span>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                 case '[':</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">          0 :                         bracketed++;</span>
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :                         n[y++] = n[x];</span>
+<span class="lineNum">     957 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                 case ']':</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">          0 :                         bracketed--;</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                         n[y++] = n[x];</span>
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     962 </span><span class="lineCov">         10 :                 case '-':</span>
+<span class="lineNum">     963 </span><span class="lineCov">         10 :                         if (bracketed)</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 :                                 n[y++] = n[x];</span>
+<span class="lineNum">     965 </span><span class="lineCov">         10 :                         break;</span>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :                 case '.':</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                         if (!n[x+1])</span>
+<span class="lineNum">     968 </span><span class="lineNoCov">          0 :                                 n[y++] = n[x];</span>
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     970 </span><span class="lineCov">      16197 :                 default:</span>
+<span class="lineNum">     971 </span>            :                         /* ignore parenthesis and whitespace */
+<span class="lineNum">     972 </span><span class="lineCov">      16197 :                         if (!strchr(&quot;( )&quot;, n[x]))</span>
+<span class="lineNum">     973 </span><span class="lineCov">      14141 :                                 n[y++] = n[x];</span>
+<span class="lineNum">     974 </span>            :                 }
+<span class="lineNum">     975 </span>            :         }
+<span class="lineNum">     976 </span><span class="lineCov">       2226 :         n[y] = '\0';</span>
+<span class="lineNum">     977 </span><span class="lineCov">       2226 : }</span>
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span>            : /*!
+<span class="lineNum">     980 </span>            :  * \brief Checks if phone number consists of valid characters
+<span class="lineNum">     981 </span>            :  * \param exten String that needs to be checked
+<span class="lineNum">     982 </span>            :  * \param valid Valid characters in string
+<span class="lineNum">     983 </span>            :  * \retval 1 if valid string
+<a name="984"><span class="lineNum">     984 </span>            :  * \retval 0 if string contains invalid characters</a>
+<span class="lineNum">     985 </span>            :  */
+<span class="lineNum">     986 </span><span class="lineCov">       1336 : static int ast_is_valid_string(const char *exten, const char *valid)</span>
+<span class="lineNum">     987 </span>            : {
+<span class="lineNum">     988 </span>            :         int x;
+<span class="lineNum">     989 </span>            : 
+<span class="lineNum">     990 </span><span class="lineCov">       1336 :         if (ast_strlen_zero(exten))</span>
+<span class="lineNum">     991 </span><span class="lineCov">        806 :                 return 0;</span>
+<span class="lineNum">     992 </span><span class="lineCov">       1197 :         for (x = 0; exten[x]; x++)</span>
+<span class="lineNum">     993 </span><span class="lineCov">       1039 :                 if (!strchr(valid, exten[x]))</span>
+<span class="lineNum">     994 </span><span class="lineCov">        372 :                         return 0;</span>
+<span class="lineNum">     995 </span><span class="lineCov">        158 :         return 1;</span>
+<a name="996"><span class="lineNum">     996 </span>            : }</a>
+<span class="lineNum">     997 </span>            : 
+<span class="lineNum">     998 </span><span class="lineCov">        834 : int ast_isphonenumber(const char *n)</span>
+<span class="lineNum">     999 </span>            : {
+<span class="lineNum">    1000 </span><span class="lineCov">        834 :         return ast_is_valid_string(n, &quot;0123456789*#+&quot;);</span>
+<a name="1001"><span class="lineNum">    1001 </span>            : }</a>
+<span class="lineNum">    1002 </span>            : 
+<span class="lineNum">    1003 </span><span class="lineCov">        502 : int ast_is_shrinkable_phonenumber(const char *exten)</span>
+<span class="lineNum">    1004 </span>            : {
+<span class="lineNum">    1005 </span><span class="lineCov">        502 :         return ast_is_valid_string(exten, &quot;0123456789*#+()-.&quot;);</span>
+<a name="1006"><span class="lineNum">    1006 </span>            : }</a>
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span><span class="lineCov">       2031 : int ast_callerid_parse(char *input_str, char **name, char **location)</span>
+<span class="lineNum">    1009 </span>            : {
+<span class="lineNum">    1010 </span>            :         char *ls;
+<span class="lineNum">    1011 </span>            :         char *le;
+<span class="lineNum">    1012 </span>            :         char *name_start;
+<span class="lineNum">    1013 </span>            :         char *instr;
+<span class="lineNum">    1014 </span><span class="lineCov">       2031 :         int quotes_stripped = 0;</span>
+<span class="lineNum">    1015 </span>            : 
+<span class="lineNum">    1016 </span>            :         /* Handle surrounding quotes */
+<span class="lineNum">    1017 </span><span class="lineCov">       2031 :         input_str = ast_strip(input_str);</span>
+<span class="lineNum">    1018 </span><span class="lineCov">       2031 :         instr = ast_strip_quoted(input_str, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">    1019 </span><span class="lineCov">       2031 :         if (instr != input_str) {</span>
+<span class="lineNum">    1020 </span><span class="lineCov">       1032 :                 quotes_stripped = 1;</span>
+<span class="lineNum">    1021 </span>            :         }
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span>            :         /* Try &quot;name&quot; &lt;location&gt; format or name &lt;location&gt; format or with a missing &gt; */
+<span class="lineNum">    1024 </span><span class="lineCov">       2031 :         if ((ls = strrchr(instr, '&lt;'))) {</span>
+<span class="lineNum">    1025 </span><span class="lineCov">        166 :                 if ((le = strrchr(ls, '&gt;'))) {</span>
+<span class="lineNum">    1026 </span><span class="lineCov">        164 :                         *le = '\0';     /* location found, trim off the brackets */</span>
+<span class="lineNum">    1027 </span>            :                 }
+<span class="lineNum">    1028 </span><span class="lineCov">        166 :                 *ls = '\0';</span>
+<span class="lineNum">    1029 </span><span class="lineCov">        166 :                 *location = ls + 1;     /* and this is the result */</span>
+<span class="lineNum">    1030 </span>            : 
+<span class="lineNum">    1031 </span><span class="lineCov">        166 :                 name_start = ast_strip_quoted(instr, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">    1032 </span>            :         } else {        /* no valid brackets */
+<span class="lineNum">    1033 </span>            :                 char tmp[256];
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span><span class="lineCov">       1865 :                 ast_copy_string(tmp, instr, sizeof(tmp));</span>
+<span class="lineNum">    1036 </span><span class="lineCov">       1865 :                 ast_shrink_phone_number(tmp);</span>
+<span class="lineNum">    1037 </span><span class="lineCov">       1865 :                 if (!quotes_stripped &amp;&amp; ast_isphonenumber(tmp)) {       /* Assume it's just a location */</span>
+<span class="lineNum">    1038 </span><span class="lineCov">         15 :                         name_start = NULL;</span>
+<span class="lineNum">    1039 </span><span class="lineCov">         15 :                         strcpy(instr, tmp); /* safe, because tmp will always be the same size or smaller than instr */</span>
+<span class="lineNum">    1040 </span><span class="lineCov">         15 :                         *location = instr;</span>
+<span class="lineNum">    1041 </span>            :                 } else { /* Assume it's just a name. */
+<span class="lineNum">    1042 </span><span class="lineCov">       1850 :                         *location = NULL;</span>
+<span class="lineNum">    1043 </span><span class="lineCov">       1850 :                         name_start = ast_strip_quoted(instr, &quot;\&quot;&quot;, &quot;\&quot;&quot;);</span>
+<span class="lineNum">    1044 </span>            :                 }
+<span class="lineNum">    1045 </span>            :         }
+<span class="lineNum">    1046 </span>            : 
+<span class="lineNum">    1047 </span><span class="lineCov">       2031 :         if (name_start) {</span>
+<span class="lineNum">    1048 </span><span class="lineCov">       2016 :                 ast_unescape_quoted(name_start);</span>
+<span class="lineNum">    1049 </span>            :         }
+<span class="lineNum">    1050 </span><span class="lineCov">       2031 :         *name = name_start;</span>
+<span class="lineNum">    1051 </span><span class="lineCov">       2031 :         return 0;</span>
+<a name="1052"><span class="lineNum">    1052 </span>            : }</a>
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 : static int __ast_callerid_generate(unsigned char *buf, const char *name, const char *number, int callwaiting, struct ast_format *codec)</span>
+<span class="lineNum">    1055 </span>            : {
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(name))</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                 name = NULL;</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">          0 :         if (ast_strlen_zero(number))</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                 number = NULL;</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :         return callerid_generate(buf, number, name, 0, callwaiting, codec);</span>
+<a name="1061"><span class="lineNum">    1061 </span>            : }</a>
+<span class="lineNum">    1062 </span>            : 
+<span class="lineNum">    1063 </span><span class="lineNoCov">          0 : int ast_callerid_generate(unsigned char *buf, const char *name, const char *number, struct ast_format *codec)</span>
+<span class="lineNum">    1064 </span>            : {
+<span class="lineNum">    1065 </span><span class="lineNoCov">          0 :         return __ast_callerid_generate(buf, name, number, 0, codec);</span>
+<a name="1066"><span class="lineNum">    1066 </span>            : }</a>
+<span class="lineNum">    1067 </span>            : 
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 : int ast_callerid_callwaiting_generate(unsigned char *buf, const char *name, const char *number, struct ast_format *codec)</span>
+<span class="lineNum">    1069 </span>            : {
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :         return __ast_callerid_generate(buf, name, number, 1, codec);</span>
+<a name="1071"><span class="lineNum">    1071 </span>            : }</a>
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span><span class="lineCov">       5085 : char *ast_callerid_merge(char *buf, int bufsiz, const char *name, const char *num, const char *unknown)</span>
+<span class="lineNum">    1074 </span>            : {
+<span class="lineNum">    1075 </span><span class="lineCov">       5085 :         if (!unknown)</span>
+<span class="lineNum">    1076 </span><span class="lineCov">        965 :                 unknown = &quot;&lt;unknown&gt;&quot;;</span>
+<span class="lineNum">    1077 </span><span class="lineCov">       5085 :         if (name &amp;&amp; num) {</span>
+<span class="lineNum">    1078 </span>            :                 char name_buf[128];
+<span class="lineNum">    1079 </span>            : 
+<span class="lineNum">    1080 </span><span class="lineCov">       4140 :                 ast_escape_quoted(name, name_buf, sizeof(name_buf));</span>
+<span class="lineNum">    1081 </span><span class="lineCov">       4140 :                 snprintf(buf, bufsiz, &quot;\&quot;%s\&quot; &lt;%s&gt;&quot;, name_buf, num);</span>
+<span class="lineNum">    1082 </span><span class="lineCov">        945 :         } else if (name) {</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">          0 :                 ast_copy_string(buf, name, bufsiz);</span>
+<span class="lineNum">    1084 </span><span class="lineCov">        945 :         } else if (num) {</span>
+<span class="lineNum">    1085 </span><span class="lineCov">         13 :                 ast_copy_string(buf, num, bufsiz);</span>
+<span class="lineNum">    1086 </span>            :         } else {
+<span class="lineNum">    1087 </span><span class="lineCov">        932 :                 ast_copy_string(buf, unknown, bufsiz);</span>
+<span class="lineNum">    1088 </span>            :         }
+<span class="lineNum">    1089 </span><span class="lineCov">       5085 :         return buf;</span>
+<a name="1090"><span class="lineNum">    1090 </span>            : }</a>
+<span class="lineNum">    1091 </span>            : 
+<span class="lineNum">    1092 </span><span class="lineCov">       1163 : int ast_callerid_split(const char *buf, char *name, int namelen, char *num, int numlen)</span>
+<span class="lineNum">    1093 </span>            : {
+<span class="lineNum">    1094 </span>            :         char *tmp;
+<span class="lineNum">    1095 </span><span class="lineCov">       1163 :         char *l = NULL, *n = NULL;</span>
+<span class="lineNum">    1096 </span>            : 
+<span class="lineNum">    1097 </span><span class="lineCov">       1163 :         tmp = ast_strdupa(buf);</span>
+<span class="lineNum">    1098 </span><span class="lineCov">       1163 :         ast_callerid_parse(tmp, &amp;n, &amp;l);</span>
+<span class="lineNum">    1099 </span><span class="lineCov">       1163 :         if (n)</span>
+<span class="lineNum">    1100 </span><span class="lineCov">       1163 :                 ast_copy_string(name, n, namelen);</span>
+<span class="lineNum">    1101 </span>            :         else
+<span class="lineNum">    1102 </span><span class="lineNoCov">          0 :                 name[0] = '\0';</span>
+<span class="lineNum">    1103 </span><span class="lineCov">       1163 :         if (l) {</span>
+<span class="lineNum">    1104 </span><span class="lineCov">        135 :                 ast_shrink_phone_number(l);</span>
+<span class="lineNum">    1105 </span><span class="lineCov">        135 :                 ast_copy_string(num, l, numlen);</span>
+<span class="lineNum">    1106 </span>            :         } else
+<span class="lineNum">    1107 </span><span class="lineCov">       1028 :                 num[0] = '\0';</span>
+<span class="lineNum">    1108 </span><span class="lineCov">       1163 :         return 0;</span>
+<span class="lineNum">    1109 </span>            : }
+<span class="lineNum">    1110 </span>            : 
+<span class="lineNum">    1111 </span>            : struct ast_value_translation {
+<span class="lineNum">    1112 </span>            :         int value;
+<span class="lineNum">    1113 </span>            :         const char *name;
+<span class="lineNum">    1114 </span>            :         const char *description;
+<span class="lineNum">    1115 </span>            : };
+<span class="lineNum">    1116 </span>            : 
+<span class="lineNum">    1117 </span>            : /*! \brief Translation table for Caller ID Presentation settings */
+<span class="lineNum">    1118 </span>            : static const struct ast_value_translation pres_types[] = {
+<span class="lineNum">    1119 </span>            : /* *INDENT-OFF* */
+<span class="lineNum">    1120 </span>            :         { AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_UNSCREENED,        &quot;allowed_not_screened&quot;,  &quot;Presentation Allowed, Not Screened&quot; },
+<span class="lineNum">    1121 </span>            :         { AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_PASSED_SCREEN,     &quot;allowed_passed_screen&quot;, &quot;Presentation Allowed, Passed Screen&quot; },
+<span class="lineNum">    1122 </span>            :         { AST_PRES_ALLOWED | AST_PRES_USER_NUMBER_FAILED_SCREEN,     &quot;allowed_failed_screen&quot;, &quot;Presentation Allowed, Failed Screen&quot; },
+<span class="lineNum">    1123 </span>            :         { AST_PRES_ALLOWED | AST_PRES_NETWORK_NUMBER,                &quot;allowed&quot;,               &quot;Presentation Allowed, Network Number&quot; },
+<span class="lineNum">    1124 </span>            : 
+<span class="lineNum">    1125 </span>            :         { AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_UNSCREENED,     &quot;prohib_not_screened&quot;,   &quot;Presentation Prohibited, Not Screened&quot; },
+<span class="lineNum">    1126 </span>            :         { AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_PASSED_SCREEN,  &quot;prohib_passed_screen&quot;,  &quot;Presentation Prohibited, Passed Screen&quot; },
+<span class="lineNum">    1127 </span>            :         { AST_PRES_RESTRICTED | AST_PRES_USER_NUMBER_FAILED_SCREEN,  &quot;prohib_failed_screen&quot;,  &quot;Presentation Prohibited, Failed Screen&quot; },
+<span class="lineNum">    1128 </span>            :         { AST_PRES_RESTRICTED | AST_PRES_NETWORK_NUMBER,             &quot;prohib&quot;,                &quot;Presentation Prohibited, Network Number&quot; },
+<span class="lineNum">    1129 </span>            : 
+<span class="lineNum">    1130 </span>            :         { AST_PRES_UNAVAILABLE | AST_PRES_NETWORK_NUMBER,            &quot;unavailable&quot;,           &quot;Number Unavailable&quot; }, /* Default name to value conversion. */
+<span class="lineNum">    1131 </span>            :         { AST_PRES_UNAVAILABLE | AST_PRES_USER_NUMBER_UNSCREENED,    &quot;unavailable&quot;,           &quot;Number Unavailable&quot; },
+<span class="lineNum">    1132 </span>            :         { AST_PRES_UNAVAILABLE | AST_PRES_USER_NUMBER_FAILED_SCREEN, &quot;unavailable&quot;,           &quot;Number Unavailable&quot; },
+<span class="lineNum">    1133 </span>            :         { AST_PRES_UNAVAILABLE | AST_PRES_USER_NUMBER_PASSED_SCREEN, &quot;unavailable&quot;,           &quot;Number Unavailable&quot; },
+<span class="lineNum">    1134 </span>            : /* *INDENT-ON* */
+<span class="lineNum">    1135 </span>            : };
+<span class="lineNum">    1136 </span>            : 
+<span class="lineNum">    1137 </span>            : /*!
+<span class="lineNum">    1138 </span>            :  * \brief Convert caller ID text code to value (used in config file parsing)
+<span class="lineNum">    1139 </span>            :  * \param data text string from config file
+<span class="lineNum">    1140 </span>            :  * \retval value AST_PRES_ from callerid.h
+<a name="1141"><span class="lineNum">    1141 </span>            :  * \retval -1 if not in table</a>
+<span class="lineNum">    1142 </span>            :  */
+<span class="lineNum">    1143 </span><span class="lineCov">       1786 : int ast_parse_caller_presentation(const char *data)</span>
+<span class="lineNum">    1144 </span>            : {
+<span class="lineNum">    1145 </span>            :         int index;
+<span class="lineNum">    1146 </span><span class="lineCov">       1786 :         if (!data) {</span>
+<span class="lineNum">    1147 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1148 </span>            :         }
+<span class="lineNum">    1149 </span>            : 
+<span class="lineNum">    1150 </span><span class="lineCov">       1903 :         for (index = 0; index &lt; ARRAY_LEN(pres_types); ++index) {</span>
+<span class="lineNum">    1151 </span><span class="lineCov">       1903 :                 if (!strcasecmp(pres_types[index].name, data)) {</span>
+<span class="lineNum">    1152 </span><span class="lineCov">       1786 :                         return pres_types[index].value;</span>
+<span class="lineNum">    1153 </span>            :                 }
+<span class="lineNum">    1154 </span>            :         }
+<span class="lineNum">    1155 </span>            : 
+<span class="lineNum">    1156 </span><span class="lineNoCov">          0 :         return -1;</span>
+<span class="lineNum">    1157 </span>            : }
+<span class="lineNum">    1158 </span>            : 
+<span class="lineNum">    1159 </span>            : /*!
+<span class="lineNum">    1160 </span>            :  * \brief Convert caller ID pres value to explanatory string
+<span class="lineNum">    1161 </span>            :  * \param data AST_PRES_ value from callerid.h
+<a name="1162"><span class="lineNum">    1162 </span>            :  * \return string for human presentation</a>
+<span class="lineNum">    1163 </span>            :  */
+<span class="lineNum">    1164 </span><span class="lineCov">        994 : const char *ast_describe_caller_presentation(int data)</span>
+<span class="lineNum">    1165 </span>            : {
+<span class="lineNum">    1166 </span>            :         int index;
+<span class="lineNum">    1167 </span>            : 
+<span class="lineNum">    1168 </span><span class="lineCov">       1016 :         for (index = 0; index &lt; ARRAY_LEN(pres_types); ++index) {</span>
+<span class="lineNum">    1169 </span><span class="lineCov">       1016 :                 if (pres_types[index].value == data) {</span>
+<span class="lineNum">    1170 </span><span class="lineCov">        994 :                         return pres_types[index].description;</span>
+<span class="lineNum">    1171 </span>            :                 }
+<span class="lineNum">    1172 </span>            :         }
+<span class="lineNum">    1173 </span>            : 
+<span class="lineNum">    1174 </span><span class="lineNoCov">          0 :         return &quot;unknown&quot;;</span>
+<span class="lineNum">    1175 </span>            : }
+<span class="lineNum">    1176 </span>            : 
+<span class="lineNum">    1177 </span>            : /*!
+<span class="lineNum">    1178 </span>            :  * \brief Convert caller ID pres value to text code
+<span class="lineNum">    1179 </span>            :  * \param data AST_PRES_ value from callerid.h
+<a name="1180"><span class="lineNum">    1180 </span>            :  * \return string for config file</a>
+<span class="lineNum">    1181 </span>            :  */
+<span class="lineNum">    1182 </span><span class="lineCov">        965 : const char *ast_named_caller_presentation(int data)</span>
+<span class="lineNum">    1183 </span>            : {
+<span class="lineNum">    1184 </span>            :         int index;
+<span class="lineNum">    1185 </span>            : 
+<span class="lineNum">    1186 </span><span class="lineCov">        997 :         for (index = 0; index &lt; ARRAY_LEN(pres_types); ++index) {</span>
+<span class="lineNum">    1187 </span><span class="lineCov">        997 :                 if (pres_types[index].value == data) {</span>
+<span class="lineNum">    1188 </span><span class="lineCov">        965 :                         return pres_types[index].name;</span>
+<span class="lineNum">    1189 </span>            :                 }
+<span class="lineNum">    1190 </span>            :         }
+<span class="lineNum">    1191 </span>            : 
+<span class="lineNum">    1192 </span><span class="lineNoCov">          0 :         return &quot;unknown&quot;;</span>
+<span class="lineNum">    1193 </span>            : }
+<span class="lineNum">    1194 </span>            : 
+<span class="lineNum">    1195 </span>            : /*! \brief Translation table for redirecting reason settings */
+<span class="lineNum">    1196 </span>            : static const struct ast_value_translation redirecting_reason_types[] = {
+<span class="lineNum">    1197 </span>            : /* *INDENT-OFF* */
+<span class="lineNum">    1198 </span>            :         { AST_REDIRECTING_REASON_UNKNOWN,        &quot;unknown&quot;,      &quot;Unknown&quot; },
+<span class="lineNum">    1199 </span>            :         { AST_REDIRECTING_REASON_USER_BUSY,      &quot;cfb&quot;,          &quot;Call Forwarding Busy&quot; },
+<span class="lineNum">    1200 </span>            :         { AST_REDIRECTING_REASON_NO_ANSWER,      &quot;cfnr&quot;,         &quot;Call Forwarding No Reply&quot; },
+<span class="lineNum">    1201 </span>            :         { AST_REDIRECTING_REASON_UNAVAILABLE,    &quot;unavailable&quot;,  &quot;Callee is Unavailable&quot; },
+<span class="lineNum">    1202 </span>            :         { AST_REDIRECTING_REASON_UNCONDITIONAL,  &quot;cfu&quot;,          &quot;Call Forwarding Unconditional&quot; },
+<span class="lineNum">    1203 </span>            :         { AST_REDIRECTING_REASON_TIME_OF_DAY,    &quot;time_of_day&quot;,  &quot;Time of Day&quot; },
+<span class="lineNum">    1204 </span>            :         { AST_REDIRECTING_REASON_DO_NOT_DISTURB, &quot;dnd&quot;,          &quot;Do Not Disturb&quot; },
+<span class="lineNum">    1205 </span>            :         { AST_REDIRECTING_REASON_DEFLECTION,     &quot;deflection&quot;,   &quot;Call Deflection&quot; },
+<span class="lineNum">    1206 </span>            :         { AST_REDIRECTING_REASON_FOLLOW_ME,      &quot;follow_me&quot;,    &quot;Follow Me&quot; },
+<span class="lineNum">    1207 </span>            :         { AST_REDIRECTING_REASON_OUT_OF_ORDER,   &quot;out_of_order&quot;, &quot;Called DTE Out-Of-Order&quot; },
+<span class="lineNum">    1208 </span>            :         { AST_REDIRECTING_REASON_AWAY,           &quot;away&quot;,         &quot;Callee is Away&quot; },
+<span class="lineNum">    1209 </span>            :         { AST_REDIRECTING_REASON_CALL_FWD_DTE,   &quot;cf_dte&quot;,       &quot;Call Forwarding By The Called DTE&quot; },
+<span class="lineNum">    1210 </span>            :         { AST_REDIRECTING_REASON_SEND_TO_VM,     &quot;send_to_vm&quot;,   &quot;Call is being redirected to user's voicemail&quot; },
+<span class="lineNum">    1211 </span>            : 
+<span class="lineNum">    1212 </span>            :         /* Convenience SIP aliases.  Alias descriptions are not used. */
+<span class="lineNum">    1213 </span>            :         { AST_REDIRECTING_REASON_USER_BUSY,      &quot;user-busy&quot; },
+<span class="lineNum">    1214 </span>            :         { AST_REDIRECTING_REASON_NO_ANSWER,      &quot;no-answer&quot; },
+<span class="lineNum">    1215 </span>            :         { AST_REDIRECTING_REASON_UNCONDITIONAL,  &quot;unconditional&quot; },
+<span class="lineNum">    1216 </span>            :         { AST_REDIRECTING_REASON_TIME_OF_DAY,    &quot;time-of-day&quot; },
+<span class="lineNum">    1217 </span>            :         { AST_REDIRECTING_REASON_DO_NOT_DISTURB, &quot;do-not-disturb&quot; },
+<span class="lineNum">    1218 </span>            :         { AST_REDIRECTING_REASON_FOLLOW_ME,      &quot;follow-me&quot; },
+<span class="lineNum">    1219 </span>            :         { AST_REDIRECTING_REASON_OUT_OF_ORDER,   &quot;out-of-service&quot; },
+<span class="lineNum">    1220 </span>            : /* *INDENT-ON* */
+<a name="1221"><span class="lineNum">    1221 </span>            : };</a>
+<span class="lineNum">    1222 </span>            : 
+<span class="lineNum">    1223 </span><span class="lineCov">         11 : int ast_redirecting_reason_parse(const char *data)</span>
+<span class="lineNum">    1224 </span>            : {
+<span class="lineNum">    1225 </span>            :         int index;
+<span class="lineNum">    1226 </span>            : 
+<span class="lineNum">    1227 </span><span class="lineCov">        180 :         for (index = 0; index &lt; ARRAY_LEN(redirecting_reason_types); ++index) {</span>
+<span class="lineNum">    1228 </span><span class="lineCov">        177 :                 if (!strcasecmp(redirecting_reason_types[index].name, data)) {</span>
+<span class="lineNum">    1229 </span><span class="lineCov">          8 :                         return redirecting_reason_types[index].value;</span>
+<span class="lineNum">    1230 </span>            :                 }
+<span class="lineNum">    1231 </span>            :         }
+<span class="lineNum">    1232 </span>            : 
+<span class="lineNum">    1233 </span><span class="lineCov">          3 :         return -1;</span>
+<a name="1234"><span class="lineNum">    1234 </span>            : }</a>
+<span class="lineNum">    1235 </span>            : 
+<span class="lineNum">    1236 </span><span class="lineNoCov">          0 : const char *ast_redirecting_reason_describe(int data)</span>
+<span class="lineNum">    1237 </span>            : {
+<span class="lineNum">    1238 </span>            :         int index;
+<span class="lineNum">    1239 </span>            : 
+<span class="lineNum">    1240 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(redirecting_reason_types); ++index) {</span>
+<span class="lineNum">    1241 </span><span class="lineNoCov">          0 :                 if (redirecting_reason_types[index].value == data) {</span>
+<span class="lineNum">    1242 </span><span class="lineNoCov">          0 :                         return redirecting_reason_types[index].description ?: &quot;Redirecting reason alias-bug&quot;;</span>
+<span class="lineNum">    1243 </span>            :                 }
+<span class="lineNum">    1244 </span>            :         }
+<span class="lineNum">    1245 </span>            : 
+<span class="lineNum">    1246 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<a name="1247"><span class="lineNum">    1247 </span>            : }</a>
+<span class="lineNum">    1248 </span>            : 
+<span class="lineNum">    1249 </span><span class="lineCov">          6 : const char *ast_redirecting_reason_name(const struct ast_party_redirecting_reason *data)</span>
+<span class="lineNum">    1250 </span>            : {
+<span class="lineNum">    1251 </span>            :         int index;
+<span class="lineNum">    1252 </span>            : 
+<span class="lineNum">    1253 </span><span class="lineCov">          6 :         if (!ast_strlen_zero(data-&gt;str)) {</span>
+<span class="lineNum">    1254 </span>            :                 /* Use this string if it has been set. Otherwise, use the table. */
+<span class="lineNum">    1255 </span><span class="lineCov">          6 :                 return data-&gt;str;</span>
+<span class="lineNum">    1256 </span>            :         }
+<span class="lineNum">    1257 </span>            : 
+<span class="lineNum">    1258 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(redirecting_reason_types); ++index) {</span>
+<span class="lineNum">    1259 </span><span class="lineNoCov">          0 :                 if (redirecting_reason_types[index].value == data-&gt;code) {</span>
+<span class="lineNum">    1260 </span><span class="lineNoCov">          0 :                         return redirecting_reason_types[index].name;</span>
+<span class="lineNum">    1261 </span>            :                 }
+<span class="lineNum">    1262 </span>            :         }
+<span class="lineNum">    1263 </span>            : 
+<span class="lineNum">    1264 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<span class="lineNum">    1265 </span>            : }
+<span class="lineNum">    1266 </span>            : 
+<span class="lineNum">    1267 </span>            : /*! \brief Translation table for connected line update source settings */
+<span class="lineNum">    1268 </span>            : static const struct ast_value_translation connected_line_source_types[] = {
+<span class="lineNum">    1269 </span>            : /* *INDENT-OFF* */
+<span class="lineNum">    1270 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_UNKNOWN,           &quot;unknown&quot;,           &quot;Unknown&quot; },
+<span class="lineNum">    1271 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_ANSWER,            &quot;answer&quot;,            &quot;Normal Call Answering&quot; },
+<span class="lineNum">    1272 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_DIVERSION,         &quot;diversion&quot;,         &quot;Call Diversion (Deprecated, use REDIRECTING)&quot; },
+<span class="lineNum">    1273 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_TRANSFER,          &quot;transfer_active&quot;,   &quot;Call Transfer(Active)&quot; },
+<span class="lineNum">    1274 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_TRANSFER,          &quot;transfer&quot;,          &quot;Call Transfer(Active)&quot; },/* Old name must come after new name. */
+<span class="lineNum">    1275 </span>            :         { AST_CONNECTED_LINE_UPDATE_SOURCE_TRANSFER_ALERTING, &quot;transfer_alerting&quot;, &quot;Call Transfer(Alerting)&quot; }
+<span class="lineNum">    1276 </span>            : /* *INDENT-ON* */
+<a name="1277"><span class="lineNum">    1277 </span>            : };</a>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 : int ast_connected_line_source_parse(const char *data)</span>
+<span class="lineNum">    1280 </span>            : {
+<span class="lineNum">    1281 </span>            :         int index;
+<span class="lineNum">    1282 </span>            : 
+<span class="lineNum">    1283 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(connected_line_source_types); ++index) {</span>
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(connected_line_source_types[index].name, data)) {</span>
+<span class="lineNum">    1285 </span><span class="lineNoCov">          0 :                         return connected_line_source_types[index].value;</span>
+<span class="lineNum">    1286 </span>            :                 }
+<span class="lineNum">    1287 </span>            :         }
+<span class="lineNum">    1288 </span>            : 
+<span class="lineNum">    1289 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="1290"><span class="lineNum">    1290 </span>            : }</a>
+<span class="lineNum">    1291 </span>            : 
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 : const char *ast_connected_line_source_describe(int data)</span>
+<span class="lineNum">    1293 </span>            : {
+<span class="lineNum">    1294 </span>            :         int index;
+<span class="lineNum">    1295 </span>            : 
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(connected_line_source_types); ++index) {</span>
+<span class="lineNum">    1297 </span><span class="lineNoCov">          0 :                 if (connected_line_source_types[index].value == data) {</span>
+<span class="lineNum">    1298 </span><span class="lineNoCov">          0 :                         return connected_line_source_types[index].description;</span>
+<span class="lineNum">    1299 </span>            :                 }
+<span class="lineNum">    1300 </span>            :         }
+<span class="lineNum">    1301 </span>            : 
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<a name="1303"><span class="lineNum">    1303 </span>            : }</a>
+<span class="lineNum">    1304 </span>            : 
+<span class="lineNum">    1305 </span><span class="lineNoCov">          0 : const char *ast_connected_line_source_name(int data)</span>
+<span class="lineNum">    1306 </span>            : {
+<span class="lineNum">    1307 </span>            :         int index;
+<span class="lineNum">    1308 </span>            : 
+<span class="lineNum">    1309 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(connected_line_source_types); ++index) {</span>
+<span class="lineNum">    1310 </span><span class="lineNoCov">          0 :                 if (connected_line_source_types[index].value == data) {</span>
+<span class="lineNum">    1311 </span><span class="lineNoCov">          0 :                         return connected_line_source_types[index].name;</span>
+<span class="lineNum">    1312 </span>            :                 }
+<span class="lineNum">    1313 </span>            :         }
+<span class="lineNum">    1314 </span>            : 
+<span class="lineNum">    1315 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<span class="lineNum">    1316 </span>            : }
+<span class="lineNum">    1317 </span>            : 
+<span class="lineNum">    1318 </span>            : /*! \brief Translation table for ast_party_name char-set settings */
+<span class="lineNum">    1319 </span>            : static const struct ast_value_translation party_name_charset_tbl[] = {
+<span class="lineNum">    1320 </span>            : /* *INDENT-OFF* */
+<span class="lineNum">    1321 </span>            :         { AST_PARTY_CHAR_SET_UNKNOWN,               &quot;unknown&quot;,      &quot;Unknown&quot; },
+<span class="lineNum">    1322 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_1,             &quot;iso8859-1&quot;,    &quot;ISO8859-1&quot; },
+<span class="lineNum">    1323 </span>            :         { AST_PARTY_CHAR_SET_WITHDRAWN,             &quot;withdrawn&quot;,    &quot;Withdrawn&quot; },
+<span class="lineNum">    1324 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_2,             &quot;iso8859-2&quot;,    &quot;ISO8859-2&quot; },
+<span class="lineNum">    1325 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_3,             &quot;iso8859-3&quot;,    &quot;ISO8859-3&quot; },
+<span class="lineNum">    1326 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_4,             &quot;iso8859-4&quot;,    &quot;ISO8859-4&quot; },
+<span class="lineNum">    1327 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_5,             &quot;iso8859-5&quot;,    &quot;ISO8859-5&quot; },
+<span class="lineNum">    1328 </span>            :         { AST_PARTY_CHAR_SET_ISO8859_7,             &quot;iso8859-7&quot;,    &quot;ISO8859-7&quot; },
+<span class="lineNum">    1329 </span>            :         { AST_PARTY_CHAR_SET_ISO10646_BMPSTRING,    &quot;bmp&quot;,          &quot;ISO10646 Bmp String&quot; },
+<span class="lineNum">    1330 </span>            :         { AST_PARTY_CHAR_SET_ISO10646_UTF_8STRING,  &quot;utf8&quot;,         &quot;ISO10646 UTF-8 String&quot; },
+<span class="lineNum">    1331 </span>            : /* *INDENT-ON* */
+<a name="1332"><span class="lineNum">    1332 </span>            : };</a>
+<span class="lineNum">    1333 </span>            : 
+<span class="lineNum">    1334 </span><span class="lineNoCov">          0 : int ast_party_name_charset_parse(const char *data)</span>
+<span class="lineNum">    1335 </span>            : {
+<span class="lineNum">    1336 </span>            :         int index;
+<span class="lineNum">    1337 </span>            : 
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(party_name_charset_tbl); ++index) {</span>
+<span class="lineNum">    1339 </span><span class="lineNoCov">          0 :                 if (!strcasecmp(party_name_charset_tbl[index].name, data)) {</span>
+<span class="lineNum">    1340 </span><span class="lineNoCov">          0 :                         return party_name_charset_tbl[index].value;</span>
+<span class="lineNum">    1341 </span>            :                 }
+<span class="lineNum">    1342 </span>            :         }
+<span class="lineNum">    1343 </span>            : 
+<span class="lineNum">    1344 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="1345"><span class="lineNum">    1345 </span>            : }</a>
+<span class="lineNum">    1346 </span>            : 
+<span class="lineNum">    1347 </span><span class="lineNoCov">          0 : const char *ast_party_name_charset_describe(int data)</span>
+<span class="lineNum">    1348 </span>            : {
+<span class="lineNum">    1349 </span>            :         int index;
+<span class="lineNum">    1350 </span>            : 
+<span class="lineNum">    1351 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(party_name_charset_tbl); ++index) {</span>
+<span class="lineNum">    1352 </span><span class="lineNoCov">          0 :                 if (party_name_charset_tbl[index].value == data) {</span>
+<span class="lineNum">    1353 </span><span class="lineNoCov">          0 :                         return party_name_charset_tbl[index].description;</span>
+<span class="lineNum">    1354 </span>            :                 }
+<span class="lineNum">    1355 </span>            :         }
+<span class="lineNum">    1356 </span>            : 
+<span class="lineNum">    1357 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<a name="1358"><span class="lineNum">    1358 </span>            : }</a>
+<span class="lineNum">    1359 </span>            : 
+<span class="lineNum">    1360 </span><span class="lineNoCov">          0 : const char *ast_party_name_charset_str(int data)</span>
+<span class="lineNum">    1361 </span>            : {
+<span class="lineNum">    1362 </span>            :         int index;
+<span class="lineNum">    1363 </span>            : 
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :         for (index = 0; index &lt; ARRAY_LEN(party_name_charset_tbl); ++index) {</span>
+<span class="lineNum">    1365 </span><span class="lineNoCov">          0 :                 if (party_name_charset_tbl[index].value == data) {</span>
+<span class="lineNum">    1366 </span><span class="lineNoCov">          0 :                         return party_name_charset_tbl[index].name;</span>
+<span class="lineNum">    1367 </span>            :                 }
+<span class="lineNum">    1368 </span>            :         }
+<span class="lineNum">    1369 </span>            : 
+<span class="lineNum">    1370 </span><span class="lineNoCov">          0 :         return &quot;not-known&quot;;</span>
+<span class="lineNum">    1371 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

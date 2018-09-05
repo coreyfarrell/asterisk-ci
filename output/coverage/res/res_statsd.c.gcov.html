@@ -1,0 +1,474 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_statsd.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_statsd.c<span style="font-size: 80%;"> (source / <a href="res_statsd.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">95</td>
+            <td class="headerCovTableEntry">128</td>
+            <td class="headerCovTableEntryLo">74.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntryMed">85.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \brief Support for publishing to a statsd server.
+<span class="lineNum">      21 </span>            :  *
+<span class="lineNum">      22 </span>            :  * \author David M. Lee, II &lt;dlee@digium.com&gt;
+<span class="lineNum">      23 </span>            :  * \since 12
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;extended&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      31 </span>            :         &lt;configInfo name=&quot;res_statsd&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      32 </span>            :                 &lt;synopsis&gt;Statsd client.&lt;/synopsis&gt;
+<span class="lineNum">      33 </span>            :                 &lt;configFile name=&quot;statsd.conf&quot;&gt;
+<span class="lineNum">      34 </span>            :                         &lt;configObject name=&quot;global&quot;&gt;
+<span class="lineNum">      35 </span>            :                                 &lt;synopsis&gt;Global configuration settings&lt;/synopsis&gt;
+<span class="lineNum">      36 </span>            :                                 &lt;configOption name=&quot;enabled&quot;&gt;
+<span class="lineNum">      37 </span>            :                                         &lt;synopsis&gt;Enable/disable the statsd module&lt;/synopsis&gt;
+<span class="lineNum">      38 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      39 </span>            :                                 &lt;configOption name=&quot;server&quot;&gt;
+<span class="lineNum">      40 </span>            :                                         &lt;synopsis&gt;Address of the statsd server&lt;/synopsis&gt;
+<span class="lineNum">      41 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      42 </span>            :                                 &lt;configOption name=&quot;prefix&quot;&gt;
+<span class="lineNum">      43 </span>            :                                         &lt;synopsis&gt;Prefix to prepend to every metric&lt;/synopsis&gt;
+<span class="lineNum">      44 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      45 </span>            :                                 &lt;configOption name=&quot;add_newline&quot;&gt;
+<span class="lineNum">      46 </span>            :                                         &lt;synopsis&gt;Append a newline to every event. This is useful if you want to fake out a server using netcat (nc -lu 8125)&lt;/synopsis&gt;
+<span class="lineNum">      47 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      48 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">      49 </span>            :                 &lt;/configFile&gt;
+<span class="lineNum">      50 </span>            :         &lt;/configInfo&gt;
+<span class="lineNum">      51 </span>            : ***/
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : #include &quot;asterisk/config_options.h&quot;
+<span class="lineNum">      56 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      57 </span>            : #include &quot;asterisk/netsock2.h&quot;
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : #define AST_API_MODULE
+<span class="lineNum">      60 </span>            : #include &quot;asterisk/statsd.h&quot;
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            : #define DEFAULT_STATSD_PORT 8125
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : #define MAX_PREFIX 40
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : /*! Socket for sending statd messages */
+<span class="lineNum">      67 </span>            : static int socket_fd = -1;
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : /*! \brief Global configuration options for statsd client. */
+<span class="lineNum">      70 </span>            : struct conf_global_options {
+<span class="lineNum">      71 </span>            :         /*! Enabled by default, disabled if false. */
+<span class="lineNum">      72 </span>            :         int enabled;
+<span class="lineNum">      73 </span>            :         /*! Disabled by default, appends newlines to all messages when enabled. */
+<span class="lineNum">      74 </span>            :         int add_newline;
+<span class="lineNum">      75 </span>            :         /*! Statsd server address[:port]. */
+<span class="lineNum">      76 </span>            :         struct ast_sockaddr statsd_server;
+<span class="lineNum">      77 </span>            :         /*! Prefix to put on every stat. */
+<span class="lineNum">      78 </span>            :         char prefix[MAX_PREFIX + 1];
+<span class="lineNum">      79 </span>            : };
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : /*! \brief All configuration options for statsd client. */
+<span class="lineNum">      82 </span>            : struct conf {
+<span class="lineNum">      83 </span>            :         /*! The general section configuration options. */
+<span class="lineNum">      84 </span>            :         struct conf_global_options *global;
+<span class="lineNum">      85 </span>            : };
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : /*! \brief Locking container for safe configuration access. */
+<a name="88"><span class="lineNum">      88 </span>            : static AO2_GLOBAL_OBJ_STATIC(confs);</a>
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineCov">         97 : static void conf_server(const struct conf *cfg, struct ast_sockaddr *addr)</span>
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span><span class="lineCov">         97 :         *addr = cfg-&gt;global-&gt;statsd_server;</span>
+<span class="lineNum">      93 </span><span class="lineCov">         97 :         if (ast_sockaddr_port(addr) == 0) {</span>
+<span class="lineNum">      94 </span><span class="lineCov">         97 :                 ast_sockaddr_set_port(addr, DEFAULT_STATSD_PORT);</span>
+<span class="lineNum">      95 </span>            :         }
+<a name="96"><span class="lineNum">      96 </span><span class="lineCov">         97 : }</span></a>
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span><span class="lineCov">     139206 : void AST_OPTIONAL_API_NAME(ast_statsd_log_string)(const char *metric_name,</span>
+<span class="lineNum">      99 </span>            :         const char *metric_type, const char *value, double sample_rate)
+<span class="lineNum">     100 </span>            : {
+<span class="lineNum">     101 </span>            :         struct conf *cfg;
+<span class="lineNum">     102 </span>            :         struct ast_str *msg;
+<span class="lineNum">     103 </span>            :         size_t len;
+<span class="lineNum">     104 </span>            :         struct ast_sockaddr statsd_server;
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span><span class="lineCov">     139206 :         if (socket_fd == -1) {</span>
+<span class="lineNum">     107 </span><span class="lineCov">     139112 :                 return;</span>
+<span class="lineNum">     108 </span>            :         }
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            :         /* Rates &lt;= 0.0 never get logged.
+<span class="lineNum">     111 </span>            :          * Rates &gt;= 1.0 always get logged.
+<span class="lineNum">     112 </span>            :          * All others leave it to chance.
+<span class="lineNum">     113 </span>            :          */
+<span class="lineNum">     114 </span><span class="lineCov">         94 :         if (sample_rate &lt;= 0.0 ||</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 (sample_rate &lt; 1.0 &amp;&amp; sample_rate &lt; ast_random_double())) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     117 </span>            :         }
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">         94 :         cfg = ao2_global_obj_ref(confs);</span>
+<span class="lineNum">     120 </span><span class="lineCov">         94 :         conf_server(cfg, &amp;statsd_server);</span>
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span><span class="lineCov">         94 :         msg = ast_str_create(40);</span>
+<span class="lineNum">     123 </span><span class="lineCov">         94 :         if (!msg) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 ao2_cleanup(cfg);</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">         94 :         if (!ast_strlen_zero(cfg-&gt;global-&gt;prefix)) {</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 ast_str_append(&amp;msg, 0, &quot;%s.&quot;, cfg-&gt;global-&gt;prefix);</span>
+<span class="lineNum">     130 </span>            :         }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">         94 :         ast_str_append(&amp;msg, 0, &quot;%s:%s|%s&quot;, metric_name, value, metric_type);</span>
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span><span class="lineCov">         94 :         if (sample_rate &lt; 1.0) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 ast_str_append(&amp;msg, 0, &quot;|@%.2f&quot;, sample_rate);</span>
+<span class="lineNum">     136 </span>            :         }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span><span class="lineCov">         94 :         if (cfg-&gt;global-&gt;add_newline) {</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 ast_str_append(&amp;msg, 0, &quot;\n&quot;);</span>
+<span class="lineNum">     140 </span>            :         }
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineCov">         94 :         len = ast_str_strlen(msg);</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">         94 :         ast_debug(6, &quot;Sending statistic %s to StatsD server\n&quot;, ast_str_buffer(msg));</span>
+<span class="lineNum">     145 </span><span class="lineCov">         94 :         ast_sendto(socket_fd, ast_str_buffer(msg), len, 0, &amp;statsd_server);</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">         94 :         ao2_cleanup(cfg);</span>
+<span class="lineNum">     148 </span><span class="lineCov">         94 :         ast_free(msg);</span>
+<a name="149"><span class="lineNum">     149 </span>            : }</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">       7728 : void AST_OPTIONAL_API_NAME(ast_statsd_log_full)(const char *metric_name,</span>
+<span class="lineNum">     152 </span>            :         const char *metric_type, intmax_t value, double sample_rate)
+<span class="lineNum">     153 </span>            : {
+<span class="lineNum">     154 </span>            :         char char_value[30];
+<span class="lineNum">     155 </span><span class="lineCov">       7728 :         snprintf(char_value, sizeof(char_value), &quot;%jd&quot;, value);</span>
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span><span class="lineCov">       7728 :         ast_statsd_log_string(metric_name, metric_type, char_value, sample_rate);</span>
+<span class="lineNum">     158 </span>            : 
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">       7728 : }</span></a>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">       1077 : AST_THREADSTORAGE(statsd_buf);</span></a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineCov">       1985 : void AST_OPTIONAL_API_NAME(ast_statsd_log_string_va)(const char *metric_name,</span>
+<span class="lineNum">     164 </span>            :         const char *metric_type, const char *value, double sample_rate, ...)
+<span class="lineNum">     165 </span>            : {
+<span class="lineNum">     166 </span>            :         struct ast_str *buf;
+<span class="lineNum">     167 </span>            :         va_list ap;
+<span class="lineNum">     168 </span>            :         int res;
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineCov">       1985 :         buf = ast_str_thread_get(&amp;statsd_buf, 128);</span>
+<span class="lineNum">     171 </span><span class="lineCov">       1985 :         if (!buf) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineCov">       1985 :         va_start(ap, sample_rate);</span>
+<span class="lineNum">     176 </span><span class="lineCov">       1985 :         res = ast_str_set_va(&amp;buf, 0, metric_name, ap);</span>
+<span class="lineNum">     177 </span><span class="lineCov">       1985 :         va_end(ap);</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">       1985 :         if (res == AST_DYNSTR_BUILD_FAILED) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     181 </span>            :         }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">       1985 :         ast_statsd_log_string(ast_str_buffer(buf), metric_type, value, sample_rate);</span>
+<a name="184"><span class="lineNum">     184 </span>            : }</a>
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineCov">       7728 : void AST_OPTIONAL_API_NAME(ast_statsd_log_full_va)(const char *metric_name,</span>
+<span class="lineNum">     187 </span>            :         const char *metric_type, intmax_t value, double sample_rate, ...)
+<span class="lineNum">     188 </span>            : {
+<span class="lineNum">     189 </span>            :         struct ast_str *buf;
+<span class="lineNum">     190 </span>            :         va_list ap;
+<span class="lineNum">     191 </span>            :         int res;
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span><span class="lineCov">       7728 :         buf = ast_str_thread_get(&amp;statsd_buf, 128);</span>
+<span class="lineNum">     194 </span><span class="lineCov">       7728 :         if (!buf) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     196 </span>            :         }
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span><span class="lineCov">       7728 :         va_start(ap, sample_rate);</span>
+<span class="lineNum">     199 </span><span class="lineCov">       7728 :         res = ast_str_set_va(&amp;buf, 0, metric_name, ap);</span>
+<span class="lineNum">     200 </span><span class="lineCov">       7728 :         va_end(ap);</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">       7728 :         if (res == AST_DYNSTR_BUILD_FAILED) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     204 </span>            :         }
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">       7728 :         ast_statsd_log_full(ast_str_buffer(buf), metric_type, value, sample_rate);</span>
+<a name="207"><span class="lineNum">     207 </span>            : }</a>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">     114543 : void AST_OPTIONAL_API_NAME(ast_statsd_log)(const char *metric_name,</span>
+<span class="lineNum">     210 </span>            :         const char *metric_type, intmax_t value)
+<span class="lineNum">     211 </span>            : {
+<span class="lineNum">     212 </span>            :         char char_value[30];
+<span class="lineNum">     213 </span><span class="lineCov">     114543 :         snprintf(char_value, sizeof(char_value), &quot;%jd&quot;, value);</span>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">     114543 :         ast_statsd_log_string(metric_name, metric_type, char_value, 1.0);</span>
+<a name="216"><span class="lineNum">     216 </span><span class="lineCov">     114543 : }</span></a>
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 : void AST_OPTIONAL_API_NAME(ast_statsd_log_sample)(const char *metric_name,</span>
+<span class="lineNum">     219 </span>            :         intmax_t value, double sample_rate)
+<span class="lineNum">     220 </span>            : {
+<span class="lineNum">     221 </span>            :         char char_value[30];
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         snprintf(char_value, sizeof(char_value), &quot;%jd&quot;, value);</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         ast_statsd_log_string(metric_name, AST_STATSD_COUNTER, char_value,</span>
+<span class="lineNum">     225 </span>            :                 sample_rate);
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span>            : /*! \brief Mapping of the statsd conf struct's globals to the
+<span class="lineNum">     229 </span>            :  *         general context in the config file. */
+<span class="lineNum">     230 </span>            : static struct aco_type global_option = {
+<span class="lineNum">     231 </span>            :         .type = ACO_GLOBAL,
+<span class="lineNum">     232 </span>            :         .name = &quot;global&quot;,
+<span class="lineNum">     233 </span>            :         .item_offset = offsetof(struct conf, global),
+<span class="lineNum">     234 </span>            :         .category = &quot;general&quot;,
+<span class="lineNum">     235 </span>            :         .category_match = ACO_WHITELIST_EXACT,
+<span class="lineNum">     236 </span>            : };
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            : static struct aco_type *global_options[] = ACO_TYPES(&amp;global_option);
+<a name="239"><span class="lineNum">     239 </span>            : </a>
+<span class="lineNum">     240 </span>            : /*! \brief Disposes of the statsd conf object */
+<span class="lineNum">     241 </span><span class="lineCov">       1050 : static void conf_destructor(void *obj)</span>
+<span class="lineNum">     242 </span>            : {
+<span class="lineNum">     243 </span><span class="lineCov">       1050 :     struct conf *cfg = obj;</span>
+<span class="lineNum">     244 </span><span class="lineCov">       1050 :     ao2_cleanup(cfg-&gt;global);</span>
+<span class="lineNum">     245 </span><span class="lineCov">       1050 : }</span>
+<a name="246"><span class="lineNum">     246 </span>            : </a>
+<span class="lineNum">     247 </span>            : /*! \brief Creates the statis http conf object. */
+<span class="lineNum">     248 </span><span class="lineCov">       1117 : static void *conf_alloc(void)</span>
+<span class="lineNum">     249 </span>            : {
+<span class="lineNum">     250 </span>            :     struct conf *cfg;
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineCov">       1117 :     if (!(cfg = ao2_alloc(sizeof(*cfg), conf_destructor))) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     254 </span>            :     }
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineCov">       1117 :     if (!(cfg-&gt;global = ao2_alloc(sizeof(*cfg-&gt;global), NULL))) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :         ao2_ref(cfg, -1);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     259 </span>            :     }
+<span class="lineNum">     260 </span><span class="lineCov">       1117 :     return cfg;</span>
+<span class="lineNum">     261 </span>            : }
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            : /*! \brief The conf file that's processed for the module. */
+<span class="lineNum">     264 </span>            : static struct aco_file conf_file = {
+<span class="lineNum">     265 </span>            :         /*! The config file name. */
+<span class="lineNum">     266 </span>            :         .filename = &quot;statsd.conf&quot;,
+<span class="lineNum">     267 </span>            :         /*! The mapping object types to be processed. */
+<span class="lineNum">     268 </span>            :         .types = ACO_TYPES(&amp;global_option),
+<span class="lineNum">     269 </span>            : };
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            : CONFIG_INFO_STANDARD(cfg_info, confs, conf_alloc,
+<span class="lineNum">     272 </span>            :                      .files = ACO_FILES(&amp;conf_file));
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span>            : /*! \brief Helper function to check if module is enabled. */
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">       1120 : static char is_enabled(void)</span></a>
+<span class="lineNum">     276 </span>            : {
+<span class="lineNum">     277 </span><span class="lineCov">       2240 :         RAII_VAR(struct conf *, cfg, ao2_global_obj_ref(confs), ao2_cleanup);</span>
+<span class="lineNum">     278 </span><span class="lineCov">       1120 :         return cfg-&gt;global-&gt;enabled;</span>
+<a name="279"><span class="lineNum">     279 </span>            : }</a>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          3 : static int statsd_init(void)</span></a>
+<span class="lineNum">     282 </span>            : {
+<span class="lineNum">     283 </span><span class="lineCov">          9 :         RAII_VAR(struct conf *, cfg, ao2_global_obj_ref(confs), ao2_cleanup);</span>
+<span class="lineNum">     284 </span>            :         char *server;
+<span class="lineNum">     285 </span>            :         struct ast_sockaddr statsd_server;
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineCov">          3 :         ast_assert(is_enabled());</span>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineCov">          3 :         ast_debug(3, &quot;Configuring statsd client.\n&quot;);</span>
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span><span class="lineCov">          3 :         if (socket_fd == -1) {</span>
+<span class="lineNum">     292 </span><span class="lineCov">          3 :                 ast_debug(3, &quot;Creating statsd socket.\n&quot;);</span>
+<span class="lineNum">     293 </span><span class="lineCov">          3 :                 socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);</span>
+<span class="lineNum">     294 </span><span class="lineCov">          3 :                 if (socket_fd == -1) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         perror(&quot;Error creating statsd socket&quot;);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     297 </span>            :                 }
+<span class="lineNum">     298 </span>            :         }
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">          3 :         conf_server(cfg, &amp;statsd_server);</span>
+<span class="lineNum">     301 </span><span class="lineCov">          3 :         server = ast_sockaddr_stringify_fmt(&amp;statsd_server,</span>
+<span class="lineNum">     302 </span>            :                 AST_SOCKADDR_STR_DEFAULT);
+<span class="lineNum">     303 </span><span class="lineCov">          3 :         ast_debug(3, &quot;  statsd server = %s.\n&quot;, server);</span>
+<span class="lineNum">     304 </span><span class="lineCov">          3 :         ast_debug(3, &quot;  add newline = %s\n&quot;, AST_YESNO(cfg-&gt;global-&gt;add_newline));</span>
+<span class="lineNum">     305 </span><span class="lineCov">          3 :         ast_debug(3, &quot;  prefix = %s\n&quot;, cfg-&gt;global-&gt;prefix);</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineCov">          3 :         return 0;</span>
+<a name="308"><span class="lineNum">     308 </span>            : }</a>
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span><span class="lineCov">       1050 : static void statsd_shutdown(void)</span>
+<span class="lineNum">     311 </span>            : {
+<span class="lineNum">     312 </span><span class="lineCov">       1050 :         ast_debug(3, &quot;Shutting down statsd client.\n&quot;);</span>
+<span class="lineNum">     313 </span><span class="lineCov">       1050 :         if (socket_fd != -1) {</span>
+<span class="lineNum">     314 </span><span class="lineCov">          3 :                 close(socket_fd);</span>
+<span class="lineNum">     315 </span><span class="lineCov">          3 :                 socket_fd = -1;</span>
+<span class="lineNum">     316 </span>            :         }
+<a name="317"><span class="lineNum">     317 </span><span class="lineCov">       1050 : }</span></a>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     320 </span>            : {
+<span class="lineNum">     321 </span><span class="lineCov">       1117 :         if (aco_info_init(&amp;cfg_info)) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineCov">       1117 :         aco_option_register(&amp;cfg_info, &quot;enabled&quot;, ACO_EXACT, global_options,</span>
+<span class="lineNum">     327 </span>            :                 &quot;no&quot;, OPT_BOOL_T, 1,
+<span class="lineNum">     328 </span>            :                 FLDSET(struct conf_global_options, enabled));
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">       1117 :         aco_option_register(&amp;cfg_info, &quot;add_newline&quot;, ACO_EXACT, global_options,</span>
+<span class="lineNum">     331 </span>            :                 &quot;no&quot;, OPT_BOOL_T, 1,
+<span class="lineNum">     332 </span>            :                 FLDSET(struct conf_global_options, add_newline));
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span><span class="lineCov">       1117 :         aco_option_register(&amp;cfg_info, &quot;server&quot;, ACO_EXACT, global_options,</span>
+<span class="lineNum">     335 </span>            :                 &quot;127.0.0.1&quot;, OPT_SOCKADDR_T, 0,
+<span class="lineNum">     336 </span>            :                 FLDSET(struct conf_global_options, statsd_server));
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span><span class="lineCov">       1117 :         aco_option_register(&amp;cfg_info, &quot;prefix&quot;, ACO_EXACT, global_options,</span>
+<span class="lineNum">     339 </span>            :                 &quot;&quot;, OPT_CHAR_ARRAY_T, 0,
+<span class="lineNum">     340 </span>            :                 CHARFLDSET(struct conf_global_options, prefix));
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span><span class="lineCov">       1117 :         if (aco_process_config(&amp;cfg_info, 0)) {</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     345 </span>            :         }
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">       1117 :         if (!is_enabled()) {</span>
+<span class="lineNum">     348 </span><span class="lineCov">       1114 :                 return AST_MODULE_LOAD_SUCCESS;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">          3 :         if (statsd_init() != 0) {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     354 </span>            :         }
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineCov">          3 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="357"><span class="lineNum">     357 </span>            : }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineCov">       1050 : static int unload_module(void)</span>
+<span class="lineNum">     360 </span>            : {
+<span class="lineNum">     361 </span><span class="lineCov">       1050 :         statsd_shutdown();</span>
+<span class="lineNum">     362 </span><span class="lineCov">       1050 :         aco_info_destroy(&amp;cfg_info);</span>
+<span class="lineNum">     363 </span><span class="lineCov">       1050 :         ao2_global_obj_release(confs);</span>
+<span class="lineNum">     364 </span><span class="lineCov">       1050 :         return 0;</span>
+<a name="365"><span class="lineNum">     365 </span>            : }</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 : static int reload_module(void)</span>
+<span class="lineNum">     368 </span>            : {
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :         if (aco_process_config(&amp;cfg_info, 1)) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">     371 </span>            :         }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         if (is_enabled()) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 return statsd_init();</span>
+<span class="lineNum">     375 </span>            :         } else {
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 statsd_shutdown();</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_SUCCESS;</span>
+<span class="lineNum">     378 </span>            :         }
+<span class="lineNum">     379 </span>            : }
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span>            : /* The priority of this module is set just after realtime, since it loads
+<a name="382"><span class="lineNum">     382 </span>            :  * configuration and could be used by any other sort of module.</a>
+<span class="lineNum">     383 </span>            :  */
+<span class="lineNum">     384 </span><span class="lineCov">       4510 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS | AST_MODFLAG_LOAD_ORDER, &quot;Statsd client support&quot;,</span>
+<span class="lineNum">     385 </span>            :         .support_level = AST_MODULE_SUPPORT_EXTENDED,
+<span class="lineNum">     386 </span>            :         .load = load_module,
+<span class="lineNum">     387 </span>            :         .unload = unload_module,
+<span class="lineNum">     388 </span>            :         .reload = reload_module,
+<span class="lineNum">     389 </span>            :         .load_pri = AST_MODPRI_REALTIME_DRIVER + 5,
+<span class="lineNum">     390 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

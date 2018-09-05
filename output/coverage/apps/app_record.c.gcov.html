@@ -1,0 +1,626 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - apps/app_record.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">apps</a> - app_record.c<span style="font-size: 80%;"> (source / <a href="app_record.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">134</td>
+            <td class="headerCovTableEntry">224</td>
+            <td class="headerCovTableEntryLo">59.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 1999 - 2005, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Matthew Fredrickson &lt;creslin@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*! \file
+<span class="lineNum">      20 </span>            :  *
+<span class="lineNum">      21 </span>            :  * \brief Trivial application to record a sound file
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Matthew Fredrickson &lt;creslin@digium.com&gt;
+<span class="lineNum">      24 </span>            :  *
+<span class="lineNum">      25 </span>            :  * \ingroup applications
+<span class="lineNum">      26 </span>            :  */
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*** MODULEINFO
+<span class="lineNum">      29 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      30 </span>            :  ***/
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/file.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/pbx.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/app.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/channel.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;asterisk/dsp.h&quot;     /* use dsp routines for silence detection */
+<span class="lineNum">      40 </span>            : #include &quot;asterisk/format_cache.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;asterisk/paths.h&quot;
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      44 </span>            :         &lt;application name=&quot;Record&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      45 </span>            :                 &lt;synopsis&gt;
+<span class="lineNum">      46 </span>            :                         Record to a file.
+<span class="lineNum">      47 </span>            :                 &lt;/synopsis&gt;
+<span class="lineNum">      48 </span>            :                 &lt;syntax&gt;
+<span class="lineNum">      49 </span>            :                         &lt;parameter name=&quot;filename&quot; required=&quot;true&quot; argsep=&quot;.&quot;&gt;
+<span class="lineNum">      50 </span>            :                                 &lt;argument name=&quot;filename&quot; required=&quot;true&quot; /&gt;
+<span class="lineNum">      51 </span>            :                                 &lt;argument name=&quot;format&quot; required=&quot;true&quot;&gt;
+<span class="lineNum">      52 </span>            :                                         &lt;para&gt;Is the format of the file type to be recorded (wav, gsm, etc).&lt;/para&gt;
+<span class="lineNum">      53 </span>            :                                 &lt;/argument&gt;
+<span class="lineNum">      54 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      55 </span>            :                         &lt;parameter name=&quot;silence&quot;&gt;
+<span class="lineNum">      56 </span>            :                                 &lt;para&gt;Is the number of seconds of silence to allow before returning.&lt;/para&gt;
+<span class="lineNum">      57 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      58 </span>            :                         &lt;parameter name=&quot;maxduration&quot;&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;para&gt;Is the maximum recording duration in seconds. If missing
+<span class="lineNum">      60 </span>            :                                 or 0 there is no maximum.&lt;/para&gt;
+<span class="lineNum">      61 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      62 </span>            :                         &lt;parameter name=&quot;options&quot;&gt;
+<span class="lineNum">      63 </span>            :                                 &lt;optionlist&gt;
+<span class="lineNum">      64 </span>            :                                         &lt;option name=&quot;a&quot;&gt;
+<span class="lineNum">      65 </span>            :                                                 &lt;para&gt;Append to existing recording rather than replacing.&lt;/para&gt;
+<span class="lineNum">      66 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      67 </span>            :                                         &lt;option name=&quot;n&quot;&gt;
+<span class="lineNum">      68 </span>            :                                                 &lt;para&gt;Do not answer, but record anyway if line not yet answered.&lt;/para&gt;
+<span class="lineNum">      69 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      70 </span>            :                                         &lt;option name=&quot;o&quot;&gt;
+<span class="lineNum">      71 </span>            :                                                 &lt;para&gt;Exit when 0 is pressed, setting the variable &lt;variable&gt;RECORD_STATUS&lt;/variable&gt;
+<span class="lineNum">      72 </span>            :                                                 to &lt;literal&gt;OPERATOR&lt;/literal&gt; instead of &lt;literal&gt;DTMF&lt;/literal&gt;&lt;/para&gt;
+<span class="lineNum">      73 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      74 </span>            :                                         &lt;option name=&quot;q&quot;&gt;
+<span class="lineNum">      75 </span>            :                                                 &lt;para&gt;quiet (do not play a beep tone).&lt;/para&gt;
+<span class="lineNum">      76 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      77 </span>            :                                         &lt;option name=&quot;s&quot;&gt;
+<span class="lineNum">      78 </span>            :                                                 &lt;para&gt;skip recording if the line is not yet answered.&lt;/para&gt;
+<span class="lineNum">      79 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      80 </span>            :                                         &lt;option name=&quot;t&quot;&gt;
+<span class="lineNum">      81 </span>            :                                                 &lt;para&gt;use alternate '*' terminator key (DTMF) instead of default '#'&lt;/para&gt;
+<span class="lineNum">      82 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      83 </span>            :                                         &lt;option name=&quot;u&quot;&gt;
+<span class="lineNum">      84 </span>            :                                                 &lt;para&gt;Don't truncate recorded silence.&lt;/para&gt;
+<span class="lineNum">      85 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      86 </span>            :                                         &lt;option name=&quot;x&quot;&gt;
+<span class="lineNum">      87 </span>            :                                                 &lt;para&gt;Ignore all terminator keys (DTMF) and keep recording until hangup.&lt;/para&gt;
+<span class="lineNum">      88 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      89 </span>            :                                         &lt;option name=&quot;k&quot;&gt;
+<span class="lineNum">      90 </span>            :                                                 &lt;para&gt;Keep recorded file upon hangup.&lt;/para&gt;
+<span class="lineNum">      91 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      92 </span>            :                                         &lt;option name=&quot;y&quot;&gt;
+<span class="lineNum">      93 </span>            :                                                 &lt;para&gt;Terminate recording if *any* DTMF digit is received.&lt;/para&gt;
+<span class="lineNum">      94 </span>            :                                         &lt;/option&gt;
+<span class="lineNum">      95 </span>            :                                 &lt;/optionlist&gt;
+<span class="lineNum">      96 </span>            :                         &lt;/parameter&gt;
+<span class="lineNum">      97 </span>            :                 &lt;/syntax&gt;
+<span class="lineNum">      98 </span>            :                 &lt;description&gt;
+<span class="lineNum">      99 </span>            :                         &lt;para&gt;If filename contains &lt;literal&gt;%d&lt;/literal&gt;, these characters will be replaced with a number
+<span class="lineNum">     100 </span>            :                         incremented by one each time the file is recorded.
+<span class="lineNum">     101 </span>            :                         Use &lt;astcli&gt;core show file formats&lt;/astcli&gt; to see the available formats on your system
+<span class="lineNum">     102 </span>            :                         User can press &lt;literal&gt;#&lt;/literal&gt; to terminate the recording and continue to the next priority.
+<span class="lineNum">     103 </span>            :                         If the user hangs up during a recording, all data will be lost and the application will terminate.&lt;/para&gt;
+<span class="lineNum">     104 </span>            :                         &lt;variablelist&gt;
+<span class="lineNum">     105 </span>            :                                 &lt;variable name=&quot;RECORDED_FILE&quot;&gt;
+<span class="lineNum">     106 </span>            :                                         &lt;para&gt;Will be set to the final filename of the recording, without an extension.&lt;/para&gt;
+<span class="lineNum">     107 </span>            :                                 &lt;/variable&gt;
+<span class="lineNum">     108 </span>            :                                 &lt;variable name=&quot;RECORD_STATUS&quot;&gt;
+<span class="lineNum">     109 </span>            :                                         &lt;para&gt;This is the final status of the command&lt;/para&gt;
+<span class="lineNum">     110 </span>            :                                         &lt;value name=&quot;DTMF&quot;&gt;A terminating DTMF was received ('#' or '*', depending upon option 't')&lt;/value&gt;
+<span class="lineNum">     111 </span>            :                                         &lt;value name=&quot;SILENCE&quot;&gt;The maximum silence occurred in the recording.&lt;/value&gt;
+<span class="lineNum">     112 </span>            :                                         &lt;value name=&quot;SKIP&quot;&gt;The line was not yet answered and the 's' option was specified.&lt;/value&gt;
+<span class="lineNum">     113 </span>            :                                         &lt;value name=&quot;TIMEOUT&quot;&gt;The maximum length was reached.&lt;/value&gt;
+<span class="lineNum">     114 </span>            :                                         &lt;value name=&quot;HANGUP&quot;&gt;The channel was hung up.&lt;/value&gt;
+<span class="lineNum">     115 </span>            :                                         &lt;value name=&quot;ERROR&quot;&gt;An unrecoverable error occurred, which resulted in a WARNING to the logs.&lt;/value&gt;
+<span class="lineNum">     116 </span>            :                                 &lt;/variable&gt;
+<span class="lineNum">     117 </span>            :                         &lt;/variablelist&gt;
+<span class="lineNum">     118 </span>            :                 &lt;/description&gt;
+<span class="lineNum">     119 </span>            :         &lt;/application&gt;
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span>            :  ***/
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            : #define OPERATOR_KEY '0'
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            : static char *app = &quot;Record&quot;;
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : enum {
+<span class="lineNum">     128 </span>            :         OPTION_APPEND = (1 &lt;&lt; 0),
+<span class="lineNum">     129 </span>            :         OPTION_NOANSWER = (1 &lt;&lt; 1),
+<span class="lineNum">     130 </span>            :         OPTION_QUIET = (1 &lt;&lt; 2),
+<span class="lineNum">     131 </span>            :         OPTION_SKIP = (1 &lt;&lt; 3),
+<span class="lineNum">     132 </span>            :         OPTION_STAR_TERMINATE = (1 &lt;&lt; 4),
+<span class="lineNum">     133 </span>            :         OPTION_IGNORE_TERMINATE = (1 &lt;&lt; 5),
+<span class="lineNum">     134 </span>            :         OPTION_KEEP = (1 &lt;&lt; 6),
+<span class="lineNum">     135 </span>            :         OPTION_ANY_TERMINATE = (1 &lt;&lt; 7),
+<span class="lineNum">     136 </span>            :         OPTION_OPERATOR_EXIT = (1 &lt;&lt; 8),
+<span class="lineNum">     137 </span>            :         OPTION_NO_TRUNCATE = (1 &lt;&lt; 9),
+<span class="lineNum">     138 </span>            : };
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            : enum dtmf_response {
+<span class="lineNum">     141 </span>            :         RESPONSE_NO_MATCH = 0,
+<span class="lineNum">     142 </span>            :         RESPONSE_OPERATOR,
+<span class="lineNum">     143 </span>            :         RESPONSE_DTMF,
+<span class="lineNum">     144 </span>            : };
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            : AST_APP_OPTIONS(app_opts,{
+<span class="lineNum">     147 </span>            :         AST_APP_OPTION('a', OPTION_APPEND),
+<span class="lineNum">     148 </span>            :         AST_APP_OPTION('k', OPTION_KEEP),
+<span class="lineNum">     149 </span>            :         AST_APP_OPTION('n', OPTION_NOANSWER),
+<span class="lineNum">     150 </span>            :         AST_APP_OPTION('o', OPTION_OPERATOR_EXIT),
+<span class="lineNum">     151 </span>            :         AST_APP_OPTION('q', OPTION_QUIET),
+<span class="lineNum">     152 </span>            :         AST_APP_OPTION('s', OPTION_SKIP),
+<span class="lineNum">     153 </span>            :         AST_APP_OPTION('t', OPTION_STAR_TERMINATE),
+<span class="lineNum">     154 </span>            :         AST_APP_OPTION('u', OPTION_NO_TRUNCATE),
+<span class="lineNum">     155 </span>            :         AST_APP_OPTION('y', OPTION_ANY_TERMINATE),
+<span class="lineNum">     156 </span>            :         AST_APP_OPTION('x', OPTION_IGNORE_TERMINATE),
+<span class="lineNum">     157 </span>            : });
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span>            : /*!
+<span class="lineNum">     160 </span>            :  * \internal
+<span class="lineNum">     161 </span>            :  * \brief Used to determine what action to take when DTMF is received while recording
+<span class="lineNum">     162 </span>            :  * \since 13.0.0
+<span class="lineNum">     163 </span>            :  *
+<span class="lineNum">     164 </span>            :  * \param chan channel being recorded
+<span class="lineNum">     165 </span>            :  * \param flags option flags in use by the record application
+<span class="lineNum">     166 </span>            :  * \param dtmf_integer the integer value of the DTMF key received
+<span class="lineNum">     167 </span>            :  * \param terminator key currently set to be pressed for normal termination
+<span class="lineNum">     168 </span>            :  *
+<a name="169"><span class="lineNum">     169 </span>            :  * \returns One of enum dtmf_response</a>
+<span class="lineNum">     170 </span>            :  */
+<span class="lineNum">     171 </span><span class="lineCov">        116 : static enum dtmf_response record_dtmf_response(struct ast_channel *chan,</span>
+<span class="lineNum">     172 </span>            :         struct ast_flags *flags, int dtmf_integer, int terminator)
+<span class="lineNum">     173 </span>            : {
+<span class="lineNum">     174 </span><span class="lineCov">        116 :         if ((dtmf_integer == OPERATOR_KEY) &amp;&amp;</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 (ast_test_flag(flags, OPTION_OPERATOR_EXIT))) {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                 return RESPONSE_OPERATOR;</span>
+<span class="lineNum">     177 </span>            :         }
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">        116 :         if ((dtmf_integer == terminator) ||</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 (ast_test_flag(flags, OPTION_ANY_TERMINATE))) {</span>
+<span class="lineNum">     181 </span><span class="lineCov">        116 :                 return RESPONSE_DTMF;</span>
+<span class="lineNum">     182 </span>            :         }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         return RESPONSE_NO_MATCH;</span>
+<a name="185"><span class="lineNum">     185 </span>            : }</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">        124 : static int create_destination_directory(const char *path)</span>
+<span class="lineNum">     188 </span>            : {
+<span class="lineNum">     189 </span>            :         int res;
+<span class="lineNum">     190 </span>            :         char directory[PATH_MAX], *file_sep;
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">        124 :         if (!(file_sep = strrchr(path, '/'))) {</span>
+<span class="lineNum">     193 </span>            :                 /* No directory to create */
+<span class="lineNum">     194 </span><span class="lineCov">        124 :                 return 0;</span>
+<span class="lineNum">     195 </span>            :         }
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span>            :         /* Overwrite temporarily */
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         *file_sep = '\0';</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            :         /* Absolute path? */
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :         if (path[0] == '/') {</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 res = ast_mkdir(path, 0777);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 *file_sep = '/';</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 return res;</span>
+<span class="lineNum">     205 </span>            :         }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            :         /* Relative path */
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         res = snprintf(directory, sizeof(directory), &quot;%s/sounds/%s&quot;,</span>
+<span class="lineNum">     209 </span>            :                                    ast_config_AST_DATA_DIR, path);
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         *file_sep = '/';</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (res &gt;= sizeof(directory)) {</span>
+<span class="lineNum">     214 </span>            :                 /* We truncated, so we fail */
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     216 </span>            :         }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         return ast_mkdir(directory, 0777);</span>
+<a name="219"><span class="lineNum">     219 </span>            : }</a>
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineCov">        124 : static int record_exec(struct ast_channel *chan, const char *data)</span>
+<span class="lineNum">     222 </span>            : {
+<span class="lineNum">     223 </span><span class="lineCov">        124 :         int res = 0;</span>
+<span class="lineNum">     224 </span><span class="lineCov">        124 :         char *ext = NULL, *opts[0];</span>
+<span class="lineNum">     225 </span>            :         char *parse;
+<span class="lineNum">     226 </span><span class="lineCov">        124 :         int i = 0;</span>
+<span class="lineNum">     227 </span>            :         char tmp[PATH_MAX];
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">        124 :         struct ast_filestream *s = NULL;</span>
+<span class="lineNum">     230 </span><span class="lineCov">        124 :         struct ast_frame *f = NULL;</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineCov">        124 :         struct ast_dsp *sildet = NULL;          /* silence detector dsp */</span>
+<span class="lineNum">     233 </span><span class="lineCov">        124 :         int totalsilence = 0;</span>
+<span class="lineNum">     234 </span><span class="lineCov">        124 :         int dspsilence = 0;</span>
+<span class="lineNum">     235 </span><span class="lineCov">        124 :         int silence = 0;                /* amount of silence to allow */</span>
+<span class="lineNum">     236 </span><span class="lineCov">        124 :         int gotsilence = 0;             /* did we timeout for silence? */</span>
+<span class="lineNum">     237 </span><span class="lineCov">        124 :         int truncate_silence = 1;       /* truncate on complete silence recording */</span>
+<span class="lineNum">     238 </span><span class="lineCov">        124 :         int maxduration = 0;            /* max duration of recording in milliseconds */</span>
+<a name="239"><span class="lineNum">     239 </span><span class="lineCov">        124 :         int gottimeout = 0;             /* did we timeout for maxduration exceeded? */</span></a>
+<span class="lineNum">     240 </span><span class="lineCov">        124 :         int terminator = '#';</span>
+<span class="lineNum">     241 </span><span class="lineCov">        248 :         RAII_VAR(struct ast_format *, rfmt, NULL, ao2_cleanup);</span>
+<span class="lineNum">     242 </span>            :         int ioflags;
+<span class="lineNum">     243 </span><span class="lineCov">        124 :         struct ast_silence_generator *silgen = NULL;</span>
+<span class="lineNum">     244 </span><span class="lineCov">        124 :         struct ast_flags flags = { 0, };</span>
+<span class="lineNum">     245 </span><span class="lineCov">        124 :         AST_DECLARE_APP_ARGS(args,</span>
+<span class="lineNum">     246 </span>            :                 AST_APP_ARG(filename);
+<span class="lineNum">     247 </span>            :                 AST_APP_ARG(silence);
+<span class="lineNum">     248 </span>            :                 AST_APP_ARG(maxduration);
+<span class="lineNum">     249 </span>            :                 AST_APP_ARG(options);
+<span class="lineNum">     250 </span>            :         );
+<span class="lineNum">     251 </span>            :         int ms;
+<span class="lineNum">     252 </span>            :         struct timeval start;
+<span class="lineNum">     253 </span><span class="lineCov">        124 :         const char *status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :         /* The next few lines of code parse out the filename and header from the input string */
+<span class="lineNum">     256 </span><span class="lineCov">        124 :         if (ast_strlen_zero(data)) { /* no data implies no filename or anything is present */</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Record requires an argument (filename)\n&quot;);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;ERROR&quot;);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     260 </span>            :         }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">        124 :         parse = ast_strdupa(data);</span>
+<span class="lineNum">     263 </span><span class="lineCov">        124 :         AST_STANDARD_APP_ARGS(args, parse);</span>
+<span class="lineNum">     264 </span><span class="lineCov">        124 :         if (args.argc == 4)</span>
+<span class="lineNum">     265 </span><span class="lineCov">        124 :                 ast_app_parse_options(app_opts, &amp;flags, opts, args.options);</span>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">        124 :         if (!ast_strlen_zero(args.filename)) {</span>
+<span class="lineNum">     268 </span><span class="lineCov">        124 :                 ext = strrchr(args.filename, '.'); /* to support filename with a . in the filename, not format */</span>
+<span class="lineNum">     269 </span><span class="lineCov">        124 :                 if (!ext)</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                         ext = strchr(args.filename, ':');</span>
+<span class="lineNum">     271 </span><span class="lineCov">        124 :                 if (ext) {</span>
+<span class="lineNum">     272 </span><span class="lineCov">        124 :                         *ext = '\0';</span>
+<span class="lineNum">     273 </span><span class="lineCov">        124 :                         ext++;</span>
+<span class="lineNum">     274 </span>            :                 }
+<span class="lineNum">     275 </span>            :         }
+<span class="lineNum">     276 </span><span class="lineCov">        124 :         if (!ext) {</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;No extension specified to filename!\n&quot;);</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;ERROR&quot;);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     280 </span>            :         }
+<span class="lineNum">     281 </span><span class="lineCov">        124 :         if (args.silence) {</span>
+<span class="lineNum">     282 </span><span class="lineCov">        124 :                 if ((sscanf(args.silence, &quot;%30d&quot;, &amp;i) == 1) &amp;&amp; (i &gt; -1)) {</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                         silence = i * 1000;</span>
+<span class="lineNum">     284 </span><span class="lineCov">        124 :                 } else if (!ast_strlen_zero(args.silence)) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;'%s' is not a valid silence duration\n&quot;, args.silence);</span>
+<span class="lineNum">     286 </span>            :                 }
+<span class="lineNum">     287 </span>            :         }
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span><span class="lineCov">        124 :         if (ast_test_flag(&amp;flags, OPTION_NO_TRUNCATE))</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 truncate_silence = 0;</span>
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">        124 :         if (args.maxduration) {</span>
+<span class="lineNum">     293 </span><span class="lineCov">        124 :                 if ((sscanf(args.maxduration, &quot;%30d&quot;, &amp;i) == 1) &amp;&amp; (i &gt; -1))</span>
+<span class="lineNum">     294 </span>            :                         /* Convert duration to milliseconds */
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         maxduration = i * 1000;</span>
+<span class="lineNum">     296 </span><span class="lineCov">        124 :                 else if (!ast_strlen_zero(args.maxduration))</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;'%s' is not a valid maximum duration\n&quot;, args.maxduration);</span>
+<span class="lineNum">     298 </span>            :         }
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">        124 :         if (ast_test_flag(&amp;flags, OPTION_STAR_TERMINATE))</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :                 terminator = '*';</span>
+<span class="lineNum">     302 </span><span class="lineCov">        124 :         if (ast_test_flag(&amp;flags, OPTION_IGNORE_TERMINATE))</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 terminator = '\0';</span>
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span>            :         /*
+<span class="lineNum">     306 </span>            :           If a '%d' is specified as part of the filename, we replace that token with
+<span class="lineNum">     307 </span>            :           sequentially incrementing numbers until we find a unique filename.
+<span class="lineNum">     308 </span>            :         */
+<span class="lineNum">     309 </span><span class="lineCov">        124 :         if (strchr(args.filename, '%')) {</span>
+<span class="lineNum">     310 </span><span class="lineCov">        122 :                 size_t src, dst, count = 0;</span>
+<span class="lineNum">     311 </span><span class="lineCov">        122 :                 size_t src_len = strlen(args.filename);</span>
+<span class="lineNum">     312 </span><span class="lineCov">        122 :                 size_t dst_len = sizeof(tmp) - 1;</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span>            :                 do {
+<span class="lineNum">     315 </span><span class="lineCov">       3332 :                         for (src = 0, dst = 0; src &lt; src_len &amp;&amp; dst &lt; dst_len; src++) {</span>
+<span class="lineNum">     316 </span><span class="lineCov">       3087 :                                 if (!strncmp(&amp;args.filename[src], &quot;%d&quot;, 2)) {</span>
+<span class="lineNum">     317 </span><span class="lineCov">        245 :                                         int s = snprintf(&amp;tmp[dst], PATH_MAX - dst, &quot;%zu&quot;, count);</span>
+<span class="lineNum">     318 </span><span class="lineCov">        245 :                                         if (s &gt;= PATH_MAX - dst) {</span>
+<span class="lineNum">     319 </span>            :                                                 /* We truncated, so we need to bail */
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                                                 ast_log(LOG_WARNING, &quot;Failed to create unique filename from template: %s\n&quot;, args.filename);</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :                                                 pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;ERROR&quot;);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                                                 return -1;</span>
+<span class="lineNum">     323 </span>            :                                         }
+<span class="lineNum">     324 </span><span class="lineCov">        245 :                                         dst += s;</span>
+<span class="lineNum">     325 </span><span class="lineCov">        245 :                                         src++;</span>
+<span class="lineNum">     326 </span>            :                                 } else {
+<span class="lineNum">     327 </span><span class="lineCov">       2842 :                                         tmp[dst] = args.filename[src];</span>
+<span class="lineNum">     328 </span><span class="lineCov">       2842 :                                         tmp[++dst] = '\0';</span>
+<span class="lineNum">     329 </span>            :                                 }
+<span class="lineNum">     330 </span>            :                         }
+<span class="lineNum">     331 </span><span class="lineCov">        245 :                         count++;</span>
+<span class="lineNum">     332 </span><span class="lineCov">        245 :                 } while (ast_fileexists(tmp, ext, ast_channel_language(chan)) &gt; 0);</span>
+<span class="lineNum">     333 </span>            :         } else
+<span class="lineNum">     334 </span><span class="lineCov">          2 :                 ast_copy_string(tmp, args.filename, sizeof(tmp));</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">        124 :         pbx_builtin_setvar_helper(chan, &quot;RECORDED_FILE&quot;, tmp);</span>
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span><span class="lineCov">        124 :         if (ast_channel_state(chan) != AST_STATE_UP) {</span>
+<span class="lineNum">     339 </span><span class="lineCov">         64 :                 if (ast_test_flag(&amp;flags, OPTION_SKIP)) {</span>
+<span class="lineNum">     340 </span>            :                         /* At the user's option, skip if the line is not up */
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;SKIP&quot;);</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">     343 </span><span class="lineCov">         64 :                 } else if (!ast_test_flag(&amp;flags, OPTION_NOANSWER)) {</span>
+<span class="lineNum">     344 </span>            :                         /* Otherwise answer unless we're supposed to record while on-hook */
+<span class="lineNum">     345 </span><span class="lineCov">         64 :                         res = ast_answer(chan);</span>
+<span class="lineNum">     346 </span>            :                 }
+<span class="lineNum">     347 </span>            :         }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span><span class="lineCov">        124 :         if (res) {</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not answer channel '%s'\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                 status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 goto out;</span>
+<span class="lineNum">     353 </span>            :         }
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">        124 :         if (!ast_test_flag(&amp;flags, OPTION_QUIET)) {</span>
+<span class="lineNum">     356 </span>            :                 /* Some code to play a nice little beep to signify the start of the record operation */
+<span class="lineNum">     357 </span><span class="lineCov">        124 :                 res = ast_streamfile(chan, &quot;beep&quot;, ast_channel_language(chan));</span>
+<span class="lineNum">     358 </span><span class="lineCov">        124 :                 if (!res) {</span>
+<span class="lineNum">     359 </span><span class="lineCov">        124 :                         res = ast_waitstream(chan, &quot;&quot;);</span>
+<span class="lineNum">     360 </span>            :                 } else {
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;ast_streamfile failed on %s\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     362 </span>            :                 }
+<span class="lineNum">     363 </span><span class="lineCov">        124 :                 ast_stopstream(chan);</span>
+<span class="lineNum">     364 </span>            :         }
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span>            :         /* The end of beep code.  Now the recording starts */
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineCov">        124 :         if (silence &gt; 0) {</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 rfmt = ao2_bump(ast_channel_readformat(chan));</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 res = ast_set_read_format(chan, ast_format_slin);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 if (res &lt; 0) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to set to linear mode, giving up\n&quot;);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;ERROR&quot;);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     375 </span>            :                 }
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 sildet = ast_dsp_new();</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :                 if (!sildet) {</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to create silence detector :(\n&quot;);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                         pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, &quot;ERROR&quot;);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     381 </span>            :                 }
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 ast_dsp_set_threshold(sildet, ast_dsp_get_threshold_from_settings(THRESHOLD_SILENCE));</span>
+<span class="lineNum">     383 </span>            :         }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">        124 :         if (create_destination_directory(tmp)) {</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not create directory for file %s\n&quot;, args.filename);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                 status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                 goto out;</span>
+<span class="lineNum">     389 </span>            :         }
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">        124 :         ioflags = ast_test_flag(&amp;flags, OPTION_APPEND) ? O_CREAT|O_APPEND|O_WRONLY : O_CREAT|O_TRUNC|O_WRONLY;</span>
+<span class="lineNum">     392 </span><span class="lineCov">        124 :         s = ast_writefile(tmp, ext, NULL, ioflags, 0, AST_FILE_MODE);</span>
+<span class="lineNum">     393 </span>            : 
+<span class="lineNum">     394 </span><span class="lineCov">        124 :         if (!s) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not create file %s\n&quot;, args.filename);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                 status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 goto out;</span>
+<span class="lineNum">     398 </span>            :         }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineCov">        124 :         if (ast_opt_transmit_silence)</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 silgen = ast_channel_start_silence_generator(chan);</span>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span>            :         /* Request a video update */
+<span class="lineNum">     404 </span><span class="lineCov">        124 :         ast_indicate(chan, AST_CONTROL_VIDUPDATE);</span>
+<span class="lineNum">     405 </span>            : 
+<span class="lineNum">     406 </span><span class="lineCov">        124 :         if (maxduration &lt;= 0)</span>
+<span class="lineNum">     407 </span><span class="lineCov">        124 :                 maxduration = -1;</span>
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineCov">        124 :         start = ast_tvnow();</span>
+<span class="lineNum">     410 </span><span class="lineCov">      12142 :         while ((ms = ast_remaining_ms(start, maxduration))) {</span>
+<span class="lineNum">     411 </span><span class="lineCov">      12142 :                 ms = ast_waitfor(chan, ms);</span>
+<span class="lineNum">     412 </span><span class="lineCov">      12142 :                 if (ms &lt; 0) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     414 </span>            :                 }
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineCov">      12142 :                 if (maxduration &gt; 0 &amp;&amp; ms == 0) {</span>
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     418 </span>            :                 }
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineCov">      12142 :                 f = ast_read(chan);</span>
+<span class="lineNum">     421 </span><span class="lineCov">      12142 :                 if (!f) {</span>
+<span class="lineNum">     422 </span><span class="lineCov">          2 :                         res = -1;</span>
+<span class="lineNum">     423 </span><span class="lineCov">          2 :                         break;</span>
+<span class="lineNum">     424 </span>            :                 }
+<span class="lineNum">     425 </span><span class="lineCov">      12140 :                 if (f-&gt;frametype == AST_FRAME_VOICE) {</span>
+<span class="lineNum">     426 </span><span class="lineCov">      10963 :                         res = ast_writestream(s, f);</span>
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineCov">      10963 :                         if (res) {</span>
+<span class="lineNum">     429 </span><span class="lineCov">          6 :                                 ast_log(LOG_WARNING, &quot;Problem writing frame\n&quot;);</span>
+<span class="lineNum">     430 </span><span class="lineCov">          6 :                                 ast_frfree(f);</span>
+<span class="lineNum">     431 </span><span class="lineCov">          6 :                                 status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     432 </span><span class="lineCov">          6 :                                 break;</span>
+<span class="lineNum">     433 </span>            :                         }
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineCov">      10957 :                         if (silence &gt; 0) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                                 dspsilence = 0;</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :                                 ast_dsp_silence(sildet, f, &amp;dspsilence);</span>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                                 if (dspsilence) {</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                                         totalsilence = dspsilence;</span>
+<span class="lineNum">     440 </span>            :                                 } else {
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                                         totalsilence = 0;</span>
+<span class="lineNum">     442 </span>            :                                 }
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                                 if (totalsilence &gt; silence) {</span>
+<span class="lineNum">     444 </span>            :                                         /* Ended happily with silence */
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :                                         ast_frfree(f);</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                                         gotsilence = 1;</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                                         status_response = &quot;SILENCE&quot;;</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">     449 </span>            :                                 }
+<span class="lineNum">     450 </span>            :                         }
+<span class="lineNum">     451 </span><span class="lineCov">       1177 :                 } else if (f-&gt;frametype == AST_FRAME_VIDEO) {</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                         res = ast_writestream(s, f);</span>
+<span class="lineNum">     453 </span>            : 
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                         if (res) {</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_WARNING, &quot;Problem writing frame\n&quot;);</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                                 status_response = &quot;ERROR&quot;;</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :                                 ast_frfree(f);</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     459 </span>            :                         }
+<span class="lineNum">     460 </span><span class="lineCov">       1177 :                 } else if (f-&gt;frametype == AST_FRAME_DTMF) {</span>
+<span class="lineNum">     461 </span>            :                         enum dtmf_response rc =
+<span class="lineNum">     462 </span><span class="lineCov">        116 :                                 record_dtmf_response(chan, &amp;flags, f-&gt;subclass.integer, terminator);</span>
+<span class="lineNum">     463 </span><span class="lineCov">        116 :                         switch(rc)      {</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                         case RESPONSE_NO_MATCH:</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                         case RESPONSE_OPERATOR:</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                                 status_response = &quot;OPERATOR&quot;;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                 ast_debug(1, &quot;Got OPERATOR\n&quot;);</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     470 </span><span class="lineCov">        116 :                         case RESPONSE_DTMF:</span>
+<span class="lineNum">     471 </span><span class="lineCov">        116 :                                 status_response = &quot;DTMF&quot;;</span>
+<span class="lineNum">     472 </span><span class="lineCov">        116 :                                 ast_debug(1, &quot;Got DTMF\n&quot;);</span>
+<span class="lineNum">     473 </span><span class="lineCov">        116 :                                 break;</span>
+<span class="lineNum">     474 </span>            :                         }
+<span class="lineNum">     475 </span><span class="lineCov">        116 :                         if (rc != RESPONSE_NO_MATCH) {</span>
+<span class="lineNum">     476 </span><span class="lineCov">        116 :                                 ast_frfree(f);</span>
+<span class="lineNum">     477 </span><span class="lineCov">        116 :                                 break;</span>
+<span class="lineNum">     478 </span>            :                         }
+<span class="lineNum">     479 </span>            :                 }
+<span class="lineNum">     480 </span><span class="lineCov">      12018 :                 ast_frfree(f);</span>
+<span class="lineNum">     481 </span>            :         }
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">        124 :         if (maxduration &gt; 0 &amp;&amp; !ms) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                 gottimeout = 1;</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :                 status_response = &quot;TIMEOUT&quot;;</span>
+<span class="lineNum">     486 </span>            :         }
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineCov">        124 :         if (!f) {</span>
+<span class="lineNum">     489 </span><span class="lineCov">          2 :                 ast_debug(1, &quot;Got hangup\n&quot;);</span>
+<span class="lineNum">     490 </span><span class="lineCov">          2 :                 res = -1;</span>
+<span class="lineNum">     491 </span><span class="lineCov">          2 :                 status_response = &quot;HANGUP&quot;;</span>
+<span class="lineNum">     492 </span><span class="lineCov">          2 :                 if (!ast_test_flag(&amp;flags, OPTION_KEEP)) {</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :                         ast_filedelete(args.filename, NULL);</span>
+<span class="lineNum">     494 </span>            :                 }
+<span class="lineNum">     495 </span>            :         }
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span><span class="lineCov">        124 :         if (gotsilence &amp;&amp; truncate_silence) {</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :                 ast_stream_rewind(s, silence - 1000);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :                 ast_truncstream(s);</span>
+<span class="lineNum">     500 </span><span class="lineCov">        124 :         } else if (!gottimeout &amp;&amp; f) {</span>
+<span class="lineNum">     501 </span>            :                 /*
+<span class="lineNum">     502 </span>            :                  * Strip off the last 1/4 second of it, if we didn't end because of a timeout,
+<span class="lineNum">     503 </span>            :                  * or a hangup.  This must mean we ended because of a DTMF tone and while this
+<span class="lineNum">     504 </span>            :                  * 1/4 second stripping is very old code the most likely explanation is that it
+<span class="lineNum">     505 </span>            :                  * relates to stripping a partial DTMF tone.
+<span class="lineNum">     506 </span>            :                  */
+<span class="lineNum">     507 </span><span class="lineCov">        122 :                 ast_stream_rewind(s, 250);</span>
+<span class="lineNum">     508 </span><span class="lineCov">        122 :                 ast_truncstream(s);</span>
+<span class="lineNum">     509 </span>            :         }
+<span class="lineNum">     510 </span><span class="lineCov">        124 :         ast_closestream(s);</span>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">        124 :         if (silgen)</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                 ast_channel_stop_silence_generator(chan, silgen);</span>
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span><span class="lineCov">        124 : out:</span>
+<span class="lineNum">     516 </span><span class="lineCov">        124 :         if ((silence &gt; 0) &amp;&amp; rfmt) {</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 res = ast_set_read_format(chan, rfmt);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                 if (res) {</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Unable to restore read format on '%s'\n&quot;, ast_channel_name(chan));</span>
+<span class="lineNum">     520 </span>            :                 }
+<span class="lineNum">     521 </span>            :         }
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span><span class="lineCov">        124 :         if (sildet) {</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 ast_dsp_free(sildet);</span>
+<span class="lineNum">     525 </span>            :         }
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineCov">        124 :         pbx_builtin_setvar_helper(chan, &quot;RECORD_STATUS&quot;, status_response);</span>
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineCov">        124 :         return res;</span>
+<a name="530"><span class="lineNum">     530 </span>            : }</a>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">       1115 : static int unload_module(void)</span>
+<span class="lineNum">     533 </span>            : {
+<span class="lineNum">     534 </span><span class="lineCov">       1115 :         return ast_unregister_application(app);</span>
+<a name="535"><span class="lineNum">     535 </span>            : }</a>
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span><span class="lineCov">       1117 : static int load_module(void)</span>
+<span class="lineNum">     538 </span>            : {
+<span class="lineNum">     539 </span><span class="lineCov">       1117 :         return ast_register_application_xml(app, record_exec);</span>
+<a name="540"><span class="lineNum">     540 </span>            : }</a>
+<span class="lineNum">     541 </span>            : 
+<span class="lineNum">     542 </span><span class="lineCov">       3351 : AST_MODULE_INFO_STANDARD(ASTERISK_GPL_KEY, &quot;Trivial Record Application&quot;);</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

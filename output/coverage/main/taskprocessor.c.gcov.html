@@ -1,0 +1,1127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - main/taskprocessor.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">main</a> - taskprocessor.c<span style="font-size: 80%;"> (source / <a href="taskprocessor.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">303</td>
+            <td class="headerCovTableEntry">445</td>
+            <td class="headerCovTableEntryLo">68.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">45</td>
+            <td class="headerCovTableEntry">48</td>
+            <td class="headerCovTableEntryHi">93.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2007-2013, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Dwayne M. Hubbard &lt;dhubbard@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*!
+<span class="lineNum">      20 </span>            :  * \file
+<span class="lineNum">      21 </span>            :  * \brief Maintain a container of uniquely-named taskprocessor threads that can be shared across modules.
+<span class="lineNum">      22 </span>            :  *
+<span class="lineNum">      23 </span>            :  * \author Dwayne Hubbard &lt;dhubbard@digium.com&gt;
+<span class="lineNum">      24 </span>            :  */
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : /*** MODULEINFO
+<span class="lineNum">      27 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      28 </span>            :  ***/
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/_private.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/time.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/astobj2.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/cli.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;asterisk/sem.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : /*!
+<span class="lineNum">      41 </span>            :  * \brief tps_task structure is queued to a taskprocessor
+<span class="lineNum">      42 </span>            :  *
+<span class="lineNum">      43 </span>            :  * tps_tasks are processed in FIFO order and freed by the taskprocessing
+<span class="lineNum">      44 </span>            :  * thread after the task handler returns.  The callback function that is assigned
+<span class="lineNum">      45 </span>            :  * to the execute() function pointer is responsible for releasing datap resources if necessary.
+<span class="lineNum">      46 </span>            :  */
+<span class="lineNum">      47 </span>            : struct tps_task {
+<span class="lineNum">      48 </span>            :         /*! \brief The execute() task callback function pointer */
+<span class="lineNum">      49 </span>            :         union {
+<span class="lineNum">      50 </span>            :                 int (*execute)(void *datap);
+<span class="lineNum">      51 </span>            :                 int (*execute_local)(struct ast_taskprocessor_local *local);
+<span class="lineNum">      52 </span>            :         } callback;
+<span class="lineNum">      53 </span>            :         /*! \brief The data pointer for the task execute() function */
+<span class="lineNum">      54 </span>            :         void *datap;
+<span class="lineNum">      55 </span>            :         /*! \brief AST_LIST_ENTRY overhead */
+<span class="lineNum">      56 </span>            :         AST_LIST_ENTRY(tps_task) list;
+<span class="lineNum">      57 </span>            :         unsigned int wants_local:1;
+<span class="lineNum">      58 </span>            : };
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : /*! \brief tps_taskprocessor_stats maintain statistics for a taskprocessor. */
+<span class="lineNum">      61 </span>            : struct tps_taskprocessor_stats {
+<span class="lineNum">      62 </span>            :         /*! \brief This is the maximum number of tasks queued at any one time */
+<span class="lineNum">      63 </span>            :         unsigned long max_qsize;
+<span class="lineNum">      64 </span>            :         /*! \brief This is the current number of tasks processed */
+<span class="lineNum">      65 </span>            :         unsigned long _tasks_processed_count;
+<span class="lineNum">      66 </span>            : };
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : /*! \brief A ast_taskprocessor structure is a singleton by name */
+<span class="lineNum">      69 </span>            : struct ast_taskprocessor {
+<span class="lineNum">      70 </span>            :         /*! \brief Friendly name of the taskprocessor */
+<span class="lineNum">      71 </span>            :         const char *name;
+<span class="lineNum">      72 </span>            :         /*! \brief Taskprocessor statistics */
+<span class="lineNum">      73 </span>            :         struct tps_taskprocessor_stats *stats;
+<span class="lineNum">      74 </span>            :         void *local_data;
+<span class="lineNum">      75 </span>            :         /*! \brief Taskprocessor current queue size */
+<span class="lineNum">      76 </span>            :         long tps_queue_size;
+<span class="lineNum">      77 </span>            :         /*! \brief Taskprocessor low water clear alert level */
+<span class="lineNum">      78 </span>            :         long tps_queue_low;
+<span class="lineNum">      79 </span>            :         /*! \brief Taskprocessor high water alert trigger level */
+<span class="lineNum">      80 </span>            :         long tps_queue_high;
+<span class="lineNum">      81 </span>            :         /*! \brief Taskprocessor queue */
+<span class="lineNum">      82 </span>            :         AST_LIST_HEAD_NOLOCK(tps_queue, tps_task) tps_queue;
+<span class="lineNum">      83 </span>            :         struct ast_taskprocessor_listener *listener;
+<span class="lineNum">      84 </span>            :         /*! Current thread executing the tasks */
+<span class="lineNum">      85 </span>            :         pthread_t thread;
+<span class="lineNum">      86 </span>            :         /*! Indicates if the taskprocessor is currently executing a task */
+<span class="lineNum">      87 </span>            :         unsigned int executing:1;
+<span class="lineNum">      88 </span>            :         /*! Indicates that a high water warning has been issued on this task processor */
+<span class="lineNum">      89 </span>            :         unsigned int high_water_warned:1;
+<span class="lineNum">      90 </span>            :         /*! Indicates that a high water alert is active on this taskprocessor */
+<span class="lineNum">      91 </span>            :         unsigned int high_water_alert:1;
+<span class="lineNum">      92 </span>            :         /*! Indicates if the taskprocessor is currently suspended */
+<span class="lineNum">      93 </span>            :         unsigned int suspended:1;
+<span class="lineNum">      94 </span>            : };
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            : /*!
+<span class="lineNum">      97 </span>            :  * \brief A listener for taskprocessors
+<span class="lineNum">      98 </span>            :  *
+<span class="lineNum">      99 </span>            :  * \since 12.0.0
+<span class="lineNum">     100 </span>            :  *
+<span class="lineNum">     101 </span>            :  * When a taskprocessor's state changes, the listener
+<span class="lineNum">     102 </span>            :  * is notified of the change. This allows for tasks
+<span class="lineNum">     103 </span>            :  * to be addressed in whatever way is appropriate for
+<span class="lineNum">     104 </span>            :  * the module using the taskprocessor.
+<span class="lineNum">     105 </span>            :  */
+<span class="lineNum">     106 </span>            : struct ast_taskprocessor_listener {
+<span class="lineNum">     107 </span>            :         /*! The callbacks the taskprocessor calls into to notify of state changes */
+<span class="lineNum">     108 </span>            :         const struct ast_taskprocessor_listener_callbacks *callbacks;
+<span class="lineNum">     109 </span>            :         /*! The taskprocessor that the listener is listening to */
+<span class="lineNum">     110 </span>            :         struct ast_taskprocessor *tps;
+<span class="lineNum">     111 </span>            :         /*! Data private to the listener */
+<span class="lineNum">     112 </span>            :         void *user_data;
+<span class="lineNum">     113 </span>            : };
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : #ifdef LOW_MEMORY
+<span class="lineNum">     116 </span>            : #define TPS_MAX_BUCKETS 61
+<span class="lineNum">     117 </span>            : #else
+<span class="lineNum">     118 </span>            : /*! \brief Number of buckets in the tps_singletons container. */
+<span class="lineNum">     119 </span>            : #define TPS_MAX_BUCKETS 1567
+<span class="lineNum">     120 </span>            : #endif
+<span class="lineNum">     121 </span>            : 
+<span class="lineNum">     122 </span>            : /*! \brief tps_singletons is the astobj2 container for taskprocessor singletons */
+<span class="lineNum">     123 </span>            : static struct ao2_container *tps_singletons;
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            : /*! \brief CLI &lt;example&gt;taskprocessor ping &amp;lt;blah&amp;gt;&lt;/example&gt; operation requires a ping condition */
+<span class="lineNum">     126 </span>            : static ast_cond_t cli_ping_cond;
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : /*! \brief CLI &lt;example&gt;taskprocessor ping &amp;lt;blah&amp;gt;&lt;/example&gt; operation requires a ping condition lock */
+<span class="lineNum">     129 </span>            : AST_MUTEX_DEFINE_STATIC(cli_ping_cond_lock);
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            : /*! \brief The astobj2 hash callback for taskprocessors */
+<span class="lineNum">     132 </span>            : static int tps_hash_cb(const void *obj, const int flags);
+<span class="lineNum">     133 </span>            : /*! \brief The astobj2 compare callback for taskprocessors */
+<span class="lineNum">     134 </span>            : static int tps_cmp_cb(void *obj, void *arg, int flags);
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : /*! \brief CLI &lt;example&gt;taskprocessor ping &amp;lt;blah&amp;gt;&lt;/example&gt; handler function */
+<span class="lineNum">     137 </span>            : static int tps_ping_handler(void *datap);
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : static char *cli_tps_ping(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a);
+<span class="lineNum">     140 </span>            : static char *cli_tps_report(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a);
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span>            : static struct ast_cli_entry taskprocessor_clis[] = {
+<span class="lineNum">     143 </span>            :         AST_CLI_DEFINE(cli_tps_ping, &quot;Ping a named task processor&quot;),
+<span class="lineNum">     144 </span>            :         AST_CLI_DEFINE(cli_tps_report, &quot;List instantiated task processors and statistics&quot;),
+<span class="lineNum">     145 </span>            : };
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span>            : struct default_taskprocessor_listener_pvt {
+<span class="lineNum">     148 </span>            :         pthread_t poll_thread;
+<span class="lineNum">     149 </span>            :         int dead;
+<span class="lineNum">     150 </span>            :         struct ast_sem sem;
+<a name="151"><span class="lineNum">     151 </span>            : };</a>
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span><span class="lineCov">      30861 : static void default_listener_pvt_destroy(struct default_taskprocessor_listener_pvt *pvt)</span>
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span><span class="lineCov">      30861 :         ast_assert(pvt-&gt;dead);</span>
+<span class="lineNum">     156 </span><span class="lineCov">      30861 :         ast_sem_destroy(&amp;pvt-&gt;sem);</span>
+<span class="lineNum">     157 </span><span class="lineCov">      30861 :         ast_free(pvt);</span>
+<a name="158"><span class="lineNum">     158 </span><span class="lineCov">      30861 : }</span></a>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineCov">      30861 : static void default_listener_pvt_dtor(struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     161 </span>            : {
+<span class="lineNum">     162 </span><span class="lineCov">      30861 :         struct default_taskprocessor_listener_pvt *pvt = listener-&gt;user_data;</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">      30861 :         default_listener_pvt_destroy(pvt);</span>
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span><span class="lineCov">      30861 :         listener-&gt;user_data = NULL;</span>
+<span class="lineNum">     167 </span><span class="lineCov">      30861 : }</span>
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : /*!
+<span class="lineNum">     170 </span>            :  * \brief Function that processes tasks in the taskprocessor
+<a name="171"><span class="lineNum">     171 </span>            :  * \internal</a>
+<span class="lineNum">     172 </span>            :  */
+<span class="lineNum">     173 </span><span class="lineCov">      31868 : static void *default_tps_processing_function(void *data)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span><span class="lineCov">      31868 :         struct ast_taskprocessor_listener *listener = data;</span>
+<span class="lineNum">     176 </span><span class="lineCov">      31868 :         struct ast_taskprocessor *tps = listener-&gt;tps;</span>
+<span class="lineNum">     177 </span><span class="lineCov">      31868 :         struct default_taskprocessor_listener_pvt *pvt = listener-&gt;user_data;</span>
+<span class="lineNum">     178 </span>            :         int sem_value;
+<span class="lineNum">     179 </span>            :         int res;
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineCov">    2184662 :         while (!pvt-&gt;dead) {</span>
+<span class="lineNum">     182 </span><span class="lineCov">    2153801 :                 res = ast_sem_wait(&amp;pvt-&gt;sem);</span>
+<span class="lineNum">     183 </span><span class="lineCov">    2152794 :                 if (res != 0 &amp;&amp; errno != EINTR) {</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;ast_sem_wait(): %s\n&quot;,</span>
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 :                                 strerror(errno));</span>
+<span class="lineNum">     186 </span>            :                         /* Just give up */
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     188 </span>            :                 }
+<span class="lineNum">     189 </span><span class="lineCov">    2152794 :                 ast_taskprocessor_execute(tps);</span>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :         /* No posting to a dead taskprocessor! */
+<span class="lineNum">     193 </span><span class="lineCov">      30861 :         res = ast_sem_getvalue(&amp;pvt-&gt;sem, &amp;sem_value);</span>
+<span class="lineNum">     194 </span><span class="lineCov">      30861 :         ast_assert(res == 0 &amp;&amp; sem_value == 0);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :         /* Free the shutdown reference (see default_listener_shutdown) */
+<span class="lineNum">     197 </span><span class="lineCov">      30861 :         ao2_t_ref(listener-&gt;tps, -1, &quot;tps-shutdown&quot;);</span>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">      30861 :         return NULL;</span>
+<a name="200"><span class="lineNum">     200 </span>            : }</a>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineCov">      31868 : static int default_listener_start(struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     203 </span>            : {
+<span class="lineNum">     204 </span><span class="lineCov">      31868 :         struct default_taskprocessor_listener_pvt *pvt = listener-&gt;user_data;</span>
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">      31868 :         if (ast_pthread_create(&amp;pvt-&gt;poll_thread, NULL, default_tps_processing_function, listener)) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     208 </span>            :         }
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span><span class="lineCov">      31868 :         return 0;</span>
+<a name="211"><span class="lineNum">     211 </span>            : }</a>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span><span class="lineCov">    2152794 : static void default_task_pushed(struct ast_taskprocessor_listener *listener, int was_empty)</span>
+<span class="lineNum">     214 </span>            : {
+<span class="lineNum">     215 </span><span class="lineCov">    2152794 :         struct default_taskprocessor_listener_pvt *pvt = listener-&gt;user_data;</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">    2152794 :         if (ast_sem_post(&amp;pvt-&gt;sem) != 0) {</span>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to notify of enqueued task: %s\n&quot;,</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                         strerror(errno));</span>
+<span class="lineNum">     220 </span>            :         }
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">    2152794 : }</span></a>
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span><span class="lineCov">      30861 : static int default_listener_die(void *data)</span>
+<span class="lineNum">     224 </span>            : {
+<span class="lineNum">     225 </span><span class="lineCov">      30861 :         struct default_taskprocessor_listener_pvt *pvt = data;</span>
+<span class="lineNum">     226 </span><span class="lineCov">      30861 :         pvt-&gt;dead = 1;</span>
+<span class="lineNum">     227 </span><span class="lineCov">      30861 :         return 0;</span>
+<a name="228"><span class="lineNum">     228 </span>            : }</a>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineCov">      30861 : static void default_listener_shutdown(struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     231 </span>            : {
+<span class="lineNum">     232 </span><span class="lineCov">      30861 :         struct default_taskprocessor_listener_pvt *pvt = listener-&gt;user_data;</span>
+<span class="lineNum">     233 </span>            :         int res;
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :         /* Hold a reference during shutdown */
+<span class="lineNum">     236 </span><span class="lineCov">      30861 :         ao2_t_ref(listener-&gt;tps, +1, &quot;tps-shutdown&quot;);</span>
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span><span class="lineCov">      30861 :         ast_taskprocessor_push(listener-&gt;tps, default_listener_die, pvt);</span>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineCov">      30861 :         ast_assert(pvt-&gt;poll_thread != AST_PTHREADT_NULL);</span>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineCov">      30861 :         if (pthread_equal(pthread_self(), pvt-&gt;poll_thread)) {</span>
+<span class="lineNum">     243 </span><span class="lineCov">      16896 :                 res = pthread_detach(pvt-&gt;poll_thread);</span>
+<span class="lineNum">     244 </span><span class="lineCov">      16896 :                 if (res != 0) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;pthread_detach(): %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     246 </span>            :                 }
+<span class="lineNum">     247 </span>            :         } else {
+<span class="lineNum">     248 </span><span class="lineCov">      13965 :                 res = pthread_join(pvt-&gt;poll_thread, NULL);</span>
+<span class="lineNum">     249 </span><span class="lineCov">      13965 :                 if (res != 0) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;pthread_join(): %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     251 </span>            :                 }
+<span class="lineNum">     252 </span>            :         }
+<span class="lineNum">     253 </span><span class="lineCov">      30861 :         pvt-&gt;poll_thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     254 </span><span class="lineCov">      30861 : }</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span>            : static const struct ast_taskprocessor_listener_callbacks default_listener_callbacks = {
+<span class="lineNum">     257 </span>            :         .start = default_listener_start,
+<span class="lineNum">     258 </span>            :         .task_pushed = default_task_pushed,
+<span class="lineNum">     259 </span>            :         .shutdown = default_listener_shutdown,
+<span class="lineNum">     260 </span>            :         .dtor = default_listener_pvt_dtor,
+<span class="lineNum">     261 </span>            : };
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            : /*!
+<span class="lineNum">     264 </span>            :  * \internal
+<a name="265"><span class="lineNum">     265 </span>            :  * \brief Clean up resources on Asterisk shutdown</a>
+<span class="lineNum">     266 </span>            :  */
+<span class="lineNum">     267 </span><span class="lineCov">       1015 : static void tps_shutdown(void)</span>
+<span class="lineNum">     268 </span>            : {
+<span class="lineNum">     269 </span><span class="lineCov">       1015 :         ast_cli_unregister_multiple(taskprocessor_clis, ARRAY_LEN(taskprocessor_clis));</span>
+<span class="lineNum">     270 </span><span class="lineCov">       1015 :         ao2_t_ref(tps_singletons, -1, &quot;Unref tps_singletons in shutdown&quot;);</span>
+<span class="lineNum">     271 </span><span class="lineCov">       1015 :         tps_singletons = NULL;</span>
+<span class="lineNum">     272 </span><span class="lineCov">       1015 : }</span>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span>            : /* initialize the taskprocessor container and register CLI operations */
+<span class="lineNum">     275 </span><span class="lineCov">       1124 : int ast_tps_init(void)</span>
+<span class="lineNum">     276 </span>            : {
+<span class="lineNum">     277 </span><span class="lineCov">       1124 :         if (!(tps_singletons = ao2_container_alloc(TPS_MAX_BUCKETS, tps_hash_cb, tps_cmp_cb))) {</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;taskprocessor container failed to initialize!\n&quot;);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     280 </span>            :         }
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span><span class="lineCov">       1124 :         ast_cond_init(&amp;cli_ping_cond, NULL);</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineCov">       1124 :         ast_cli_register_multiple(taskprocessor_clis, ARRAY_LEN(taskprocessor_clis));</span>
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span><span class="lineCov">       1124 :         ast_register_cleanup(tps_shutdown);</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">       1124 :         return 0;</span>
+<span class="lineNum">     289 </span>            : }
+<a name="290"><span class="lineNum">     290 </span>            : </a>
+<span class="lineNum">     291 </span>            : /* allocate resources for the task */
+<span class="lineNum">     292 </span><span class="lineCov">     693282 : static struct tps_task *tps_task_alloc(int (*task_exe)(void *datap), void *datap)</span>
+<span class="lineNum">     293 </span>            : {
+<span class="lineNum">     294 </span>            :         struct tps_task *t;
+<span class="lineNum">     295 </span><span class="lineCov">     693282 :         if (!task_exe) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;task_exe is NULL!\n&quot;);</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     298 </span>            :         }
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">     693282 :         t = ast_calloc(1, sizeof(*t));</span>
+<span class="lineNum">     301 </span><span class="lineCov">     693282 :         if (!t) {</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;failed to allocate task!\n&quot;);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     304 </span>            :         }
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineCov">     693282 :         t-&gt;callback.execute = task_exe;</span>
+<span class="lineNum">     307 </span><span class="lineCov">     693282 :         t-&gt;datap = datap;</span>
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span><span class="lineCov">     693282 :         return t;</span>
+<a name="310"><span class="lineNum">     310 </span>            : }</a>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineCov">    1864058 : static struct tps_task *tps_task_alloc_local(int (*task_exe)(struct ast_taskprocessor_local *local), void *datap)</span>
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span>            :         struct tps_task *t;
+<span class="lineNum">     315 </span><span class="lineCov">    1864058 :         if (!task_exe) {</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;task_exe is NULL!\n&quot;);</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     318 </span>            :         }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">    1864058 :         t = ast_calloc(1, sizeof(*t));</span>
+<span class="lineNum">     321 </span><span class="lineCov">    1864058 :         if (!t) {</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;failed to allocate task!\n&quot;);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     324 </span>            :         }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span><span class="lineCov">    1864058 :         t-&gt;callback.execute_local = task_exe;</span>
+<span class="lineNum">     327 </span><span class="lineCov">    1864058 :         t-&gt;datap = datap;</span>
+<span class="lineNum">     328 </span><span class="lineCov">    1864058 :         t-&gt;wants_local = 1;</span>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span><span class="lineCov">    1864058 :         return t;</span>
+<span class="lineNum">     331 </span>            : }
+<a name="332"><span class="lineNum">     332 </span>            : </a>
+<span class="lineNum">     333 </span>            : /* release task resources */
+<span class="lineNum">     334 </span><span class="lineCov">    2557340 : static void *tps_task_free(struct tps_task *task)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span><span class="lineCov">    2557340 :         ast_free(task);</span>
+<span class="lineNum">     337 </span><span class="lineCov">    2557340 :         return NULL;</span>
+<span class="lineNum">     338 </span>            : }
+<a name="339"><span class="lineNum">     339 </span>            : </a>
+<span class="lineNum">     340 </span>            : /* taskprocessor tab completion */
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 : static char *tps_taskprocessor_tab_complete(struct ast_cli_args *a)</span>
+<span class="lineNum">     342 </span>            : {
+<span class="lineNum">     343 </span>            :         int tklen;
+<span class="lineNum">     344 </span>            :         struct ast_taskprocessor *p;
+<span class="lineNum">     345 </span>            :         struct ao2_iterator i;
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :         if (a-&gt;pos != 3) {</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :         tklen = strlen(a-&gt;word);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         i = ao2_iterator_init(tps_singletons, 0);</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :         while ((p = ao2_iterator_next(&amp;i))) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 if (!strncasecmp(a-&gt;word, p-&gt;name, tklen)) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                         if (ast_cli_completion_add(ast_strdup(p-&gt;name))) {</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                                 ast_taskprocessor_unreference(p);</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     358 </span>            :                         }
+<span class="lineNum">     359 </span>            :                 }
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                 ast_taskprocessor_unreference(p);</span>
+<span class="lineNum">     361 </span>            :         }
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     365 </span>            : }
+<a name="366"><span class="lineNum">     366 </span>            : </a>
+<span class="lineNum">     367 </span>            : /* ping task handling function */
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 : static int tps_ping_handler(void *datap)</span>
+<span class="lineNum">     369 </span>            : {
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;cli_ping_cond_lock);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         ast_cond_signal(&amp;cli_ping_cond);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;cli_ping_cond_lock);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     374 </span>            : }
+<a name="375"><span class="lineNum">     375 </span>            : </a>
+<span class="lineNum">     376 </span>            : /* ping the specified taskprocessor and display the ping time on the CLI */
+<span class="lineNum">     377 </span><span class="lineCov">       1124 : static char *cli_tps_ping(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     378 </span>            : {
+<span class="lineNum">     379 </span>            :         struct timeval begin, end, delta;
+<span class="lineNum">     380 </span>            :         const char *name;
+<span class="lineNum">     381 </span>            :         struct timeval when;
+<span class="lineNum">     382 </span>            :         struct timespec ts;
+<span class="lineNum">     383 </span>            :         struct ast_taskprocessor *tps;
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     386 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     387 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core ping taskprocessor&quot;;</span>
+<span class="lineNum">     388 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     389 </span>            :                         &quot;Usage: core ping taskprocessor &lt;taskprocessor&gt;\n&quot;
+<span class="lineNum">     390 </span>            :                         &quot;  Displays the time required for a task to be processed\n&quot;;
+<span class="lineNum">     391 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                 return tps_taskprocessor_tab_complete(a);</span>
+<span class="lineNum">     394 </span>            :         }
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != 4)</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         name = a-&gt;argv[3];</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :         if (!(tps = ast_taskprocessor_get(name, TPS_REF_IF_EXISTS))) {</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;\nping failed: %s not found\n\n&quot;, name);</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                 return CLI_SUCCESS;</span>
+<span class="lineNum">     403 </span>            :         }
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;\npinging %s ...&quot;, name);</span>
+<span class="lineNum">     405 </span>            : 
+<span class="lineNum">     406 </span>            :         /*
+<span class="lineNum">     407 </span>            :          * Wait up to 5 seconds for a ping reply.
+<span class="lineNum">     408 </span>            :          *
+<span class="lineNum">     409 </span>            :          * On a very busy system it could take awhile to get a
+<span class="lineNum">     410 </span>            :          * ping response from some taskprocessors.
+<span class="lineNum">     411 </span>            :          */
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         begin = ast_tvnow();</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         when = ast_tvadd(begin, ast_samp2tv(5000, 1000));</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :         ts.tv_sec = when.tv_sec;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :         ts.tv_nsec = when.tv_usec * 1000;</span>
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :         ast_mutex_lock(&amp;cli_ping_cond_lock);</span>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         if (ast_taskprocessor_push(tps, tps_ping_handler, 0) &lt; 0) {</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 ast_mutex_unlock(&amp;cli_ping_cond_lock);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, &quot;\nping failed: could not push task to %s\n\n&quot;, name);</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 ast_taskprocessor_unreference(tps);</span>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                 return CLI_FAILURE;</span>
+<span class="lineNum">     423 </span>            :         }
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         ast_cond_timedwait(&amp;cli_ping_cond, &amp;cli_ping_cond_lock, &amp;ts);</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :         ast_mutex_unlock(&amp;cli_ping_cond_lock);</span>
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         end = ast_tvnow();</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :         delta = ast_tvsub(end, begin);</span>
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;\n\t%24s ping time: %.1ld.%.6ld sec\n\n&quot;, name, (long)delta.tv_sec, (long int)delta.tv_usec);</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         ast_taskprocessor_unreference(tps);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     432 </span>            : }
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span>            : /*!
+<span class="lineNum">     435 </span>            :  * \internal
+<span class="lineNum">     436 </span>            :  * \brief Taskprocessor ao2 container sort function.
+<span class="lineNum">     437 </span>            :  * \since 13.8.0
+<span class="lineNum">     438 </span>            :  *
+<span class="lineNum">     439 </span>            :  * \param obj_left pointer to the (user-defined part) of an object.
+<span class="lineNum">     440 </span>            :  * \param obj_right pointer to the (user-defined part) of an object.
+<span class="lineNum">     441 </span>            :  * \param flags flags from ao2_callback()
+<span class="lineNum">     442 </span>            :  *   OBJ_SEARCH_OBJECT - if set, 'obj_right', is an object.
+<span class="lineNum">     443 </span>            :  *   OBJ_SEARCH_KEY - if set, 'obj_right', is a search key item that is not an object.
+<span class="lineNum">     444 </span>            :  *   OBJ_SEARCH_PARTIAL_KEY - if set, 'obj_right', is a partial search key item that is not an object.
+<span class="lineNum">     445 </span>            :  *
+<span class="lineNum">     446 </span>            :  * \retval &lt;0 if obj_left &lt; obj_right
+<span class="lineNum">     447 </span>            :  * \retval =0 if obj_left == obj_right
+<a name="448"><span class="lineNum">     448 </span>            :  * \retval &gt;0 if obj_left &gt; obj_right</a>
+<span class="lineNum">     449 </span>            :  */
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 : static int tps_sort_cb(const void *obj_left, const void *obj_right, int flags)</span>
+<span class="lineNum">     451 </span>            : {
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :         const struct ast_taskprocessor *tps_left = obj_left;</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :         const struct ast_taskprocessor *tps_right = obj_right;</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :         const char *right_key = obj_right;</span>
+<span class="lineNum">     455 </span>            :         int cmp;
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     459 </span>            :         case OBJ_SEARCH_OBJECT:
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 right_key = tps_right-&gt;name;</span>
+<span class="lineNum">     461 </span>            :                 /* Fall through */
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 cmp = strcasecmp(tps_left-&gt;name, right_key);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                 cmp = strncasecmp(tps_left-&gt;name, right_key, strlen(right_key));</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     468 </span>            :         }
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :         return cmp;</span>
+<a name="470"><span class="lineNum">     470 </span>            : }</a>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">       1124 : static char *cli_tps_report(struct ast_cli_entry *e, int cmd, struct ast_cli_args *a)</span>
+<span class="lineNum">     473 </span>            : {
+<span class="lineNum">     474 </span>            :         char name[256];
+<span class="lineNum">     475 </span>            :         int tcount;
+<span class="lineNum">     476 </span>            :         unsigned long qsize;
+<span class="lineNum">     477 </span>            :         unsigned long maxqsize;
+<span class="lineNum">     478 </span>            :         unsigned long processed;
+<span class="lineNum">     479 </span>            :         struct ao2_container *sorted_tps;
+<span class="lineNum">     480 </span>            :         struct ast_taskprocessor *tps;
+<span class="lineNum">     481 </span>            :         struct ao2_iterator iter;
+<span class="lineNum">     482 </span>            : #define FMT_HEADERS             &quot;%-45s %10s %10s %10s %10s %10s\n&quot;
+<span class="lineNum">     483 </span>            : #define FMT_FIELDS              &quot;%-45s %10lu %10lu %10lu %10lu %10lu\n&quot;
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span><span class="lineCov">       1124 :         switch (cmd) {</span>
+<span class="lineNum">     486 </span><span class="lineCov">       1124 :         case CLI_INIT:</span>
+<span class="lineNum">     487 </span><span class="lineCov">       1124 :                 e-&gt;command = &quot;core show taskprocessors&quot;;</span>
+<span class="lineNum">     488 </span><span class="lineCov">       1124 :                 e-&gt;usage =</span>
+<span class="lineNum">     489 </span>            :                         &quot;Usage: core show taskprocessors\n&quot;
+<span class="lineNum">     490 </span>            :                         &quot;  Shows a list of instantiated task processors and their statistics\n&quot;;
+<span class="lineNum">     491 </span><span class="lineCov">       1124 :                 return NULL;</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         case CLI_GENERATE:</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     494 </span>            :         }
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :         if (a-&gt;argc != e-&gt;args) {</span>
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :                 return CLI_SHOWUSAGE;</span>
+<span class="lineNum">     498 </span>            :         }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :         sorted_tps = ao2_container_alloc_rbtree(AO2_ALLOC_OPT_LOCK_NOLOCK, 0, tps_sort_cb,</span>
+<span class="lineNum">     501 </span>            :                 NULL);
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         if (!sorted_tps</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 || ao2_container_dup(sorted_tps, tps_singletons, 0)) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                 ao2_cleanup(sorted_tps);</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 return CLI_FAILURE;</span>
+<span class="lineNum">     506 </span>            :         }
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;\n&quot; FMT_HEADERS, &quot;Processor&quot;, &quot;Processed&quot;, &quot;In Queue&quot;, &quot;Max Depth&quot;, &quot;Low water&quot;, &quot;High water&quot;);</span>
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :         tcount = 0;</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :         iter = ao2_iterator_init(sorted_tps, AO2_ITERATOR_UNLINK);</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         while ((tps = ao2_iterator_next(&amp;iter))) {</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 ast_copy_string(name, tps-&gt;name, sizeof(name));</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :                 qsize = tps-&gt;tps_queue_size;</span>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                 if (tps-&gt;stats) {</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                         maxqsize = tps-&gt;stats-&gt;max_qsize;</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                         processed = tps-&gt;stats-&gt;_tasks_processed_count;</span>
+<span class="lineNum">     517 </span>            :                 } else {
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                         maxqsize = 0;</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                         processed = 0;</span>
+<span class="lineNum">     520 </span>            :                 }
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :                 ast_cli(a-&gt;fd, FMT_FIELDS, name, processed, qsize, maxqsize,</span>
+<span class="lineNum">     522 </span>            :                         tps-&gt;tps_queue_low, tps-&gt;tps_queue_high);
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 ast_taskprocessor_unreference(tps);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 ++tcount;</span>
+<span class="lineNum">     525 </span>            :         }
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :         ao2_iterator_destroy(&amp;iter);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         ast_cli(a-&gt;fd, &quot;\n%d taskprocessors\n\n&quot;, tcount);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         ao2_ref(sorted_tps, -1);</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :         return CLI_SUCCESS;</span>
+<span class="lineNum">     530 </span>            : }
+<a name="531"><span class="lineNum">     531 </span>            : </a>
+<span class="lineNum">     532 </span>            : /* hash callback for astobj2 */
+<span class="lineNum">     533 </span><span class="lineCov">     304032 : static int tps_hash_cb(const void *obj, const int flags)</span>
+<span class="lineNum">     534 </span>            : {
+<span class="lineNum">     535 </span><span class="lineCov">     304032 :         const struct ast_taskprocessor *tps = obj;</span>
+<span class="lineNum">     536 </span><span class="lineCov">     304032 :         const char *name = flags &amp; OBJ_KEY ? obj : tps-&gt;name;</span>
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineCov">     304032 :         return ast_str_case_hash(name);</span>
+<span class="lineNum">     539 </span>            : }
+<a name="540"><span class="lineNum">     540 </span>            : </a>
+<span class="lineNum">     541 </span>            : /* compare callback for astobj2 */
+<span class="lineNum">     542 </span><span class="lineCov">       3820 : static int tps_cmp_cb(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     543 </span>            : {
+<span class="lineNum">     544 </span><span class="lineCov">       3820 :         struct ast_taskprocessor *lhs = obj, *rhs = arg;</span>
+<span class="lineNum">     545 </span><span class="lineCov">       3820 :         const char *rhsname = flags &amp; OBJ_KEY ? arg : rhs-&gt;name;</span>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">       3820 :         return !strcasecmp(lhs-&gt;name, rhsname) ? CMP_MATCH | CMP_STOP : 0;</span>
+<span class="lineNum">     548 </span>            : }
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            : /*! Count of the number of taskprocessors in high water alert. */
+<span class="lineNum">     551 </span>            : static unsigned int tps_alert_count;
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            : /*! Access protection for tps_alert_count */
+<span class="lineNum">     554 </span>            : AST_RWLOCK_DEFINE_STATIC(tps_alert_lock);
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span>            : /*!
+<span class="lineNum">     557 </span>            :  * \internal
+<span class="lineNum">     558 </span>            :  * \brief Add a delta to tps_alert_count with protection.
+<span class="lineNum">     559 </span>            :  * \since 13.10.0
+<span class="lineNum">     560 </span>            :  *
+<span class="lineNum">     561 </span>            :  * \param tps Taskprocessor updating queue water mark alert trigger.
+<span class="lineNum">     562 </span>            :  * \param delta The amount to add to tps_alert_count.
+<span class="lineNum">     563 </span>            :  *
+<a name="564"><span class="lineNum">     564 </span>            :  * \return Nothing</a>
+<span class="lineNum">     565 </span>            :  */
+<span class="lineNum">     566 </span><span class="lineCov">          4 : static void tps_alert_add(struct ast_taskprocessor *tps, int delta)</span>
+<span class="lineNum">     567 </span>            : {
+<span class="lineNum">     568 </span>            :         unsigned int old;
+<span class="lineNum">     569 </span>            : 
+<span class="lineNum">     570 </span><span class="lineCov">          4 :         ast_rwlock_wrlock(&amp;tps_alert_lock);</span>
+<span class="lineNum">     571 </span><span class="lineCov">          4 :         old = tps_alert_count;</span>
+<span class="lineNum">     572 </span><span class="lineCov">          4 :         tps_alert_count += delta;</span>
+<span class="lineNum">     573 </span><span class="lineCov">          4 :         if (DEBUG_ATLEAST(3)</span>
+<span class="lineNum">     574 </span>            :                 /* and tps_alert_count becomes zero or non-zero */
+<span class="lineNum">     575 </span><span class="lineCov">          4 :                 &amp;&amp; !old != !tps_alert_count) {</span>
+<span class="lineNum">     576 </span><span class="lineCov">          2 :                 ast_log(LOG_DEBUG, &quot;Taskprocessor '%s' %s the high water alert.\n&quot;,</span>
+<span class="lineNum">     577 </span><span class="lineCov">          2 :                         tps-&gt;name, tps_alert_count ? &quot;triggered&quot; : &quot;cleared&quot;);</span>
+<span class="lineNum">     578 </span>            :         }
+<span class="lineNum">     579 </span><span class="lineCov">          4 :         ast_rwlock_unlock(&amp;tps_alert_lock);</span>
+<a name="580"><span class="lineNum">     580 </span><span class="lineCov">          4 : }</span></a>
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span><span class="lineCov">       1393 : unsigned int ast_taskprocessor_alert_get(void)</span>
+<span class="lineNum">     583 </span>            : {
+<span class="lineNum">     584 </span>            :         unsigned int count;
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">       1393 :         ast_rwlock_rdlock(&amp;tps_alert_lock);</span>
+<span class="lineNum">     587 </span><span class="lineCov">       1393 :         count = tps_alert_count;</span>
+<span class="lineNum">     588 </span><span class="lineCov">       1393 :         ast_rwlock_unlock(&amp;tps_alert_lock);</span>
+<span class="lineNum">     589 </span>            : 
+<span class="lineNum">     590 </span><span class="lineCov">       1393 :         return count;</span>
+<a name="591"><span class="lineNum">     591 </span>            : }</a>
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span><span class="lineCov">      13050 : int ast_taskprocessor_alert_set_levels(struct ast_taskprocessor *tps, long low_water, long high_water)</span>
+<span class="lineNum">     594 </span>            : {
+<span class="lineNum">     595 </span><span class="lineCov">      13050 :         if (!tps || high_water &lt; 0 || high_water &lt; low_water) {</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     597 </span>            :         }
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineCov">      13050 :         if (low_water &lt; 0) {</span>
+<span class="lineNum">     600 </span>            :                 /* Set low water level to 90% of high water level */
+<span class="lineNum">     601 </span><span class="lineCov">      13050 :                 low_water = (high_water * 9) / 10;</span>
+<span class="lineNum">     602 </span>            :         }
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineCov">      13050 :         ao2_lock(tps);</span>
+<span class="lineNum">     605 </span>            : 
+<span class="lineNum">     606 </span><span class="lineCov">      13050 :         tps-&gt;tps_queue_low = low_water;</span>
+<span class="lineNum">     607 </span><span class="lineCov">      13050 :         tps-&gt;tps_queue_high = high_water;</span>
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span><span class="lineCov">      13050 :         if (tps-&gt;high_water_alert) {</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 if (!tps-&gt;tps_queue_size || tps-&gt;tps_queue_size &lt; low_water) {</span>
+<span class="lineNum">     611 </span>            :                         /* Update water mark alert immediately */
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :                         tps-&gt;high_water_alert = 0;</span>
+<span class="lineNum">     613 </span><span class="lineNoCov">          0 :                         tps_alert_add(tps, -1);</span>
+<span class="lineNum">     614 </span>            :                 }
+<span class="lineNum">     615 </span>            :         } else {
+<span class="lineNum">     616 </span><span class="lineCov">      13050 :                 if (high_water &lt; tps-&gt;tps_queue_size) {</span>
+<span class="lineNum">     617 </span>            :                         /* Update water mark alert immediately */
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                         tps-&gt;high_water_alert = 1;</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                         tps_alert_add(tps, +1);</span>
+<span class="lineNum">     620 </span>            :                 }
+<span class="lineNum">     621 </span>            :         }
+<span class="lineNum">     622 </span>            : 
+<span class="lineNum">     623 </span><span class="lineCov">      13050 :         ao2_unlock(tps);</span>
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span><span class="lineCov">      13050 :         return 0;</span>
+<span class="lineNum">     626 </span>            : }
+<a name="627"><span class="lineNum">     627 </span>            : </a>
+<span class="lineNum">     628 </span>            : /* destroy the taskprocessor */
+<span class="lineNum">     629 </span><span class="lineCov">      97288 : static void tps_taskprocessor_dtor(void *tps)</span>
+<span class="lineNum">     630 </span>            : {
+<span class="lineNum">     631 </span><span class="lineCov">      97288 :         struct ast_taskprocessor *t = tps;</span>
+<span class="lineNum">     632 </span>            :         struct tps_task *task;
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">      97289 :         while ((task = AST_LIST_REMOVE_HEAD(&amp;t-&gt;tps_queue, list))) {</span>
+<span class="lineNum">     635 </span><span class="lineCov">          1 :                 tps_task_free(task);</span>
+<span class="lineNum">     636 </span>            :         }
+<span class="lineNum">     637 </span><span class="lineCov">      97288 :         t-&gt;tps_queue_size = 0;</span>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">      97288 :         if (t-&gt;high_water_alert) {</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :                 t-&gt;high_water_alert = 0;</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :                 tps_alert_add(t, -1);</span>
+<span class="lineNum">     642 </span>            :         }
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span><span class="lineCov">      97288 :         ast_free(t-&gt;stats);</span>
+<span class="lineNum">     645 </span><span class="lineCov">      97288 :         t-&gt;stats = NULL;</span>
+<span class="lineNum">     646 </span><span class="lineCov">      97288 :         ast_free((char *) t-&gt;name);</span>
+<span class="lineNum">     647 </span><span class="lineCov">      97288 :         t-&gt;name = NULL;</span>
+<span class="lineNum">     648 </span><span class="lineCov">      97288 :         ao2_cleanup(t-&gt;listener);</span>
+<span class="lineNum">     649 </span><span class="lineCov">      97288 :         t-&gt;listener = NULL;</span>
+<span class="lineNum">     650 </span><span class="lineCov">      97288 : }</span>
+<a name="651"><span class="lineNum">     651 </span>            : </a>
+<span class="lineNum">     652 </span>            : /* pop the front task and return it */
+<span class="lineNum">     653 </span><span class="lineCov">    2597270 : static struct tps_task *tps_taskprocessor_pop(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     654 </span>            : {
+<span class="lineNum">     655 </span>            :         struct tps_task *task;
+<span class="lineNum">     656 </span>            : 
+<span class="lineNum">     657 </span><span class="lineCov">    2597270 :         if ((task = AST_LIST_REMOVE_HEAD(&amp;tps-&gt;tps_queue, list))) {</span>
+<span class="lineNum">     658 </span><span class="lineCov">    2557339 :                 --tps-&gt;tps_queue_size;</span>
+<span class="lineNum">     659 </span><span class="lineCov">    2557339 :                 if (tps-&gt;high_water_alert &amp;&amp; tps-&gt;tps_queue_size &lt;= tps-&gt;tps_queue_low) {</span>
+<span class="lineNum">     660 </span><span class="lineCov">          2 :                         tps-&gt;high_water_alert = 0;</span>
+<span class="lineNum">     661 </span><span class="lineCov">          2 :                         tps_alert_add(tps, -1);</span>
+<span class="lineNum">     662 </span>            :                 }
+<span class="lineNum">     663 </span>            :         }
+<span class="lineNum">     664 </span><span class="lineCov">    2597270 :         return task;</span>
+<a name="665"><span class="lineNum">     665 </span>            : }</a>
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineCov">    2557787 : long ast_taskprocessor_size(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     668 </span>            : {
+<span class="lineNum">     669 </span><span class="lineCov">    2557787 :         return (tps) ? tps-&gt;tps_queue_size : -1;</span>
+<span class="lineNum">     670 </span>            : }
+<a name="671"><span class="lineNum">     671 </span>            : </a>
+<span class="lineNum">     672 </span>            : /* taskprocessor name accessor */
+<span class="lineNum">     673 </span><span class="lineCov">       9880 : const char *ast_taskprocessor_name(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     674 </span>            : {
+<span class="lineNum">     675 </span><span class="lineCov">       9880 :         if (!tps) {</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;no taskprocessor specified!\n&quot;);</span>
+<span class="lineNum">     677 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     678 </span>            :         }
+<span class="lineNum">     679 </span><span class="lineCov">       9880 :         return tps-&gt;name;</span>
+<a name="680"><span class="lineNum">     680 </span>            : }</a>
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span><span class="lineCov">      97288 : static void listener_shutdown(struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     683 </span>            : {
+<span class="lineNum">     684 </span><span class="lineCov">      97288 :         listener-&gt;callbacks-&gt;shutdown(listener);</span>
+<span class="lineNum">     685 </span><span class="lineCov">      97288 :         ao2_ref(listener-&gt;tps, -1);</span>
+<a name="686"><span class="lineNum">     686 </span><span class="lineCov">      97288 : }</span></a>
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span><span class="lineCov">      97289 : static void taskprocessor_listener_dtor(void *obj)</span>
+<span class="lineNum">     689 </span>            : {
+<span class="lineNum">     690 </span><span class="lineCov">      97289 :         struct ast_taskprocessor_listener *listener = obj;</span>
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span><span class="lineCov">      97289 :         if (listener-&gt;callbacks-&gt;dtor) {</span>
+<span class="lineNum">     693 </span><span class="lineCov">      30861 :                 listener-&gt;callbacks-&gt;dtor(listener);</span>
+<span class="lineNum">     694 </span>            :         }
+<a name="695"><span class="lineNum">     695 </span><span class="lineCov">      97289 : }</span></a>
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span><span class="lineCov">     103312 : struct ast_taskprocessor_listener *ast_taskprocessor_listener_alloc(const struct ast_taskprocessor_listener_callbacks *callbacks, void *user_data)</span>
+<span class="lineNum">     698 </span>            : {
+<span class="lineNum">     699 </span>            :         struct ast_taskprocessor_listener *listener;
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">     103312 :         listener = ao2_alloc(sizeof(*listener), taskprocessor_listener_dtor);</span>
+<span class="lineNum">     702 </span><span class="lineCov">     103312 :         if (!listener) {</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     704 </span>            :         }
+<span class="lineNum">     705 </span><span class="lineCov">     103312 :         listener-&gt;callbacks = callbacks;</span>
+<span class="lineNum">     706 </span><span class="lineCov">     103312 :         listener-&gt;user_data = user_data;</span>
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineCov">     103312 :         return listener;</span>
+<a name="709"><span class="lineNum">     709 </span>            : }</a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineCov">     183852 : struct ast_taskprocessor *ast_taskprocessor_listener_get_tps(const struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     712 </span>            : {
+<span class="lineNum">     713 </span><span class="lineCov">     183852 :         ao2_ref(listener-&gt;tps, +1);</span>
+<span class="lineNum">     714 </span><span class="lineCov">     183852 :         return listener-&gt;tps;</span>
+<a name="715"><span class="lineNum">     715 </span>            : }</a>
+<span class="lineNum">     716 </span>            : 
+<span class="lineNum">     717 </span><span class="lineCov">     583782 : void *ast_taskprocessor_listener_get_user_data(const struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     718 </span>            : {
+<span class="lineNum">     719 </span><span class="lineCov">     583782 :         return listener-&gt;user_data;</span>
+<a name="720"><span class="lineNum">     720 </span>            : }</a>
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineCov">      31868 : static void *default_listener_pvt_alloc(void)</span>
+<span class="lineNum">     723 </span>            : {
+<span class="lineNum">     724 </span>            :         struct default_taskprocessor_listener_pvt *pvt;
+<span class="lineNum">     725 </span>            : 
+<span class="lineNum">     726 </span><span class="lineCov">      31868 :         pvt = ast_calloc(1, sizeof(*pvt));</span>
+<span class="lineNum">     727 </span><span class="lineCov">      31868 :         if (!pvt) {</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     729 </span>            :         }
+<span class="lineNum">     730 </span><span class="lineCov">      31868 :         pvt-&gt;poll_thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     731 </span><span class="lineCov">      31868 :         if (ast_sem_init(&amp;pvt-&gt;sem, 0, 0) != 0) {</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;ast_sem_init(): %s\n&quot;, strerror(errno));</span>
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :                 ast_free(pvt);</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     735 </span>            :         }
+<span class="lineNum">     736 </span><span class="lineCov">      31868 :         return pvt;</span>
+<a name="737"><span class="lineNum">     737 </span>            : }</a>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineCov">     103311 : static struct ast_taskprocessor *__allocate_taskprocessor(const char *name, struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     740 </span>            : {
+<span class="lineNum">     741 </span>            :         struct ast_taskprocessor *p;
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineCov">     103311 :         p = ao2_alloc(sizeof(*p), tps_taskprocessor_dtor);</span>
+<span class="lineNum">     744 </span><span class="lineCov">     103311 :         if (!p) {</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;failed to create taskprocessor '%s'\n&quot;, name);</span>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     747 </span>            :         }
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span>            :         /* Set default congestion water level alert triggers. */
+<span class="lineNum">     750 </span><span class="lineCov">     103311 :         p-&gt;tps_queue_low = (AST_TASKPROCESSOR_HIGH_WATER_LEVEL * 9) / 10;</span>
+<span class="lineNum">     751 </span><span class="lineCov">     103311 :         p-&gt;tps_queue_high = AST_TASKPROCESSOR_HIGH_WATER_LEVEL;</span>
+<span class="lineNum">     752 </span>            : 
+<span class="lineNum">     753 </span><span class="lineCov">     103311 :         p-&gt;stats = ast_calloc(1, sizeof(*p-&gt;stats));</span>
+<span class="lineNum">     754 </span><span class="lineCov">     103311 :         p-&gt;name = ast_strdup(name);</span>
+<span class="lineNum">     755 </span><span class="lineCov">     103311 :         if (!p-&gt;stats || !p-&gt;name) {</span>
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :                 ao2_ref(p, -1);</span>
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     758 </span>            :         }
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span><span class="lineCov">     103311 :         ao2_ref(listener, +1);</span>
+<span class="lineNum">     761 </span><span class="lineCov">     103311 :         p-&gt;listener = listener;</span>
+<span class="lineNum">     762 </span>            : 
+<span class="lineNum">     763 </span><span class="lineCov">     103311 :         p-&gt;thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     764 </span>            : 
+<span class="lineNum">     765 </span><span class="lineCov">     103311 :         ao2_ref(p, +1);</span>
+<span class="lineNum">     766 </span><span class="lineCov">     103311 :         listener-&gt;tps = p;</span>
+<span class="lineNum">     767 </span>            : 
+<span class="lineNum">     768 </span><span class="lineCov">     103311 :         if (!(ao2_link(tps_singletons, p))) {</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to add taskprocessor '%s' to container\n&quot;, p-&gt;name);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :                 listener-&gt;tps = NULL;</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :                 ao2_ref(p, -2);</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     773 </span>            :         }
+<span class="lineNum">     774 </span>            : 
+<span class="lineNum">     775 </span><span class="lineCov">     103311 :         if (p-&gt;listener-&gt;callbacks-&gt;start(p-&gt;listener)) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to start taskprocessor listener for taskprocessor %s\n&quot;,</span>
+<span class="lineNum">     777 </span>            :                         p-&gt;name);
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 ast_taskprocessor_unreference(p);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     780 </span>            :         }
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span><span class="lineCov">     103311 :         return p;</span>
+<span class="lineNum">     783 </span>            : }
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            : /* Provide a reference to a taskprocessor.  Create the taskprocessor if necessary, but don't
+<a name="786"><span class="lineNum">     786 </span>            :  * create the taskprocessor if we were told via ast_tps_options to return a reference only</a>
+<span class="lineNum">     787 </span>            :  * if it already exists */
+<span class="lineNum">     788 </span><span class="lineCov">      31989 : struct ast_taskprocessor *ast_taskprocessor_get(const char *name, enum ast_tps_options create)</span>
+<span class="lineNum">     789 </span>            : {
+<span class="lineNum">     790 </span>            :         struct ast_taskprocessor *p;
+<span class="lineNum">     791 </span>            :         struct ast_taskprocessor_listener *listener;
+<span class="lineNum">     792 </span>            :         struct default_taskprocessor_listener_pvt *pvt;
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span><span class="lineCov">      31989 :         if (ast_strlen_zero(name)) {</span>
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;requesting a nameless taskprocessor!!!\n&quot;);</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     797 </span>            :         }
+<span class="lineNum">     798 </span><span class="lineCov">      31989 :         p = ao2_find(tps_singletons, name, OBJ_KEY);</span>
+<span class="lineNum">     799 </span><span class="lineCov">      31989 :         if (p) {</span>
+<span class="lineNum">     800 </span><span class="lineCov">        119 :                 return p;</span>
+<span class="lineNum">     801 </span>            :         }
+<span class="lineNum">     802 </span><span class="lineCov">      31870 :         if (create &amp; TPS_REF_IF_EXISTS) {</span>
+<span class="lineNum">     803 </span>            :                 /* calling function does not want a new taskprocessor to be created if it doesn't already exist */
+<span class="lineNum">     804 </span><span class="lineCov">          2 :                 return NULL;</span>
+<span class="lineNum">     805 </span>            :         }
+<span class="lineNum">     806 </span>            :         /* Create a new taskprocessor. Start by creating a default listener */
+<span class="lineNum">     807 </span><span class="lineCov">      31868 :         pvt = default_listener_pvt_alloc();</span>
+<span class="lineNum">     808 </span><span class="lineCov">      31868 :         if (!pvt) {</span>
+<span class="lineNum">     809 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     810 </span>            :         }
+<span class="lineNum">     811 </span><span class="lineCov">      31868 :         listener = ast_taskprocessor_listener_alloc(&amp;default_listener_callbacks, pvt);</span>
+<span class="lineNum">     812 </span><span class="lineCov">      31868 :         if (!listener) {</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">          0 :                 default_listener_pvt_destroy(pvt);</span>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     815 </span>            :         }
+<span class="lineNum">     816 </span>            : 
+<span class="lineNum">     817 </span><span class="lineCov">      31868 :         p = __allocate_taskprocessor(name, listener);</span>
+<span class="lineNum">     818 </span>            : 
+<span class="lineNum">     819 </span><span class="lineCov">      31868 :         ao2_ref(listener, -1);</span>
+<span class="lineNum">     820 </span><span class="lineCov">      31868 :         return p;</span>
+<a name="821"><span class="lineNum">     821 </span>            : }</a>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineCov">      71444 : struct ast_taskprocessor *ast_taskprocessor_create_with_listener(const char *name, struct ast_taskprocessor_listener *listener)</span>
+<span class="lineNum">     824 </span>            : {
+<span class="lineNum">     825 </span><span class="lineCov">      71444 :         struct ast_taskprocessor *p = ao2_find(tps_singletons, name, OBJ_KEY);</span>
+<span class="lineNum">     826 </span>            : 
+<span class="lineNum">     827 </span><span class="lineCov">      71444 :         if (p) {</span>
+<span class="lineNum">     828 </span><span class="lineCov">          1 :                 ast_taskprocessor_unreference(p);</span>
+<span class="lineNum">     829 </span><span class="lineCov">          1 :                 return NULL;</span>
+<span class="lineNum">     830 </span>            :         }
+<span class="lineNum">     831 </span><span class="lineCov">      71443 :         return __allocate_taskprocessor(name, listener);</span>
+<a name="832"><span class="lineNum">     832 </span>            : }</a>
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span><span class="lineCov">      25289 : void ast_taskprocessor_set_local(struct ast_taskprocessor *tps,</span>
+<a name="835"><span class="lineNum">     835 </span>            :         void *local_data)</a>
+<span class="lineNum">     836 </span>            : {
+<span class="lineNum">     837 </span><span class="lineCov">      50578 :         SCOPED_AO2LOCK(lock, tps);</span>
+<span class="lineNum">     838 </span><span class="lineCov">      25289 :         tps-&gt;local_data = local_data;</span>
+<span class="lineNum">     839 </span><span class="lineCov">      25289 : }</span>
+<a name="840"><span class="lineNum">     840 </span>            : </a>
+<span class="lineNum">     841 </span>            : /* decrement the taskprocessor reference count and unlink from the container if necessary */
+<span class="lineNum">     842 </span><span class="lineCov">     324517 : void *ast_taskprocessor_unreference(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     843 </span>            : {
+<span class="lineNum">     844 </span><span class="lineCov">     324517 :         if (!tps) {</span>
+<span class="lineNum">     845 </span><span class="lineCov">      38476 :                 return NULL;</span>
+<span class="lineNum">     846 </span>            :         }
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :         /* To prevent another thread from finding and getting a reference to this
+<span class="lineNum">     849 </span>            :          * taskprocessor we hold the singletons lock. If we didn't do this then
+<span class="lineNum">     850 </span>            :          * they may acquire it and find that the listener has been shut down.
+<span class="lineNum">     851 </span>            :          */
+<span class="lineNum">     852 </span><span class="lineCov">     286041 :         ao2_lock(tps_singletons);</span>
+<span class="lineNum">     853 </span>            : 
+<span class="lineNum">     854 </span><span class="lineCov">     286041 :         if (ao2_ref(tps, -1) &gt; 3) {</span>
+<span class="lineNum">     855 </span><span class="lineCov">     188753 :                 ao2_unlock(tps_singletons);</span>
+<span class="lineNum">     856 </span><span class="lineCov">     188753 :                 return NULL;</span>
+<span class="lineNum">     857 </span>            :         }
+<span class="lineNum">     858 </span>            : 
+<span class="lineNum">     859 </span>            :         /* If we're down to 3 references, then those must be:
+<span class="lineNum">     860 </span>            :          * 1. The reference we just got rid of
+<span class="lineNum">     861 </span>            :          * 2. The container
+<span class="lineNum">     862 </span>            :          * 3. The listener
+<span class="lineNum">     863 </span>            :          */
+<span class="lineNum">     864 </span><span class="lineCov">      97288 :         ao2_unlink_flags(tps_singletons, tps, OBJ_NOLOCK);</span>
+<span class="lineNum">     865 </span><span class="lineCov">      97288 :         ao2_unlock(tps_singletons);</span>
+<span class="lineNum">     866 </span>            : 
+<span class="lineNum">     867 </span><span class="lineCov">      97288 :         listener_shutdown(tps-&gt;listener);</span>
+<span class="lineNum">     868 </span><span class="lineCov">      97288 :         return NULL;</span>
+<span class="lineNum">     869 </span>            : }
+<a name="870"><span class="lineNum">     870 </span>            : </a>
+<span class="lineNum">     871 </span>            : /* push the task into the taskprocessor queue */
+<span class="lineNum">     872 </span><span class="lineCov">    2557340 : static int taskprocessor_push(struct ast_taskprocessor *tps, struct tps_task *t)</span>
+<span class="lineNum">     873 </span>            : {
+<span class="lineNum">     874 </span>            :         int previous_size;
+<span class="lineNum">     875 </span>            :         int was_empty;
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineCov">    2557340 :         if (!tps) {</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;tps is NULL!\n&quot;);</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     880 </span>            :         }
+<span class="lineNum">     881 </span>            : 
+<span class="lineNum">     882 </span><span class="lineCov">    2557340 :         if (!t) {</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;t is NULL!\n&quot;);</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     885 </span>            :         }
+<span class="lineNum">     886 </span>            : 
+<span class="lineNum">     887 </span><span class="lineCov">    2557340 :         ao2_lock(tps);</span>
+<span class="lineNum">     888 </span><span class="lineCov">    2557340 :         AST_LIST_INSERT_TAIL(&amp;tps-&gt;tps_queue, t, list);</span>
+<span class="lineNum">     889 </span><span class="lineCov">    2557340 :         previous_size = tps-&gt;tps_queue_size++;</span>
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span><span class="lineCov">    2557340 :         if (tps-&gt;tps_queue_high &lt;= tps-&gt;tps_queue_size) {</span>
+<span class="lineNum">     892 </span><span class="lineCov">      28900 :                 if (!tps-&gt;high_water_alert) {</span>
+<span class="lineNum">     893 </span><span class="lineCov">          2 :                         ast_log(LOG_WARNING, &quot;The '%s' task processor queue reached %ld scheduled tasks%s.\n&quot;,</span>
+<span class="lineNum">     894 </span><span class="lineCov">          2 :                                 tps-&gt;name, tps-&gt;tps_queue_size, tps-&gt;high_water_warned ? &quot; again&quot; : &quot;&quot;);</span>
+<span class="lineNum">     895 </span><span class="lineCov">          2 :                         tps-&gt;high_water_warned = 1;</span>
+<span class="lineNum">     896 </span><span class="lineCov">          2 :                         tps-&gt;high_water_alert = 1;</span>
+<span class="lineNum">     897 </span><span class="lineCov">          2 :                         tps_alert_add(tps, +1);</span>
+<span class="lineNum">     898 </span>            :                 }
+<span class="lineNum">     899 </span>            :         }
+<span class="lineNum">     900 </span>            : 
+<span class="lineNum">     901 </span>            :         /* The currently executing task counts as still in queue */
+<span class="lineNum">     902 </span><span class="lineCov">    2557340 :         was_empty = tps-&gt;executing ? 0 : previous_size == 0;</span>
+<span class="lineNum">     903 </span><span class="lineCov">    2557340 :         ao2_unlock(tps);</span>
+<span class="lineNum">     904 </span><span class="lineCov">    2557340 :         tps-&gt;listener-&gt;callbacks-&gt;task_pushed(tps-&gt;listener, was_empty);</span>
+<span class="lineNum">     905 </span><span class="lineCov">    2557340 :         return 0;</span>
+<a name="906"><span class="lineNum">     906 </span>            : }</a>
+<span class="lineNum">     907 </span>            : 
+<span class="lineNum">     908 </span><span class="lineCov">     693282 : int ast_taskprocessor_push(struct ast_taskprocessor *tps, int (*task_exe)(void *datap), void *datap)</span>
+<span class="lineNum">     909 </span>            : {
+<span class="lineNum">     910 </span><span class="lineCov">     693282 :         return taskprocessor_push(tps, tps_task_alloc(task_exe, datap));</span>
+<a name="911"><span class="lineNum">     911 </span>            : }</a>
+<span class="lineNum">     912 </span>            : 
+<span class="lineNum">     913 </span><span class="lineCov">    1864058 : int ast_taskprocessor_push_local(struct ast_taskprocessor *tps, int (*task_exe)(struct ast_taskprocessor_local *datap), void *datap)</span>
+<span class="lineNum">     914 </span>            : {
+<span class="lineNum">     915 </span><span class="lineCov">    1864058 :         return taskprocessor_push(tps, tps_task_alloc_local(task_exe, datap));</span>
+<a name="916"><span class="lineNum">     916 </span>            : }</a>
+<span class="lineNum">     917 </span>            : 
+<span class="lineNum">     918 </span><span class="lineCov">          8 : int ast_taskprocessor_suspend(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     919 </span>            : {
+<span class="lineNum">     920 </span><span class="lineCov">          8 :         if (tps) {</span>
+<span class="lineNum">     921 </span><span class="lineCov">          8 :                 ao2_lock(tps);</span>
+<span class="lineNum">     922 </span><span class="lineCov">          8 :                 tps-&gt;suspended = 1;</span>
+<span class="lineNum">     923 </span><span class="lineCov">          8 :                 ao2_unlock(tps);</span>
+<span class="lineNum">     924 </span><span class="lineCov">          8 :                 return 0;</span>
+<span class="lineNum">     925 </span>            :         }
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="927"><span class="lineNum">     927 </span>            : }</a>
+<span class="lineNum">     928 </span>            : 
+<span class="lineNum">     929 </span><span class="lineCov">          8 : int ast_taskprocessor_unsuspend(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     930 </span>            : {
+<span class="lineNum">     931 </span><span class="lineCov">          8 :         if (tps) {</span>
+<span class="lineNum">     932 </span><span class="lineCov">          8 :                 ao2_lock(tps);</span>
+<span class="lineNum">     933 </span><span class="lineCov">          8 :                 tps-&gt;suspended = 0;</span>
+<span class="lineNum">     934 </span><span class="lineCov">          8 :                 ao2_unlock(tps);</span>
+<span class="lineNum">     935 </span><span class="lineCov">          8 :                 return 0;</span>
+<span class="lineNum">     936 </span>            :         }
+<span class="lineNum">     937 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="938"><span class="lineNum">     938 </span>            : }</a>
+<span class="lineNum">     939 </span>            : 
+<span class="lineNum">     940 </span><span class="lineCov">          8 : int ast_taskprocessor_is_suspended(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     941 </span>            : {
+<span class="lineNum">     942 </span><span class="lineCov">          8 :         return tps ? tps-&gt;suspended : -1;</span>
+<a name="943"><span class="lineNum">     943 </span>            : }</a>
+<span class="lineNum">     944 </span>            : 
+<span class="lineNum">     945 </span><span class="lineCov">    2597270 : int ast_taskprocessor_execute(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">     946 </span>            : {
+<span class="lineNum">     947 </span>            :         struct ast_taskprocessor_local local;
+<span class="lineNum">     948 </span>            :         struct tps_task *t;
+<span class="lineNum">     949 </span>            :         long size;
+<span class="lineNum">     950 </span>            : 
+<span class="lineNum">     951 </span><span class="lineCov">    2597270 :         ao2_lock(tps);</span>
+<span class="lineNum">     952 </span><span class="lineCov">    2597270 :         t = tps_taskprocessor_pop(tps);</span>
+<span class="lineNum">     953 </span><span class="lineCov">    2597270 :         if (!t) {</span>
+<span class="lineNum">     954 </span><span class="lineCov">      39931 :                 ao2_unlock(tps);</span>
+<span class="lineNum">     955 </span><span class="lineCov">      39931 :                 return 0;</span>
+<span class="lineNum">     956 </span>            :         }
+<span class="lineNum">     957 </span>            : 
+<span class="lineNum">     958 </span><span class="lineCov">    2557339 :         tps-&gt;thread = pthread_self();</span>
+<span class="lineNum">     959 </span><span class="lineCov">    2557339 :         tps-&gt;executing = 1;</span>
+<span class="lineNum">     960 </span>            : 
+<span class="lineNum">     961 </span><span class="lineCov">    2557339 :         if (t-&gt;wants_local) {</span>
+<span class="lineNum">     962 </span><span class="lineCov">    1864058 :                 local.local_data = tps-&gt;local_data;</span>
+<span class="lineNum">     963 </span><span class="lineCov">    1864058 :                 local.data = t-&gt;datap;</span>
+<span class="lineNum">     964 </span>            :         }
+<span class="lineNum">     965 </span><span class="lineCov">    2557339 :         ao2_unlock(tps);</span>
+<span class="lineNum">     966 </span>            : 
+<span class="lineNum">     967 </span><span class="lineCov">    2557339 :         if (t-&gt;wants_local) {</span>
+<span class="lineNum">     968 </span><span class="lineCov">    1864058 :                 t-&gt;callback.execute_local(&amp;local);</span>
+<span class="lineNum">     969 </span>            :         } else {
+<span class="lineNum">     970 </span><span class="lineCov">     693281 :                 t-&gt;callback.execute(t-&gt;datap);</span>
+<span class="lineNum">     971 </span>            :         }
+<span class="lineNum">     972 </span><span class="lineCov">    2557339 :         tps_task_free(t);</span>
+<span class="lineNum">     973 </span>            : 
+<span class="lineNum">     974 </span><span class="lineCov">    2557339 :         ao2_lock(tps);</span>
+<span class="lineNum">     975 </span><span class="lineCov">    2557339 :         tps-&gt;thread = AST_PTHREADT_NULL;</span>
+<span class="lineNum">     976 </span>            :         /* We need to check size in the same critical section where we reset the
+<span class="lineNum">     977 </span>            :          * executing bit. Avoids a race condition where a task is pushed right
+<span class="lineNum">     978 </span>            :          * after we pop an empty stack.
+<span class="lineNum">     979 </span>            :          */
+<span class="lineNum">     980 </span><span class="lineCov">    2557339 :         tps-&gt;executing = 0;</span>
+<span class="lineNum">     981 </span><span class="lineCov">    2557339 :         size = ast_taskprocessor_size(tps);</span>
+<span class="lineNum">     982 </span>            : 
+<span class="lineNum">     983 </span>            :         /* Update the stats */
+<span class="lineNum">     984 </span><span class="lineCov">    2557339 :         if (tps-&gt;stats) {</span>
+<span class="lineNum">     985 </span><span class="lineCov">    2557339 :                 ++tps-&gt;stats-&gt;_tasks_processed_count;</span>
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span>            :                 /* Include the task we just executed as part of the queue size. */
+<span class="lineNum">     988 </span><span class="lineCov">    2557339 :                 if (size &gt;= tps-&gt;stats-&gt;max_qsize) {</span>
+<span class="lineNum">     989 </span><span class="lineCov">      94454 :                         tps-&gt;stats-&gt;max_qsize = size + 1;</span>
+<span class="lineNum">     990 </span>            :                 }
+<span class="lineNum">     991 </span>            :         }
+<span class="lineNum">     992 </span><span class="lineCov">    2557339 :         ao2_unlock(tps);</span>
+<span class="lineNum">     993 </span>            : 
+<span class="lineNum">     994 </span>            :         /* If we executed a task, check for the transition to empty */
+<span class="lineNum">     995 </span><span class="lineCov">    2557339 :         if (size == 0 &amp;&amp; tps-&gt;listener-&gt;callbacks-&gt;emptied) {</span>
+<span class="lineNum">     996 </span><span class="lineCov">     149601 :                 tps-&gt;listener-&gt;callbacks-&gt;emptied(tps-&gt;listener);</span>
+<span class="lineNum">     997 </span>            :         }
+<span class="lineNum">     998 </span><span class="lineCov">    2557339 :         return size &gt; 0;</span>
+<a name="999"><span class="lineNum">     999 </span>            : }</a>
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span><span class="lineCov">       5630 : int ast_taskprocessor_is_task(struct ast_taskprocessor *tps)</span>
+<span class="lineNum">    1002 </span>            : {
+<span class="lineNum">    1003 </span>            :         int is_task;
+<span class="lineNum">    1004 </span>            : 
+<span class="lineNum">    1005 </span><span class="lineCov">       5630 :         ao2_lock(tps);</span>
+<span class="lineNum">    1006 </span><span class="lineCov">       5630 :         is_task = pthread_equal(tps-&gt;thread, pthread_self());</span>
+<span class="lineNum">    1007 </span><span class="lineCov">       5630 :         ao2_unlock(tps);</span>
+<span class="lineNum">    1008 </span><span class="lineCov">       5630 :         return is_task;</span>
+<a name="1009"><span class="lineNum">    1009 </span>            : }</a>
+<span class="lineNum">    1010 </span>            : 
+<span class="lineNum">    1011 </span><span class="lineCov">      87795 : unsigned int ast_taskprocessor_seq_num(void)</span>
+<span class="lineNum">    1012 </span>            : {
+<span class="lineNum">    1013 </span>            :         static int seq_num;
+<span class="lineNum">    1014 </span>            : 
+<span class="lineNum">    1015 </span><span class="lineCov">      87795 :         return (unsigned int) ast_atomic_fetchadd_int(&amp;seq_num, +1);</span>
+<a name="1016"><span class="lineNum">    1016 </span>            : }</a>
+<span class="lineNum">    1017 </span>            : 
+<span class="lineNum">    1018 </span><span class="lineCov">      87795 : void ast_taskprocessor_build_name(char *buf, unsigned int size, const char *format, ...)</span>
+<span class="lineNum">    1019 </span>            : {
+<span class="lineNum">    1020 </span>            :         va_list ap;
+<span class="lineNum">    1021 </span>            :         int user_size;
+<span class="lineNum">    1022 </span>            : #define SEQ_STR_SIZE (1 + 8 + 1)        /* Dash plus 8 hex digits plus null terminator */
+<span class="lineNum">    1023 </span>            : 
+<span class="lineNum">    1024 </span><span class="lineCov">      87795 :         ast_assert(buf != NULL);</span>
+<span class="lineNum">    1025 </span><span class="lineCov">      87795 :         ast_assert(SEQ_STR_SIZE &lt;= size);</span>
+<span class="lineNum">    1026 </span>            : 
+<span class="lineNum">    1027 </span><span class="lineCov">      87795 :         va_start(ap, format);</span>
+<span class="lineNum">    1028 </span><span class="lineCov">      87795 :         user_size = vsnprintf(buf, size - (SEQ_STR_SIZE - 1), format, ap);</span>
+<span class="lineNum">    1029 </span><span class="lineCov">      87795 :         va_end(ap);</span>
+<span class="lineNum">    1030 </span><span class="lineCov">      87795 :         if (user_size &lt; 0) {</span>
+<span class="lineNum">    1031 </span>            :                 /*
+<span class="lineNum">    1032 </span>            :                  * Wow!  We got an output error to a memory buffer.
+<span class="lineNum">    1033 </span>            :                  * Assume no user part of name written.
+<span class="lineNum">    1034 </span>            :                  */
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                 user_size = 0;</span>
+<span class="lineNum">    1036 </span><span class="lineCov">      87795 :         } else if (size &lt; user_size + SEQ_STR_SIZE) {</span>
+<span class="lineNum">    1037 </span>            :                 /* Truncate user part of name to make sequence number fit. */
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                 user_size = size - SEQ_STR_SIZE;</span>
+<span class="lineNum">    1039 </span>            :         }
+<span class="lineNum">    1040 </span>            : 
+<span class="lineNum">    1041 </span>            :         /* Append sequence number to end of user name. */
+<span class="lineNum">    1042 </span><span class="lineCov">      87795 :         snprintf(buf + user_size, SEQ_STR_SIZE, &quot;-%08x&quot;, ast_taskprocessor_seq_num());</span>
+<span class="lineNum">    1043 </span><span class="lineCov">      87795 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

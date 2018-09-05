@@ -1,0 +1,1787 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - Asterisk GIT-16-d8ac5bf1a5 - res/res_pjsip_outbound_publish.c</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">res</a> - res_pjsip_outbound_publish.c<span style="font-size: 80%;"> (source / <a href="res_pjsip_outbound_publish.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">Asterisk GIT-16-d8ac5bf1a5</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">433</td>
+            <td class="headerCovTableEntry">705</td>
+            <td class="headerCovTableEntryLo">61.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-07-23 21:48:22</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">64</td>
+            <td class="headerCovTableEntry">78</td>
+            <td class="headerCovTableEntryMed">82.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * Asterisk -- An open source telephony toolkit.
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  * Copyright (C) 2014, Digium, Inc.
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  * Joshua Colp &lt;jcolp@digium.com&gt;
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * See http://www.asterisk.org for more information about
+<span class="lineNum">       9 </span>            :  * the Asterisk project. Please do not directly contact
+<span class="lineNum">      10 </span>            :  * any of the maintainers of this project for assistance;
+<span class="lineNum">      11 </span>            :  * the project provides a web site, mailing lists and IRC
+<span class="lineNum">      12 </span>            :  * channels for your use.
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * This program is free software, distributed under the terms of
+<span class="lineNum">      15 </span>            :  * the GNU General Public License Version 2. See the LICENSE file
+<span class="lineNum">      16 </span>            :  * at the top of the source tree.
+<span class="lineNum">      17 </span>            :  */
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : /*** MODULEINFO
+<span class="lineNum">      20 </span>            :         &lt;depend&gt;pjproject&lt;/depend&gt;
+<span class="lineNum">      21 </span>            :         &lt;depend&gt;res_pjproject&lt;/depend&gt;
+<span class="lineNum">      22 </span>            :         &lt;depend&gt;res_pjsip&lt;/depend&gt;
+<span class="lineNum">      23 </span>            :         &lt;support_level&gt;core&lt;/support_level&gt;
+<span class="lineNum">      24 </span>            :  ***/
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;asterisk.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &lt;pjsip.h&gt;
+<span class="lineNum">      29 </span>            : #include &lt;pjsip_simple.h&gt;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;asterisk/res_pjproject.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;asterisk/res_pjsip.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;asterisk/res_pjsip_outbound_publish.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;asterisk/module.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;asterisk/taskprocessor.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;asterisk/threadpool.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;asterisk/datastore.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;res_pjsip/include/res_pjsip_private.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : /*** DOCUMENTATION
+<span class="lineNum">      41 </span>            :         &lt;configInfo name=&quot;res_pjsip_outbound_publish&quot; language=&quot;en_US&quot;&gt;
+<span class="lineNum">      42 </span>            :                 &lt;synopsis&gt;SIP resource for outbound publish&lt;/synopsis&gt;
+<span class="lineNum">      43 </span>            :                 &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      44 </span>            :                         &lt;emphasis&gt;Outbound Publish&lt;/emphasis&gt;
+<span class="lineNum">      45 </span>            :                         &lt;/para&gt;
+<span class="lineNum">      46 </span>            :                         &lt;para&gt;This module allows &lt;literal&gt;res_pjsip&lt;/literal&gt; to publish to other SIP servers.&lt;/para&gt;
+<span class="lineNum">      47 </span>            :                 &lt;/description&gt;
+<span class="lineNum">      48 </span>            :                 &lt;configFile name=&quot;pjsip.conf&quot;&gt;
+<span class="lineNum">      49 </span>            :                         &lt;configObject name=&quot;outbound-publish&quot;&gt;
+<span class="lineNum">      50 </span>            :                                 &lt;synopsis&gt;The configuration for outbound publish&lt;/synopsis&gt;
+<span class="lineNum">      51 </span>            :                                 &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      52 </span>            :                                         Publish is &lt;emphasis&gt;COMPLETELY&lt;/emphasis&gt; separate from the rest of
+<span class="lineNum">      53 </span>            :                                         &lt;literal&gt;pjsip.conf&lt;/literal&gt;. A minimal configuration consists of
+<span class="lineNum">      54 </span>            :                                         setting a &lt;literal&gt;server_uri&lt;/literal&gt; and &lt;literal&gt;event&lt;/literal&gt;.
+<span class="lineNum">      55 </span>            :                                 &lt;/para&gt;&lt;/description&gt;
+<span class="lineNum">      56 </span>            :                                 &lt;configOption name=&quot;expiration&quot; default=&quot;3600&quot;&gt;
+<span class="lineNum">      57 </span>            :                                         &lt;synopsis&gt;Expiration time for publications in seconds&lt;/synopsis&gt;
+<span class="lineNum">      58 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      59 </span>            :                                 &lt;configOption name=&quot;outbound_auth&quot; default=&quot;&quot;&gt;
+<span class="lineNum">      60 </span>            :                                         &lt;synopsis&gt;Authentication object(s) to be used for outbound publishes.&lt;/synopsis&gt;
+<span class="lineNum">      61 </span>            :                                         &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      62 </span>            :                                                 This is a comma-delimited list of &lt;replaceable&gt;auth&lt;/replaceable&gt;
+<span class="lineNum">      63 </span>            :                                                 sections defined in &lt;filename&gt;pjsip.conf&lt;/filename&gt; used to respond
+<span class="lineNum">      64 </span>            :                                                 to outbound authentication challenges.&lt;/para&gt;
+<span class="lineNum">      65 </span>            :                                                 &lt;note&gt;&lt;para&gt;
+<span class="lineNum">      66 </span>            :                                                 Using the same auth section for inbound and outbound
+<span class="lineNum">      67 </span>            :                                                 authentication is not recommended.  There is a difference in
+<span class="lineNum">      68 </span>            :                                                 meaning for an empty realm setting between inbound and outbound
+<span class="lineNum">      69 </span>            :                                                 authentication uses.  See the auth realm description for details.
+<span class="lineNum">      70 </span>            :                                                 &lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">      71 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">      72 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      73 </span>            :                                 &lt;configOption name=&quot;outbound_proxy&quot; default=&quot;&quot;&gt;
+<span class="lineNum">      74 </span>            :                                         &lt;synopsis&gt;Full SIP URI of the outbound proxy used to send publishes&lt;/synopsis&gt;
+<span class="lineNum">      75 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      76 </span>            :                                 &lt;configOption name=&quot;server_uri&quot;&gt;
+<span class="lineNum">      77 </span>            :                                         &lt;synopsis&gt;SIP URI of the server and entity to publish to&lt;/synopsis&gt;
+<span class="lineNum">      78 </span>            :                                         &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      79 </span>            :                                                 This is the URI at which to find the entity and server to send the outbound PUBLISH to.
+<span class="lineNum">      80 </span>            :                                                 This URI is used as the request URI of the outbound PUBLISH request from Asterisk.
+<span class="lineNum">      81 </span>            :                                         &lt;/para&gt;&lt;/description&gt;
+<span class="lineNum">      82 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      83 </span>            :                                 &lt;configOption name=&quot;from_uri&quot;&gt;
+<span class="lineNum">      84 </span>            :                                         &lt;synopsis&gt;SIP URI to use in the From header&lt;/synopsis&gt;
+<span class="lineNum">      85 </span>            :                                         &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      86 </span>            :                                                 This is the URI that will be placed into the From header of outgoing PUBLISH
+<span class="lineNum">      87 </span>            :                                                 messages. If no URI is specified then the URI provided in &lt;literal&gt;server_uri&lt;/literal&gt;
+<span class="lineNum">      88 </span>            :                                                 will be used.
+<span class="lineNum">      89 </span>            :                                         &lt;/para&gt;&lt;/description&gt;
+<span class="lineNum">      90 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      91 </span>            :                                 &lt;configOption name=&quot;to_uri&quot;&gt;
+<span class="lineNum">      92 </span>            :                                         &lt;synopsis&gt;SIP URI to use in the To header&lt;/synopsis&gt;
+<span class="lineNum">      93 </span>            :                                         &lt;description&gt;&lt;para&gt;
+<span class="lineNum">      94 </span>            :                                                 This is the URI that will be placed into the To header of outgoing PUBLISH
+<span class="lineNum">      95 </span>            :                                                 messages. If no URI is specified then the URI provided in &lt;literal&gt;server_uri&lt;/literal&gt;
+<span class="lineNum">      96 </span>            :                                                 will be used.
+<span class="lineNum">      97 </span>            :                                         &lt;/para&gt;&lt;/description&gt;
+<span class="lineNum">      98 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">      99 </span>            :                                 &lt;configOption name=&quot;event&quot; default=&quot;&quot;&gt;
+<span class="lineNum">     100 </span>            :                                         &lt;synopsis&gt;Event type of the PUBLISH.&lt;/synopsis&gt;
+<span class="lineNum">     101 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     102 </span>            :                                 &lt;configOption name=&quot;max_auth_attempts&quot; default=&quot;5&quot;&gt;
+<span class="lineNum">     103 </span>            :                                         &lt;synopsis&gt;Maximum number of authentication attempts before stopping the publication.&lt;/synopsis&gt;
+<span class="lineNum">     104 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     105 </span>            :                                 &lt;configOption name=&quot;transport&quot;&gt;
+<span class="lineNum">     106 </span>            :                                         &lt;synopsis&gt;Transport used for outbound publish&lt;/synopsis&gt;
+<span class="lineNum">     107 </span>            :                                         &lt;description&gt;
+<span class="lineNum">     108 </span>            :                                                 &lt;note&gt;&lt;para&gt;A &lt;replaceable&gt;transport&lt;/replaceable&gt; configured in
+<span class="lineNum">     109 </span>            :                                                 &lt;literal&gt;pjsip.conf&lt;/literal&gt;. As with other &lt;literal&gt;res_pjsip&lt;/literal&gt; modules, this will use the first available transport of the appropriate type if unconfigured.&lt;/para&gt;&lt;/note&gt;
+<span class="lineNum">     110 </span>            :                                         &lt;/description&gt;
+<span class="lineNum">     111 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     112 </span>            :                                 &lt;configOption name=&quot;multi_user&quot; default=&quot;no&quot;&gt;
+<span class="lineNum">     113 </span>            :                                         &lt;synopsis&gt;Enable multi-user support&lt;/synopsis&gt;
+<span class="lineNum">     114 </span>            :                                         &lt;description&gt;&lt;para&gt;When enabled the user portion of the server uri is replaced by a dynamically created user&lt;/para&gt;&lt;/description&gt;
+<span class="lineNum">     115 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     116 </span>            :                                 &lt;configOption name=&quot;type&quot;&gt;
+<span class="lineNum">     117 </span>            :                                         &lt;synopsis&gt;Must be of type 'outbound-publish'.&lt;/synopsis&gt;
+<span class="lineNum">     118 </span>            :                                 &lt;/configOption&gt;
+<span class="lineNum">     119 </span>            :                         &lt;/configObject&gt;
+<span class="lineNum">     120 </span>            :                 &lt;/configFile&gt;
+<span class="lineNum">     121 </span>            :         &lt;/configInfo&gt;
+<span class="lineNum">     122 </span>            :  ***/
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            : static int pjsip_max_url_size = PJSIP_MAX_URL_SIZE;
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span>            : /*! \brief Queued outbound publish message */
+<span class="lineNum">     127 </span>            : struct sip_outbound_publish_message {
+<span class="lineNum">     128 </span>            :         /*! \brief Optional body */
+<span class="lineNum">     129 </span>            :         struct ast_sip_body body;
+<span class="lineNum">     130 </span>            :         /*! \brief Linked list information */
+<span class="lineNum">     131 </span>            :         AST_LIST_ENTRY(sip_outbound_publish_message) entry;
+<span class="lineNum">     132 </span>            :         /*! \brief Extra space for body contents */
+<span class="lineNum">     133 </span>            :         char body_contents[0];
+<span class="lineNum">     134 </span>            : };
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : /*
+<span class="lineNum">     137 </span>            :  * A note about some of the object types used in this module:
+<span class="lineNum">     138 </span>            :  *
+<span class="lineNum">     139 </span>            :  * The reason we currently have 4 separate object types that relate to configuration,
+<span class="lineNum">     140 </span>            :  * publishing, state, and client information is due to object lifetimes and order of
+<span class="lineNum">     141 </span>            :  * destruction dependencies.
+<span class="lineNum">     142 </span>            :  *
+<span class="lineNum">     143 </span>            :  * Separation of concerns is a good thing and of course it makes sense to have a
+<span class="lineNum">     144 </span>            :  * configuration object type as well as an object type wrapper around pjsip's publishing
+<span class="lineNum">     145 </span>            :  * client class. There also may be run time state data that needs to be tracked, so
+<span class="lineNum">     146 </span>            :  * again having something to handle that is prudent. However, it may be tempting to think
+<span class="lineNum">     147 </span>            :  * &quot;why not combine the state and client object types?&quot; Especially seeing as how they have
+<span class="lineNum">     148 </span>            :  * a one-to-one relationship. The answer is, it's possible, but it'd make the code a bit
+<span class="lineNum">     149 </span>            :  * more awkward.
+<span class="lineNum">     150 </span>            :  *
+<span class="lineNum">     151 </span>            :  * Currently this module maintains a global container of current state objects. When this
+<span class="lineNum">     152 </span>            :  * states container is replaced, or deleted, it un-references all contained objects. Any
+<span class="lineNum">     153 </span>            :  * state with a reference left have probably been carried over from a reload/realtime fetch.
+<span class="lineNum">     154 </span>            :  * States not carried over are destructed and the associated client (and all its publishers)
+<span class="lineNum">     155 </span>            :  * get unpublished.
+<span class="lineNum">     156 </span>            :  *
+<span class="lineNum">     157 </span>            :  * This &quot;unpublishing&quot; goes through a careful process of unpublishing the client, all its
+<span class="lineNum">     158 </span>            :  * publishers, and making sure all the appropriate references are removed in a sane order.
+<span class="lineNum">     159 </span>            :  * This process is essentially kicked off with the destruction of the state. If the state
+<span class="lineNum">     160 </span>            :  * and client objects were to be merged, where clients became the globally tracked object
+<span class="lineNum">     161 </span>            :  * type, this &quot;unpublishing&quot; process would never start because of the multiple references
+<span class="lineNum">     162 </span>            :  * held to the client object over it's lifetime. Meaning the global tracking container
+<span class="lineNum">     163 </span>            :  * would remove its reference to the client object when done with it, but other sources
+<span class="lineNum">     164 </span>            :  * would still be holding a reference to it (namely the datastore and publisher(s)).
+<span class="lineNum">     165 </span>            :  *
+<span class="lineNum">     166 </span>            :  * Thus at this time it is easier to keep them separate.
+<span class="lineNum">     167 </span>            :  */
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : /*! \brief Outbound publish information */
+<span class="lineNum">     170 </span>            : struct ast_sip_outbound_publish {
+<span class="lineNum">     171 </span>            :         /*! \brief Sorcery object details */
+<span class="lineNum">     172 </span>            :         SORCERY_OBJECT(details);
+<span class="lineNum">     173 </span>            :         /*! \brief Stringfields */
+<span class="lineNum">     174 </span>            :         AST_DECLARE_STRING_FIELDS(
+<span class="lineNum">     175 </span>            :                 /*! \brief URI for the entity and server */
+<span class="lineNum">     176 </span>            :                 AST_STRING_FIELD(server_uri);
+<span class="lineNum">     177 </span>            :                 /*! \brief URI for the From header */
+<span class="lineNum">     178 </span>            :                 AST_STRING_FIELD(from_uri);
+<span class="lineNum">     179 </span>            :                 /*! \brief URI for the To header */
+<span class="lineNum">     180 </span>            :                 AST_STRING_FIELD(to_uri);
+<span class="lineNum">     181 </span>            :                 /*! \brief Explicit transport to use for publish */
+<span class="lineNum">     182 </span>            :                 AST_STRING_FIELD(transport);
+<span class="lineNum">     183 </span>            :                 /*! \brief Outbound proxy to use */
+<span class="lineNum">     184 </span>            :                 AST_STRING_FIELD(outbound_proxy);
+<span class="lineNum">     185 </span>            :                 /*! \brief The event type to publish */
+<span class="lineNum">     186 </span>            :                 AST_STRING_FIELD(event);
+<span class="lineNum">     187 </span>            :         );
+<span class="lineNum">     188 </span>            :         /*! \brief Requested expiration time */
+<span class="lineNum">     189 </span>            :         unsigned int expiration;
+<span class="lineNum">     190 </span>            :         /*! \brief Maximum number of auth attempts before stopping the publish client */
+<span class="lineNum">     191 </span>            :         unsigned int max_auth_attempts;
+<span class="lineNum">     192 </span>            :         /*! \brief Configured authentication credentials */
+<span class="lineNum">     193 </span>            :         struct ast_sip_auth_vector outbound_auths;
+<span class="lineNum">     194 </span>            :         /*! \brief The publishing client is used for multiple users when true */
+<span class="lineNum">     195 </span>            :         unsigned int multi_user;
+<span class="lineNum">     196 </span>            : };
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            : struct sip_outbound_publisher {
+<span class="lineNum">     199 </span>            :         /*! \brief The client object that 'owns' this client
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :              \note any potential circular reference problems are accounted
+<span class="lineNum">     202 </span>            :              for (see publisher alloc for more information)
+<span class="lineNum">     203 </span>            :         */
+<span class="lineNum">     204 </span>            :         struct ast_sip_outbound_publish_client *owner;
+<span class="lineNum">     205 </span>            :         /*! \brief Underlying publish client */
+<span class="lineNum">     206 </span>            :         pjsip_publishc *client;
+<span class="lineNum">     207 </span>            :         /*! \brief The From URI for this specific publisher */
+<span class="lineNum">     208 </span>            :         char *from_uri;
+<span class="lineNum">     209 </span>            :         /*! \brief The To URI for this specific publisher */
+<span class="lineNum">     210 </span>            :         char *to_uri;
+<span class="lineNum">     211 </span>            :         /*! \brief Timer entry for refreshing publish */
+<span class="lineNum">     212 </span>            :         pj_timer_entry timer;
+<span class="lineNum">     213 </span>            :         /*! \brief The number of auth attempts done */
+<span class="lineNum">     214 </span>            :         unsigned int auth_attempts;
+<span class="lineNum">     215 </span>            :         /*! \brief Queue of outgoing publish messages to send*/
+<span class="lineNum">     216 </span>            :         AST_LIST_HEAD_NOLOCK(, sip_outbound_publish_message) queue;
+<span class="lineNum">     217 </span>            :         /*! \brief The message currently being sent */
+<span class="lineNum">     218 </span>            :         struct sip_outbound_publish_message *sending;
+<span class="lineNum">     219 </span>            :         /*! \brief Publish client should be destroyed */
+<span class="lineNum">     220 </span>            :         unsigned int destroy;
+<span class="lineNum">     221 </span>            :         /*! \brief Serializer for stuff and things */
+<span class="lineNum">     222 </span>            :         struct ast_taskprocessor *serializer;
+<span class="lineNum">     223 </span>            :         /*! \brief User, if any, associated with the publisher */
+<span class="lineNum">     224 </span>            :         char user[0];
+<span class="lineNum">     225 </span>            : };
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span>            : /*! \brief Outbound publish client state information (persists for lifetime of a publish) */
+<span class="lineNum">     228 </span>            : struct ast_sip_outbound_publish_client {
+<span class="lineNum">     229 </span>            :         /*! \brief Outbound publish information */
+<span class="lineNum">     230 </span>            :         struct ast_sip_outbound_publish *publish;
+<span class="lineNum">     231 </span>            :         /*! \brief Publisher datastores set up by handlers */
+<span class="lineNum">     232 </span>            :         struct ao2_container *datastores;
+<span class="lineNum">     233 </span>            :         /*! \brief Container of all the client publishing objects */
+<span class="lineNum">     234 </span>            :         struct ao2_container *publishers;
+<span class="lineNum">     235 </span>            :         /*! \brief Publishing has been fully started and event type informed */
+<span class="lineNum">     236 </span>            :         unsigned int started;
+<span class="lineNum">     237 </span>            : };
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span>            : /*! \brief Outbound publish state information (persists for lifetime of a publish) */
+<span class="lineNum">     240 </span>            : struct ast_sip_outbound_publish_state {
+<span class="lineNum">     241 </span>            :         /*! \brief Outbound publish client */
+<span class="lineNum">     242 </span>            :         struct ast_sip_outbound_publish_client *client;
+<span class="lineNum">     243 </span>            :         /* publish state id lookup key - same as publish configuration id */
+<span class="lineNum">     244 </span>            :         char id[0];
+<span class="lineNum">     245 </span>            : };
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            : /*!
+<span class="lineNum">     248 </span>            :  * \brief Used for locking while loading/reloading
+<span class="lineNum">     249 </span>            :  *
+<span class="lineNum">     250 </span>            :  * Mutli-user configurations make it so publishers can be dynamically added and
+<span class="lineNum">     251 </span>            :  * removed. Publishers should not be added or removed during a [re]load since
+<span class="lineNum">     252 </span>            :  * it could cause the current_clients container to be out of sync. Thus the
+<span class="lineNum">     253 </span>            :  * reason for this lock.
+<span class="lineNum">     254 </span>            :  */
+<span class="lineNum">     255 </span>            : AST_RWLOCK_DEFINE_STATIC(load_lock);
+<a name="256"><span class="lineNum">     256 </span>            : </a>
+<a name="257"><span class="lineNum">     257 </span>            : #define DEFAULT_PUBLISHER_BUCKETS 119</a>
+<span class="lineNum">     258 </span><span class="lineCov">         50 : AO2_STRING_FIELD_HASH_FN(sip_outbound_publisher, user);</span>
+<span class="lineNum">     259 </span><span class="lineCov">         42 : AO2_STRING_FIELD_CMP_FN(sip_outbound_publisher, user);</span>
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span>            : /*! Time needs to be long enough for a transaction to timeout if nothing replies. */
+<span class="lineNum">     262 </span>            : #define MAX_UNLOAD_TIMEOUT_TIME         35      /* Seconds */
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : /*! Shutdown group to monitor sip_outbound_registration_client_state serializers. */
+<span class="lineNum">     265 </span>            : static struct ast_serializer_shutdown_group *shutdown_group;
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : /*! \brief Default number of client state container buckets */
+<span class="lineNum">     268 </span>            : #define DEFAULT_STATE_BUCKETS 31
+<span class="lineNum">     269 </span>            : static AO2_GLOBAL_OBJ_STATIC(current_states);
+<span class="lineNum">     270 </span>            : /*! \brief Used on [re]loads to hold new state data */
+<span class="lineNum">     271 </span>            : static struct ao2_container *new_states;
+<a name="272"><span class="lineNum">     272 </span>            : </a>
+<span class="lineNum">     273 </span>            : /*! \brief hashing function for state objects */
+<span class="lineNum">     274 </span><span class="lineCov">          5 : static int outbound_publish_state_hash(const void *obj, const int flags)</span>
+<span class="lineNum">     275 </span>            : {
+<span class="lineNum">     276 </span>            :         const struct ast_sip_outbound_publish_state *object;
+<span class="lineNum">     277 </span>            :         const char *key;
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">          5 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 key = obj;</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     283 </span><span class="lineCov">          5 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     284 </span><span class="lineCov">          5 :                 object = obj;</span>
+<span class="lineNum">     285 </span><span class="lineCov">          5 :                 key = object-&gt;id;</span>
+<span class="lineNum">     286 </span><span class="lineCov">          5 :                 break;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span><span class="lineCov">          5 :         return ast_str_hash(key);</span>
+<span class="lineNum">     292 </span>            : }
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span>            : /*! \brief comparator function for client objects */
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 : static int outbound_publish_state_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">     296 </span>            : {
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :         const struct ast_sip_outbound_publish_state *object_left = obj;</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         const struct ast_sip_outbound_publish_state *object_right = arg;</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         const char *right_key = arg;</span>
+<span class="lineNum">     300 </span>            :         int cmp;
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 right_key = object_right-&gt;id;</span>
+<span class="lineNum">     305 </span>            :                 /* Fall through */
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 cmp = strcmp(object_left-&gt;id, right_key);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">     310 </span>            :                 /* Not supported by container. */
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     316 </span>            :         }
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :         if (cmp) {</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     319 </span>            :         }
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         return CMP_MATCH;</span>
+<a name="321"><span class="lineNum">     321 </span>            : }</a>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineCov">       7664 : static struct ao2_container *get_publishes_and_update_state(void)</span>
+<a name="324"><span class="lineNum">     324 </span>            : {</a>
+<span class="lineNum">     325 </span>            :         struct ao2_container *container;
+<span class="lineNum">     326 </span><span class="lineCov">      22992 :         SCOPED_WRLOCK(lock, &amp;load_lock);</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineCov">       7664 :         container = ast_sorcery_retrieve_by_fields(</span>
+<span class="lineNum">     329 </span><span class="lineCov">       7664 :                 ast_sip_get_sorcery(), &quot;outbound-publish&quot;,</span>
+<span class="lineNum">     330 </span>            :                 AST_RETRIEVE_FLAG_MULTIPLE | AST_RETRIEVE_FLAG_ALL, NULL);
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">       7664 :         if (!new_states) {</span>
+<span class="lineNum">     333 </span><span class="lineCov">       7659 :                 return container;</span>
+<span class="lineNum">     334 </span>            :         }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          5 :         ao2_global_obj_replace_unref(current_states, new_states);</span>
+<span class="lineNum">     337 </span><span class="lineCov">          5 :         ao2_cleanup(new_states);</span>
+<span class="lineNum">     338 </span><span class="lineCov">          5 :         new_states = NULL;</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineCov">          5 :         return container;</span>
+<span class="lineNum">     341 </span>            : }
+<span class="lineNum">     342 </span>            : 
+<a name="343"><span class="lineNum">     343 </span>            : AST_RWLIST_HEAD_STATIC(publisher_handlers, ast_sip_event_publisher_handler);</a>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineCov">       3408 : static void sub_add_handler(struct ast_sip_event_publisher_handler *handler)</span>
+<span class="lineNum">     346 </span>            : {
+<span class="lineNum">     347 </span><span class="lineCov">       3408 :         AST_RWLIST_INSERT_TAIL(&amp;publisher_handlers, handler, next);</span>
+<a name="348"><span class="lineNum">     348 </span><span class="lineCov">       3408 : }</span></a>
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineCov">       3458 : static struct ast_sip_event_publisher_handler *find_publisher_handler_for_event_name(const char *event_name)</span>
+<span class="lineNum">     351 </span>            : {
+<span class="lineNum">     352 </span>            :         struct ast_sip_event_publisher_handler *iter;
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span><span class="lineCov">       8616 :         AST_RWLIST_TRAVERSE(&amp;publisher_handlers, iter, next) {</span>
+<span class="lineNum">     355 </span><span class="lineCov">       5177 :                 if (!strcmp(iter-&gt;event_name, event_name)) {</span>
+<span class="lineNum">     356 </span><span class="lineCov">         19 :                         break;</span>
+<span class="lineNum">     357 </span>            :                 }
+<span class="lineNum">     358 </span>            :         }
+<span class="lineNum">     359 </span><span class="lineCov">       3458 :         return iter;</span>
+<span class="lineNum">     360 </span>            : }
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span>            : /*! \brief Helper function which cancels the refresh timer on a publisher */
+<span class="lineNum">     363 </span><span class="lineCov">         21 : static void cancel_publish_refresh(struct sip_outbound_publisher *publisher)</span>
+<span class="lineNum">     364 </span>            : {
+<span class="lineNum">     365 </span><span class="lineCov">         21 :         if (pj_timer_heap_cancel_if_active(pjsip_endpt_get_timer_heap(ast_sip_get_pjsip_endpoint()),</span>
+<span class="lineNum">     366 </span>            :                 &amp;publisher-&gt;timer, 0)) {
+<span class="lineNum">     367 </span>            :                 /* The timer was successfully cancelled, drop the refcount of the publisher */
+<span class="lineNum">     368 </span><span class="lineCov">         16 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">     369 </span>            :         }
+<span class="lineNum">     370 </span><span class="lineCov">         21 : }</span>
+<a name="371"><span class="lineNum">     371 </span>            : </a>
+<span class="lineNum">     372 </span>            : /*! \brief Helper function which sets up the timer to send publication */
+<span class="lineNum">     373 </span><span class="lineCov">         16 : static void schedule_publish_refresh(struct sip_outbound_publisher *publisher, int expiration)</span>
+<span class="lineNum">     374 </span>            : {
+<span class="lineNum">     375 </span><span class="lineCov">         16 :         struct ast_sip_outbound_publish *publish = ao2_bump(publisher-&gt;owner-&gt;publish);</span>
+<span class="lineNum">     376 </span><span class="lineCov">         16 :         pj_time_val delay = { .sec = 0, };</span>
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineCov">         16 :         cancel_publish_refresh(publisher);</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineCov">         16 :         if (expiration &gt; 0) {</span>
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 delay.sec = expiration - PJSIP_PUBLISHC_DELAY_BEFORE_REFRESH;</span>
+<span class="lineNum">     382 </span>            :         }
+<span class="lineNum">     383 </span><span class="lineCov">         16 :         if (publish-&gt;expiration &amp;&amp; ((delay.sec &gt; publish-&gt;expiration) || !delay.sec)) {</span>
+<span class="lineNum">     384 </span><span class="lineCov">         16 :                 delay.sec = publish-&gt;expiration;</span>
+<span class="lineNum">     385 </span>            :         }
+<span class="lineNum">     386 </span><span class="lineCov">         16 :         if (delay.sec &lt; PJSIP_PUBLISHC_DELAY_BEFORE_REFRESH) {</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                 delay.sec = PJSIP_PUBLISHC_DELAY_BEFORE_REFRESH;</span>
+<span class="lineNum">     388 </span>            :         }
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineCov">         16 :         ao2_ref(publisher, +1);</span>
+<span class="lineNum">     391 </span><span class="lineCov">         16 :         if (pjsip_endpt_schedule_timer(ast_sip_get_pjsip_endpoint(), &amp;publisher-&gt;timer, &amp;delay) != PJ_SUCCESS) {</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Failed to pass timed publish refresh to scheduler\n&quot;);</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">     394 </span>            :         }
+<span class="lineNum">     395 </span><span class="lineCov">         16 :         ao2_ref(publish, -1);</span>
+<span class="lineNum">     396 </span><span class="lineCov">         16 : }</span>
+<span class="lineNum">     397 </span>            : 
+<span class="lineNum">     398 </span>            : static int publisher_client_send(void *obj, void *arg, void *data, int flags);
+<a name="399"><span class="lineNum">     399 </span>            : </a>
+<span class="lineNum">     400 </span>            : /*! \brief Publish client timer callback function */
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 : static void sip_outbound_publish_timer_cb(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)</span>
+<span class="lineNum">     402 </span>            : {
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :         struct sip_outbound_publisher *publisher = entry-&gt;user_data;</span>
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :         ao2_lock(publisher);</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         if (AST_LIST_EMPTY(&amp;publisher-&gt;queue)) {</span>
+<span class="lineNum">     407 </span>            :                 int res;
+<span class="lineNum">     408 </span>            :                 /* If there are no outstanding messages send an empty PUBLISH message so our publication doesn't expire */
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 publisher_client_send(publisher, NULL, &amp;res, 0);</span>
+<span class="lineNum">     410 </span>            :         }
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :         ao2_unlock(publisher);</span>
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 : }</span>
+<a name="415"><span class="lineNum">     415 </span>            : </a>
+<span class="lineNum">     416 </span>            : /*! \brief Task for cancelling a refresh timer */
+<span class="lineNum">     417 </span><span class="lineCov">          5 : static int cancel_refresh_timer_task(void *data)</span>
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span><span class="lineCov">          5 :         struct sip_outbound_publisher *publisher = data;</span>
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span><span class="lineCov">          5 :         cancel_publish_refresh(publisher);</span>
+<span class="lineNum">     422 </span><span class="lineCov">          5 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineCov">          5 :         return 0;</span>
+<a name="425"><span class="lineNum">     425 </span>            : }</a>
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineCov">         27 : static void set_transport(struct sip_outbound_publisher *publisher, pjsip_tx_data *tdata)</span>
+<span class="lineNum">     428 </span>            : {
+<span class="lineNum">     429 </span><span class="lineCov">         27 :         if (!ast_strlen_zero(publisher-&gt;owner-&gt;publish-&gt;transport)) {</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 pjsip_tpselector selector = { .type = PJSIP_TPSELECTOR_NONE, };</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                 ast_sip_set_tpselector_from_transport_name(</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                         publisher-&gt;owner-&gt;publish-&gt;transport, &amp;selector);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :                 pjsip_tx_data_set_transport(tdata, &amp;selector);</span>
+<span class="lineNum">     434 </span>            :         }
+<span class="lineNum">     435 </span><span class="lineCov">         27 : }</span>
+<a name="436"><span class="lineNum">     436 </span>            : </a>
+<span class="lineNum">     437 </span>            : /*! \brief Task for sending an unpublish */
+<span class="lineNum">     438 </span><span class="lineCov">          4 : static int send_unpublish_task(void *data)</span>
+<span class="lineNum">     439 </span>            : {
+<span class="lineNum">     440 </span><span class="lineCov">          4 :         struct sip_outbound_publisher *publisher = data;</span>
+<span class="lineNum">     441 </span>            :         pjsip_tx_data *tdata;
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">          4 :         if (pjsip_publishc_unpublish(publisher-&gt;client, &amp;tdata) == PJ_SUCCESS) {</span>
+<span class="lineNum">     444 </span><span class="lineCov">          4 :                 set_transport(publisher, tdata);</span>
+<span class="lineNum">     445 </span><span class="lineCov">          4 :                 pjsip_publishc_send(publisher-&gt;client, tdata);</span>
+<span class="lineNum">     446 </span>            :         }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">          4 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineCov">          4 :         return 0;</span>
+<a name="451"><span class="lineNum">     451 </span>            : }</a>
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span><span class="lineCov">         10 : static void stop_publishing(struct ast_sip_outbound_publish_client *client,</span>
+<span class="lineNum">     454 </span>            :                             struct ast_sip_event_publisher_handler *handler)
+<span class="lineNum">     455 </span>            : {
+<span class="lineNum">     456 </span><span class="lineCov">         10 :         if (!handler) {</span>
+<span class="lineNum">     457 </span><span class="lineCov">          5 :                 handler = find_publisher_handler_for_event_name(client-&gt;publish-&gt;event);</span>
+<span class="lineNum">     458 </span>            :         }
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span><span class="lineCov">         10 :         if (handler) {</span>
+<span class="lineNum">     461 </span><span class="lineCov">          5 :                 handler-&gt;stop_publishing(client);</span>
+<span class="lineNum">     462 </span>            :         }
+<span class="lineNum">     463 </span><span class="lineCov">         10 : }</span>
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span>            : static int cancel_and_unpublish(void *obj, void *arg, int flags);
+<a name="466"><span class="lineNum">     466 </span>            : </a>
+<span class="lineNum">     467 </span>            : /*! \brief Helper function which starts or stops publish clients when applicable */
+<a name="468"><span class="lineNum">     468 </span><span class="lineCov">       7664 : static void sip_outbound_publish_synchronize(struct ast_sip_event_publisher_handler *removed)</span></a>
+<span class="lineNum">     469 </span>            : {
+<span class="lineNum">     470 </span><span class="lineCov">      22992 :         RAII_VAR(struct ao2_container *, publishes, get_publishes_and_update_state(), ao2_cleanup);</span>
+<span class="lineNum">     471 </span>            :         struct ao2_container *states;
+<span class="lineNum">     472 </span>            :         struct ao2_iterator i;
+<span class="lineNum">     473 </span>            :         struct ast_sip_outbound_publish_state *state;
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineCov">       7664 :         if (!publishes) {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     477 </span>            :         }
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineCov">       7664 :         states = ao2_global_obj_ref(current_states);</span>
+<span class="lineNum">     480 </span><span class="lineCov">       7664 :         if (!states) {</span>
+<span class="lineNum">     481 </span><span class="lineCov">       7619 :                 return;</span>
+<span class="lineNum">     482 </span>            :         }
+<span class="lineNum">     483 </span>            : 
+<span class="lineNum">     484 </span><span class="lineCov">         45 :         i = ao2_iterator_init(states, 0);</span>
+<span class="lineNum">     485 </span><span class="lineCov">         90 :         while ((state = ao2_iterator_next(&amp;i))) {</span>
+<span class="lineNum">     486 </span><span class="lineCov">         45 :                 struct ast_sip_outbound_publish *publish = ao2_bump(state-&gt;client-&gt;publish);</span>
+<span class="lineNum">     487 </span><span class="lineCov">         45 :                 struct ast_sip_event_publisher_handler *handler = find_publisher_handler_for_event_name(publish-&gt;event);</span>
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">         45 :                 if (!state-&gt;client-&gt;started) {</span>
+<span class="lineNum">     490 </span>            :                         /* If the publisher client has not yet been started try to start it */
+<span class="lineNum">     491 </span><span class="lineCov">         26 :                         if (!handler) {</span>
+<span class="lineNum">     492 </span><span class="lineCov">         21 :                                 ast_debug(2, &quot;Could not find handler for event '%s' for outbound publish client '%s'\n&quot;,</span>
+<span class="lineNum">     493 </span>            :                                           publish-&gt;event, ast_sorcery_object_get_id(publish));
+<span class="lineNum">     494 </span><span class="lineCov">          5 :                         } else if (handler-&gt;start_publishing(publish, state-&gt;client)) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                                 ast_log(LOG_ERROR, &quot;Failed to start outbound publish with event '%s' for client '%s'\n&quot;,</span>
+<span class="lineNum">     496 </span>            :                                         publish-&gt;event, ast_sorcery_object_get_id(publish));
+<span class="lineNum">     497 </span>            :                         } else {
+<span class="lineNum">     498 </span><span class="lineCov">          5 :                                 state-&gt;client-&gt;started = 1;</span>
+<span class="lineNum">     499 </span>            :                         }
+<span class="lineNum">     500 </span><span class="lineCov">         19 :                 } else if (state-&gt;client-&gt;started &amp;&amp; !handler &amp;&amp; removed &amp;&amp; !strcmp(publish-&gt;event, removed-&gt;event_name)) {</span>
+<span class="lineNum">     501 </span><span class="lineCov">          5 :                         stop_publishing(state-&gt;client, removed);</span>
+<span class="lineNum">     502 </span><span class="lineCov">          5 :                         ao2_callback(state-&gt;client-&gt;publishers, OBJ_NODATA, cancel_and_unpublish, NULL);</span>
+<span class="lineNum">     503 </span><span class="lineCov">          5 :                         state-&gt;client-&gt;started = 0;</span>
+<span class="lineNum">     504 </span>            :                 }
+<span class="lineNum">     505 </span><span class="lineCov">         45 :                 ao2_ref(publish, -1);</span>
+<span class="lineNum">     506 </span><span class="lineCov">         45 :                 ao2_ref(state, -1);</span>
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span><span class="lineCov">         45 :         ao2_iterator_destroy(&amp;i);</span>
+<span class="lineNum">     509 </span><span class="lineCov">         45 :         ao2_ref(states, -1);</span>
+<a name="510"><span class="lineNum">     510 </span>            : }</a>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">          5 : static struct ast_sip_outbound_publish_state *sip_publish_state_get(const char *id)</span>
+<span class="lineNum">     513 </span>            : {
+<span class="lineNum">     514 </span><span class="lineCov">          5 :         struct ao2_container *states = ao2_global_obj_ref(current_states);</span>
+<span class="lineNum">     515 </span>            :         struct ast_sip_outbound_publish_state *res;
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span><span class="lineCov">          5 :         if (!states) {</span>
+<span class="lineNum">     518 </span><span class="lineCov">          5 :                 return NULL;</span>
+<span class="lineNum">     519 </span>            :         }
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :         res = ao2_find(states, id, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         ao2_ref(states, -1);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :         return res;</span>
+<a name="524"><span class="lineNum">     524 </span>            : }</a>
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 : struct ast_sip_outbound_publish_client *ast_sip_publish_client_get(const char *name)</span>
+<span class="lineNum">     527 </span>            : {
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         struct ast_sip_outbound_publish_state *state = sip_publish_state_get(name);</span>
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         if (!state) {</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     532 </span>            :         }
+<span class="lineNum">     533 </span>            : 
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :         ao2_ref(state-&gt;client, +1);</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :         ao2_ref(state, -1);</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :         return state-&gt;client;</span>
+<a name="537"><span class="lineNum">     537 </span>            : }</a>
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 : const char *ast_sip_publish_client_get_from_uri(struct ast_sip_outbound_publish_client *client)</span>
+<span class="lineNum">     540 </span>            : {
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :         struct ast_sip_outbound_publish *publish = client-&gt;publish;</span>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :         return S_OR(publish-&gt;from_uri, S_OR(publish-&gt;server_uri, &quot;&quot;));</span>
+<span class="lineNum">     544 </span>            : }
+<span class="lineNum">     545 </span>            : 
+<span class="lineNum">     546 </span>            : static struct sip_outbound_publisher *sip_outbound_publish_client_add_publisher(
+<a name="547"><span class="lineNum">     547 </span>            :         struct ast_sip_outbound_publish_client *client, const char *user);</a>
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span><span class="lineCov">         45 : static struct sip_outbound_publisher *sip_outbound_publish_client_get_publisher(</span>
+<span class="lineNum">     550 </span>            :         struct ast_sip_outbound_publish_client *client, const char *user)
+<span class="lineNum">     551 </span>            : {
+<span class="lineNum">     552 </span>            :         struct sip_outbound_publisher *publisher;
+<span class="lineNum">     553 </span>            : 
+<span class="lineNum">     554 </span>            :         /*
+<span class="lineNum">     555 </span>            :          * Lock before searching since there could be a race between searching and adding.
+<span class="lineNum">     556 </span>            :          * Just use the load_lock since we might need to lock it anyway (if adding) and
+<span class="lineNum">     557 </span>            :          * also it simplifies the code (otherwise we'd have to lock the publishers, no-
+<span class="lineNum">     558 </span>            :          * lock the search and pass a flag to 'add publisher to no-lock the potential link).
+<span class="lineNum">     559 </span>            :          */
+<span class="lineNum">     560 </span><span class="lineCov">         45 :         ast_rwlock_wrlock(&amp;load_lock);</span>
+<span class="lineNum">     561 </span><span class="lineCov">         45 :         publisher = ao2_find(client-&gt;publishers, user, OBJ_SEARCH_KEY);</span>
+<span class="lineNum">     562 </span><span class="lineCov">         45 :         if (!publisher) {</span>
+<span class="lineNum">     563 </span><span class="lineCov">          3 :                 if (!(publisher = sip_outbound_publish_client_add_publisher(client, user))) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                         ast_rwlock_unlock(&amp;load_lock);</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     566 </span>            :                 }
+<span class="lineNum">     567 </span>            :         }
+<span class="lineNum">     568 </span><span class="lineCov">         45 :         ast_rwlock_unlock(&amp;load_lock);</span>
+<span class="lineNum">     569 </span>            : 
+<span class="lineNum">     570 </span><span class="lineCov">         45 :         return publisher;</span>
+<a name="571"><span class="lineNum">     571 </span>            : }</a>
+<span class="lineNum">     572 </span>            : 
+<span class="lineNum">     573 </span><span class="lineCov">         15 : const char *ast_sip_publish_client_get_user_from_uri(struct ast_sip_outbound_publish_client *client, const char *user,</span>
+<span class="lineNum">     574 </span>            :         char *uri, size_t size)
+<span class="lineNum">     575 </span>            : {
+<span class="lineNum">     576 </span>            :         struct sip_outbound_publisher *publisher;
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span><span class="lineCov">         15 :         publisher = sip_outbound_publish_client_get_publisher(client, user);</span>
+<span class="lineNum">     579 </span><span class="lineCov">         15 :         if (!publisher) {</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     581 </span>            :         }
+<span class="lineNum">     582 </span>            : 
+<span class="lineNum">     583 </span><span class="lineCov">         15 :         ast_copy_string(uri, publisher-&gt;from_uri, size);</span>
+<span class="lineNum">     584 </span><span class="lineCov">         15 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">     585 </span>            : 
+<span class="lineNum">     586 </span><span class="lineCov">         15 :         return uri;</span>
+<a name="587"><span class="lineNum">     587 </span>            : }</a>
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span><span class="lineNoCov">          0 : const char *ast_sip_publish_client_get_to_uri(struct ast_sip_outbound_publish_client *client)</span>
+<span class="lineNum">     590 </span>            : {
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :         struct ast_sip_outbound_publish *publish = client-&gt;publish;</span>
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :         return S_OR(publish-&gt;to_uri, S_OR(publish-&gt;server_uri, &quot;&quot;));</span>
+<a name="594"><span class="lineNum">     594 </span>            : }</a>
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">         15 : const char *ast_sip_publish_client_get_user_to_uri(struct ast_sip_outbound_publish_client *client, const char *user,</span>
+<span class="lineNum">     597 </span>            :         char *uri, size_t size)
+<span class="lineNum">     598 </span>            : {
+<span class="lineNum">     599 </span>            :         struct sip_outbound_publisher *publisher;
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span><span class="lineCov">         15 :         publisher = sip_outbound_publish_client_get_publisher(client, user);</span>
+<span class="lineNum">     602 </span><span class="lineCov">         15 :         if (!publisher) {</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     604 </span>            :         }
+<span class="lineNum">     605 </span>            : 
+<span class="lineNum">     606 </span><span class="lineCov">         15 :         ast_copy_string(uri, publisher-&gt;to_uri, size);</span>
+<span class="lineNum">     607 </span><span class="lineCov">         15 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span><span class="lineCov">         15 :         return uri;</span>
+<a name="610"><span class="lineNum">     610 </span>            : }</a>
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineCov">       3408 : int ast_sip_register_event_publisher_handler(struct ast_sip_event_publisher_handler *handler)</span>
+<a name="613"><span class="lineNum">     613 </span>            : {</a>
+<span class="lineNum">     614 </span>            :         struct ast_sip_event_publisher_handler *existing;
+<span class="lineNum">     615 </span><span class="lineCov">      10224 :         SCOPED_LOCK(lock, &amp;publisher_handlers, AST_RWLIST_WRLOCK, AST_RWLIST_UNLOCK);</span>
+<span class="lineNum">     616 </span>            : 
+<span class="lineNum">     617 </span><span class="lineCov">       3408 :         if (!handler-&gt;start_publishing || !handler-&gt;stop_publishing) {</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Handler does not implement required callbacks. Cannot register\n&quot;);</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     620 </span><span class="lineCov">       3408 :         } else if (ast_strlen_zero(handler-&gt;event_name)) {</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;No event package specified for event publisher handler. Cannot register\n&quot;);</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     623 </span>            :         }
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span><span class="lineCov">       3408 :         existing = find_publisher_handler_for_event_name(handler-&gt;event_name);</span>
+<span class="lineNum">     626 </span><span class="lineCov">       3408 :         if (existing) {</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to register event publisher handler for event %s. &quot;</span>
+<span class="lineNum">     628 </span>            :                                 &quot;A handler is already registered\n&quot;, handler-&gt;event_name);
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     630 </span>            :         }
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">       3408 :         sub_add_handler(handler);</span>
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">       3408 :         sip_outbound_publish_synchronize(NULL);</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineCov">       3408 :         return 0;</span>
+<a name="637"><span class="lineNum">     637 </span>            : }</a>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">       3404 : void ast_sip_unregister_event_publisher_handler(struct ast_sip_event_publisher_handler *handler)</span>
+<a name="640"><span class="lineNum">     640 </span>            : {</a>
+<span class="lineNum">     641 </span>            :         struct ast_sip_event_publisher_handler *iter;
+<span class="lineNum">     642 </span><span class="lineCov">      10212 :         SCOPED_LOCK(lock, &amp;publisher_handlers, AST_RWLIST_WRLOCK, AST_RWLIST_UNLOCK);</span>
+<span class="lineNum">     643 </span><span class="lineCov">       7659 :         AST_RWLIST_TRAVERSE_SAFE_BEGIN(&amp;publisher_handlers, iter, next) {</span>
+<span class="lineNum">     644 </span><span class="lineCov">       7659 :                 if (handler == iter) {</span>
+<span class="lineNum">     645 </span><span class="lineCov">       3404 :                         AST_RWLIST_REMOVE_CURRENT(next);</span>
+<span class="lineNum">     646 </span><span class="lineCov">       3404 :                         break;</span>
+<span class="lineNum">     647 </span>            :                 }
+<span class="lineNum">     648 </span>            :         }
+<span class="lineNum">     649 </span>            :         AST_RWLIST_TRAVERSE_SAFE_END;
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineCov">       3404 :         sip_outbound_publish_synchronize(handler);</span>
+<span class="lineNum">     652 </span><span class="lineCov">       3404 : }</span>
+<a name="653"><span class="lineNum">     653 </span>            : </a>
+<span class="lineNum">     654 </span>            : /*! \brief Destructor function for publish information */
+<span class="lineNum">     655 </span><span class="lineCov">          5 : static void sip_outbound_publish_destroy(void *obj)</span>
+<span class="lineNum">     656 </span>            : {
+<span class="lineNum">     657 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish *publish = obj;</span>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span><span class="lineCov">          5 :         ast_sip_auth_vector_destroy(&amp;publish-&gt;outbound_auths);</span>
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span><span class="lineCov">          5 :         ast_string_field_free_memory(publish);</span>
+<span class="lineNum">     662 </span><span class="lineCov">          5 : }</span>
+<a name="663"><span class="lineNum">     663 </span>            : </a>
+<span class="lineNum">     664 </span>            : /*! \brief Allocator function for publish information */
+<span class="lineNum">     665 </span><span class="lineCov">          5 : static void *sip_outbound_publish_alloc(const char *name)</span>
+<span class="lineNum">     666 </span>            : {
+<span class="lineNum">     667 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish *publish = ast_sorcery_generic_alloc(sizeof(*publish),</span>
+<span class="lineNum">     668 </span>            :                 sip_outbound_publish_destroy);
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineCov">          5 :         if (!publish || ast_string_field_init(publish, 256)) {</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                 ao2_cleanup(publish);</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     673 </span>            :         }
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineCov">          5 :         return publish;</span>
+<a name="676"><span class="lineNum">     676 </span>            : }</a>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span><span class="lineCov">          2 : static void sip_outbound_publish_datastore_destroy(void *obj)</span>
+<span class="lineNum">     679 </span>            : {
+<span class="lineNum">     680 </span><span class="lineCov">          2 :         struct ast_datastore *datastore = obj;</span>
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span>            :         /* Using the destroy function (if present) destroy the data */
+<span class="lineNum">     683 </span><span class="lineCov">          2 :         if (datastore-&gt;info-&gt;destroy != NULL &amp;&amp; datastore-&gt;data != NULL) {</span>
+<span class="lineNum">     684 </span><span class="lineCov">          2 :                 datastore-&gt;info-&gt;destroy(datastore-&gt;data);</span>
+<span class="lineNum">     685 </span><span class="lineCov">          2 :                 datastore-&gt;data = NULL;</span>
+<span class="lineNum">     686 </span>            :         }
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span><span class="lineCov">          2 :         ast_free((void *) datastore-&gt;uid);</span>
+<span class="lineNum">     689 </span><span class="lineCov">          2 :         datastore-&gt;uid = NULL;</span>
+<a name="690"><span class="lineNum">     690 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     691 </span>            : 
+<a name="692"><span class="lineNum">     692 </span><span class="lineCov">          2 : struct ast_datastore *ast_sip_publish_client_alloc_datastore(const struct ast_datastore_info *info, const char *uid)</span></a>
+<span class="lineNum">     693 </span>            : {
+<span class="lineNum">     694 </span><span class="lineCov">          4 :         RAII_VAR(struct ast_datastore *, datastore, NULL, ao2_cleanup);</span>
+<span class="lineNum">     695 </span><span class="lineCov">          2 :         const char *uid_ptr = uid;</span>
+<span class="lineNum">     696 </span>            :         char uuid_buf[AST_UUID_STR_LEN];
+<span class="lineNum">     697 </span>            : 
+<span class="lineNum">     698 </span><span class="lineCov">          2 :         if (!info) {</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     700 </span>            :         }
+<span class="lineNum">     701 </span>            : 
+<span class="lineNum">     702 </span><span class="lineCov">          2 :         datastore = ao2_alloc(sizeof(*datastore), sip_outbound_publish_datastore_destroy);</span>
+<span class="lineNum">     703 </span><span class="lineCov">          2 :         if (!datastore) {</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     705 </span>            :         }
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span><span class="lineCov">          2 :         datastore-&gt;info = info;</span>
+<span class="lineNum">     708 </span><span class="lineCov">          2 :         if (ast_strlen_zero(uid)) {</span>
+<span class="lineNum">     709 </span>            :                 /* They didn't provide an ID so we'll provide one ourself */
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                 uid_ptr = ast_uuid_generate_str(uuid_buf, sizeof(uuid_buf));</span>
+<span class="lineNum">     711 </span>            :         }
+<span class="lineNum">     712 </span>            : 
+<span class="lineNum">     713 </span><span class="lineCov">          2 :         datastore-&gt;uid = ast_strdup(uid_ptr);</span>
+<span class="lineNum">     714 </span><span class="lineCov">          2 :         if (!datastore-&gt;uid) {</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     716 </span>            :         }
+<span class="lineNum">     717 </span>            : 
+<span class="lineNum">     718 </span><span class="lineCov">          2 :         ao2_ref(datastore, +1);</span>
+<span class="lineNum">     719 </span><span class="lineCov">          2 :         return datastore;</span>
+<a name="720"><span class="lineNum">     720 </span>            : }</a>
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineCov">          2 : int ast_sip_publish_client_add_datastore(struct ast_sip_outbound_publish_client *client,</span>
+<span class="lineNum">     723 </span>            :         struct ast_datastore *datastore)
+<span class="lineNum">     724 </span>            : {
+<span class="lineNum">     725 </span><span class="lineCov">          2 :         ast_assert(datastore != NULL);</span>
+<span class="lineNum">     726 </span><span class="lineCov">          2 :         ast_assert(datastore-&gt;info != NULL);</span>
+<span class="lineNum">     727 </span><span class="lineCov">          2 :         ast_assert(!ast_strlen_zero(datastore-&gt;uid));</span>
+<span class="lineNum">     728 </span>            : 
+<span class="lineNum">     729 </span><span class="lineCov">          2 :         if (!ao2_link(client-&gt;datastores, datastore)) {</span>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     731 </span>            :         }
+<span class="lineNum">     732 </span><span class="lineCov">          2 :         return 0;</span>
+<a name="733"><span class="lineNum">     733 </span>            : }</a>
+<span class="lineNum">     734 </span>            : 
+<span class="lineNum">     735 </span><span class="lineCov">          2 : struct ast_datastore *ast_sip_publish_client_get_datastore(struct ast_sip_outbound_publish_client *client,</span>
+<span class="lineNum">     736 </span>            :         const char *name)
+<span class="lineNum">     737 </span>            : {
+<span class="lineNum">     738 </span><span class="lineCov">          2 :         return ao2_find(client-&gt;datastores, name, OBJ_SEARCH_KEY);</span>
+<a name="739"><span class="lineNum">     739 </span>            : }</a>
+<span class="lineNum">     740 </span>            : 
+<span class="lineNum">     741 </span><span class="lineCov">          2 : void ast_sip_publish_client_remove_datastore(struct ast_sip_outbound_publish_client *client,</span>
+<span class="lineNum">     742 </span>            :         const char *name)
+<span class="lineNum">     743 </span>            : {
+<span class="lineNum">     744 </span><span class="lineCov">          2 :         ao2_find(client-&gt;datastores, name, OBJ_SEARCH_KEY | OBJ_UNLINK | OBJ_NODATA);</span>
+<a name="745"><span class="lineNum">     745 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     746 </span>            : 
+<a name="747"><span class="lineNum">     747 </span><span class="lineCov">         45 : static int sip_publisher_service_queue(void *data)</span></a>
+<a name="748"><span class="lineNum">     748 </span>            : {</a>
+<span class="lineNum">     749 </span><span class="lineCov">         90 :         RAII_VAR(struct sip_outbound_publisher *, publisher, data, ao2_cleanup);</span>
+<span class="lineNum">     750 </span><span class="lineCov">        135 :         SCOPED_AO2LOCK(lock, publisher);</span>
+<span class="lineNum">     751 </span>            :         struct sip_outbound_publish_message *message;
+<span class="lineNum">     752 </span>            :         pjsip_tx_data *tdata;
+<span class="lineNum">     753 </span>            :         pj_status_t status;
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span><span class="lineCov">         45 :         if (publisher-&gt;destroy || publisher-&gt;sending || !(message = AST_LIST_FIRST(&amp;publisher-&gt;queue))) {</span>
+<span class="lineNum">     756 </span><span class="lineCov">         22 :                 return 0;</span>
+<span class="lineNum">     757 </span>            :         }
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">         23 :         if (pjsip_publishc_publish(publisher-&gt;client, PJ_FALSE, &amp;tdata) != PJ_SUCCESS) {</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                 goto fatal;</span>
+<span class="lineNum">     761 </span>            :         }
+<span class="lineNum">     762 </span>            : 
+<span class="lineNum">     763 </span><span class="lineCov">         46 :         if (!ast_strlen_zero(message-&gt;body.type) &amp;&amp; !ast_strlen_zero(message-&gt;body.subtype) &amp;&amp;</span>
+<span class="lineNum">     764 </span><span class="lineCov">         23 :                 ast_sip_add_body(tdata, &amp;message-&gt;body)) {</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :                 pjsip_tx_data_dec_ref(tdata);</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">          0 :                 goto fatal;</span>
+<span class="lineNum">     767 </span>            :         }
+<span class="lineNum">     768 </span>            : 
+<span class="lineNum">     769 </span><span class="lineCov">         23 :         set_transport(publisher, tdata);</span>
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span><span class="lineCov">         23 :         status = pjsip_publishc_send(publisher-&gt;client, tdata);</span>
+<span class="lineNum">     772 </span><span class="lineCov">         23 :         if (status == PJ_EBUSY) {</span>
+<span class="lineNum">     773 </span>            :                 /* We attempted to send the message but something else got there first */
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :                 goto service;</span>
+<span class="lineNum">     775 </span><span class="lineCov">         23 :         } else if (status != PJ_SUCCESS) {</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                 goto fatal;</span>
+<span class="lineNum">     777 </span>            :         }
+<span class="lineNum">     778 </span>            : 
+<span class="lineNum">     779 </span><span class="lineCov">         23 :         publisher-&gt;sending = message;</span>
+<span class="lineNum">     780 </span>            : 
+<span class="lineNum">     781 </span><span class="lineCov">         23 :         return 0;</span>
+<span class="lineNum">     782 </span>            : 
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 : fatal:</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :         AST_LIST_REMOVE_HEAD(&amp;publisher-&gt;queue, entry);</span>
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :         ast_free(message);</span>
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 : service:</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :         if (ast_sip_push_task(publisher-&gt;serializer, sip_publisher_service_queue, ao2_bump(publisher))) {</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">     790 </span>            :         }
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="792"><span class="lineNum">     792 </span>            : }</a>
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span><span class="lineCov">         23 : static int publisher_client_send(void *obj, void *arg, void *data, int flags)</span>
+<span class="lineNum">     795 </span>            : {
+<span class="lineNum">     796 </span><span class="lineCov">         23 :         struct sip_outbound_publisher *publisher = obj;</span>
+<span class="lineNum">     797 </span><span class="lineCov">         23 :         const struct ast_sip_body *body = arg;</span>
+<span class="lineNum">     798 </span>            :         struct sip_outbound_publish_message *message;
+<a name="799"><span class="lineNum">     799 </span><span class="lineCov">         23 :         size_t type_len = 0, subtype_len = 0, body_text_len = 0;</span></a>
+<span class="lineNum">     800 </span><span class="lineCov">         23 :         int *res = data;</span>
+<span class="lineNum">     801 </span><span class="lineCov">         69 :         SCOPED_AO2LOCK(lock, publisher);</span>
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span><span class="lineCov">         23 :         *res = -1;</span>
+<span class="lineNum">     804 </span><span class="lineCov">         23 :         if (!publisher-&gt;client) {</span>
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     806 </span>            :         }
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span>            :         /* If a body is present we need more space for the contents of it */
+<span class="lineNum">     809 </span><span class="lineCov">         23 :         if (body) {</span>
+<span class="lineNum">     810 </span><span class="lineCov">         23 :                 type_len = strlen(body-&gt;type) + 1;</span>
+<span class="lineNum">     811 </span><span class="lineCov">         23 :                 subtype_len = strlen(body-&gt;subtype) + 1;</span>
+<span class="lineNum">     812 </span><span class="lineCov">         23 :                 body_text_len = strlen(body-&gt;body_text) + 1;</span>
+<span class="lineNum">     813 </span>            :         }
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span><span class="lineCov">         23 :         message = ast_calloc(1, sizeof(*message) + type_len + subtype_len + body_text_len);</span>
+<span class="lineNum">     816 </span><span class="lineCov">         23 :         if (!message) {</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     818 </span>            :         }
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span><span class="lineCov">         23 :         if (body) {</span>
+<span class="lineNum">     821 </span><span class="lineCov">         23 :                 char *dst = message-&gt;body_contents;</span>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineCov">         23 :                 message-&gt;body.type = strcpy(dst, body-&gt;type);</span>
+<span class="lineNum">     824 </span><span class="lineCov">         23 :                 dst += type_len;</span>
+<span class="lineNum">     825 </span><span class="lineCov">         23 :                 message-&gt;body.subtype = strcpy(dst, body-&gt;subtype);</span>
+<span class="lineNum">     826 </span><span class="lineCov">         23 :                 dst += subtype_len;</span>
+<span class="lineNum">     827 </span><span class="lineCov">         23 :                 message-&gt;body.body_text = strcpy(dst, body-&gt;body_text);</span>
+<span class="lineNum">     828 </span>            :         }
+<span class="lineNum">     829 </span>            : 
+<span class="lineNum">     830 </span><span class="lineCov">         23 :         AST_LIST_INSERT_TAIL(&amp;publisher-&gt;queue, message, entry);</span>
+<span class="lineNum">     831 </span>            : 
+<span class="lineNum">     832 </span><span class="lineCov">         23 :         *res = ast_sip_push_task(publisher-&gt;serializer, sip_publisher_service_queue, ao2_bump(publisher));</span>
+<span class="lineNum">     833 </span><span class="lineCov">         23 :         if (*res) {</span>
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">     835 </span>            :         }
+<span class="lineNum">     836 </span>            : 
+<span class="lineNum">     837 </span><span class="lineCov">         23 :         return *res;</span>
+<a name="838"><span class="lineNum">     838 </span>            : }</a>
+<span class="lineNum">     839 </span>            : 
+<span class="lineNum">     840 </span><span class="lineCov">          8 : int ast_sip_publish_client_send(struct ast_sip_outbound_publish_client *client,</span>
+<a name="841"><span class="lineNum">     841 </span>            :         const struct ast_sip_body *body)</a>
+<span class="lineNum">     842 </span>            : {
+<span class="lineNum">     843 </span><span class="lineCov">         16 :         SCOPED_AO2LOCK(lock, client);</span>
+<span class="lineNum">     844 </span><span class="lineCov">          8 :         int res = 0;</span>
+<span class="lineNum">     845 </span>            : 
+<span class="lineNum">     846 </span><span class="lineCov">          8 :         ao2_callback_data(client-&gt;publishers, OBJ_NODATA,</span>
+<span class="lineNum">     847 </span>            :                           publisher_client_send, (void *)body, &amp;res);
+<span class="lineNum">     848 </span><span class="lineCov">          8 :         return res;</span>
+<a name="849"><span class="lineNum">     849 </span>            : }</a>
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineCov">          5 : static int sip_outbound_publisher_set_uri(</span>
+<span class="lineNum">     852 </span>            :         pj_pool_t *pool, const char *uri, const char *user, pj_str_t *res_uri)
+<span class="lineNum">     853 </span>            : {
+<span class="lineNum">     854 </span>            :         pj_str_t tmp;
+<span class="lineNum">     855 </span>            :         pjsip_uri *parsed;
+<span class="lineNum">     856 </span>            :         pjsip_sip_uri *parsed_uri;
+<span class="lineNum">     857 </span>            :         int size;
+<span class="lineNum">     858 </span>            : 
+<span class="lineNum">     859 </span><span class="lineCov">          5 :         pj_strdup2_with_null(pool, &amp;tmp, uri);</span>
+<span class="lineNum">     860 </span><span class="lineCov">          5 :         if (!(parsed = pjsip_parse_uri(pool, tmp.ptr, tmp.slen, 0))) {</span>
+<span class="lineNum">     861 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     862 </span>            :         }
+<span class="lineNum">     863 </span>            : 
+<span class="lineNum">     864 </span><span class="lineCov">          5 :         if (!(parsed_uri = pjsip_uri_get_uri(parsed))) {</span>
+<span class="lineNum">     865 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     866 </span>            :         }
+<span class="lineNum">     867 </span>            : 
+<span class="lineNum">     868 </span><span class="lineCov">          5 :         if (!ast_strlen_zero(user)) {</span>
+<span class="lineNum">     869 </span><span class="lineCov">          3 :                 pj_strdup2(pool, &amp;parsed_uri-&gt;user, user);</span>
+<span class="lineNum">     870 </span>            :         }
+<span class="lineNum">     871 </span>            : 
+<span class="lineNum">     872 </span><span class="lineCov">          5 :         res_uri-&gt;ptr = (char*) pj_pool_alloc(pool, pjsip_max_url_size);</span>
+<span class="lineNum">     873 </span><span class="lineCov">          5 :         if (!res_uri-&gt;ptr) {</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     875 </span>            :         }
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineCov">          5 :         if ((size = pjsip_uri_print(PJSIP_URI_IN_OTHER, parsed_uri, res_uri-&gt;ptr,</span>
+<span class="lineNum">     878 </span><span class="lineCov">          5 :                                     pjsip_max_url_size - 1)) &lt;= 0) {</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     880 </span>            :         }
+<span class="lineNum">     881 </span><span class="lineCov">          5 :         res_uri-&gt;ptr[size] = '\0';</span>
+<span class="lineNum">     882 </span><span class="lineCov">          5 :         res_uri-&gt;slen = size;</span>
+<span class="lineNum">     883 </span>            : 
+<span class="lineNum">     884 </span><span class="lineCov">          5 :         return 0;</span>
+<a name="885"><span class="lineNum">     885 </span>            : }</a>
+<span class="lineNum">     886 </span>            : 
+<span class="lineNum">     887 </span><span class="lineCov">          5 : static int sip_outbound_publisher_set_uris(</span>
+<span class="lineNum">     888 </span>            :         pj_pool_t *pool, struct sip_outbound_publisher *publisher,
+<span class="lineNum">     889 </span>            :         pj_str_t *server_uri, pj_str_t *to_uri, pj_str_t *from_uri)
+<span class="lineNum">     890 </span>            : {
+<span class="lineNum">     891 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish *publish = publisher-&gt;owner-&gt;publish;</span>
+<span class="lineNum">     892 </span>            : 
+<span class="lineNum">     893 </span><span class="lineCov">          5 :         if (sip_outbound_publisher_set_uri(pool, publish-&gt;server_uri, publisher-&gt;user, server_uri)) {</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid server URI '%s' specified on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">     895 </span>            :                         publish-&gt;server_uri, ast_sorcery_object_get_id(publish));
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     897 </span>            :         }
+<span class="lineNum">     898 </span>            : 
+<span class="lineNum">     899 </span><span class="lineCov">          5 :         if (ast_strlen_zero(publish-&gt;to_uri)) {</span>
+<span class="lineNum">     900 </span><span class="lineCov">          5 :                 to_uri-&gt;ptr = server_uri-&gt;ptr;</span>
+<span class="lineNum">     901 </span><span class="lineCov">          5 :                 to_uri-&gt;slen = server_uri-&gt;slen;</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">          0 :         } else if (sip_outbound_publisher_set_uri(pool, publish-&gt;to_uri, publisher-&gt;user, to_uri)) {</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid to URI '%s' specified on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">     904 </span>            :                         publish-&gt;to_uri, ast_sorcery_object_get_id(publish));
+<span class="lineNum">     905 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     906 </span>            :         }
+<span class="lineNum">     907 </span>            : 
+<span class="lineNum">     908 </span><span class="lineCov">          5 :         publisher-&gt;to_uri = ast_strdup(to_uri-&gt;ptr);</span>
+<span class="lineNum">     909 </span><span class="lineCov">          5 :         if (!publisher-&gt;to_uri) {</span>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     911 </span>            :         }
+<span class="lineNum">     912 </span>            : 
+<span class="lineNum">     913 </span><span class="lineCov">          5 :         if (ast_strlen_zero(publish-&gt;from_uri)) {</span>
+<span class="lineNum">     914 </span><span class="lineCov">          5 :                 from_uri-&gt;ptr = server_uri-&gt;ptr;</span>
+<span class="lineNum">     915 </span><span class="lineCov">          5 :                 from_uri-&gt;slen = server_uri-&gt;slen;</span>
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :         } else if (sip_outbound_publisher_set_uri(pool, publish-&gt;from_uri, publisher-&gt;user, from_uri)) {</span>
+<span class="lineNum">     917 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Invalid from URI '%s' specified on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">     918 </span>            :                         publish-&gt;from_uri, ast_sorcery_object_get_id(publish));
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     920 </span>            :         }
+<span class="lineNum">     921 </span>            : 
+<span class="lineNum">     922 </span><span class="lineCov">          5 :         publisher-&gt;from_uri = ast_strdup(from_uri-&gt;ptr);</span>
+<span class="lineNum">     923 </span><span class="lineCov">          5 :         if (!publisher-&gt;from_uri) {</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     925 </span>            :         }
+<span class="lineNum">     926 </span>            : 
+<span class="lineNum">     927 </span><span class="lineCov">          5 :         return 0;</span>
+<span class="lineNum">     928 </span>            : }
+<span class="lineNum">     929 </span>            : 
+<span class="lineNum">     930 </span>            : static void sip_outbound_publish_callback(struct pjsip_publishc_cbparam *param);
+<a name="931"><span class="lineNum">     931 </span>            : </a>
+<span class="lineNum">     932 </span>            : /*! \brief Helper function that allocates a pjsip publish client and configures it */
+<span class="lineNum">     933 </span><span class="lineCov">          5 : static int sip_outbound_publisher_init(void *data)</span>
+<a name="934"><span class="lineNum">     934 </span>            : {</a>
+<span class="lineNum">     935 </span><span class="lineCov">          5 :         struct sip_outbound_publisher *publisher = data;</span>
+<span class="lineNum">     936 </span><span class="lineCov">         10 :         RAII_VAR(struct ast_sip_outbound_publish *, publish, NULL, ao2_cleanup);</span>
+<span class="lineNum">     937 </span><span class="lineCov">          5 :         pjsip_publishc_opt opt = {</span>
+<span class="lineNum">     938 </span>            :                 .queue_request = PJ_FALSE,
+<span class="lineNum">     939 </span>            :         };
+<span class="lineNum">     940 </span>            :         pj_pool_t *pool;
+<span class="lineNum">     941 </span>            :         pj_str_t event, server_uri, to_uri, from_uri;
+<span class="lineNum">     942 </span>            : 
+<span class="lineNum">     943 </span><span class="lineCov">          5 :         if (publisher-&gt;client) {</span>
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     945 </span>            :         }
+<span class="lineNum">     946 </span>            : 
+<span class="lineNum">     947 </span><span class="lineCov">          5 :         if (pjsip_publishc_create(ast_sip_get_pjsip_endpoint(), &amp;opt,</span>
+<span class="lineNum">     948 </span><span class="lineCov">          5 :                                   ao2_bump(publisher), sip_outbound_publish_callback,</span>
+<span class="lineNum">     949 </span>            :                 &amp;publisher-&gt;client) != PJ_SUCCESS) {
+<span class="lineNum">     950 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     952 </span>            :         }
+<span class="lineNum">     953 </span>            : 
+<span class="lineNum">     954 </span><span class="lineCov">          5 :         publish = ao2_bump(publisher-&gt;owner-&gt;publish);</span>
+<span class="lineNum">     955 </span>            : 
+<span class="lineNum">     956 </span><span class="lineCov">          5 :         if (!ast_strlen_zero(publish-&gt;outbound_proxy)) {</span>
+<span class="lineNum">     957 </span>            :                 pjsip_route_hdr route_set, *route;
+<span class="lineNum">     958 </span>            :                 static const pj_str_t ROUTE_HNAME = { &quot;Route&quot;, 5 };
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                 pj_list_init(&amp;route_set);</span>
+<span class="lineNum">     961 </span>            : 
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                 if (!(route = pjsip_parse_hdr(pjsip_publishc_get_pool(publisher-&gt;client), &amp;ROUTE_HNAME,</span>
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                         (char*)publish-&gt;outbound_proxy, strlen(publish-&gt;outbound_proxy), NULL))) {</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 :                         pjsip_publishc_destroy(publisher-&gt;client);</span>
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">     966 </span>            :                 }
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                 pj_list_insert_nodes_before(&amp;route_set, route);</span>
+<span class="lineNum">     968 </span>            : 
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 :                 pjsip_publishc_set_route_set(publisher-&gt;client, &amp;route_set);</span>
+<span class="lineNum">     970 </span>            :         }
+<span class="lineNum">     971 </span>            : 
+<span class="lineNum">     972 </span><span class="lineCov">          5 :         pool = pjsip_endpt_create_pool(ast_sip_get_pjsip_endpoint(), &quot;URI Validation&quot;,</span>
+<span class="lineNum">     973 </span>            :                                        pjsip_max_url_size, pjsip_max_url_size);
+<span class="lineNum">     974 </span><span class="lineCov">          5 :         if (!pool) {</span>
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Could not create pool for URI validation on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">     976 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">     977 </span><span class="lineNoCov">          0 :                 pjsip_publishc_destroy(publisher-&gt;client);</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     979 </span>            :         }
+<span class="lineNum">     980 </span>            : 
+<span class="lineNum">     981 </span><span class="lineCov">          5 :         if (sip_outbound_publisher_set_uris(pool, publisher, &amp;server_uri, &amp;from_uri, &amp;to_uri)) {</span>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                 pjsip_endpt_release_pool(ast_sip_get_pjsip_endpoint(), pool);</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :                 pjsip_publishc_destroy(publisher-&gt;client);</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     985 </span>            :         }
+<span class="lineNum">     986 </span>            : 
+<span class="lineNum">     987 </span><span class="lineCov">          5 :         pj_cstr(&amp;event, publish-&gt;event);</span>
+<span class="lineNum">     988 </span><span class="lineCov">          5 :         if (pjsip_publishc_init(publisher-&gt;client, &amp;event, &amp;server_uri, &amp;from_uri, &amp;to_uri,</span>
+<span class="lineNum">     989 </span><span class="lineCov">          5 :                         publish-&gt;expiration) != PJ_SUCCESS) {</span>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Failed to initialize publishing client on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">     991 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">     992 </span><span class="lineNoCov">          0 :                 pjsip_endpt_release_pool(ast_sip_get_pjsip_endpoint(), pool);</span>
+<span class="lineNum">     993 </span><span class="lineNoCov">          0 :                 pjsip_publishc_destroy(publisher-&gt;client);</span>
+<span class="lineNum">     994 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     995 </span>            :         }
+<span class="lineNum">     996 </span>            : 
+<span class="lineNum">     997 </span><span class="lineCov">          5 :         pjsip_endpt_release_pool(ast_sip_get_pjsip_endpoint(), pool);</span>
+<span class="lineNum">     998 </span><span class="lineCov">          5 :         return 0;</span>
+<a name="999"><span class="lineNum">     999 </span>            : }</a>
+<span class="lineNum">    1000 </span>            : 
+<span class="lineNum">    1001 </span><span class="lineNoCov">          0 : static int sip_outbound_publisher_reinit(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1002 </span>            : {
+<span class="lineNum">    1003 </span><span class="lineNoCov">          0 :         return sip_outbound_publisher_init(obj);</span>
+<a name="1004"><span class="lineNum">    1004 </span>            : }</a>
+<span class="lineNum">    1005 </span>            : 
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 : static int sip_outbound_publisher_reinit_all(void *data)</span>
+<span class="lineNum">    1007 </span>            : {
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :         ao2_callback(data, OBJ_NODATA, sip_outbound_publisher_reinit, NULL);</span>
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">    1010 </span>            : }
+<a name="1011"><span class="lineNum">    1011 </span>            : </a>
+<span class="lineNum">    1012 </span>            : /*! \brief Destructor function for publish client */
+<span class="lineNum">    1013 </span><span class="lineCov">          5 : static void sip_outbound_publisher_destroy(void *obj)</span>
+<span class="lineNum">    1014 </span>            : {
+<span class="lineNum">    1015 </span><span class="lineCov">          5 :         struct sip_outbound_publisher *publisher = obj;</span>
+<span class="lineNum">    1016 </span>            :         struct sip_outbound_publish_message *message;
+<span class="lineNum">    1017 </span>            : 
+<span class="lineNum">    1018 </span>            :         /* You might be tempted to think &quot;the publish client isn't being destroyed&quot; but it actually is - just elsewhere */
+<span class="lineNum">    1019 </span>            : 
+<span class="lineNum">    1020 </span><span class="lineCov">          6 :         while ((message = AST_LIST_REMOVE_HEAD(&amp;publisher-&gt;queue, entry))) {</span>
+<span class="lineNum">    1021 </span><span class="lineCov">          1 :                 ast_free(message);</span>
+<span class="lineNum">    1022 </span>            :         }
+<span class="lineNum">    1023 </span>            : 
+<span class="lineNum">    1024 </span><span class="lineCov">          5 :         ao2_cleanup(publisher-&gt;owner);</span>
+<span class="lineNum">    1025 </span><span class="lineCov">          5 :         ast_free(publisher-&gt;from_uri);</span>
+<span class="lineNum">    1026 </span><span class="lineCov">          5 :         ast_free(publisher-&gt;to_uri);</span>
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span><span class="lineCov">          5 :         ast_taskprocessor_unreference(publisher-&gt;serializer);</span>
+<a name="1029"><span class="lineNum">    1029 </span><span class="lineCov">          5 : }</span></a>
+<span class="lineNum">    1030 </span>            : 
+<span class="lineNum">    1031 </span><span class="lineCov">          5 : static struct sip_outbound_publisher *sip_outbound_publisher_alloc(</span>
+<span class="lineNum">    1032 </span>            :         struct ast_sip_outbound_publish_client *client, const char *user)
+<span class="lineNum">    1033 </span>            : {
+<span class="lineNum">    1034 </span>            :         struct sip_outbound_publisher *publisher;
+<span class="lineNum">    1035 </span>            :         char tps_name[AST_TASKPROCESSOR_MAX_NAME + 1];
+<span class="lineNum">    1036 </span>            : 
+<span class="lineNum">    1037 </span><span class="lineCov">          5 :         publisher = ao2_alloc(sizeof(*publisher) + (user ? strlen(user) : 0) + 1,</span>
+<span class="lineNum">    1038 </span>            :                               sip_outbound_publisher_destroy);
+<span class="lineNum">    1039 </span><span class="lineCov">          5 :         if (!publisher) {</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1041 </span>            :         }
+<span class="lineNum">    1042 </span>            : 
+<span class="lineNum">    1043 </span>            :         /*
+<span class="lineNum">    1044 </span>            :          * Bump the ref to the client. This essentially creates a circular reference,
+<span class="lineNum">    1045 </span>            :          * but it is needed in order to make sure the client object doesn't get pulled
+<span class="lineNum">    1046 </span>            :          * out from under us when the publisher stops publishing.
+<span class="lineNum">    1047 </span>            :          *
+<span class="lineNum">    1048 </span>            :          * The circular reference is alleviated by calling cancel_and_unpublish for
+<span class="lineNum">    1049 </span>            :          * each client, from the state's destructor. By calling it there all references
+<span class="lineNum">    1050 </span>            :          * to the publishers should go to zero, thus calling the publisher's destructor.
+<span class="lineNum">    1051 </span>            :          * This in turn removes the client reference we added here. The state then removes
+<span class="lineNum">    1052 </span>            :          * its reference to the client, which should take it to zero.
+<span class="lineNum">    1053 </span>            :          */
+<span class="lineNum">    1054 </span><span class="lineCov">          5 :         publisher-&gt;owner = ao2_bump(client);</span>
+<span class="lineNum">    1055 </span><span class="lineCov">          5 :         publisher-&gt;timer.user_data = publisher;</span>
+<span class="lineNum">    1056 </span><span class="lineCov">          5 :         publisher-&gt;timer.cb = sip_outbound_publish_timer_cb;</span>
+<span class="lineNum">    1057 </span><span class="lineCov">          5 :         if (user) {</span>
+<span class="lineNum">    1058 </span><span class="lineCov">          3 :                 strcpy(publisher-&gt;user, user);</span>
+<span class="lineNum">    1059 </span>            :         } else {
+<span class="lineNum">    1060 </span><span class="lineCov">          2 :                 *publisher-&gt;user = '\0';</span>
+<span class="lineNum">    1061 </span>            :         }
+<span class="lineNum">    1062 </span>            : 
+<span class="lineNum">    1063 </span><span class="lineCov">          5 :         ast_taskprocessor_build_name(tps_name, sizeof(tps_name), &quot;pjsip/outpub/%s&quot;,</span>
+<span class="lineNum">    1064 </span><span class="lineCov">          5 :                 ast_sorcery_object_get_id(client-&gt;publish));</span>
+<span class="lineNum">    1065 </span>            : 
+<span class="lineNum">    1066 </span><span class="lineCov">          5 :         publisher-&gt;serializer = ast_sip_create_serializer_group(tps_name,</span>
+<span class="lineNum">    1067 </span>            :                 shutdown_group);
+<span class="lineNum">    1068 </span><span class="lineCov">          5 :         if (!publisher-&gt;serializer) {</span>
+<span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1071 </span>            :         }
+<span class="lineNum">    1072 </span>            : 
+<span class="lineNum">    1073 </span><span class="lineCov">          5 :         if (ast_sip_push_task_wait_servant(NULL, sip_outbound_publisher_init, publisher)) {</span>
+<span class="lineNum">    1074 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to create publisher for outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1075 </span><span class="lineNoCov">          0 :                         ast_sorcery_object_get_id(client-&gt;publish));</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1078 </span>            :         }
+<span class="lineNum">    1079 </span>            : 
+<span class="lineNum">    1080 </span><span class="lineCov">          5 :         return publisher;</span>
+<a name="1081"><span class="lineNum">    1081 </span>            : }</a>
+<span class="lineNum">    1082 </span>            : 
+<span class="lineNum">    1083 </span><span class="lineCov">          5 : static struct sip_outbound_publisher *sip_outbound_publish_client_add_publisher(</span>
+<span class="lineNum">    1084 </span>            :         struct ast_sip_outbound_publish_client *client, const char *user)
+<span class="lineNum">    1085 </span>            : {
+<span class="lineNum">    1086 </span>            :         struct sip_outbound_publisher *publisher =
+<span class="lineNum">    1087 </span><span class="lineCov">          5 :                 sip_outbound_publisher_alloc(client, user);</span>
+<span class="lineNum">    1088 </span>            : 
+<span class="lineNum">    1089 </span><span class="lineCov">          5 :         if (!publisher) {</span>
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1091 </span>            :         }
+<span class="lineNum">    1092 </span>            : 
+<span class="lineNum">    1093 </span><span class="lineCov">          5 :         if (!ao2_link(client-&gt;publishers, publisher)) {</span>
+<span class="lineNum">    1094 </span>            :                 /*
+<span class="lineNum">    1095 </span>            :                  * No need to bump the reference here. The task will take care of
+<span class="lineNum">    1096 </span>            :                  * removing the reference.
+<span class="lineNum">    1097 </span>            :                  */
+<span class="lineNum">    1098 </span><span class="lineNoCov">          0 :                 if (ast_sip_push_task(publisher-&gt;serializer, cancel_refresh_timer_task, publisher)) {</span>
+<span class="lineNum">    1099 </span><span class="lineNoCov">          0 :                         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1100 </span>            :                 }
+<span class="lineNum">    1101 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1102 </span>            :         }
+<span class="lineNum">    1103 </span>            : 
+<span class="lineNum">    1104 </span><span class="lineCov">          5 :         return publisher;</span>
+<a name="1105"><span class="lineNum">    1105 </span>            : }</a>
+<span class="lineNum">    1106 </span>            : 
+<span class="lineNum">    1107 </span><span class="lineCov">         15 : int ast_sip_publish_client_user_send(struct ast_sip_outbound_publish_client *client,</span>
+<span class="lineNum">    1108 </span>            :                                      const char *user, const struct ast_sip_body *body)
+<span class="lineNum">    1109 </span>            : {
+<span class="lineNum">    1110 </span>            :         struct sip_outbound_publisher *publisher;
+<span class="lineNum">    1111 </span>            :         int res;
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span><span class="lineCov">         15 :         publisher = sip_outbound_publish_client_get_publisher(client, user);</span>
+<span class="lineNum">    1114 </span><span class="lineCov">         15 :         if (!publisher) {</span>
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1116 </span>            :         }
+<span class="lineNum">    1117 </span>            : 
+<span class="lineNum">    1118 </span><span class="lineCov">         15 :         publisher_client_send(publisher, (void *)body, &amp;res, 0);</span>
+<span class="lineNum">    1119 </span><span class="lineCov">         15 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1120 </span><span class="lineCov">         15 :         return res;</span>
+<a name="1121"><span class="lineNum">    1121 </span>            : }</a>
+<span class="lineNum">    1122 </span>            : 
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 : void ast_sip_publish_client_remove(struct ast_sip_outbound_publish_client *client,</span>
+<a name="1124"><span class="lineNum">    1124 </span>            :                                    const char *user)</a>
+<span class="lineNum">    1125 </span>            : {
+<span class="lineNum">    1126 </span><span class="lineNoCov">          0 :         SCOPED_WRLOCK(lock, &amp;load_lock);</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :         ao2_find(client-&gt;publishers, user, OBJ_SEARCH_KEY | OBJ_UNLINK | OBJ_NODATA);</span>
+<a name="1128"><span class="lineNum">    1128 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1129 </span>            : 
+<span class="lineNum">    1130 </span><span class="lineCov">          5 : static int explicit_publish_destroy(void *data)</span>
+<span class="lineNum">    1131 </span>            : {
+<span class="lineNum">    1132 </span><span class="lineCov">          5 :         struct sip_outbound_publisher *publisher = data;</span>
+<span class="lineNum">    1133 </span>            : 
+<span class="lineNum">    1134 </span>            :         /*
+<span class="lineNum">    1135 </span>            :          * If there is no pjsip publishing client then we obviously don't need
+<span class="lineNum">    1136 </span>            :          * to destroy it. Also, the ref for the Asterisk publishing client that
+<span class="lineNum">    1137 </span>            :          * pjsip had would not exist or should already be gone as well.
+<span class="lineNum">    1138 </span>            :          */
+<span class="lineNum">    1139 </span><span class="lineCov">          5 :         if (publisher-&gt;client) {</span>
+<span class="lineNum">    1140 </span><span class="lineCov">          5 :                 pjsip_publishc_destroy(publisher-&gt;client);</span>
+<span class="lineNum">    1141 </span><span class="lineCov">          5 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1142 </span>            :         }
+<span class="lineNum">    1143 </span>            : 
+<span class="lineNum">    1144 </span><span class="lineCov">          5 :         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1145 </span>            : 
+<span class="lineNum">    1146 </span><span class="lineCov">          5 :         return 0;</span>
+<span class="lineNum">    1147 </span>            : }
+<a name="1148"><span class="lineNum">    1148 </span>            : </a>
+<span class="lineNum">    1149 </span>            : /*! \brief Helper function which cancels and un-publishes a no longer used client */
+<span class="lineNum">    1150 </span><span class="lineCov">         10 : static int cancel_and_unpublish(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1151 </span>            : {
+<span class="lineNum">    1152 </span><span class="lineCov">         10 :         struct sip_outbound_publisher *publisher = obj;</span>
+<a name="1153"><span class="lineNum">    1153 </span><span class="lineCov">         10 :         struct ast_sip_outbound_publish_client *client = publisher-&gt;owner;</span></a>
+<span class="lineNum">    1154 </span>            : 
+<span class="lineNum">    1155 </span><span class="lineCov">         30 :         SCOPED_AO2LOCK(lock, publisher);</span>
+<span class="lineNum">    1156 </span>            : 
+<span class="lineNum">    1157 </span><span class="lineCov">         10 :         if (!client-&gt;started) {</span>
+<span class="lineNum">    1158 </span>            :                 /* If the publisher was never started, there's nothing to unpublish, so just
+<span class="lineNum">    1159 </span>            :                  * destroy the publication and remove its reference to the publisher.
+<span class="lineNum">    1160 </span>            :                  */
+<span class="lineNum">    1161 </span><span class="lineCov">          5 :                 if (ast_sip_push_task(publisher-&gt;serializer, explicit_publish_destroy, ao2_bump(publisher))) {</span>
+<span class="lineNum">    1162 </span><span class="lineNoCov">          0 :                         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1163 </span>            :                 }
+<span class="lineNum">    1164 </span><span class="lineCov">          5 :                 return 0;</span>
+<span class="lineNum">    1165 </span>            :         }
+<span class="lineNum">    1166 </span>            : 
+<span class="lineNum">    1167 </span><span class="lineCov">          5 :         if (ast_sip_push_task(publisher-&gt;serializer, cancel_refresh_timer_task, ao2_bump(publisher))) {</span>
+<span class="lineNum">    1168 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Could not stop refresh timer on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1169 </span><span class="lineNoCov">          0 :                         ast_sorcery_object_get_id(client-&gt;publish));</span>
+<span class="lineNum">    1170 </span><span class="lineNoCov">          0 :                 ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1171 </span>            :         }
+<span class="lineNum">    1172 </span>            : 
+<span class="lineNum">    1173 </span>            :         /* If nothing is being sent right now send the unpublish - the destroy will happen in the subsequent callback */
+<span class="lineNum">    1174 </span><span class="lineCov">          5 :         if (!publisher-&gt;sending) {</span>
+<span class="lineNum">    1175 </span><span class="lineCov">          4 :                 if (ast_sip_push_task(publisher-&gt;serializer, send_unpublish_task, ao2_bump(publisher))) {</span>
+<span class="lineNum">    1176 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Could not send unpublish message on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1177 </span><span class="lineNoCov">          0 :                                 ast_sorcery_object_get_id(client-&gt;publish));</span>
+<span class="lineNum">    1178 </span><span class="lineNoCov">          0 :                         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1179 </span>            :                 }
+<span class="lineNum">    1180 </span>            :         }
+<span class="lineNum">    1181 </span><span class="lineCov">          5 :         publisher-&gt;destroy = 1;</span>
+<span class="lineNum">    1182 </span><span class="lineCov">          5 :         return 0;</span>
+<span class="lineNum">    1183 </span>            : }
+<a name="1184"><span class="lineNum">    1184 </span>            : </a>
+<span class="lineNum">    1185 </span>            : /*! \brief Destructor function for publish client */
+<span class="lineNum">    1186 </span><span class="lineCov">          5 : static void sip_outbound_publish_client_destroy(void *obj)</span>
+<span class="lineNum">    1187 </span>            : {
+<span class="lineNum">    1188 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish_client *client = obj;</span>
+<span class="lineNum">    1189 </span>            : 
+<span class="lineNum">    1190 </span><span class="lineCov">          5 :         ao2_cleanup(client-&gt;datastores);</span>
+<span class="lineNum">    1191 </span>            : 
+<span class="lineNum">    1192 </span>            :         /*
+<span class="lineNum">    1193 </span>            :          * The client's publishers have already been unpublished and destroyed
+<span class="lineNum">    1194 </span>            :          * by this point, so it is safe to finally remove the reference to the
+<span class="lineNum">    1195 </span>            :          * publish object. The client needed to hold a reference to it until
+<span class="lineNum">    1196 </span>            :          * the publishers were done with it.
+<span class="lineNum">    1197 </span>            :          */
+<span class="lineNum">    1198 </span><span class="lineCov">          5 :         ao2_cleanup(client-&gt;publish);</span>
+<span class="lineNum">    1199 </span><span class="lineCov">          5 : }</span>
+<a name="1200"><span class="lineNum">    1200 </span>            : </a>
+<span class="lineNum">    1201 </span>            : /*! \brief Destructor function for publish state */
+<span class="lineNum">    1202 </span><span class="lineCov">          5 : static void sip_outbound_publish_state_destroy(void *obj)</span>
+<span class="lineNum">    1203 </span>            : {
+<span class="lineNum">    1204 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish_state *state = obj;</span>
+<span class="lineNum">    1205 </span>            : 
+<span class="lineNum">    1206 </span><span class="lineCov">          5 :         stop_publishing(state-&gt;client, NULL);</span>
+<span class="lineNum">    1207 </span>            :         /*
+<span class="lineNum">    1208 </span>            :          * Since the state is being destroyed the associated client needs to also
+<span class="lineNum">    1209 </span>            :          * be destroyed. However simply removing the reference to the client will
+<span class="lineNum">    1210 </span>            :          * not initiate client destruction since the client's publisher(s) hold a
+<span class="lineNum">    1211 </span>            :          * reference to the client object as well. So we need to unpublish the
+<span class="lineNum">    1212 </span>            :          * the client's publishers here, which will remove the publisher's client
+<span class="lineNum">    1213 </span>            :          * reference during that process.
+<span class="lineNum">    1214 </span>            :          *
+<span class="lineNum">    1215 </span>            :          * That being said we don't want to remove the client's reference to the
+<span class="lineNum">    1216 </span>            :          * publish object just yet. We'll hold off on that until client destruction
+<span class="lineNum">    1217 </span>            :          * itself. This is because the publishers need access to the client's
+<span class="lineNum">    1218 </span>            :          * publish object while they are unpublishing.
+<span class="lineNum">    1219 </span>            :          */
+<span class="lineNum">    1220 </span><span class="lineCov">          5 :         ao2_callback(state-&gt;client-&gt;publishers, OBJ_NODATA | OBJ_UNLINK, cancel_and_unpublish, NULL);</span>
+<span class="lineNum">    1221 </span><span class="lineCov">          5 :         ao2_cleanup(state-&gt;client-&gt;publishers);</span>
+<span class="lineNum">    1222 </span>            : 
+<span class="lineNum">    1223 </span><span class="lineCov">          5 :         state-&gt;client-&gt;started = 0;</span>
+<span class="lineNum">    1224 </span><span class="lineCov">          5 :         ao2_cleanup(state-&gt;client);</span>
+<span class="lineNum">    1225 </span><span class="lineCov">          5 : }</span>
+<span class="lineNum">    1226 </span>            : 
+<span class="lineNum">    1227 </span>            : /*!
+<span class="lineNum">    1228 </span>            :  * \internal
+<span class="lineNum">    1229 </span>            :  * \brief Check if a publish can be reused
+<span class="lineNum">    1230 </span>            :  *
+<span class="lineNum">    1231 </span>            :  * This checks if the existing outbound publish's configuration differs from a newly-applied
+<span class="lineNum">    1232 </span>            :  * outbound publish.
+<span class="lineNum">    1233 </span>            :  *
+<span class="lineNum">    1234 </span>            :  * \param existing The pre-existing outbound publish
+<a name="1235"><span class="lineNum">    1235 </span>            :  * \param applied The newly-created publish</a>
+<span class="lineNum">    1236 </span>            :  */
+<span class="lineNum">    1237 </span><span class="lineNoCov">          0 : static int can_reuse_publish(struct ast_sip_outbound_publish *existing, struct ast_sip_outbound_publish *applied)</span>
+<span class="lineNum">    1238 </span>            : {
+<span class="lineNum">    1239 </span>            :         int i;
+<span class="lineNum">    1240 </span>            : 
+<span class="lineNum">    1241 </span><span class="lineNoCov">          0 :         if (strcmp(existing-&gt;server_uri, applied-&gt;server_uri) || strcmp(existing-&gt;from_uri, applied-&gt;from_uri) ||</span>
+<span class="lineNum">    1242 </span><span class="lineNoCov">          0 :                 strcmp(existing-&gt;to_uri, applied-&gt;to_uri) || strcmp(existing-&gt;outbound_proxy, applied-&gt;outbound_proxy) ||</span>
+<span class="lineNum">    1243 </span><span class="lineNoCov">          0 :                 strcmp(existing-&gt;event, applied-&gt;event) ||</span>
+<span class="lineNum">    1244 </span><span class="lineNoCov">          0 :                 AST_VECTOR_SIZE(&amp;existing-&gt;outbound_auths) != AST_VECTOR_SIZE(&amp;applied-&gt;outbound_auths)) {</span>
+<span class="lineNum">    1245 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1246 </span>            :         }
+<span class="lineNum">    1247 </span>            : 
+<span class="lineNum">    1248 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; AST_VECTOR_SIZE(&amp;existing-&gt;outbound_auths); ++i) {</span>
+<span class="lineNum">    1249 </span><span class="lineNoCov">          0 :                 if (strcmp(AST_VECTOR_GET(&amp;existing-&gt;outbound_auths, i), AST_VECTOR_GET(&amp;applied-&gt;outbound_auths, i))) {</span>
+<span class="lineNum">    1250 </span><span class="lineNoCov">          0 :                         return 0;</span>
+<span class="lineNum">    1251 </span>            :                 }
+<span class="lineNum">    1252 </span>            :         }
+<span class="lineNum">    1253 </span>            : 
+<span class="lineNum">    1254 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">    1255 </span>            : }
+<a name="1256"><span class="lineNum">    1256 </span>            : </a>
+<span class="lineNum">    1257 </span>            : /*! \brief Callback function for publish client responses */
+<span class="lineNum">    1258 </span><span class="lineCov">         22 : static void sip_outbound_publish_callback(struct pjsip_publishc_cbparam *param)</span>
+<span class="lineNum">    1259 </span>            : {
+<span class="lineNum">    1260 </span>            : #define DESTROY_CLIENT() do {                      \
+<span class="lineNum">    1261 </span>            :         pjsip_publishc_destroy(publisher-&gt;client); \
+<span class="lineNum">    1262 </span>            :         publisher-&gt;client = NULL; \
+<a name="1263"><span class="lineNum">    1263 </span>            :         ao2_ref(publisher, -1); } while (0)</a>
+<a name="1264"><span class="lineNum">    1264 </span>            : </a>
+<a name="1265"><span class="lineNum">    1265 </span><span class="lineCov">         66 :         RAII_VAR(struct sip_outbound_publisher *, publisher, ao2_bump(param-&gt;token), ao2_cleanup);</span></a>
+<span class="lineNum">    1266 </span><span class="lineCov">         66 :         RAII_VAR(struct ast_sip_outbound_publish *, publish, ao2_bump(publisher-&gt;owner-&gt;publish), ao2_cleanup);</span>
+<span class="lineNum">    1267 </span><span class="lineCov">         66 :         SCOPED_AO2LOCK(lock, publisher);</span>
+<span class="lineNum">    1268 </span>            :         pjsip_tx_data *tdata;
+<span class="lineNum">    1269 </span>            : 
+<span class="lineNum">    1270 </span><span class="lineCov">         22 :         if (publisher-&gt;destroy) {</span>
+<span class="lineNum">    1271 </span><span class="lineNoCov">          0 :                 if (publisher-&gt;sending) {</span>
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :                         publisher-&gt;sending = NULL;</span>
+<span class="lineNum">    1273 </span>            : 
+<span class="lineNum">    1274 </span><span class="lineNoCov">          0 :                         if (!ast_sip_push_task(publisher-&gt;serializer, send_unpublish_task, ao2_bump(publisher))) {</span>
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :                                 return;</span>
+<span class="lineNum">    1276 </span>            :                         }
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                         ast_log(LOG_WARNING, &quot;Could not send unpublish message on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1278 </span>            :                                 ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :                         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1280 </span>            :                 }
+<span class="lineNum">    1281 </span>            :                 /* Once the destroy is called this callback will not get called any longer, so drop the publisher ref */
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                 DESTROY_CLIENT();</span>
+<span class="lineNum">    1283 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1284 </span>            :         }
+<span class="lineNum">    1285 </span>            : 
+<span class="lineNum">    1286 </span><span class="lineCov">         22 :         if (param-&gt;code == 401 || param-&gt;code == 407) {</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                 pjsip_transaction *tsx = pjsip_rdata_get_tsx(param-&gt;rdata);</span>
+<span class="lineNum">    1288 </span>            : 
+<span class="lineNum">    1289 </span><span class="lineNoCov">          0 :                 if (!ast_sip_create_request_with_auth(&amp;publish-&gt;outbound_auths,</span>
+<span class="lineNum">    1290 </span>            :                                 param-&gt;rdata, tsx-&gt;last_tx, &amp;tdata)) {
+<span class="lineNum">    1291 </span><span class="lineNoCov">          0 :                         set_transport(publisher, tdata);</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 :                         pjsip_publishc_send(publisher-&gt;client, tdata);</span>
+<span class="lineNum">    1293 </span>            :                 }
+<span class="lineNum">    1294 </span><span class="lineNoCov">          0 :                 publisher-&gt;auth_attempts++;</span>
+<span class="lineNum">    1295 </span>            : 
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :                 if (publisher-&gt;auth_attempts == publish-&gt;max_auth_attempts) {</span>
+<span class="lineNum">    1297 </span><span class="lineNoCov">          0 :                         DESTROY_CLIENT();</span>
+<span class="lineNum">    1298 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Reached maximum number of PUBLISH authentication attempts on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1299 </span>            :                                 ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1300 </span>            : 
+<span class="lineNum">    1301 </span><span class="lineNoCov">          0 :                         goto end;</span>
+<span class="lineNum">    1302 </span>            :                 }
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1304 </span>            :         }
+<span class="lineNum">    1305 </span>            : 
+<span class="lineNum">    1306 </span><span class="lineCov">         22 :         publisher-&gt;auth_attempts = 0;</span>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineCov">         22 :         if (param-&gt;code == 412) {</span>
+<span class="lineNum">    1309 </span><span class="lineNoCov">          0 :                 DESTROY_CLIENT();</span>
+<span class="lineNum">    1310 </span><span class="lineNoCov">          0 :                 if (sip_outbound_publisher_init(publisher)) {</span>
+<span class="lineNum">    1311 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Failed to create a new outbound publish client for '%s' on 412 response\n&quot;,</span>
+<span class="lineNum">    1312 </span>            :                                 ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1313 </span><span class="lineNoCov">          0 :                         goto end;</span>
+<span class="lineNum">    1314 </span>            :                 }
+<span class="lineNum">    1315 </span>            : 
+<span class="lineNum">    1316 </span>            :                 /* Setting this to NULL will cause a new PUBLISH to get created and sent for the same underlying body */
+<span class="lineNum">    1317 </span><span class="lineNoCov">          0 :                 publisher-&gt;sending = NULL;</span>
+<span class="lineNum">    1318 </span><span class="lineCov">         22 :         } else if (param-&gt;code == 423) {</span>
+<span class="lineNum">    1319 </span>            :                 /* Update the expiration with the new expiration time if available */
+<span class="lineNum">    1320 </span>            :                 pjsip_expires_hdr *expires;
+<span class="lineNum">    1321 </span>            : 
+<span class="lineNum">    1322 </span><span class="lineNoCov">          0 :                 expires = pjsip_msg_find_hdr(param-&gt;rdata-&gt;msg_info.msg, PJSIP_H_MIN_EXPIRES, NULL);</span>
+<span class="lineNum">    1323 </span><span class="lineNoCov">          0 :                 if (!expires || !expires-&gt;ivalue) {</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">          0 :                         DESTROY_CLIENT();</span>
+<span class="lineNum">    1325 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Received 423 response on outbound publish '%s' without a Min-Expires header\n&quot;,</span>
+<span class="lineNum">    1326 </span>            :                                 ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1327 </span><span class="lineNoCov">          0 :                         goto end;</span>
+<span class="lineNum">    1328 </span>            :                 }
+<span class="lineNum">    1329 </span>            : 
+<span class="lineNum">    1330 </span><span class="lineNoCov">          0 :                 pjsip_publishc_update_expires(publisher-&gt;client, expires-&gt;ivalue);</span>
+<span class="lineNum">    1331 </span><span class="lineNoCov">          0 :                 publisher-&gt;sending = NULL;</span>
+<span class="lineNum">    1332 </span><span class="lineCov">         22 :         } else if (publisher-&gt;sending) {</span>
+<span class="lineNum">    1333 </span>            :                 /* Remove the message currently being sent so that when the queue is serviced another will get sent */
+<span class="lineNum">    1334 </span><span class="lineCov">         22 :                 AST_LIST_REMOVE_HEAD(&amp;publisher-&gt;queue, entry);</span>
+<span class="lineNum">    1335 </span><span class="lineCov">         22 :                 ast_free(publisher-&gt;sending);</span>
+<span class="lineNum">    1336 </span><span class="lineCov">         22 :                 publisher-&gt;sending = NULL;</span>
+<span class="lineNum">    1337 </span><span class="lineCov">         22 :                 if (!param-&gt;rdata) {</span>
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :                         ast_log(LOG_NOTICE, &quot;No response received for outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1339 </span>            :                                 ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1340 </span>            :                 }
+<span class="lineNum">    1341 </span>            :         }
+<span class="lineNum">    1342 </span>            : 
+<span class="lineNum">    1343 </span><span class="lineCov">         22 :         if (AST_LIST_EMPTY(&amp;publisher-&gt;queue)) {</span>
+<span class="lineNum">    1344 </span><span class="lineCov">         16 :                 schedule_publish_refresh(publisher, param-&gt;expiration);</span>
+<span class="lineNum">    1345 </span>            :         }
+<span class="lineNum">    1346 </span>            : 
+<span class="lineNum">    1347 </span><span class="lineCov">          6 : end:</span>
+<span class="lineNum">    1348 </span><span class="lineCov">         22 :         if (!publisher-&gt;client) {</span>
+<span class="lineNum">    1349 </span>            :                 struct sip_outbound_publish_message *message;
+<span class="lineNum">    1350 </span>            : 
+<span class="lineNum">    1351 </span><span class="lineNoCov">          0 :                 while ((message = AST_LIST_REMOVE_HEAD(&amp;publisher-&gt;queue, entry))) {</span>
+<span class="lineNum">    1352 </span><span class="lineNoCov">          0 :                         ast_free(message);</span>
+<span class="lineNum">    1353 </span>            :                 }
+<span class="lineNum">    1354 </span>            :         } else {
+<span class="lineNum">    1355 </span><span class="lineCov">         22 :                 if (ast_sip_push_task(publisher-&gt;serializer, sip_publisher_service_queue, ao2_bump(publisher))) {</span>
+<span class="lineNum">    1356 </span><span class="lineNoCov">          0 :                         ao2_ref(publisher, -1);</span>
+<span class="lineNum">    1357 </span>            :                 }
+<span class="lineNum">    1358 </span>            :         }
+<span class="lineNum">    1359 </span>            : }
+<span class="lineNum">    1360 </span>            : 
+<a name="1361"><span class="lineNum">    1361 </span>            : #define DATASTORE_BUCKETS 53</a>
+<span class="lineNum">    1362 </span>            : 
+<span class="lineNum">    1363 </span><span class="lineCov">          6 : static int datastore_hash(const void *obj, int flags)</span>
+<span class="lineNum">    1364 </span>            : {
+<span class="lineNum">    1365 </span>            :         const struct ast_datastore *datastore;
+<span class="lineNum">    1366 </span>            :         const char *uid;
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span><span class="lineCov">          6 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">    1369 </span><span class="lineCov">          4 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">    1370 </span><span class="lineCov">          4 :                 uid = obj;</span>
+<span class="lineNum">    1371 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">    1372 </span><span class="lineCov">          2 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">    1373 </span><span class="lineCov">          2 :                 datastore = obj;</span>
+<span class="lineNum">    1374 </span><span class="lineCov">          2 :                 uid = datastore-&gt;uid;</span>
+<span class="lineNum">    1375 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">    1377 </span>            :                 /* Hash can only work on something with a full key. */
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :                 ast_assert(0);</span>
+<span class="lineNum">    1379 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1380 </span>            :         }
+<span class="lineNum">    1381 </span>            : 
+<span class="lineNum">    1382 </span><span class="lineCov">          6 :         return ast_str_hash(uid);</span>
+<a name="1383"><span class="lineNum">    1383 </span>            : }</a>
+<span class="lineNum">    1384 </span>            : 
+<span class="lineNum">    1385 </span><span class="lineCov">          4 : static int datastore_cmp(void *obj, void *arg, int flags)</span>
+<span class="lineNum">    1386 </span>            : {
+<span class="lineNum">    1387 </span><span class="lineCov">          4 :         const struct ast_datastore *object_left = obj;</span>
+<span class="lineNum">    1388 </span><span class="lineCov">          4 :         const struct ast_datastore *object_right = arg;</span>
+<span class="lineNum">    1389 </span><span class="lineCov">          4 :         const char *right_key = arg;</span>
+<span class="lineNum">    1390 </span>            :         int cmp;
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span><span class="lineCov">          4 :         switch (flags &amp; OBJ_SEARCH_MASK) {</span>
+<span class="lineNum">    1393 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_OBJECT:</span>
+<span class="lineNum">    1394 </span><span class="lineNoCov">          0 :                 right_key = object_right-&gt;uid;</span>
+<span class="lineNum">    1395 </span>            :                 /* Fall through */
+<span class="lineNum">    1396 </span><span class="lineCov">          4 :         case OBJ_SEARCH_KEY:</span>
+<span class="lineNum">    1397 </span><span class="lineCov">          4 :                 cmp = strcmp(object_left-&gt;uid, right_key);</span>
+<span class="lineNum">    1398 </span><span class="lineCov">          4 :                 break;</span>
+<span class="lineNum">    1399 </span><span class="lineNoCov">          0 :         case OBJ_SEARCH_PARTIAL_KEY:</span>
+<span class="lineNum">    1400 </span><span class="lineNoCov">          0 :         cmp = strncmp(object_left-&gt;uid, right_key, strlen(right_key));</span>
+<span class="lineNum">    1401 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">          0 :         default:</span>
+<span class="lineNum">    1403 </span>            :                 /*
+<span class="lineNum">    1404 </span>            :                  * What arg points to is specific to this traversal callback
+<span class="lineNum">    1405 </span>            :                  * and has no special meaning to astobj2.
+<span class="lineNum">    1406 </span>            :                  */
+<span class="lineNum">    1407 </span><span class="lineNoCov">          0 :                 cmp = 0;</span>
+<span class="lineNum">    1408 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">    1409 </span>            :         }
+<span class="lineNum">    1410 </span><span class="lineCov">          4 :         if (cmp) {</span>
+<span class="lineNum">    1411 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1412 </span>            :         }
+<span class="lineNum">    1413 </span>            :         /*
+<span class="lineNum">    1414 </span>            :          * At this point the traversal callback is identical to a sorted
+<span class="lineNum">    1415 </span>            :          * container.
+<span class="lineNum">    1416 </span>            :          */
+<span class="lineNum">    1417 </span><span class="lineCov">          4 :         return CMP_MATCH;</span>
+<span class="lineNum">    1418 </span>            : }
+<a name="1419"><span class="lineNum">    1419 </span>            : </a>
+<span class="lineNum">    1420 </span>            : /*! \brief Allocator function for publish client */
+<span class="lineNum">    1421 </span><span class="lineCov">          5 : static struct ast_sip_outbound_publish_state *sip_outbound_publish_state_alloc(</span>
+<span class="lineNum">    1422 </span>            :         struct ast_sip_outbound_publish *publish)
+<span class="lineNum">    1423 </span>            : {
+<span class="lineNum">    1424 </span><span class="lineCov">          5 :         const char *id = ast_sorcery_object_get_id(publish);</span>
+<span class="lineNum">    1425 </span>            :         struct ast_sip_outbound_publish_state *state =
+<span class="lineNum">    1426 </span><span class="lineCov">          5 :                 ao2_alloc(sizeof(*state) + strlen(id) + 1, sip_outbound_publish_state_destroy);</span>
+<span class="lineNum">    1427 </span>            : 
+<span class="lineNum">    1428 </span><span class="lineCov">          5 :         if (!state) {</span>
+<span class="lineNum">    1429 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1430 </span>            :         }
+<span class="lineNum">    1431 </span>            : 
+<span class="lineNum">    1432 </span><span class="lineCov">          5 :         state-&gt;client = ao2_alloc(sizeof(*state-&gt;client), sip_outbound_publish_client_destroy);</span>
+<span class="lineNum">    1433 </span><span class="lineCov">          5 :         if (!state-&gt;client) {</span>
+<span class="lineNum">    1434 </span><span class="lineNoCov">          0 :                 ao2_ref(state, -1);</span>
+<span class="lineNum">    1435 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1436 </span>            :         }
+<span class="lineNum">    1437 </span>            : 
+<span class="lineNum">    1438 </span><span class="lineCov">          5 :         state-&gt;client-&gt;datastores = ao2_container_alloc(DATASTORE_BUCKETS, datastore_hash, datastore_cmp);</span>
+<span class="lineNum">    1439 </span><span class="lineCov">          5 :         if (!state-&gt;client-&gt;datastores) {</span>
+<span class="lineNum">    1440 </span><span class="lineNoCov">          0 :                 ao2_ref(state, -1);</span>
+<span class="lineNum">    1441 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1442 </span>            :         }
+<span class="lineNum">    1443 </span>            : 
+<span class="lineNum">    1444 </span><span class="lineCov">          5 :         state-&gt;client-&gt;publishers = ao2_container_alloc(DATASTORE_BUCKETS, sip_outbound_publisher_hash_fn,</span>
+<span class="lineNum">    1445 </span>            :                                                         sip_outbound_publisher_cmp_fn);
+<span class="lineNum">    1446 </span><span class="lineCov">          5 :         if (!state-&gt;client-&gt;publishers) {</span>
+<span class="lineNum">    1447 </span><span class="lineNoCov">          0 :                 ao2_ref(state, -1);</span>
+<span class="lineNum">    1448 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">    1449 </span>            :         }
+<span class="lineNum">    1450 </span>            : 
+<span class="lineNum">    1451 </span><span class="lineCov">          5 :         state-&gt;client-&gt;publish = ao2_bump(publish);</span>
+<span class="lineNum">    1452 </span>            : 
+<span class="lineNum">    1453 </span><span class="lineCov">          5 :         strcpy(state-&gt;id, id);</span>
+<span class="lineNum">    1454 </span><span class="lineCov">          5 :         return state;</span>
+<a name="1455"><span class="lineNum">    1455 </span>            : }</a>
+<span class="lineNum">    1456 </span>            : 
+<span class="lineNum">    1457 </span><span class="lineCov">          5 : static int validate_publish_config(struct ast_sip_outbound_publish *publish)</span>
+<span class="lineNum">    1458 </span>            : {
+<span class="lineNum">    1459 </span><span class="lineCov">          5 :         if (ast_strlen_zero(publish-&gt;server_uri)) {</span>
+<span class="lineNum">    1460 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;No server URI specified on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1461 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1463 </span><span class="lineCov">          5 :         } else if (ast_sip_validate_uri_length(publish-&gt;server_uri)) {</span>
+<span class="lineNum">    1464 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Server URI or hostname length exceeds pjproject limit or is not a sip(s) uri: '%s' on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1465 </span>            :                         publish-&gt;server_uri,
+<span class="lineNum">    1466 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1467 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1468 </span><span class="lineCov">          5 :         } else if (ast_strlen_zero(publish-&gt;event)) {</span>
+<span class="lineNum">    1469 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;No event type specified for outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1470 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1471 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1472 </span><span class="lineCov">          5 :         } else if (!ast_strlen_zero(publish-&gt;from_uri)</span>
+<span class="lineNum">    1473 </span><span class="lineNoCov">          0 :                 &amp;&amp; ast_sip_validate_uri_length(publish-&gt;from_uri)) {</span>
+<span class="lineNum">    1474 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;From URI or hostname length exceeds pjproject limit or is not a sip(s) uri: '%s' on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1475 </span>            :                         publish-&gt;from_uri,
+<span class="lineNum">    1476 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1477 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1478 </span><span class="lineCov">          5 :         } else if (!ast_strlen_zero(publish-&gt;to_uri)</span>
+<span class="lineNum">    1479 </span><span class="lineNoCov">          0 :                 &amp;&amp; ast_sip_validate_uri_length(publish-&gt;to_uri)) {</span>
+<span class="lineNum">    1480 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;To URI or hostname length exceeds pjproject limit or is not a sip(s) uri: '%s' on outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1481 </span>            :                         publish-&gt;to_uri,
+<span class="lineNum">    1482 </span>            :                         ast_sorcery_object_get_id(publish));
+<span class="lineNum">    1483 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1484 </span>            :         }
+<span class="lineNum">    1485 </span><span class="lineCov">          5 :         return 0;</span>
+<a name="1486"><span class="lineNum">    1486 </span>            : }</a>
+<span class="lineNum">    1487 </span>            : 
+<span class="lineNum">    1488 </span><span class="lineNoCov">          0 : static int current_state_reusable(struct ast_sip_outbound_publish *publish,</span>
+<span class="lineNum">    1489 </span>            :                                   struct ast_sip_outbound_publish_state *current_state)
+<span class="lineNum">    1490 </span>            : {
+<span class="lineNum">    1491 </span>            :         struct ast_sip_outbound_publish *old_publish;
+<span class="lineNum">    1492 </span>            : 
+<span class="lineNum">    1493 </span>            :         /*
+<span class="lineNum">    1494 </span>            :          * Don't maintain the old state/client objects if the multi_user option changed.
+<span class="lineNum">    1495 </span>            :          */
+<span class="lineNum">    1496 </span><span class="lineNoCov">          0 :         if ((!publish-&gt;multi_user &amp;&amp; current_state-&gt;client-&gt;publish-&gt;multi_user) ||</span>
+<span class="lineNum">    1497 </span><span class="lineNoCov">          0 :             (publish-&gt;multi_user &amp;&amp; !current_state-&gt;client-&gt;publish-&gt;multi_user)) {</span>
+<span class="lineNum">    1498 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1499 </span>            :         }
+<span class="lineNum">    1500 </span>            : 
+<span class="lineNum">    1501 </span>            : 
+<span class="lineNum">    1502 </span><span class="lineNoCov">          0 :         if (!can_reuse_publish(current_state-&gt;client-&gt;publish, publish)) {</span>
+<span class="lineNum">    1503 </span>            :                 /*
+<span class="lineNum">    1504 </span>            :                  * Something significant has changed in the configuration, so we are
+<span class="lineNum">    1505 </span>            :                  * unable to use the old state object. The current state needs to go
+<span class="lineNum">    1506 </span>            :                  * away and a new one needs to be created.
+<span class="lineNum">    1507 </span>            :                  */
+<span class="lineNum">    1508 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">    1509 </span>            :         }
+<span class="lineNum">    1510 </span>            : 
+<span class="lineNum">    1511 </span>            :         /*
+<span class="lineNum">    1512 </span>            :          * We can reuse the current state object so keep it, but swap out the
+<span class="lineNum">    1513 </span>            :          * underlying publish object with the new one.
+<span class="lineNum">    1514 </span>            :          */
+<span class="lineNum">    1515 </span><span class="lineNoCov">          0 :         old_publish = current_state-&gt;client-&gt;publish;</span>
+<span class="lineNum">    1516 </span><span class="lineNoCov">          0 :         current_state-&gt;client-&gt;publish = publish;</span>
+<span class="lineNum">    1517 </span><span class="lineNoCov">          0 :         if (ast_sip_push_task_wait_servant(NULL, sip_outbound_publisher_reinit_all,</span>
+<span class="lineNum">    1518 </span><span class="lineNoCov">          0 :                 current_state-&gt;client-&gt;publishers)) {</span>
+<span class="lineNum">    1519 </span>            :                 /*
+<span class="lineNum">    1520 </span>            :                  * If the state object fails to re-initialize then swap
+<span class="lineNum">    1521 </span>            :                  * the old publish info back in.
+<span class="lineNum">    1522 </span>            :                  */
+<span class="lineNum">    1523 </span><span class="lineNoCov">          0 :                 current_state-&gt;client-&gt;publish = publish;</span>
+<span class="lineNum">    1524 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to reinitialize client(s) for outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1525 </span><span class="lineNoCov">          0 :                         ast_sorcery_object_get_id(current_state-&gt;client-&gt;publish));</span>
+<span class="lineNum">    1526 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1527 </span>            :         }
+<span class="lineNum">    1528 </span>            : 
+<span class="lineNum">    1529 </span>            :         /*
+<span class="lineNum">    1530 </span>            :          * Since we swapped out the publish object the new one needs a ref
+<span class="lineNum">    1531 </span>            :          * while the old one needs to go away.
+<span class="lineNum">    1532 </span>            :          */
+<span class="lineNum">    1533 </span><span class="lineNoCov">          0 :         ao2_ref(current_state-&gt;client-&gt;publish, +1);</span>
+<span class="lineNum">    1534 </span><span class="lineNoCov">          0 :         ao2_cleanup(old_publish);</span>
+<span class="lineNum">    1535 </span>            : 
+<span class="lineNum">    1536 </span>            :         /* Tell the caller that the current state object should be used */
+<span class="lineNum">    1537 </span><span class="lineNoCov">          0 :         return 1;</span>
+<span class="lineNum">    1538 </span>            : }
+<a name="1539"><span class="lineNum">    1539 </span>            : </a>
+<span class="lineNum">    1540 </span>            : /*! \brief Apply function which finds or allocates a state structure */
+<span class="lineNum">    1541 </span><span class="lineCov">          5 : static int sip_outbound_publish_apply(const struct ast_sorcery *sorcery, void *obj)</span>
+<span class="lineNum">    1542 </span>            : {
+<span class="lineNum">    1543 </span>            : #define ADD_TO_NEW_STATES(__obj) \
+<span class="lineNum">    1544 </span>            :         do { if (__obj) { \
+<span class="lineNum">    1545 </span>            :              ao2_link(new_states, __obj); \
+<span class="lineNum">    1546 </span>            :              ao2_ref(__obj, -1); } } while (0)
+<span class="lineNum">    1547 </span>            : 
+<span class="lineNum">    1548 </span><span class="lineCov">          5 :         struct ast_sip_outbound_publish *applied = obj;</span>
+<span class="lineNum">    1549 </span>            :         struct ast_sip_outbound_publish_state *current_state, *new_state;
+<span class="lineNum">    1550 </span><span class="lineCov">          5 :         struct sip_outbound_publisher *publisher = NULL;</span>
+<span class="lineNum">    1551 </span>            :         int res;
+<span class="lineNum">    1552 </span>            : 
+<span class="lineNum">    1553 </span>            :         /*
+<span class="lineNum">    1554 </span>            :          * New states are being loaded or reloaded. We'll need to add the new
+<span class="lineNum">    1555 </span>            :          * object if created/updated, or keep the old object if an error occurs.
+<span class="lineNum">    1556 </span>            :          */
+<span class="lineNum">    1557 </span><span class="lineCov">          5 :         if (!new_states) {</span>
+<span class="lineNum">    1558 </span><span class="lineCov">          5 :                 new_states = ao2_container_alloc_options(</span>
+<span class="lineNum">    1559 </span>            :                         AO2_ALLOC_OPT_LOCK_NOLOCK, DEFAULT_STATE_BUCKETS,
+<span class="lineNum">    1560 </span>            :                         outbound_publish_state_hash, outbound_publish_state_cmp);
+<span class="lineNum">    1561 </span>            : 
+<span class="lineNum">    1562 </span><span class="lineCov">          5 :                 if (!new_states) {</span>
+<span class="lineNum">    1563 </span><span class="lineNoCov">          0 :                         ast_log(LOG_ERROR, &quot;Unable to allocate new states container\n&quot;);</span>
+<span class="lineNum">    1564 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<span class="lineNum">    1565 </span>            :                 }
+<span class="lineNum">    1566 </span>            :         }
+<span class="lineNum">    1567 </span>            : 
+<span class="lineNum">    1568 </span>            :         /* If there is current state we'll want to maintain it if any errors occur */
+<span class="lineNum">    1569 </span><span class="lineCov">          5 :         current_state = sip_publish_state_get(ast_sorcery_object_get_id(applied));</span>
+<span class="lineNum">    1570 </span>            : 
+<span class="lineNum">    1571 </span><span class="lineCov">          5 :         if ((res = validate_publish_config(applied))) {</span>
+<span class="lineNum">    1572 </span><span class="lineNoCov">          0 :                 ADD_TO_NEW_STATES(current_state);</span>
+<span class="lineNum">    1573 </span><span class="lineNoCov">          0 :                 return res;</span>
+<span class="lineNum">    1574 </span>            :         }
+<span class="lineNum">    1575 </span>            : 
+<span class="lineNum">    1576 </span><span class="lineCov">          5 :         if (current_state &amp;&amp; (res = current_state_reusable(applied, current_state))) {</span>
+<span class="lineNum">    1577 </span>            :                 /*
+<span class="lineNum">    1578 </span>            :                  * The current state object was able to be reused, or an error
+<span class="lineNum">    1579 </span>            :                  * occurred. Either way we keep the current state and be done.
+<span class="lineNum">    1580 </span>            :                  */
+<span class="lineNum">    1581 </span><span class="lineNoCov">          0 :                 ADD_TO_NEW_STATES(current_state);</span>
+<span class="lineNum">    1582 </span><span class="lineNoCov">          0 :                 return res == 1 ? 0 : -1;</span>
+<span class="lineNum">    1583 </span>            :         }
+<span class="lineNum">    1584 </span>            : 
+<span class="lineNum">    1585 </span>            :         /*
+<span class="lineNum">    1586 </span>            :          * No current state was found or it was unable to be reused. Either way
+<span class="lineNum">    1587 </span>            :          * we'll need to create a new state object.
+<span class="lineNum">    1588 </span>            :          */
+<span class="lineNum">    1589 </span><span class="lineCov">          5 :         new_state = sip_outbound_publish_state_alloc(applied);</span>
+<span class="lineNum">    1590 </span><span class="lineCov">          5 :         if (!new_state) {</span>
+<span class="lineNum">    1591 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to create state for outbound publish '%s'\n&quot;,</span>
+<span class="lineNum">    1592 </span>            :                         ast_sorcery_object_get_id(applied));
+<span class="lineNum">    1593 </span><span class="lineNoCov">          0 :                 ADD_TO_NEW_STATES(current_state);</span>
+<span class="lineNum">    1594 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1595 </span>            :         };
+<span class="lineNum">    1596 </span>            : 
+<span class="lineNum">    1597 </span><span class="lineCov">          7 :         if (!applied-&gt;multi_user &amp;&amp;</span>
+<span class="lineNum">    1598 </span><span class="lineCov">          2 :             !(publisher = sip_outbound_publish_client_add_publisher(new_state-&gt;client, NULL))) {</span>
+<span class="lineNum">    1599 </span><span class="lineNoCov">          0 :                 ADD_TO_NEW_STATES(current_state);</span>
+<span class="lineNum">    1600 </span><span class="lineNoCov">          0 :                 ao2_ref(new_state, -1);</span>
+<span class="lineNum">    1601 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1602 </span>            :         }
+<span class="lineNum">    1603 </span><span class="lineCov">          5 :         ao2_cleanup(publisher);</span>
+<span class="lineNum">    1604 </span>            : 
+<span class="lineNum">    1605 </span><span class="lineCov">          5 :         ADD_TO_NEW_STATES(new_state);</span>
+<span class="lineNum">    1606 </span><span class="lineCov">          5 :         ao2_cleanup(current_state);</span>
+<span class="lineNum">    1607 </span><span class="lineCov">          5 :         return res;</span>
+<a name="1608"><span class="lineNum">    1608 </span>            : }</a>
+<span class="lineNum">    1609 </span>            : 
+<span class="lineNum">    1610 </span><span class="lineNoCov">          0 : static int outbound_auth_handler(const struct aco_option *opt, struct ast_variable *var, void *obj)</span>
+<span class="lineNum">    1611 </span>            : {
+<span class="lineNum">    1612 </span><span class="lineNoCov">          0 :         struct ast_sip_outbound_publish *publish = obj;</span>
+<span class="lineNum">    1613 </span>            : 
+<span class="lineNum">    1614 </span><span class="lineNoCov">          0 :         return ast_sip_auth_vector_init(&amp;publish-&gt;outbound_auths, var-&gt;value);</span>
+<span class="lineNum">    1615 </span>            : }
+<a name="1616"><span class="lineNum">    1616 </span>            : </a>
+<span class="lineNum">    1617 </span>            : 
+<span class="lineNum">    1618 </span><span class="lineCov">        851 : static int unload_module(void)</span>
+<span class="lineNum">    1619 </span>            : {
+<span class="lineNum">    1620 </span>            :         int remaining;
+<span class="lineNum">    1621 </span>            : 
+<span class="lineNum">    1622 </span><span class="lineCov">        851 :         ast_sorcery_object_unregister(ast_sip_get_sorcery(), &quot;outbound-publish&quot;);</span>
+<span class="lineNum">    1623 </span>            : 
+<span class="lineNum">    1624 </span><span class="lineCov">        851 :         ao2_global_obj_release(current_states);</span>
+<span class="lineNum">    1625 </span>            : 
+<span class="lineNum">    1626 </span>            :         /* Wait for publication serializers to get destroyed. */
+<span class="lineNum">    1627 </span><span class="lineCov">        851 :         ast_debug(2, &quot;Waiting for publication to complete for unload.\n&quot;);</span>
+<span class="lineNum">    1628 </span><span class="lineCov">        851 :         remaining = ast_serializer_shutdown_group_join(shutdown_group, MAX_UNLOAD_TIMEOUT_TIME);</span>
+<span class="lineNum">    1629 </span><span class="lineCov">        851 :         if (remaining) {</span>
+<span class="lineNum">    1630 </span><span class="lineNoCov">          0 :                 ast_log(LOG_WARNING, &quot;Unload incomplete.  Could not stop %d outbound publications.  Try again later.\n&quot;,</span>
+<span class="lineNum">    1631 </span>            :                         remaining);
+<span class="lineNum">    1632 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">    1633 </span>            :         }
+<span class="lineNum">    1634 </span>            : 
+<span class="lineNum">    1635 </span><span class="lineCov">        851 :         ast_debug(2, &quot;Successful shutdown.\n&quot;);</span>
+<span class="lineNum">    1636 </span>            : 
+<span class="lineNum">    1637 </span><span class="lineCov">        851 :         ao2_cleanup(shutdown_group);</span>
+<span class="lineNum">    1638 </span><span class="lineCov">        851 :         shutdown_group = NULL;</span>
+<span class="lineNum">    1639 </span>            : 
+<span class="lineNum">    1640 </span><span class="lineCov">        851 :         return 0;</span>
+<a name="1641"><span class="lineNum">    1641 </span>            : }</a>
+<span class="lineNum">    1642 </span>            : 
+<span class="lineNum">    1643 </span><span class="lineCov">        852 : static int load_module(void)</span>
+<span class="lineNum">    1644 </span>            : {
+<span class="lineNum">    1645 </span>            :         /* As of pjproject 2.4.5, PJSIP_MAX_URL_SIZE isn't exposed yet but we try anyway. */
+<span class="lineNum">    1646 </span><span class="lineCov">        852 :         ast_pjproject_get_buildopt(&quot;PJSIP_MAX_URL_SIZE&quot;, &quot;%d&quot;, &amp;pjsip_max_url_size);</span>
+<span class="lineNum">    1647 </span>            : 
+<span class="lineNum">    1648 </span><span class="lineCov">        852 :         shutdown_group = ast_serializer_shutdown_group_alloc();</span>
+<span class="lineNum">    1649 </span><span class="lineCov">        852 :         if (!shutdown_group) {</span>
+<span class="lineNum">    1650 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">    1651 </span>            :         }
+<span class="lineNum">    1652 </span>            : 
+<span class="lineNum">    1653 </span><span class="lineCov">        852 :         ast_sorcery_apply_config(ast_sip_get_sorcery(), &quot;res_pjsip_outbound_publish&quot;);</span>
+<span class="lineNum">    1654 </span><span class="lineCov">        852 :         ast_sorcery_apply_default(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;config&quot;, &quot;pjsip.conf,criteria=type=outbound-publish&quot;);</span>
+<span class="lineNum">    1655 </span>            : 
+<span class="lineNum">    1656 </span><span class="lineCov">        852 :         if (ast_sorcery_object_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, sip_outbound_publish_alloc, NULL,</span>
+<span class="lineNum">    1657 </span>            :                 sip_outbound_publish_apply)) {
+<span class="lineNum">    1658 </span><span class="lineNoCov">          0 :                 ast_log(LOG_ERROR, &quot;Unable to register 'outbound-publish' type with sorcery\n&quot;);</span>
+<span class="lineNum">    1659 </span><span class="lineNoCov">          0 :                 unload_module();</span>
+<span class="lineNum">    1660 </span><span class="lineNoCov">          0 :                 return AST_MODULE_LOAD_DECLINE;</span>
+<span class="lineNum">    1661 </span>            :         }
+<span class="lineNum">    1662 </span>            : 
+<span class="lineNum">    1663 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;type&quot;, &quot;&quot;, OPT_NOOP_T, 0, 0);</span>
+<span class="lineNum">    1664 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;server_uri&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, server_uri));</span>
+<span class="lineNum">    1665 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;from_uri&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, from_uri));</span>
+<span class="lineNum">    1666 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;event&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, event));</span>
+<span class="lineNum">    1667 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;to_uri&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, to_uri));</span>
+<span class="lineNum">    1668 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;outbound_proxy&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, outbound_proxy));</span>
+<span class="lineNum">    1669 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;expiration&quot;, &quot;3600&quot;, OPT_UINT_T, 0, FLDSET(struct ast_sip_outbound_publish, expiration));</span>
+<span class="lineNum">    1670 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;max_auth_attempts&quot;, &quot;5&quot;, OPT_UINT_T, 0, FLDSET(struct ast_sip_outbound_publish, max_auth_attempts));</span>
+<span class="lineNum">    1671 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;transport&quot;, &quot;&quot;, OPT_STRINGFIELD_T, 0, STRFLDSET(struct ast_sip_outbound_publish, transport));</span>
+<span class="lineNum">    1672 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register_custom(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;outbound_auth&quot;, &quot;&quot;, outbound_auth_handler, NULL, NULL, 0, 0);</span>
+<span class="lineNum">    1673 </span><span class="lineCov">        852 :         ast_sorcery_object_field_register(ast_sip_get_sorcery(), &quot;outbound-publish&quot;, &quot;multi_user&quot;, &quot;no&quot;, OPT_BOOL_T, 1, FLDSET(struct ast_sip_outbound_publish, multi_user));</span>
+<span class="lineNum">    1674 </span>            : 
+<span class="lineNum">    1675 </span><span class="lineCov">        852 :         ast_sorcery_reload_object(ast_sip_get_sorcery(), &quot;outbound-publish&quot;);</span>
+<span class="lineNum">    1676 </span>            : 
+<span class="lineNum">    1677 </span><span class="lineCov">        852 :         AST_RWLIST_RDLOCK(&amp;publisher_handlers);</span>
+<span class="lineNum">    1678 </span><span class="lineCov">        852 :         sip_outbound_publish_synchronize(NULL);</span>
+<span class="lineNum">    1679 </span><span class="lineCov">        852 :         AST_RWLIST_UNLOCK(&amp;publisher_handlers);</span>
+<span class="lineNum">    1680 </span>            : 
+<span class="lineNum">    1681 </span><span class="lineCov">        852 :         pjsip_publishc_init_module(ast_sip_get_pjsip_endpoint());</span>
+<span class="lineNum">    1682 </span>            : 
+<span class="lineNum">    1683 </span><span class="lineCov">        852 :         return AST_MODULE_LOAD_SUCCESS;</span>
+<a name="1684"><span class="lineNum">    1684 </span>            : }</a>
+<span class="lineNum">    1685 </span>            : 
+<span class="lineNum">    1686 </span><span class="lineNoCov">          0 : static int reload_module(void)</span>
+<span class="lineNum">    1687 </span>            : {
+<span class="lineNum">    1688 </span><span class="lineNoCov">          0 :         ast_sorcery_reload_object(ast_sip_get_sorcery(), &quot;outbound-publish&quot;);</span>
+<span class="lineNum">    1689 </span>            : 
+<span class="lineNum">    1690 </span><span class="lineNoCov">          0 :         AST_RWLIST_RDLOCK(&amp;publisher_handlers);</span>
+<span class="lineNum">    1691 </span><span class="lineNoCov">          0 :         sip_outbound_publish_synchronize(NULL);</span>
+<span class="lineNum">    1692 </span><span class="lineNoCov">          0 :         AST_RWLIST_UNLOCK(&amp;publisher_handlers);</span>
+<span class="lineNum">    1693 </span><span class="lineNoCov">          0 :         return 0;</span>
+<a name="1694"><span class="lineNum">    1694 </span>            : }</a>
+<span class="lineNum">    1695 </span>            : 
+<span class="lineNum">    1696 </span><span class="lineCov">       3448 : AST_MODULE_INFO(ASTERISK_GPL_KEY, AST_MODFLAG_GLOBAL_SYMBOLS | AST_MODFLAG_LOAD_ORDER, &quot;PJSIP Outbound Publish Support&quot;,</span>
+<span class="lineNum">    1697 </span>            :         .support_level = AST_MODULE_SUPPORT_CORE,
+<span class="lineNum">    1698 </span>            :         .load = load_module,
+<span class="lineNum">    1699 </span>            :         .reload = reload_module,
+<span class="lineNum">    1700 </span>            :         .unload = unload_module,
+<span class="lineNum">    1701 </span>            :         .load_pri = AST_MODPRI_CHANNEL_DEPEND,
+<span class="lineNum">    1702 </span>            :         .requires = &quot;res_pjproject,res_pjsip&quot;,
+<span class="lineNum">    1703 </span>            : );
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
