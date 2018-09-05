@@ -7,24 +7,31 @@ output_dir="--output-dir=${OUTPUT_DIR}"
 testsuite_dir="--testsuite-dir=/usr/src/testsuite"
 cache_dir="--cache-dir=/usr/src/ci-cache"
 
-init_repo() {
+clean_repo() {
 	(
-		set -x
 		cd /usr/src/$1
-		git fetch origin --force
-		git checkout -B 16 origin/16
+		if test -n "$(git status --porcelain)"; then
+			echo "Repo $1 is dirty.  You must commit, stash or ignore all changes." >&2
+			exit 1
+		fi
+
+		set -x
+		git clean -fxdq
 	)
 }
 
-init_repo asterisk
-init_repo testsuite
+clean_repo asterisk
+clean_repo testsuite
 
 set -x
 rm -fr ${OUTPUT_DIR} || :
 ./tests/CI/buildAsterisk.sh ${output_dir} ${cache_dir} "$@"
 ./tests/CI/installAsterisk.sh
-./tests/CI/runUnittests.sh ${output_dir}/unittests
 
+# Disabled as I'm testing with REF_DEBUG and unittests produce a huge file + leaks.
+#./tests/CI/runUnittests.sh ${output_dir}/unittests
+
+# Not my focus for now.
 #./tests/CI/runTestsuite.sh ${testsuite_dir} --realtime --initialize-db --cleanup-db
 #mv ../testsuite/logs ${OUTPUT_DIR}/testsuite-realtime
 #mv ../testsuite/asterisk-test-suite-report.xml ${OUTPUT_DIR}/testsuite-realtime
