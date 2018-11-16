@@ -5,10 +5,10 @@ FROM fedora:28
 
 RUN	dnf -y update && \
 	dnf -y install \
-		bash-completion colordiff diffstat man tig vim \
+		bash-completion colordiff diffstat man tig vim expect \
 		\
 		make gcc gcc-c++ lcov pkgconfig \
-		libedit-devel jansson-devel libuuid-devel sqlite-devel libxml2-devel \
+		libedit-devel libuuid-devel sqlite-devel libxml2-devel \
 		speex-devel speexdsp-devel libogg-devel libvorbis-devel alsa-lib-devel portaudio-devel libcurl-devel xmlstarlet bison flex \
 		postgresql-devel unixODBC-devel neon-devel gmime-devel lua-devel uriparser-devel libxslt-devel openssl-devel \
 		mysql-devel bluez-libs-devel radcli-devel freetds-devel jack-audio-connection-kit-devel bash \
